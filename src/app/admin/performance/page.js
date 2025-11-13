@@ -8,16 +8,19 @@ import Topbar from "../../../components/Topbar";
 export default function PerformancePage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activePage, setActivePage] = useState("Performance");
-  
+
   // Filters
   const [branch, setBranch] = useState("All");
   const [dateRange, setDateRange] = useState("Last 7 Days");
   const [customDates, setCustomDates] = useState({ from: "", to: "" });
   const [selectedProcedure, setSelectedProcedure] = useState("all");
-  
+
   const [loading, setLoading] = useState(true);
   const [performanceData, setPerformanceData] = useState(null);
-  const [chartComponents, setChartComponents] = useState({ Line: null, Bar: null });
+  const [chartComponents, setChartComponents] = useState({
+    Line: null,
+    Bar: null,
+  });
 
   // Load charts
   useEffect(() => {
@@ -45,11 +48,6 @@ export default function PerformancePage() {
     loadCharts();
   }, []);
 
-  // Fetch data
-  useEffect(() => {
-    fetchPerformanceData();
-  }, [branch, dateRange, customDates, selectedProcedure]);
-
   const fetchPerformanceData = async () => {
     setLoading(true);
     try {
@@ -71,6 +69,11 @@ export default function PerformancePage() {
       setLoading(false);
     }
   };
+
+  // Fetch data
+  useEffect(() => {
+    fetchPerformanceData();
+  }, [branch, dateRange, customDates, selectedProcedure]);
 
   const { Line, Bar } = chartComponents;
 
@@ -119,7 +122,11 @@ export default function PerformancePage() {
       {
         label: "Revenue (₹)",
         data: branchData.map((b) => b.revenue),
-        backgroundColor: ["rgba(99,102,241,0.8)", "rgba(16,185,129,0.8)", "rgba(245,158,11,0.8)"],
+        backgroundColor: [
+          "rgba(99,102,241,0.8)",
+          "rgba(16,185,129,0.8)",
+          "rgba(245,158,11,0.8)",
+        ],
         borderRadius: 6,
       },
     ],
@@ -174,7 +181,10 @@ export default function PerformancePage() {
             {/* Branch Performance Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
               {branchData.map((branch) => (
-                <div key={branch.name} className="bg-white p-6 rounded-2xl shadow">
+                <div
+                  key={branch.name}
+                  className="bg-white p-6 rounded-2xl shadow"
+                >
                   <div className="flex justify-between items-start mb-4">
                     <div>
                       <p className="text-gray-500 text-sm">{branch.name}</p>
@@ -187,11 +197,17 @@ export default function PerformancePage() {
                         branch.growth > 0 ? "text-green-600" : "text-red-600"
                       }`}
                     >
-                      {branch.growth > 0 ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
+                      {branch.growth > 0 ? (
+                        <TrendingUp size={16} />
+                      ) : (
+                        <TrendingDown size={16} />
+                      )}
                       {Math.abs(branch.growth)}%
                     </div>
                   </div>
-                  <p className="text-gray-600 text-sm">{branch.patients} patients</p>
+                  <p className="text-gray-600 text-sm">
+                    {branch.patients} patients
+                  </p>
                 </div>
               ))}
             </div>
@@ -200,7 +216,9 @@ export default function PerformancePage() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
               {/* Daily Revenue Chart */}
               <div className="bg-white p-6 rounded-2xl shadow">
-                <h2 className="text-lg font-semibold text-gray-800 mb-4">Daily Revenue</h2>
+                <h2 className="text-lg font-semibold text-gray-800 mb-4">
+                  Daily Revenue
+                </h2>
                 <div className="h-64">
                   {Line ? (
                     <Line data={lineChartData} options={chartOptions} />
@@ -214,7 +232,9 @@ export default function PerformancePage() {
 
               {/* Branch Comparison Chart */}
               <div className="bg-white p-6 rounded-2xl shadow">
-                <h2 className="text-lg font-semibold text-gray-800 mb-4">Branch Comparison</h2>
+                <h2 className="text-lg font-semibold text-gray-800 mb-4">
+                  Branch Comparison
+                </h2>
                 <div className="h-64">
                   {Bar ? (
                     <Bar data={barChartData} options={chartOptions} />
@@ -230,7 +250,9 @@ export default function PerformancePage() {
             {/* Procedure Performance Table */}
             <div className="bg-white p-6 rounded-2xl shadow">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-lg font-semibold text-gray-800">Procedure Performance</h2>
+                <h2 className="text-lg font-semibold text-gray-800">
+                  Procedure Performance
+                </h2>
                 <select
                   value={selectedProcedure}
                   onChange={(e) => setSelectedProcedure(e.target.value)}
@@ -247,17 +269,27 @@ export default function PerformancePage() {
                 <table className="w-full">
                   <thead>
                     <tr className="border-b">
-                      <th className="text-left py-3 px-4 text-gray-600 font-medium">Procedure</th>
-                      <th className="text-right py-3 px-4 text-gray-600 font-medium">Count</th>
-                      <th className="text-right py-3 px-4 text-gray-600 font-medium">Revenue</th>
-                      <th className="text-right py-3 px-4 text-gray-600 font-medium">Avg/Patient</th>
+                      <th className="text-left py-3 px-4 text-gray-600 font-medium">
+                        Procedure
+                      </th>
+                      <th className="text-right py-3 px-4 text-gray-600 font-medium">
+                        Count
+                      </th>
+                      <th className="text-right py-3 px-4 text-gray-600 font-medium">
+                        Revenue
+                      </th>
+                      <th className="text-right py-3 px-4 text-gray-600 font-medium">
+                        Avg/Patient
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
                     {procedureData.map((proc) => (
                       <tr key={proc.name} className="border-b hover:bg-gray-50">
                         <td className="py-3 px-4 text-gray-800">{proc.name}</td>
-                        <td className="py-3 px-4 text-right text-gray-800">{proc.count}</td>
+                        <td className="py-3 px-4 text-right text-gray-800">
+                          {proc.count}
+                        </td>
                         <td className="py-3 px-4 text-right text-gray-800">
                           ₹{proc.revenue.toLocaleString()}
                         </td>
