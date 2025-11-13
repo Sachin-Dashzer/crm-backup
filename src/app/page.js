@@ -47,7 +47,7 @@ export default function HomePage() {
               href="/login"
               className="px-6 py-3 rounded-lg border border-gray-300 font-medium hover:bg-gray-100"
             >
-              Let's Start
+              Let&apos;s Start
             </Link>
           </div>
         </div>

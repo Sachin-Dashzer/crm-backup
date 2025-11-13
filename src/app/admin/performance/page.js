@@ -48,30 +48,30 @@ export default function PerformancePage() {
     loadCharts();
   }, []);
 
-  const fetchPerformanceData = async () => {
-    setLoading(true);
-    try {
-      const response = await fetch("/api/admin/performance", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          branch,
-          dateRange,
-          customDates,
-          procedure: selectedProcedure,
-        }),
-      });
-      const data = await response.json();
-      setPerformanceData(data);
-    } catch (error) {
-      console.error("Error fetching performance:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   // Fetch data
   useEffect(() => {
+    const fetchPerformanceData = async () => {
+      setLoading(true);
+      try {
+        const response = await fetch("/api/admin/performance", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            branch,
+            dateRange,
+            customDates,
+            procedure: selectedProcedure,
+          }),
+        });
+        const data = await response.json();
+        setPerformanceData(data);
+      } catch (error) {
+        console.error("Error fetching performance:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchPerformanceData();
   }, [branch, dateRange, customDates, selectedProcedure]);
 
