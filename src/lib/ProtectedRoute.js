@@ -1,0 +1,69 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useRouter, usePathname } from "next/navigation";
+
+export default function ProtectedRoute({ children, allowedRoles = [] }) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const [isAuthorized, setIsAuthorized] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    checkAuth();
+  }, [pathname]);
+
+  const checkAuth = async () => {
+    try {
+      // Get user role from cookie
+      const userRole = document.cookie
+        .split("; ")
+        .find((row) => row.startsWith("userRole="))
+        ?.split("=")[1];
+
+      const isLoggedIn = document.cookie
+        .split("; ")
+        .find((row) => row.startsWith("isLoggedIn="))
+        ?.split("=")[1] === 'true';
+
+      if (!isLoggedIn || !userRole) {
+        router.push("/login");
+        return;
+      }
+
+      // Check if user role is allowed
+      if (allowedRoles.length > 0 && !allowedRoles.includes(userRole)) {
+        // Redirect to their proper dashboard
+        const roleRoutes = {
+          admin: '/admin/dashboard',
+          sales: '/sales/dashboard',
+          reception: '/reception/dashboard',
+          surgery: '/surgery/dashboard',
+        };
+        router.push(roleRoutes[userRole] || '/login');
+        return;
+      }
+
+      setIsAuthorized(true);
+    } catch (error) {
+      console.error("Auth check error:", error);
+      router.push("/login");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+      </div>
+    );
+  }
+
+  if (!isAuthorized) {
+    return null;
+  }
+
+  return <>{children}</>;
+}
