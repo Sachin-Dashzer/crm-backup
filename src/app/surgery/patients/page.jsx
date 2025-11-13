@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { 
   Users, 
   Search, 
@@ -20,7 +20,8 @@ import Topbar from "@/components/Topbar";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 
-export default function SurgeryPatients() {
+// Content component that uses useSearchParams
+function SurgeryPatientsContent() {
   const searchParams = useSearchParams();
   const filterParam = searchParams.get('filter');
   
@@ -447,5 +448,26 @@ export default function SurgeryPatients() {
         )}
       </main>
     </div>
+  );
+}
+
+/* ===================================================
+   Main Surgery Patients Component with Suspense
+=================================================== */
+export default function SurgeryPatients() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-screen bg-gray-50">
+        <Sidebar role="surgery" />
+        <main className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-500 mx-auto"></div>
+            <p className="mt-4 text-gray-600 font-medium">Loading patients...</p>
+          </div>
+        </main>
+      </div>
+    }>
+      <SurgeryPatientsContent />
+    </Suspense>
   );
 }

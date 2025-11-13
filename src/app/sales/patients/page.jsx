@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import SalesSidebar from "@/components/SalesSidebar";
@@ -31,8 +31,6 @@ const STATUS_COLORS = {
   SURGERY_BOOKED: "bg-green-100 text-green-800",
   CLOSED: "bg-gray-100 text-gray-800",
 };
-
-
 
 const PAYMENT_STATUS_COLORS = {
   PAID: "bg-green-100 text-green-800",
@@ -81,10 +79,8 @@ const getInitialFiltersFromURL = (sp) => ({
   maxPackage: "",
 });
 
-/* ===================================================
-   Sales Patient Dashboard
-=================================================== */
-export default function SalesPatientDashboard() {
+// Content component that uses useSearchParams
+function SalesPatientDashboardContent() {
   const searchParams = useSearchParams();
 
   /* ------------ State ------------ */
@@ -988,6 +984,24 @@ export default function SalesPatientDashboard() {
         )}
       </main>
     </div>
+  );
+}
+
+/* ===================================================
+   Main Sales Patient Dashboard Component with Suspense
+=================================================== */
+export default function SalesPatientDashboard() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-screen bg-gray-50">
+        <SalesSidebar />
+        <main className="flex-1 flex items-center justify-center">
+          <div className="animate-spin h-10 w-10 border-4 border-indigo-200 border-t-indigo-600 rounded-full" />
+        </main>
+      </div>
+    }>
+      <SalesPatientDashboardContent />
+    </Suspense>
   );
 }
 
