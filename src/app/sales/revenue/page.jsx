@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Search, Filter, Download, IndianRupee, TrendingUp, Calendar, CreditCard } from "lucide-react";
 import Sidebar from "../../../components/SalesSidebar";
 import Topbar from "../../../components/Topbar";
 
-export default function SalesRevenue() {
+// Content component that uses useSearchParams
+function SalesRevenueContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [activePage, setActivePage] = useState("Revenue");
@@ -320,5 +321,25 @@ export default function SalesRevenue() {
         </div>
       </main>
     </div>
+  );
+}
+
+/* ===================================================
+   Main Sales Revenue Component with Suspense
+=================================================== */
+export default function SalesRevenue() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500 mx-auto"></div>
+            <p className="mt-4 text-gray-600 font-medium">Loading revenue data...</p>
+          </div>
+        </div>
+      </div>
+    }>
+      <SalesRevenueContent />
+    </Suspense>
   );
 }
