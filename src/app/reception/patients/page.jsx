@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import ReceptionSidebar from "@/components/ReceptionSidebar";
@@ -17,7 +17,6 @@ const STATUS_COLORS = {
   SURGERY_BOOKED: "bg-green-100 text-green-800",
   CLOSED: "bg-gray-100 text-gray-800",
 };
-
 
 const LOCATION_OPTIONS = ["Delhi", "Mumbai", "Hyderabad"];
 
@@ -48,10 +47,8 @@ const getInitialFiltersFromURL = (sp) => ({
   readyForSurgery: sp.get("readyForSurgery") === "true",
 });
 
-/* ===================================================
-   Patient Dashboard
-=================================================== */
-export default function PatientDashboard() {
+// Create a wrapper component that uses useSearchParams
+function PatientDashboardContent() {
   const searchParams = useSearchParams();
 
   /* ------------ State ------------ */
@@ -780,6 +777,24 @@ export default function PatientDashboard() {
         )}
       </main>
     </div>
+  );
+}
+
+/* ===================================================
+   Main Patient Dashboard Component with Suspense
+=================================================== */
+export default function PatientDashboard() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-screen bg-gray-50">
+        <ReceptionSidebar />
+        <main className="flex-1 flex items-center justify-center">
+          <div className="animate-spin h-10 w-10 border-4 border-indigo-200 border-t-indigo-600 rounded-full" />
+        </main>
+      </div>
+    }>
+      <PatientDashboardContent />
+    </Suspense>
   );
 }
 
