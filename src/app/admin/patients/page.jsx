@@ -1,13 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
 import { Filter, X, ChevronRight, ChevronLeft, Search, Calendar } from "lucide-react";
 
 /* -------------------- Constants -------------------- */
-
 const STATUS_OPTIONS = [
   "NEW", "NOT-VISITED", "CONSULTED", "SURGERY_BOOKED", "CLOSED",
 ];
@@ -47,10 +46,8 @@ const getInitialFiltersFromURL = (sp) => ({
   readyForSurgery: sp.get("readyForSurgery") === "true",
 });
 
-/* ===================================================
-   Patient Dashboard
-=================================================== */
-export default function PatientDashboard() {
+// Content component that uses useSearchParams
+function PatientDashboardContent() {
   const searchParams = useSearchParams();
 
   /* ------------ State ------------ */
@@ -779,6 +776,24 @@ export default function PatientDashboard() {
         )}
       </main>
     </div>
+  );
+}
+
+/* ===================================================
+   Main Patient Dashboard Component with Suspense
+=================================================== */
+export default function PatientDashboard() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-screen bg-gray-50">
+        <Sidebar />
+        <main className="flex-1 flex items-center justify-center">
+          <div className="animate-spin h-10 w-10 border-4 border-indigo-200 border-t-indigo-600 rounded-full" />
+        </main>
+      </div>
+    }>
+      <PatientDashboardContent />
+    </Suspense>
   );
 }
 
