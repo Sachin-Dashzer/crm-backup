@@ -8,7 +8,6 @@ const employeeSchema = new mongoose.Schema({
   },
   phone: {
     type: String,
-    required: [true, 'Phone is required'],
     trim: true
   },
   email: {

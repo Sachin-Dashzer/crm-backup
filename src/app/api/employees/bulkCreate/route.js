@@ -13,7 +13,7 @@ const handler = async (req) => {
   }
 
   for (const data of employees) {
-    if (!data.name || !data.phone || !data.role) {
+    if (!data.name || !data.role) {
       return NextResponse.json(
         { message: "All fields are required" },
         { status: 400 }

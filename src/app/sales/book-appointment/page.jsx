@@ -119,7 +119,7 @@ export default function BookAppointment() {
     const fetchEmployees = async () => {
       try {
         const response = await fetch(
-          "http://localhost:3000/api/employees/get-id"
+          "/api/employees/get-id"
         );
         const result = await response.json();
         if (result.success) {
@@ -187,7 +187,7 @@ export default function BookAppointment() {
       // Clean the form data before sending
       const cleanedData = cleanObjectIdFields(formData);
 
-      const response = await fetch("/api/sales/create-appointment", {
+      const response = await fetch("/api/patients/create", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

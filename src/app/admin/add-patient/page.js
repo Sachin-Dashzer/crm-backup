@@ -419,7 +419,7 @@ export default function PatientRegistration() {
     const fetchEmployees = async () => {
       try {
         const response = await fetch(
-          "http://localhost:3000/api/employees/get-id"
+          "/api/employees/get-id"
         );
         const result = await response.json();
         if (result.success) {
