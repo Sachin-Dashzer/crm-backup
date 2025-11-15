@@ -2,7 +2,20 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Sidebar from "@/components/Sidebar";
-import { Filter, X, ChevronRight, ChevronLeft, Search, TrendingUp, Users, DollarSign, Activity } from "lucide-react";
+import Link from "next/link";
+import {
+  Filter,
+  X,
+  Plus,
+  ChevronRight,
+  ChevronLeft,
+  Search,
+  TrendingUp,
+  Edit,
+  Users,
+  DollarSign,
+  Activity,
+} from "lucide-react";
 
 /* -------------------- Constants -------------------- */
 const CATEGORY_OPTIONS = [
@@ -11,7 +24,7 @@ const CATEGORY_OPTIONS = [
   "Counsellor",
   "Technician",
   "Implanter",
-  "Others"
+  "Others",
 ];
 
 const CATEGORY_COLORS = {
@@ -31,8 +44,7 @@ const formatCurrency = (amount) =>
     maximumFractionDigits: 0,
   }).format(amount || 0);
 
-const formatNumber = (num) =>
-  new Intl.NumberFormat("en-IN").format(num || 0);
+const formatNumber = (num) => new Intl.NumberFormat("en-IN").format(num || 0);
 
 /* ===================================================
    Staff Performance Dashboard
@@ -75,31 +87,101 @@ export default function StaffDashboard() {
         // Use mock data for demonstration
         setData({
           Doctor: [
-            { name: "Alok Mishra", totalPatient: 9, graftsImplanted: 18430, amountReceived: 271000 },
-            { name: "Nisha Agarwal", totalPatient: 8, graftsImplanted: 10200, amountReceived: 278000 },
-            { name: "Swati Banerjee", totalPatient: 9, graftsImplanted: 20700, amountReceived: 244000 }
+            {
+              name: "Alok Mishra",
+              totalPatient: 9,
+              graftsImplanted: 18430,
+              amountReceived: 271000,
+            },
+            {
+              name: "Nisha Agarwal",
+              totalPatient: 8,
+              graftsImplanted: 10200,
+              amountReceived: 278000,
+            },
+            {
+              name: "Swati Banerjee",
+              totalPatient: 9,
+              graftsImplanted: 20700,
+              amountReceived: 244000,
+            },
           ],
           Agent: [
-            { name: "Amit Patel", totalPatient: 1, readyForSurgery: 1, amountReceived: 35000 },
-            { name: "Anjali Reddy", totalPatient: 1, readyForSurgery: 1, amountReceived: 18000 },
-            { name: "Arun Joshi", totalPatient: 3, readyForSurgery: 1, amountReceived: 90000 }
+            {
+              name: "Amit Patel",
+              totalPatient: 1,
+              readyForSurgery: 1,
+              amountReceived: 35000,
+            },
+            {
+              name: "Anjali Reddy",
+              totalPatient: 1,
+              readyForSurgery: 1,
+              amountReceived: 18000,
+            },
+            {
+              name: "Arun Joshi",
+              totalPatient: 3,
+              readyForSurgery: 1,
+              amountReceived: 90000,
+            },
           ],
           Counsellor: [
-            { name: "Anita Rao", totalPatient: 7, readyForSurgery: 7, amountReceived: 257000 },
-            { name: "Deepak Sharma", totalPatient: 6, readyForSurgery: 5, amountReceived: 173000 }
+            {
+              name: "Anita Rao",
+              totalPatient: 7,
+              readyForSurgery: 7,
+              amountReceived: 257000,
+            },
+            {
+              name: "Deepak Sharma",
+              totalPatient: 6,
+              readyForSurgery: 5,
+              amountReceived: 173000,
+            },
           ],
           Technician: [
-            { name: "Geeta Krishnan", totalPatient: 12, graftsImplanted: 24080, amountReceived: 368000 },
-            { name: "Harish Chandra", totalPatient: 7, graftsImplanted: 16100, amountReceived: 165000 }
+            {
+              name: "Geeta Krishnan",
+              totalPatient: 12,
+              graftsImplanted: 24080,
+              amountReceived: 368000,
+            },
+            {
+              name: "Harish Chandra",
+              totalPatient: 7,
+              graftsImplanted: 16100,
+              amountReceived: 165000,
+            },
           ],
           Implanter: [
-            { name: "Anil Khanna", totalPatient: 11, graftsImplanted: 25650, amountReceived: 393000 },
-            { name: "Madhuri Sen", totalPatient: 10, graftsImplanted: 17180, amountReceived: 272000 }
+            {
+              name: "Anil Khanna",
+              totalPatient: 11,
+              graftsImplanted: 25650,
+              amountReceived: 393000,
+            },
+            {
+              name: "Madhuri Sen",
+              totalPatient: 10,
+              graftsImplanted: 17180,
+              amountReceived: 272000,
+            },
           ],
           Others: [
-            { name: "Ananya Das", totalPatient: 2, graftsImplanted: 6500, amountReceived: 58000 },
-            { name: "Gaurav Tiwari", totalPatient: 4, graftsImplanted: 10600, amountReceived: 103000 }
-          ]
+            {
+              name: "Ananya Das",
+              totalPatient: 2,
+              graftsImplanted: 6500,
+              amountReceived: 58000,
+            },
+            {
+              name: "Gaurav Tiwari",
+              totalPatient: 4,
+              graftsImplanted: 10600,
+              amountReceived: 103000,
+            },
+          ],
         });
       } finally {
         setLoading(false);
@@ -121,33 +203,43 @@ export default function StaffDashboard() {
     // Search filter
     if (filters.search) {
       const q = filters.search.toLowerCase();
-      list = list.filter((item) =>
-        item.name.toLowerCase().includes(q)
-      );
+      list = list.filter((item) => item.name.toLowerCase().includes(q));
     }
 
     // Patient count filters
     if (filters.minPatients) {
-      list = list.filter((item) => item.totalPatient >= Number(filters.minPatients));
+      list = list.filter(
+        (item) => item.totalPatient >= Number(filters.minPatients)
+      );
     }
     if (filters.maxPatients) {
-      list = list.filter((item) => item.totalPatient <= Number(filters.maxPatients));
+      list = list.filter(
+        (item) => item.totalPatient <= Number(filters.maxPatients)
+      );
     }
 
     // Amount filters
     if (filters.minAmount) {
-      list = list.filter((item) => item.amountReceived >= Number(filters.minAmount));
+      list = list.filter(
+        (item) => item.amountReceived >= Number(filters.minAmount)
+      );
     }
     if (filters.maxAmount) {
-      list = list.filter((item) => item.amountReceived <= Number(filters.maxAmount));
+      list = list.filter(
+        (item) => item.amountReceived <= Number(filters.maxAmount)
+      );
     }
 
     // Grafts filters (only for applicable categories)
     if (filters.minGrafts) {
-      list = list.filter((item) => (item.graftsImplanted || 0) >= Number(filters.minGrafts));
+      list = list.filter(
+        (item) => (item.graftsImplanted || 0) >= Number(filters.minGrafts)
+      );
     }
     if (filters.maxGrafts) {
-      list = list.filter((item) => (item.graftsImplanted || 0) <= Number(filters.maxGrafts));
+      list = list.filter(
+        (item) => (item.graftsImplanted || 0) <= Number(filters.maxGrafts)
+      );
     }
 
     // Sort
@@ -171,7 +263,12 @@ export default function StaffDashboard() {
         amountReceived: acc.amountReceived + (item.amountReceived || 0),
         readyForSurgery: acc.readyForSurgery + (item.readyForSurgery || 0),
       }),
-      { totalPatient: 0, graftsImplanted: 0, amountReceived: 0, readyForSurgery: 0 }
+      {
+        totalPatient: 0,
+        graftsImplanted: 0,
+        amountReceived: 0,
+        readyForSurgery: 0,
+      }
     );
   }, [filtered]);
 
@@ -210,13 +307,25 @@ export default function StaffDashboard() {
     if (filters.category)
       chips.push({ k: "category", label: `Category: ${filters.category}` });
     if (filters.minPatients)
-      chips.push({ k: "minPatients", label: `Min Patients: ${filters.minPatients}` });
+      chips.push({
+        k: "minPatients",
+        label: `Min Patients: ${filters.minPatients}`,
+      });
     if (filters.maxPatients)
-      chips.push({ k: "maxPatients", label: `Max Patients: ${filters.maxPatients}` });
+      chips.push({
+        k: "maxPatients",
+        label: `Max Patients: ${filters.maxPatients}`,
+      });
     if (filters.minAmount)
-      chips.push({ k: "minAmount", label: `Min Amount: ${formatCurrency(filters.minAmount)}` });
+      chips.push({
+        k: "minAmount",
+        label: `Min Amount: ${formatCurrency(filters.minAmount)}`,
+      });
     if (filters.maxAmount)
-      chips.push({ k: "maxAmount", label: `Max Amount: ${formatCurrency(filters.maxAmount)}` });
+      chips.push({
+        k: "maxAmount",
+        label: `Max Amount: ${formatCurrency(filters.maxAmount)}`,
+      });
     if (filters.minGrafts)
       chips.push({ k: "minGrafts", label: `Min Grafts: ${filters.minGrafts}` });
     if (filters.maxGrafts)
@@ -251,23 +360,34 @@ export default function StaffDashboard() {
         <header className="bg-white shadow-sm sticky top-0 z-10">
           <div className="px-6 py-4 flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-semibold text-gray-900">Staff Performance</h1>
+              <h1 className="text-2xl font-semibold text-gray-900">
+                Staff Performance
+              </h1>
               <p className="text-sm text-gray-500">
                 Track performance metrics across all staff categories
               </p>
             </div>
-            <button
-              onClick={() => setDrawerOpen(true)}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border bg-white shadow-sm hover:bg-gray-50 text-gray-700 transition-colors"
-            >
-              <Filter className="w-4 h-4" />
-              Filters
-              {activeFilterChips.length > 0 && (
-                <span className="ml-1 text-xs px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 font-medium">
-                  {activeFilterChips.length}
-                </span>
-              )}
-            </button>
+            <div>
+              <button
+                onClick={() => setDrawerOpen(true)}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border bg-white shadow-sm hover:bg-gray-50 text-gray-700 transition-colors"
+              >
+                <Filter className="w-4 h-4" />
+                Filters
+                {activeFilterChips.length > 0 && (
+                  <span className="ml-1 text-xs px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 font-medium">
+                    {activeFilterChips.length}
+                  </span>
+                )}
+              </button>
+              <Link
+                href="add-employee"
+                className="inline-flex items-center gap-2 mx-4 px-4 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
+              >
+                <Plus className="w-4 h-4" />
+                Add Employee
+              </Link>
+            </div>
           </div>
 
           {/* Active filter chips */}
@@ -371,7 +491,9 @@ export default function StaffDashboard() {
               placeholder="Search staff by name…"
               className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-gray-300 shadow-sm focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 transition-colors"
               value={filters.search}
-              onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+              onChange={(e) =>
+                setFilters({ ...filters, search: e.target.value })
+              }
             />
           </div>
         </div>
@@ -413,6 +535,7 @@ export default function StaffDashboard() {
                       onSort={toggleSort}
                     />
                     <Th label="Avg per Patient" />
+                    <Th label="More" />
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
@@ -424,18 +547,26 @@ export default function StaffDashboard() {
                       >
                         <div className="flex flex-col items-center justify-center">
                           <Search className="w-12 h-12 text-gray-300 mb-4" />
-                          <p className="text-lg font-medium text-gray-900 mb-2">No results found</p>
-                          <p className="text-gray-500">Try adjusting your search or filters</p>
+                          <p className="text-lg font-medium text-gray-900 mb-2">
+                            No results found
+                          </p>
+                          <p className="text-gray-500">
+                            Try adjusting your search or filters
+                          </p>
                         </div>
                       </td>
                     </tr>
                   ) : (
                     rows.map((item, idx) => {
+
                       const avgPerPatient = item.totalPatient
                         ? item.amountReceived / item.totalPatient
                         : 0;
                       return (
-                        <tr key={idx} className="hover:bg-gray-50 transition-colors">
+                        <tr
+                          key={idx}
+                          className="hover:bg-gray-50 transition-colors"
+                        >
                           <td className="px-6 py-4 font-medium text-gray-900">
                             {item.name}
                           </td>
@@ -457,6 +588,15 @@ export default function StaffDashboard() {
                           </td>
                           <td className="px-6 py-4 text-gray-600">
                             {formatCurrency(avgPerPatient)}
+                          </td>
+                          <td className="px-6 py-4 text-gray-600">
+                            <Link
+                              href={`/admin/employees/update/${item._id}`}
+                              className="p-2 rounded-lg hover:bg-blue-50 text-blue-600 transition-colors"
+                              title="Edit patient"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </Link>
                           </td>
                         </tr>
                       );
@@ -485,7 +625,9 @@ export default function StaffDashboard() {
                       </td>
                       <td className="px-6 py-4 text-gray-600">
                         {totals.totalPatient > 0
-                          ? formatCurrency(totals.amountReceived / totals.totalPatient)
+                          ? formatCurrency(
+                              totals.amountReceived / totals.totalPatient
+                            )
                           : "—"}
                       </td>
                     </tr>
@@ -497,7 +639,8 @@ export default function StaffDashboard() {
             {/* Footer / Pagination */}
             <div className="flex flex-col md:flex-row items-center justify-between gap-3 px-6 py-4 border-t bg-gray-50">
               <p className="text-sm text-gray-600">
-                Showing <b>{startIdx + 1}</b>–<b>{endIdx}</b> of <b>{total}</b> staff
+                Showing <b>{startIdx + 1}</b>–<b>{endIdx}</b> of <b>{total}</b>{" "}
+                staff
               </p>
               <div className="flex items-center gap-3">
                 <select
@@ -546,7 +689,9 @@ export default function StaffDashboard() {
               {/* Header */}
               <div className="px-6 py-4 border-b bg-white flex items-center justify-between">
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900">Filters</h3>
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    Filters
+                  </h3>
                   <p className="text-sm text-gray-500 mt-1">
                     Refine your staff performance view
                   </p>
@@ -563,7 +708,10 @@ export default function StaffDashboard() {
               <div className="flex-1 overflow-y-auto">
                 <div className="p-6 space-y-6">
                   {/* Category Filter */}
-                  <Section title="Category" icon={<Filter className="w-4 h-4" />}>
+                  <Section
+                    title="Category"
+                    icon={<Filter className="w-4 h-4" />}
+                  >
                     <Field label="Staff Category">
                       <Select
                         value={filters.category}
@@ -583,7 +731,10 @@ export default function StaffDashboard() {
                   </Section>
 
                   {/* Patient Count Filter */}
-                  <Section title="Patient Count" icon={<Users className="w-4 h-4" />}>
+                  <Section
+                    title="Patient Count"
+                    icon={<Users className="w-4 h-4" />}
+                  >
                     <div className="grid grid-cols-2 gap-4">
                       <Field label="Min Patients">
                         <Input
@@ -609,7 +760,10 @@ export default function StaffDashboard() {
                   </Section>
 
                   {/* Amount Filter */}
-                  <Section title="Amount Received" icon={<DollarSign className="w-4 h-4" />}>
+                  <Section
+                    title="Amount Received"
+                    icon={<DollarSign className="w-4 h-4" />}
+                  >
                     <div className="grid grid-cols-2 gap-4">
                       <Field label="Min Amount (₹)">
                         <Input
@@ -636,7 +790,10 @@ export default function StaffDashboard() {
 
                   {/* Grafts Filter (conditional) */}
                   {hasGrafts && (
-                    <Section title="Grafts Implanted" icon={<TrendingUp className="w-4 h-4" />}>
+                    <Section
+                      title="Grafts Implanted"
+                      icon={<TrendingUp className="w-4 h-4" />}
+                    >
                       <div className="grid grid-cols-2 gap-4">
                         <Field label="Min Grafts">
                           <Input
@@ -725,13 +882,23 @@ function Section({ title, icon, children }) {
 function Field({ label, children }) {
   return (
     <label className="block">
-      {label && <span className="block text-sm font-medium text-gray-700 mb-2">{label}</span>}
+      {label && (
+        <span className="block text-sm font-medium text-gray-700 mb-2">
+          {label}
+        </span>
+      )}
       {children}
     </label>
   );
 }
 
-function Input({ type = "text", value, onChange, placeholder, className = "" }) {
+function Input({
+  type = "text",
+  value,
+  onChange,
+  placeholder,
+  className = "",
+}) {
   return (
     <input
       type={type}
@@ -775,9 +942,7 @@ function SummaryCard({ title, value, icon, color }) {
           <p className="text-sm font-medium text-gray-600 mb-1">{title}</p>
           <p className="text-2xl font-bold text-gray-900">{value}</p>
         </div>
-        <div className={`p-3 rounded-lg ${colorClasses[color]}`}>
-          {icon}
-        </div>
+        <div className={`p-3 rounded-lg ${colorClasses[color]}`}>{icon}</div>
       </div>
     </div>
   );

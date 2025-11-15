@@ -1,632 +1,501 @@
 [
   {
-    "name": "Sunita",
-    "phone": "8920693496",
-    "email" : "",
-    "role": "Agent"
+    "name": "SHIVAM RAI",
+    "phone": "7838826632",
+    "email": "",
+    "role": "Others"
   },
   {
-    "name": "Ayesha",
-    "phone": "9971915864",
-    "email" : "",
-    "role": "Agent"
+    "name": "SANJAY SINGH",
+    "phone": "8448307056",
+    "email": "",
+    "role": "Technician"
   },
   {
-    "name": "Beauty Chodhery",
-    "phone": "9717674612",
-    "email" : "",
-    "role": "Agent"
+    "name": "DURGESH GUPTA",
+    "phone": "9289147963",
+    "email": "",
+    "role": "Others"
   },
   {
-    "name": "Rahul Gupta",
-    "phone": "9311545060",
-    "email" : "",
-    "role": "Agent"
+    "name": "VAASHU",
+    "phone": "9999216811",
+    "email": "",
+    "role": "Technician"
   },
   {
-    "name": "Anjali singh",
-    "phone": "7303878190",
-    "email" : "",
-    "role": "Agent"
+    "name": "AMIT KUMAR",
+    "phone": "6283884492",
+    "email": "",
+    "role": "Implanter"
   },
   {
-    "name": "Nisha (Rajiya)",
-    "phone": "8287608586",
-    "email" : "",
-    "role": "Agent"
+    "name": "ARCHANA",
+    "phone": "8076350538",
+    "email": "",
+    "role": "Implanter"
   },
   {
-    "name": "Bhawana",
-    "phone": "8198971158",
-    "email" : "",
-    "role": "Agent"
+    "name": "GUNJAN",
+    "phone": "9818697541",
+    "email": "",
+    "role": "Implanter"
   },
   {
-    "name": "Shaheen",
-    "phone": "7247868055",
-    "email" : "",
-    "role": "Agent"
+    "name": "RITIKA",
+    "phone": "8744080827",
+    "email": "",
+    "role": "Others"
   },
   {
-    "name": "(Gudiya)Anjali",
-    "phone": "9310767886",
-    "email" : "",
-    "role": "Agent"
+    "name": "JATIN Jarwal",
+    "phone": "9216203543",
+    "email": "",
+    "role": "Implanter"
   },
   {
-    "name": "Anju",
-    "phone": "9354506934",
-    "email" : "",
-    "role": "Agent"
+    "name": "Sheetal Bhatiya",
+    "phone": "7988415814",
+    "email": "",
+    "role": "Implanter"
   },
   {
-    "name": "Anam",
-    "phone": "7042124866",
-    "email" : "",
-    "role": "Agent"
+    "name": "NISHANT KUSHWAHA",
+    "phone": "8171385980",
+    "email": "",
+    "role": "Technician"
   },
   {
-    "name": "Aachal Chaturvedi",
-    "phone": "8448306374",
-    "email" : "",
-    "role": "Agent"
+    "name": "CHANDAN KUMAR",
+    "phone": "9334059199",
+    "email": "",
+    "role": "Implanter"
   },
   {
-    "name": "Rajiv singh",
-    "phone": "9643075865",
-    "email" : "",
-    "role": "Agent"
+    "name": "JATIN",
+    "phone": "8700130897",
+    "email": "",
+    "role": "Implanter"
   },
   {
-    "name": "Nikita Nikki",
-    "phone": "8750887588",
-    "email" : "",
-    "role": "Agent"
+    "name": "EKTA",
+    "phone": "9910534023",
+    "email": "",
+    "role": "Others"
   },
   {
-    "name": "Harshita Rai",
-    "phone": "7827516971",
-    "email" : "",
-    "role": "Agent"
+    "name": "PRITAM",
+    "phone": "8824185718",
+    "email": "",
+    "role": "Implanter"
   },
   {
-    "name": "Janvi Gupta",
-    "phone": "9958530105",
-    "email" : "",
-    "role": "Agent"
+    "name": "ANKIT",
+    "phone": "9310136418",
+    "email": "",
+    "role": "Implanter"
   },
   {
-    "name": "Anjali Mathur",
-    "phone": "",
-    "email" : "",
-    "role": "Agent"
+    "name": "GOURI SAGAR",
+    "phone": "9266571543",
+    "email": "",
+    "role": "Implanter"
   },
   {
-    "name": "Nikita Yadav",
-    "phone": "9821574518",
-    "email" : "",
-    "role": "Agent"
+    "name": "SIMRAN",
+    "phone": "9718493850",
+    "email": "",
+    "role": "Implanter"
   },
   {
-    "name": "Kanika",
-    "phone": "8882388207",
-    "email" : "",
-    "role": "Agent"
+    "name": "JYOTI Kumari",
+    "phone": "9355658634",
+    "email": "",
+    "role": "Others"
   },
   {
-    "name": "Ashu",
-    "phone": "7838699102",
-    "email" : "",
-    "role": "Agent"
+    "name": "SANDHYA",
+    "phone": "9198545935",
+    "email": "",
+    "role": "Others"
   },
   {
-    "name": "Akansha S",
-    "phone": "7011345996",
-    "email" : "",
-    "role": "Agent"
+    "name": "RAVINDRA KHUSHWAHA",
+    "phone": "9675101570",
+    "email": "",
+    "role": "Implanter"
   },
   {
-    "name": "Aisha Khan",
-    "phone": "7428922270",
-    "email" : "",
-    "role": "Agent"
+    "name": "Yogesh Gupta",
+    "phone": "9667499969",
+    "email": "",
+    "role": "Others"
   },
   {
-    "name": "Lucky Tanwar",
-    "phone": "7217767823",
-    "email" : "",
-    "role": "Agent"
+    "name": "Deshraj Kumar Bairwa",
+    "phone": "9660544875",
+    "email": "",
+    "role": "Others"
   },
+  
   {
-    "name": "Nisha Mahor",
-    "phone": "8383903389",
-    "email" : "",
-    "role": "Agent"
+    "name": "Yashvinder Singh",
+    "phone": "8447001548",
+    "email": "",
+    "role": "Others"
   },
   {
-    "name": "Vinita",
-    "phone": "9315337868",
-    "email" : "",
-    "role": "Agent"
+    "name": "Parul",
+    "phone": "8595557099",
+    "email": "",
+    "role": "Others"
   },
   {
-    "name": "Bharat Goswami",
-    "phone": "8527193995",
-    "email" : "",
-    "role": "Agent"
+    "name": "Kiran",
+    "phone": "9873343501",
+    "email": "",
+    "role": "Others"
   },
   {
-    "name": "Khushi",
-    "phone": "9643230280",
-    "email" : "",
-    "role": "Agent"
+    "name": "Anjali",
+    "phone": "9821737758",
+    "email": "",
+    "role": "Others"
   },
   {
-    "name": "Janvi",
-    "phone": "8376849263",
-    "email" : "",
-    "role": "Agent"
+    "name": "NITESH ( NIKKI)",
+    "phone": "9205069771",
+    "email": "",
+    "role": "Others"
   },
   {
-    "name": "Amit",
-    "phone": "7210005148",
-    "email" : "",
-    "role": "Agent"
+    "name": "utkarsh",
+    "phone": "9319432592",
+    "email": "",
+    "role": "Others"
   },
   {
-    "name": "Pradeep",
-    "phone": "",
-    "email" : "",
-    "role": "Agent"
+    "name": "Jashan",
+    "phone": "8908550003",
+    "email": "",
+    "role": "Technician"
   },
   {
-    "name": "Vipin",
-    "phone": "7042919593",
-    "email" : "",
-    "role": "Agent"
+    "name": "RAVI KUMAR",
+    "phone": "7579782314",
+    "email": "",
+    "role": "Others"
   },
   {
-    "name": "Nikeesh",
-    "phone": "6205021314",
-    "email" : "",
-    "role": "Agent"
+    "name": "SUNIL NAGAR",
+    "phone": "9079115069",
+    "email": "",
+    "role": "Others"
   },
   {
-    "name": "Sachin",
-    "phone": "8287037611",
-    "email" : "",
-    "role": "Agent"
+    "name": "NARENDRA",
+    "phone": "8851212224",
+    "email": "",
+    "role": "Technician"
   },
   {
-    "name": "Rahul Vashisth",
-    "phone": "",
-    "email" : "",
-    "role": "Agent"
+    "name": "Nilesh",
+    "phone": "9756722934",
+    "email": "",
+    "role": "Technician"
   },
   {
-    "name": "Subham Chitransh",
-    "phone": "7766839176",
-    "email" : "",
-    "role": "Agent"
+    "name": "AMAAN MIRZA",
+    "phone": "9810334104",
+    "email": "",
+    "role": "Implanter"
   },
   {
-    "name": "Tulsi",
-    "phone": "9870453187",
-    "email" : "",
-    "role": "Agent"
+    "name": "Dr Tanya Arora",
+    "phone": "8368021354",
+    "email": "",
+    "role": "Doctor"
   },
   {
-    "name": "Sakshi",
-    "phone": "8882735616",
-    "email" : "",
-    "role": "Agent"
+    "name": "Pooja Sharma",
+    "phone": "8826439924",
+    "email": "",
+    "role": "Implanter"
   },
   {
-    "name": "Sanjana",
-    "phone": "8920236007",
-    "email" : "",
-    "role": "Agent"
+    "name": "Md Sarfaraz",
+    "phone": "9625670667",
+    "email": "",
+    "role": "Others"
   },
   {
-    "name": "Kavita Bora",
-    "phone": "9582812921",
-    "email" : "",
-    "role": "Agent"
+    "name": "Yashveer",
+    "phone": "9971381255",
+    "email": "",
+    "role": "Others"
   },
   {
-    "name": "Chetan Kumar",
-    "phone": "7217746053",
-    "email" : "",
-    "role": "Agent"
+    "name": "Pawan Kumar",
+    "phone": "7065257882",
+    "email": "",
+    "role": "Others"
   },
   {
-    "name": "Pawan Sharma",
-    "phone": "7390975405",
-    "email" : "",
-    "role": "Agent"
+    "name": "Kamal Bairwa",
+    "phone": "8058892785",
+    "email": "",
+    "role": "Others"
   },
   {
-    "name": "Kirti Niwas",
-    "phone": "8929665456",
-    "email" : "",
-    "role": "Agent"
+    "name": "Manmohan Bairwa",
+    "phone": "7877279502",
+    "email": "",
+    "role": "Others"
   },
   {
-    "name": "Rinky",
-    "phone": "9335355889",
-    "email" : "",
-    "role": "Agent"
+    "name": "Yogesh Kumar Insha",
+    "phone": "8306206226",
+    "email": "",
+    "role": "Technician"
   },
   {
-    "name": "Anish",
-    "phone": "8851050270",
-    "email" : "",
-    "role": "Agent"
+    "name": "PRAKASH KUMAR",
+    "phone": "9958741076",
+    "email": "",
+    "role": "Technician"
   },
   {
-    "name": "Himanshi Ravi",
-    "phone": "8109289175",
-    "email" : "",
-    "role": "Agent"
+    "name": "DEEPAK KUSHWAHA",
+    "phone": "9958741077",
+    "email": "",
+    "role": "Technician"
   },
   {
-    "name": "Dinesh",
-    "phone": "9821756097",
-    "email" : "",
-    "role": "Agent"
+    "name": "PANKAJ",
+    "phone": "8958449464",
+    "email": "",
+    "role": "Technician"
   },
   {
-    "name": "ABHISHEK RAI",
-    "phone": "9634938655",
-    "email" : "",
-    "role": "Agent"
+    "name": "SACHIN",
+    "phone": "9958741081",
+    "email": "",
+    "role": "Implanter"
   },
   {
-    "name": "ANKUR KHUSHWAHA",
-    "phone": "8527596280",
-    "email" : "",
-    "role": "Agent"
+    "name": "SUNIL BHAIRWA",
+    "phone": "7240515815",
+    "email": "",
+    "role": "Implanter"
   },
   {
-    "name": "Rozy",
-    "phone": "8287819671",
-    "email" : "",
-    "role": "Agent"
+    "name": "ARTI",
+    "phone": "9958741086",
+    "email": "",
+    "role": "Implanter"
   },
   {
-    "name": "Pooja Kakkar",
-    "phone": "9643086647",
-    "email" : "",
-    "role": "Agent"
+    "name": "CHETNA",
+    "phone": "8287867897",
+    "email": "",
+    "role": "Implanter"
   },
   {
-    "name": "Nishi",
-    "phone": "7982336017",
-    "email" : "",
-    "role": "Agent"
+    "name": "MOHIT SHAH",
+    "phone": "9958741089",
+    "email": "",
+    "role": "Others"
   },
   {
-    "name": "Aanand Kumar Saket",
-    "phone": "7724935695",
-    "email" : "",
-    "role": "Agent"
+    "name": "YASHIKA",
+    "phone": "9667932450",
+    "email": "",
+    "role": "Others"
   },
   {
-    "name": "PALAK MALHOTRA",
-    "phone": "8802274362",
-    "email" : "",
-    "role": "Agent"
+    "name": "POOJA",
+    "phone": "9205091244",
+    "email": "",
+    "role": "Others"
   },
   {
-    "name": "Sheetal Rathour",
-    "phone": "9354232491",
-    "email" : "",
-    "role": "Agent"
+    "name": "MUSKAN KARAR (MANNU)",
+    "phone": "9958741095",
+    "email": "",
+    "role": "Others"
   },
   {
-    "name": "Mehak Chauhan",
-    "phone": "8447281875",
-    "email" : "",
-    "role": "Agent"
+    "name": "JAHANA",
+    "phone": "9199329315",
+    "email": "",
+    "role": "Others"
   },
   {
-    "name": "Arjun",
-    "phone": "9311636824",
-    "email" : "",
-    "role": "Agent"
+    "name": "ROHAN SINGH",
+    "phone": "7065869223",
+    "email": "",
+    "role": "Others"
   },
   {
-    "name": "Kashish sachdeva",
-    "phone": "8130586716",
-    "email" : "",
-    "role": "Agent"
+    "name": "ROHIT",
+    "phone": "8764763600",
+    "email": "",
+    "role": "Implanter"
   },
   {
-    "name": "Payal Prajapati",
-    "phone": "9205502942",
-    "email" : "",
-    "role": "Agent"
+    "name": "MUMTAJ",
+    "phone": "9667436799",
+    "email": "",
+    "role": "Others"
   },
   {
-    "name": "SONIYA",
-    "phone": "9899018071",
-    "email" : "",
-    "role": "Agent"
+    "name": "PAYAL",
+    "phone": "9958741104",
+    "email": "",
+    "role": "Others"
   },
   {
-    "name": "MAHIMA",
-    "phone": "9354328232",
-    "email" : "",
-    "role": "Agent"
+    "name": "SALMAN KHAN",
+    "phone": "7982724902",
+    "email": "",
+    "role": "Others"
   },
   {
-    "name": "SHIVANI",
-    "phone": "8595182924",
-    "email" : "",
-    "role": "Agent"
+    "name": "RINKU",
+    "phone": "9821137715",
+    "email": "",
+    "role": "Others"
   },
   {
-    "name": "Shaifali",
-    "phone": "9205049061",
-    "email" : "",
-    "role": "Agent"
+    "name": "HIMANSHU KUMAR",
+    "phone": "9958741110",
+    "email": "",
+    "role": "Others"
   },
   {
-    "name": "Tanya Dubey",
-    "phone": "6306683594",
-    "email" : "",
-    "role": "Agent"
+    "name": "VIKAS Bairwa",
+    "phone": "8058193092",
+    "email": "",
+    "role": "Others"
   },
   {
-    "name": "Anjali Sharma",
-    "phone": "9354003546",
-    "email" : "",
-    "role": "Agent"
+    "name": "Pinki",
+    "phone": "8506871705",
+    "email": "",
+    "role": "Others"
   },
   {
-    "name": "Farheen Ansari",
-    "phone": "7056457004",
-    "email" : "",
-    "role": "Agent"
+    "name": "Babita",
+    "phone": "8933064653",
+    "email": "",
+    "role": "Others"
   },
   {
-    "name": "Yash Thakur",
-    "phone": "9220264451",
-    "email" : "",
-    "role": "Agent"
+    "name": "Ravi Kushwaha",
+    "phone": "7037595070",
+    "email": "",
+    "role": "Others"
   },
   {
-    "name": "Nitika",
-    "phone": "7827900974",
-    "email" : "",
-    "role": "Agent"
+    "name": "Parveen Meemrot",
+    "phone": "9116772736",
+    "email": "",
+    "role": "Others"
   },
   {
-    "name": "Ranjana",
-    "phone": "8750742361",
-    "email" : "",
-    "role": "Agent"
+    "name": "SONIA",
+    "phone": "7827848139",
+    "email": "",
+    "role": "Others"
   },
   {
-    "name": "Anshika",
-    "phone": "9310608582",
-    "email" : "",
-    "role": "Agent"
+    "name": "Disha",
+    "phone": "8375851336",
+    "email": "",
+    "role": "Others"
   },
   {
-    "name": "Aakash Sharma",
-    "phone": "9818732337",
-    "email" : "",
-    "role": "Agent"
+    "name": "Uvesh",
+    "phone": "7055291995",
+    "email": "",
+    "role": "Others"
   },
   {
-    "name": "Mushkan Sharma",
-    "phone": "8527541877",
-    "email" : "",
-    "role": "Agent"
+    "name": "Simran Sharma",
+    "phone": "8875780931",
+    "email": "",
+    "role": "Others"
   },
   {
-    "name": "Arvind Vishwakarma",
-    "phone": "7065653356",
-    "email" : "",
-    "role": "Agent"
+    "name": "Reetu",
+    "phone": "9310157897",
+    "email": "",
+    "role": "Implanter"
   },
   {
-    "name": "Kumkum Rajput",
-    "phone": "9718587101",
-    "email" : "",
-    "role": "Agent"
+    "name": "DR PARNAV",
+    "phone": "8368912370",
+    "email": "",
+    "role": "Doctor"
   },
   {
-    "name": "Harsshita Sabarwal",
-    "phone": "9625220513",
-    "email" : "",
-    "role": "Agent"
+    "name": "Dr.Mansi",
+    "phone": "8755211994",
+    "email": "",
+    "role": "Doctor"
   },
   {
-    "name": "Bhavey Singh Rana",
-    "phone": "9266821609",
-    "email" : "",
-    "role": "Agent"
+    "name": "Satyam Rai",
+    "phone": "9220129430",
+    "email": "",
+    "role": "Others"
   },
   {
-    "name": "Himanshu Verma",
-    "phone": "9212131233",
-    "email" : "",
-    "role": "Agent"
+    "name": "Rinku Bhagwat",
+    "phone": "9887293547",
+    "email": "",
+    "role": "Others"
   },
   {
-    "name": "Deep Kumar",
-    "phone": "9953594610",
-    "email" : "",
-    "role": "Agent"
+    "name": "Dinesh Kumar",
+    "phone": "8809139030",
+    "email": "",
+    "role": "Others"
   },
   {
-    "name": "Abhishek Abhua",
-    "phone": "8810404741",
-    "email" : "",
-    "role": "Agent"
+    "name": "Sourabh Kumar",
+    "phone": "9956130556",
+    "email": "",
+    "role": "Others"
   },
   {
-    "name": "Khushbu Mathur",
-    "phone": "9318481377",
-    "email" : "",
-    "role": "Agent"
+    "name": "Kavaljeet Kaur",
+    "phone": "8742958182",
+    "email": "",
+    "role": "Others"
   },
   {
-    "name": "Piyush",
-    "phone": "8178433668",
-    "email" : "",
-    "role": "Agent"
+    "name": "MUKUL TYAGI",
+    "phone": "7838507297",
+    "email": "",
+    "role": "Counsellor"
   },
   {
-    "name": "Devraj",
-    "phone": "9953365762",
-    "email" : "",
-    "role": "Agent"
+    "name": "Tanmay verma",
+    "phone": "8882248977",
+    "email": "",
+    "role": "Counsellor"
   },
   {
-    "name": "Laiba",
-    "phone": "9643197719",
-    "email" : "",
-    "role": "Agent"
+    "name": "Priyanshu Koli",
+    "phone": "9650729768",
+    "email": "",
+    "role": "Counsellor"
   },
   {
-    "name": "Palak Singh",
-    "phone": "9643694314",
-    "email" : "",
-    "role": "Agent"
-  },
-  {
-    "name": "Aachal Panchal",
-    "phone": "9211246549",
-    "email" : "",
-    "role": "Agent"
-  },
-  {
-    "name": "Anjali Gupta",
-    "phone": "9021496519",
-    "email" : "",
-    "role": "Agent"
-  },
-  {
-    "name": "Prashant Kumar",
-    "phone": "7291936851",
-    "email" : "",
-    "role": "Agent"
-  },
-  {
-    "name": "Alisha",
-    "phone": "8527753871",
-    "email" : "",
-    "role": "Agent"
-  },
-  {
-    "name": "Jyoti Gautam",
-    "phone": "9289415086",
-    "email" : "",
-    "role": "Agent"
-  },
-  {
-    "name": "Sita",
-    "phone": "9319913716",
-    "email" : "",
-    "role": "Agent"
-  },
-  {
-    "name": "Tanisha",
-    "phone": "9717618581",
-    "email" : "",
-    "role": "Agent"
-  },
-  {
-    "name": "Yakshi",
-    "phone": "7065776394",
-    "email" : "",
-    "role": "Agent"
-  },
-  {
-    "name": "Vikas kashyap",
-    "phone": "8986199986",
-    "email" : "",
-    "role": "Agent"
-  },
-  {
-    "name": "Naaz Bano",
-    "phone": "9625797298",
-    "email" : "",
-    "role": "Agent"
-  },
-  {
-    "name": "Sushmita Rukaya",
-    "phone": "7303405436",
-    "email" : "",
-    "role": "Agent"
-  },
-  {
-    "name": "Jatin",
-    "phone": "9654858988",
-    "email" : "",
-    "role": "Agent"
-  },
-  {
-    "name": "Bhavyansh Gandhi",
-    "phone": "7827740351",
-    "email" : "",
-    "role": "Agent"
-  },
-  {
-    "name": "Jaspreet Singh",
-    "phone": "9315053150",
-    "email" : "",
-    "role": "Agent"
-  },
-  {
-    "name": "Ashish Kumar",
-    "phone": "7011287734",
-    "email" : "",
-    "role": "Agent"
-  },
-  {
-    "name": "Sufiyan",
-    "phone": "7037170762",
-    "email" : "",
-    "role": "Agent"
-  },
-  {
-    "name": "Himanshi Kaushik",
-    "phone": "8882750475",
-    "email" : "",
-    "role": "Agent"
-  },
-  {
-    "name": "Shweta Saini",
-    "phone": "9818905136",
-    "email" : "",
-    "role": "Agent"
-  },
-  {
-    "name": "Mehzabi",
-    "phone": "7048914773",
-    "email" : "",
-    "role": "Agent"
-  },
-  {
-    "name": "Rajesh Sahu",
-    "phone": "8743833878",
-    "email" : "",
-    "role": "Agent"
-  },
-  {
-    "name": "Tamanna",
-    "phone": "7838830446",
-    "email" : "",
-    "role": "Agent"
-  },
-  {
-    "name": "Chanchal",
-    "phone": "8810387158",
-    "email" : "",
-    "role": "Agent"
+    "name": "Sandhrabh Sharma",
+    "phone": "9910145845",
+    "email": "",
+    "role": "Counsellor"
   }
 ]

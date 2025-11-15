@@ -18,10 +18,10 @@ const handler = async (req) => {
       );
     }
 
-    // ✅ Date range setup
     const today = new Date();
-    const fromDate = from ? new Date(from) : new Date(today);
-    fromDate.setHours(0, 0, 0, 0);
+    let fromDate = from ? new Date(from) : new Date(today);
+    fromDate.setDate(fromDate.getDate() - 1);
+    fromDate.setHours(23, 59, 59, 999);
 
     const toDate = to ? new Date(to) : new Date(today);
     toDate.setHours(23, 59, 59, 999);
@@ -41,7 +41,8 @@ const handler = async (req) => {
     }
 
     // ✅ Calculate the number of days in the selected range
-    const daysDifference = Math.ceil((toDate - fromDate) / (1000 * 60 * 60 * 24)) + 1;
+    const daysDifference =
+      Math.ceil((toDate - fromDate) / (1000 * 60 * 60 * 24)) + 1;
 
     // ✅ Calculate yesterday's date range (same duration as selected range, but shifted back)
     const yesterdayEnd = new Date(fromDate);
@@ -66,7 +67,8 @@ const handler = async (req) => {
 
     // ✅ Centralized filter objects
     const branchFilter = branch === "All" ? {} : { "personal.branch": branch };
-    const branchFilterPatient = branch === "All" ? {} : { "patientData.personal.branch": branch };
+    const branchFilterPatient =
+      branch === "All" ? {} : { "patientData.personal.branch": branch };
 
     // ✅ OPTIMIZED: Single aggregation for all patient counts (current period & comparison period)
     const getPatientStats = async () => {
@@ -76,9 +78,19 @@ const handler = async (req) => {
             ...branchFilter,
             $or: [
               { "personal.visitDate": { $gte: fromDate, $lte: toDate } },
-              { "personal.visitDate": { $gte: yesterdayStart, $lte: yesterdayEnd } },
+              {
+                "personal.visitDate": {
+                  $gte: yesterdayStart,
+                  $lte: yesterdayEnd,
+                },
+              },
               { "surgery.surgeryDate": { $gte: fromDate, $lte: toDate } },
-              { "surgery.surgeryDate": { $gte: yesterdayStart, $lte: yesterdayEnd } },
+              {
+                "surgery.surgeryDate": {
+                  $gte: yesterdayStart,
+                  $lte: yesterdayEnd,
+                },
+              },
             ],
           },
         },
@@ -86,7 +98,11 @@ const handler = async (req) => {
           $facet: {
             // Current period counts
             currentAppointments: [
-              { $match: { "personal.visitDate": { $gte: fromDate, $lte: toDate } } },
+              {
+                $match: {
+                  "personal.visitDate": { $gte: fromDate, $lte: toDate },
+                },
+              },
               { $count: "count" },
             ],
             currentVisits: [
@@ -108,18 +124,32 @@ const handler = async (req) => {
               { $count: "count" },
             ],
             currentSurgeries: [
-              { $match: { "surgery.surgeryDate": { $gte: fromDate, $lte: toDate } } },
+              {
+                $match: {
+                  "surgery.surgeryDate": { $gte: fromDate, $lte: toDate },
+                },
+              },
               { $count: "count" },
             ],
             // Comparison period counts (previous period of same duration)
             comparisonAppointments: [
-              { $match: { "personal.visitDate": { $gte: yesterdayStart, $lte: yesterdayEnd } } },
+              {
+                $match: {
+                  "personal.visitDate": {
+                    $gte: yesterdayStart,
+                    $lte: yesterdayEnd,
+                  },
+                },
+              },
               { $count: "count" },
             ],
             comparisonVisits: [
               {
                 $match: {
-                  "personal.visitDate": { $gte: yesterdayStart, $lte: yesterdayEnd },
+                  "personal.visitDate": {
+                    $gte: yesterdayStart,
+                    $lte: yesterdayEnd,
+                  },
                   "counselling.counsellor": { $exists: true, $ne: "" },
                 },
               },
@@ -128,14 +158,24 @@ const handler = async (req) => {
             comparisonReadyForSurgery: [
               {
                 $match: {
-                  "personal.visitDate": { $gte: yesterdayStart, $lte: yesterdayEnd },
+                  "personal.visitDate": {
+                    $gte: yesterdayStart,
+                    $lte: yesterdayEnd,
+                  },
                   "counselling.readyForSurgery": true,
                 },
               },
               { $count: "count" },
             ],
             comparisonSurgeries: [
-              { $match: { "surgery.surgeryDate": { $gte: yesterdayStart, $lte: yesterdayEnd } } },
+              {
+                $match: {
+                  "surgery.surgeryDate": {
+                    $gte: yesterdayStart,
+                    $lte: yesterdayEnd,
+                  },
+                },
+              },
               { $count: "count" },
             ],
           },
@@ -201,7 +241,9 @@ const handler = async (req) => {
             ],
             // Comparison period revenue
             comparisonTotal: [
-              { $match: { date: { $gte: yesterdayStart, $lte: yesterdayEnd } } },
+              {
+                $match: { date: { $gte: yesterdayStart, $lte: yesterdayEnd } },
+              },
               { $group: { _id: null, total: { $sum: "$amount" } } },
             ],
             // Last 7 days
@@ -211,7 +253,13 @@ const handler = async (req) => {
             ],
             last7DaysByMethod: [
               { $match: { date: { $gte: last7DaysStart, $lte: actualToday } } },
-              { $group: { _id: "$method", total: { $sum: "$amount" }, count: { $sum: 1 } } },
+              {
+                $group: {
+                  _id: "$method",
+                  total: { $sum: "$amount" },
+                  count: { $sum: 1 },
+                },
+              },
             ],
             last7DaysPerDay: [
               { $match: { date: { $gte: last7DaysStart, $lte: actualToday } } },
@@ -225,15 +273,27 @@ const handler = async (req) => {
             ],
             // Last 30 days
             last30DaysTotal: [
-              { $match: { date: { $gte: last30DaysStart, $lte: actualToday } } },
+              {
+                $match: { date: { $gte: last30DaysStart, $lte: actualToday } },
+              },
               { $group: { _id: null, total: { $sum: "$amount" } } },
             ],
             last30DaysByMethod: [
-              { $match: { date: { $gte: last30DaysStart, $lte: actualToday } } },
-              { $group: { _id: "$method", total: { $sum: "$amount" }, count: { $sum: 1 } } },
+              {
+                $match: { date: { $gte: last30DaysStart, $lte: actualToday } },
+              },
+              {
+                $group: {
+                  _id: "$method",
+                  total: { $sum: "$amount" },
+                  count: { $sum: 1 },
+                },
+              },
             ],
             last30DaysPerDay: [
-              { $match: { date: { $gte: last30DaysStart, $lte: actualToday } } },
+              {
+                $match: { date: { $gte: last30DaysStart, $lte: actualToday } },
+              },
               {
                 $group: {
                   _id: { $dateToString: { format: "%Y-%m-%d", date: "$date" } },
@@ -294,19 +354,31 @@ const handler = async (req) => {
       // Patient stats with growth percentage
       appointment: {
         count: patientStats.current.appointments,
-        growth: calculateGrowth(patientStats.current.appointments, patientStats.comparison.appointments),
+        growth: calculateGrowth(
+          patientStats.current.appointments,
+          patientStats.comparison.appointments
+        ),
       },
       visitPatient: {
         count: patientStats.current.visits,
-        growth: calculateGrowth(patientStats.current.visits, patientStats.comparison.visits),
+        growth: calculateGrowth(
+          patientStats.current.visits,
+          patientStats.comparison.visits
+        ),
       },
       readyforSurgery: {
         count: patientStats.current.readyForSurgery,
-        growth: calculateGrowth(patientStats.current.readyForSurgery, patientStats.comparison.readyForSurgery),
+        growth: calculateGrowth(
+          patientStats.current.readyForSurgery,
+          patientStats.comparison.readyForSurgery
+        ),
       },
       surgeryPatient: {
         count: patientStats.current.surgeries,
-        growth: calculateGrowth(patientStats.current.surgeries, patientStats.comparison.surgeries),
+        growth: calculateGrowth(
+          patientStats.current.surgeries,
+          patientStats.comparison.surgeries
+        ),
       },
 
       // Revenue with growth percentage

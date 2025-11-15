@@ -132,6 +132,11 @@ patientSchema.pre("save", function (next) {
   const isVisitDatePast =
     patient.personal?.visitDate && patient.personal.visitDate < currentDate;
 
+  if (patient.counselling?.finlpackage) {
+    patient.payments = patient.payments || {};
+    patient.payments.totalAmount = patient.counselling.finlpackage;
+  }
+
   if (!patient.counselling?.counsellor) {
     if (isVisitDatePast) {
       patient.ops.status = "NOT-VISITED";

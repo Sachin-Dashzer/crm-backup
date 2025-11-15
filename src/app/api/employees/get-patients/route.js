@@ -7,9 +7,10 @@ const handler = async (req) => {
   try {
     const data = await Employee.find({})
       .populate({
-        path: 'patient',
-        select: 'personal.name surgery.technique surgery.graftsImplanted payments.amountReceived counselling.readyForSurgery ops.status createdAt',
-        options: { sort: { createdAt: -1 } }
+        path: "patient",
+        select:
+          "personal.name surgery.technique surgery.graftsImplanted payments.amountReceived counselling.readyForSurgery ops.status createdAt",
+        options: { sort: { createdAt: -1 } },
       })
       .sort({ name: 1 });
 
@@ -30,20 +31,22 @@ const handler = async (req) => {
 
       // Convert role to lowercase for consistent comparison
       const normalizedRole = role.toLowerCase();
-      
+
       let employeeData;
 
-      if (normalizedRole === 'agent' || normalizedRole === 'counsellor') {
+      if (normalizedRole === "agent" || normalizedRole === "counsellor") {
         // For agent and counsellor - use readyForSurgery
-        const readyForSurgery = patients.filter(patient => 
-          patient.counselling && patient.counselling.readyForSurgery === true
+        const readyForSurgery = patients.filter(
+          (patient) =>
+            patient.counselling && patient.counselling.readyForSurgery === true
         ).length;
 
         employeeData = {
+          _id: employee._id,
           name: employee.name,
           totalPatient: patientCount,
           readyForSurgery: readyForSurgery,
-          amountReceived: amountReceived
+          amountReceived: amountReceived,
         };
       } else {
         // For all other roles (doctor, implanter, technician, etc.) - use graftsImplanted
@@ -52,10 +55,11 @@ const handler = async (req) => {
         }, 0);
 
         employeeData = {
+          _id: employee._id,
           name: employee.name,
           totalPatient: patientCount,
           graftsImplanted: graftsImplanted,
-          amountReceived: amountReceived
+          amountReceived: amountReceived,
         };
       }
 
@@ -67,13 +71,13 @@ const handler = async (req) => {
   } catch (error) {
     console.error("Error fetching employees:", error);
     return NextResponse.json(
-      { 
-        success: false, 
-        error: "Failed to fetch employees" 
+      {
+        success: false,
+        error: "Failed to fetch employees",
       },
       { status: 500 }
     );
   }
 };
 
-export const GET = withDB(handler); 
+export const GET = withDB(handler);
