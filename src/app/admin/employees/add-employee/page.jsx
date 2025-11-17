@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
+import { useToast } from "@/components/Toast";
+import InputField from "@/components/InputField";
 import {
   UserPlus,
   Phone,
@@ -14,89 +16,6 @@ import {
   ToggleRight,
   AlertCircle,
 } from "lucide-react";
-
-const InputField = ({
-  label,
-  type = "text",
-  value,
-  onChange,
-  placeholder,
-  required = false,
-  className = "",
-  options = [],
-}) => {
-  const baseClasses =
-    "w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 shadow-sm";
-
-  if (type === "select") {
-    return (
-      <div className={className}>
-        <label className="block text-sm font-semibold text-gray-700 mb-2">
-          {label} {required && <span className="text-red-500">*</span>}
-        </label>
-        <select
-          className={baseClasses}
-          value={value}
-          onChange={onChange}
-          required={required}
-        >
-          <option value="">Select {label}</option>
-          {options.map((option, index) => (
-            <option key={index} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-      </div>
-    );
-  }
-
-  if (type === "checkbox") {
-    return (
-      <div className={`${className}`}>
-        <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
-          <div className="flex items-center space-x-3">
-            <label className="text-sm font-semibold text-gray-700">
-              {label}
-            </label>
-          </div>
-          <button
-            type="button"
-            onClick={() => onChange({ target: { type: 'checkbox', checked: !value } })}
-            className={`relative inline-flex items-center h-6 rounded-full w-11 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-              value ? 'bg-green-500' : 'bg-gray-300'
-            }`}
-          >
-            <span
-              className={`inline-block w-4 h-4 transform transition-transform duration-200 bg-white rounded-full shadow-lg ${
-                value ? 'translate-x-6' : 'translate-x-1'
-              }`}
-            />
-          </button>
-        </div>
-        <p className="mt-2 text-sm text-gray-500">
-          {value ? "Employee is currently active" : "Employee is currently inactive"}
-        </p>
-      </div>
-    );
-  }
-
-  return (
-    <div className={className}>
-      <label className="block text-sm font-semibold text-gray-700 mb-2">
-        {label} {required && <span className="text-red-500">*</span>}
-      </label>
-      <input
-        type={type}
-        className={baseClasses}
-        value={value}
-        onChange={onChange}
-        placeholder={placeholder}
-        required={required}
-      />
-    </div>
-  );
-};
 
 const RoleDescriptionCard = ({ role }) => {
   const roleDescriptions = {
@@ -189,9 +108,9 @@ const RoleDescriptionCard = ({ role }) => {
 
 export default function EmployeeRegistration() {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitStatus, setSubmitStatus] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const router = useRouter();
+  const toast = useToast();
 
   const [formData, setFormData] = useState({
     name: "",
@@ -218,37 +137,24 @@ export default function EmployeeRegistration() {
 
   const validateForm = () => {
     // Clear previous status
-    setSubmitStatus(null);
 
     if (!formData.name.trim()) {
-      setSubmitStatus({
-        type: "error",
-        message: "Employee name is required",
-      });
+      toast.error("Employee name is required");
       return false;
     }
 
     if (!formData.role) {
-      setSubmitStatus({
-        type: "error",
-        message: "Please select an employee role",
-      });
+      toast.error("Employee role is required");
       return false;
     }
 
     if (formData.email && !formData.email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
-      setSubmitStatus({
-        type: "error",
-        message: "Please enter a valid email address",
-      });
+      toast.error("Please enter a valid email address");
       return false;
     }
 
     if (formData.phone && !formData.phone.match(/^[0-9]{10}$/)) {
-      setSubmitStatus({
-        type: "error",
-        message: "Phone number must be exactly 10 digits",
-      });
+      toast.error("Phone number must be exactly 10 digits");
       return false;
     }
 
@@ -263,7 +169,6 @@ export default function EmployeeRegistration() {
     }
 
     setIsSubmitting(true);
-    setSubmitStatus(null);
 
     try {
       const response = await fetch("/api/employees/create", {
@@ -281,10 +186,7 @@ export default function EmployeeRegistration() {
 
       const result = await response.json();
 
-      setSubmitStatus({
-        type: "success",
-        message: "Employee registered successfully!",
-      });
+      toast.sucess("Employee data loaded successfully");
 
       // Reset form after successful submission
       setTimeout(() => {
@@ -295,14 +197,10 @@ export default function EmployeeRegistration() {
           role: "",
           isactive: true,
         });
-        setSubmitStatus(null);
       }, 2000);
     } catch (error) {
-      console.error("Error submitting employee data:", error);
-      setSubmitStatus({
-        type: "error",
-        message: error.message || "Failed to save employee data. Please try again.",
-      });
+
+      toast.error("Error submitting employee data:", error.message);
     } finally {
       setIsSubmitting(false);
     }
@@ -343,26 +241,7 @@ export default function EmployeeRegistration() {
               </div>
             </div>
 
-            {/* Status Message */}
-            {submitStatus && (
-              <div
-                className={`px-8 py-4 ${
-                  submitStatus.type === "success"
-                    ? "bg-green-50 text-green-800 border-l-4 border-green-400"
-                    : "bg-red-50 text-red-800 border-l-4 border-red-400"
-                }`}
-              >
-                <div className="flex">
-                  <div className="flex-shrink-0">
-                    {submitStatus.type === "success" ? "✓" : "⚠"}
-                  </div>
-                  <div className="ml-3">
-                    <p className="text-sm font-medium">{submitStatus.message}</p>
-                  </div>
-                </div>
-              </div>
-            )}
-
+            
             {/* Form */}
             <form onSubmit={handleSubmit} className="px-8 py-8">
               <div className="space-y-8">

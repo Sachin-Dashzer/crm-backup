@@ -1,7 +1,11 @@
-import { writeFile, unlink, mkdir } from "fs/promises";
 import { NextResponse } from "next/server";
-import path from "path";
-import { existsSync } from "fs";
+import { v2 as cloudinary } from "cloudinary";
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 export async function POST(request) {
   try {
@@ -17,40 +21,28 @@ export async function POST(request) {
       );
     }
 
-    // Convert file to buffer
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    // Create directory structure: public/uploads/{patientId}/{section}
-    const uploadDir = path.join(
-      process.cwd(),
-      "public",
-      "uploads",
-      patientId,
-      section
-    );
-
-    // Create directory if it doesn't exist
-    if (!existsSync(uploadDir)) {
-      await mkdir(uploadDir, { recursive: true });
-    }
-
-    // Generate unique filename
-    const timestamp = Date.now();
-    const originalName = file.name.replace(/\s+/g, "_"); // Replace spaces with underscores
-    const filename = `${timestamp}_${originalName}`;
-    const filepath = path.join(uploadDir, filename);
-
-    // Write file to disk
-    await writeFile(filepath, buffer);
-
-    // Return the relative path that will be stored in database
-    const relativePath = `/uploads/${patientId}/${section}/${filename}`;
+    const uploadResponse = await new Promise((resolve, reject) => {
+      cloudinary.uploader.upload_stream(
+        {
+          folder: `patients/${patientId}/${section}`,
+          resource_type: "auto",
+          public_id: `${Date.now()}_${file.name.replace(/\s+/g, "_")}`,
+        },
+        (error, result) => {
+          if (error) reject(error);
+          else resolve(result);
+        }
+      ).end(buffer);
+    });
 
     return NextResponse.json({
       success: true,
       message: "File uploaded successfully",
-      filePath: relativePath,
+      filePath: uploadResponse.secure_url,
+      publicId: uploadResponse.public_id,
     });
   } catch (error) {
     console.error("Error uploading file:", error);
@@ -63,28 +55,25 @@ export async function POST(request) {
 
 export async function DELETE(request) {
   try {
-    const { filePath } = await request.json();
+    const { publicId } = await request.json();
 
-    if (!filePath) {
+    if (!publicId) {
       return NextResponse.json(
-        { success: false, message: "No file path provided" },
+        { success: false, message: "No public ID provided" },
         { status: 400 }
       );
     }
 
-    // Convert relative path to absolute path
-    const absolutePath = path.join(process.cwd(), "public", filePath);
+    const result = await cloudinary.uploader.destroy(publicId);
 
-    // Check if file exists
-    if (existsSync(absolutePath)) {
-      await unlink(absolutePath);
+    if (result.result === "ok") {
       return NextResponse.json({
         success: true,
         message: "File deleted successfully",
       });
     } else {
       return NextResponse.json(
-        { success: false, message: "File not found" },
+        { success: false, message: "File not found or already deleted" },
         { status: 404 }
       );
     }
@@ -96,9 +85,3 @@ export async function DELETE(request) {
     );
   }
 }
-
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};

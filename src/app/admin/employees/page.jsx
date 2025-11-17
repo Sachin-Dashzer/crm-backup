@@ -381,7 +381,7 @@ export default function StaffDashboard() {
                 )}
               </button>
               <Link
-                href="add-employee"
+                href="/admin/employees/add-employee"
                 className="inline-flex items-center gap-2 mx-4 px-4 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
               >
                 <Plus className="w-4 h-4" />

@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
+import { useToast } from "@/components/Toast";
+import InputField from "@/components/InputField";
 import {
   Upload,
   X,
@@ -18,92 +20,6 @@ import {
   UserPlus,
 } from "lucide-react";
 
-const InputField = ({
-  label,
-  type = "text",
-  value,
-  onChange,
-  placeholder,
-  required = false,
-  className = "",
-  options = [],
-}) => {
-  const baseClasses =
-    "w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 shadow-sm";
-
-  if (type === "select") {
-    return (
-      <div className={className}>
-        <label className="block text-sm font-semibold text-gray-700 mb-2">
-          {label} {required && <span className="text-red-500">*</span>}
-        </label>
-        <select
-          className={baseClasses}
-          value={value}
-          onChange={onChange}
-          required={required}
-        >
-          <option value="">Select {label}</option>
-          {options.map((option, index) => (
-            <option key={index} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-      </div>
-    );
-  }
-
-  if (type === "textarea") {
-    return (
-      <div className={className}>
-        <label className="block text-sm font-semibold text-gray-700 mb-2">
-          {label} {required && <span className="text-red-500">*</span>}
-        </label>
-        <textarea
-          className={`${baseClasses} min-h-[120px] resize-vertical`}
-          value={value}
-          onChange={onChange}
-          placeholder={placeholder}
-          required={required}
-          rows={4}
-        />
-      </div>
-    );
-  }
-
-  if (type === "checkbox") {
-    return (
-      <div className={`flex items-center space-x-3 ${className}`}>
-        <input
-          type="checkbox"
-          className="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-          checked={value}
-          onChange={onChange}
-        />
-        <label className="text-sm font-medium text-gray-700">
-          {placeholder || label}
-        </label>
-      </div>
-    );
-  }
-
-  return (
-    <div className={className}>
-      <label className="block text-sm font-semibold text-gray-700 mb-2">
-        {label} {required && <span className="text-red-500">*</span>}
-      </label>
-      <input
-        type={type}
-        className={baseClasses}
-        value={value}
-        onChange={onChange}
-        placeholder={placeholder}
-        required={required}
-      />
-    </div>
-  );
-};
 
 const StepHeader = ({ icon: Icon, title, description, color }) => (
   <div className="text-center mb-8">
@@ -317,10 +233,11 @@ const DocumentUpload = ({
 export default function PatientRegistration() {
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitStatus, setSubmitStatus] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [uploadingFiles, setUploadingFiles] = useState({});
   const router = useRouter();
+
+  const toast = useToast();
 
   const [employees, setEmployees] = useState({
     Agent: [],
@@ -519,19 +436,13 @@ export default function PatientRegistration() {
         },
       }));
 
-      setSubmitStatus({
-        type: "success",
-        message: `Successfully uploaded ${uploadedPaths.length} file(s)`,
-      });
+      toast.success(`Successfully uploaded ${uploadedPaths.length} file(s)`);
 
-      // Clear success message after 3 seconds
-      setTimeout(() => setSubmitStatus(null), 3000);
+      
     } catch (error) {
       console.error("Error uploading files:", error);
-      setSubmitStatus({
-        type: "error",
-        message: "Failed to upload some files. Please try again.",
-      });
+      toast.error("Failed to upload files. Please try again.");
+      
     } finally {
       setUploadingFiles((prev) => ({ ...prev, [section]: false }));
     }
@@ -558,21 +469,16 @@ export default function PatientRegistration() {
           },
         }));
 
-        setSubmitStatus({
-          type: "success",
-          message: "File removed successfully",
-        });
 
-        setTimeout(() => setSubmitStatus(null), 3000);
+        toast.success("File removed successfully");
+
+       
       } else {
-        throw new Error("Failed to delete file");
+        toast.error("Failed to remove file. Please try again.");
       }
     } catch (error) {
-      console.error("Error removing file:", error);
-      setSubmitStatus({
-        type: "error",
-        message: "Failed to remove file. Please try again.",
-      });
+      toast.error("Failed to remove file. Please try again.")
+      
     }
   };
 
@@ -668,7 +574,6 @@ export default function PatientRegistration() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
-    setSubmitStatus(null);
 
     try {
       // Clean the form data before sending
@@ -688,12 +593,9 @@ export default function PatientRegistration() {
       }
 
       const result = await response.json();
+      toast.success("Patient registered successfully!");
 
-      setSubmitStatus({
-        type: "success",
-        message: "Patient registered successfully!",
-      });
-
+      
       // Reset form after successful submission
       setTimeout(() => {
         setFormData({
@@ -770,14 +672,10 @@ export default function PatientRegistration() {
           },
         });
         setStep(1);
-        setSubmitStatus(null);
       }, 2000);
     } catch (error) {
-      console.error("Error submitting patient data:", error);
-      setSubmitStatus({
-        type: "error",
-        message: error.message || "Failed to save patient data. Please try again.",
-      });
+      toast.error("Failed to save patient data. Please try again.");
+     
     } finally {
       setIsSubmitting(false);
     }
@@ -810,25 +708,7 @@ export default function PatientRegistration() {
             </div>
           </div>
 
-          {submitStatus && (
-            <div
-              className={`px-8 py-4 ${
-                submitStatus.type === "success"
-                  ? "bg-green-50 text-green-800 border-l-4 border-green-400"
-                  : "bg-red-50 text-red-800 border-l-4 border-red-400"
-              }`}
-            >
-              <div className="flex">
-                <div className="flex-shrink-0">
-                  {submitStatus.type === "success" ? "✓" : "⚠"}
-                </div>
-                <div className="ml-3">
-                  <p className="text-sm font-medium">{submitStatus.message}</p>
-                </div>
-              </div>
-            </div>
-          )}
-
+          
           <div className="px-8 py-6 border-b border-gray-200">
             <div className="flex justify-between items-center">
               <div className="flex space-x-2">

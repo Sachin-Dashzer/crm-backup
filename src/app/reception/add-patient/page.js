@@ -179,68 +179,6 @@ const BenefitsManager = ({ benefits, onChange, onAdd, onRemove }) => (
   </div>
 );
 
-const TransactionManager = ({ transactions, onChange, onAdd, onRemove }) => (
-  <div className="md:col-span-2">
-    <h4 className="text-lg font-semibold text-gray-700 mb-4">Transactions</h4>
-    {transactions.map((transaction, index) => (
-      <div key={index} className="bg-gray-50 p-6 rounded-lg mb-4 border">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <InputField
-            label="Date"
-            type="date"
-            value={transaction.date ? transaction.date.split("T")[0] : ""}
-            onChange={(e) => onChange(index, "date", e.target.value)}
-          />
-          <InputField
-            label="Payment Type"
-            type="select"
-            value={transaction.paymentType || ""}
-            onChange={(e) => onChange(index, "paymentType", e.target.value)}
-            options={[
-              { value: "Full-payment", label: "Full Payment" },
-              { value: "Advance", label: "Advance" },
-              { value: "Installment", label: "Installment" },
-              { value: "EMI", label: "EMI" },
-            ]}
-          />
-          <InputField
-            label="Branch"
-            type="select"
-            value={transaction.branch || ""}
-            onChange={(e) => onChange(index, "branch", e.target.value)}
-            options={[
-              { value: "Delhi", label: "Delhi" },
-              { value: "Mumbai", label: "Mumbai" },
-              { value: "Hyderabad", label: "Hyderabad" },
-            ]}
-          />
-          <InputField
-            label="Amount"
-            type="number"
-            value={transaction.amount || ""}
-            onChange={(e) => onChange(index, "amount", e.target.value)}
-            placeholder="Transaction amount"
-          />
-        </div>
-        <button
-          type="button"
-          className="mt-3 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors duration-200"
-          onClick={() => onRemove(index)}
-        >
-          Remove Transaction
-        </button>
-      </div>
-    ))}
-    <button
-      type="button"
-      className="px-6 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors duration-200 font-medium"
-      onClick={onAdd}
-    >
-      + Add Transaction
-    </button>
-  </div>
-);
-
 const DocumentUpload = ({
   title,
   icon: Icon,
@@ -387,13 +325,6 @@ export default function PatientRegistration() {
       graftingPerson: "",
       helper: "",
     },
-    payments: {
-      totalAmount: "",
-      amountReceived: "",
-      pendingAmount: "",
-      medicineAmount: "",
-      transactions: [],
-    },
     documents: {
       images: [],
       consentForm: [],
@@ -410,8 +341,7 @@ export default function PatientRegistration() {
     { number: 2, title: "Counsellor Details", icon: FileText, color: "green" },
     { number: 3, title: "Medical Information", icon: Heart, color: "red" },
     { number: 4, title: "Surgery Details", icon: Scissors, color: "orange" },
-    { number: 5, title: "Payment Details", icon: CreditCard, color: "purple" },
-    { number: 6, title: "Document Upload", icon: FileUp, color: "indigo" },
+    { number: 5, title: "Document Upload", icon: FileUp, color: "indigo" },
   ];
 
   // Fetch employees on component mount
@@ -576,34 +506,6 @@ export default function PatientRegistration() {
     }
   };
 
-  const handleTransactionChange = (index, field, value) => {
-    const newTransactions = [...formData.payments.transactions];
-    newTransactions[index] = {
-      ...newTransactions[index],
-      [field]: value,
-    };
-    handleChange("payments", "transactions", newTransactions);
-  };
-
-  const addTransaction = () => {
-    handleChange("payments", "transactions", [
-      ...formData.payments.transactions,
-      {
-        date: "",
-        paymentType: "",
-        branch: "",
-        amount: "",
-      },
-    ]);
-  };
-
-  const removeTransaction = (index) => {
-    const newTransactions = formData.payments.transactions.filter(
-      (_, i) => i !== index
-    );
-    handleChange("payments", "transactions", newTransactions);
-  };
-
   // Clean empty ObjectId fields before sending to API
   const cleanObjectIdFields = (data) => {
     const cleaned = JSON.parse(JSON.stringify(data)); // Deep clone
@@ -641,12 +543,6 @@ export default function PatientRegistration() {
       personal: ["age", "packageQuoted"],
       counselling: ["finlpackage", "graftsSuggested"],
       surgery: ["OT", "graftsneed", "graftsImplanted"],
-      payments: [
-        "totalAmount",
-        "amountReceived",
-        "pendingAmount",
-        "medicineAmount",
-      ],
     };
 
     Object.keys(numberFields).forEach((section) => {
@@ -752,13 +648,6 @@ export default function PatientRegistration() {
             graftingPerson: "",
             helper: "",
           },
-          payments: {
-            totalAmount: "",
-            amountReceived: "",
-            pendingAmount: "",
-            medicineAmount: "",
-            transactions: [],
-          },
           documents: {
             images: [],
             consentForm: [],
@@ -783,7 +672,7 @@ export default function PatientRegistration() {
     }
   };
 
-  const nextStep = () => setStep(Math.min(step + 1, 6));
+  const nextStep = () => setStep(Math.min(step + 1, 5));
   const prevStep = () => setStep(Math.max(step - 1, 1));
 
   return (
@@ -1397,58 +1286,6 @@ export default function PatientRegistration() {
             {step === 5 && (
               <div className="space-y-8">
                 <StepHeader
-                  icon={CreditCard}
-                  title="Payment Details"
-                  description="Financial information and transactions"
-                  color="purple"
-                />
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 gap-x-12">
-                  <InputField
-                    label="Total Amount (₹)"
-                    type="number"
-                    value={formData.payments.totalAmount}
-                    onChange={createChangeHandler("payments", "totalAmount")}
-                    placeholder="Total amount quoted"
-                  />
-
-                  <InputField
-                    label="Amount Received (₹)"
-                    type="number"
-                    value={formData.payments.amountReceived}
-                    onChange={createChangeHandler("payments", "amountReceived")}
-                    placeholder="Amount received"
-                  />
-
-                  <InputField
-                    label="Pending Amount (₹)"
-                    type="number"
-                    value={formData.payments.pendingAmount}
-                    onChange={createChangeHandler("payments", "pendingAmount")}
-                    placeholder="Pending amount"
-                  />
-
-                  <InputField
-                    label="Medicine Amount (₹)"
-                    type="number"
-                    value={formData.payments.medicineAmount}
-                    onChange={createChangeHandler("payments", "medicineAmount")}
-                    placeholder="Medicine cost"
-                  />
-
-                  <TransactionManager
-                    transactions={formData.payments.transactions}
-                    onChange={handleTransactionChange}
-                    onAdd={addTransaction}
-                    onRemove={removeTransaction}
-                  />
-                </div>
-              </div>
-            )}
-
-            {step === 6 && (
-              <div className="space-y-8">
-                <StepHeader
                   icon={FileUp}
                   title="Document Upload"
                   description="Upload patient images and forms"
@@ -1523,7 +1360,7 @@ export default function PatientRegistration() {
               )}
 
               <div className="flex space-x-4">
-                {step < 6 && (
+                {step < 5 && (
                   <button
                     type="button"
                     className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 transition-colors duration-200"
@@ -1533,7 +1370,7 @@ export default function PatientRegistration() {
                   </button>
                 )}
 
-                {step === 6 && (
+                {step === 5 && (
                   <button
                     type="button"
                     onClick={handleSubmit}

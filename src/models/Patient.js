@@ -139,7 +139,7 @@ patientSchema.pre("save", function (next) {
 
   if (!patient.counselling?.counsellor) {
     if (isVisitDatePast) {
-      patient.ops.status = "NOT-VISITED";
+      patient.ops.status = "NOT_VISITED";
     } else {
       patient.ops.status = "NEW";
     }
