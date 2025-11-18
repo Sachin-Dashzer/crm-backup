@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import Logo from "@/../public/logo-2.png"
+import Logo from "@/../public/logo-2.png";
 import {
   DollarSign,
   Save,
@@ -99,7 +99,6 @@ export default function CreateBill() {
       }
     } catch (e) {
       toast.error("Failed to fetch patients");
-      console.error("Error fetching patients:", e);
     }
   };
 
@@ -181,6 +180,11 @@ export default function CreateBill() {
       const data = await res.json();
 
       if (res.ok) {
+        // ✅ Update patient with live data from API response
+        if (data.updatedPatient) {
+          setSelectedPatient(data.updatedPatient);
+        }
+
         toast.success("Bill created successfully!");
         setCreatedTransaction(data.data);
         setShowPrintPreview(true);
@@ -253,11 +257,9 @@ export default function CreateBill() {
           toast.success("PDF downloaded successfully!");
         })
         .catch((error) => {
-          console.error("Error generating PDF:", error);
           toast.error("Failed to generate PDF");
         });
     } catch (error) {
-      console.error("Error loading html2pdf:", error);
       toast.error("Failed to load PDF library");
     }
   };
@@ -596,6 +598,7 @@ export default function CreateBill() {
 
             <div
               ref={billRef}
+              id="printable-bill"
               style={{
                 background: "white",
                 padding: "40px",
@@ -1063,24 +1066,45 @@ export default function CreateBill() {
 
       <style jsx global>{`
         @media print {
+          /* Hide everything except the bill */
           body * {
             visibility: hidden;
           }
-          .no-print {
+
+          /* Hide non-printable elements */
+          .no-print,
+          .no-print * {
             display: none !important;
           }
+
+          /* Show only the bill */
+          #printable-bill,
+          #printable-bill * {
+            visibility: visible !important;
+          }
+
+          /* Position bill at top of page */
+          #printable-bill {
+            position: absolute !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            padding: 20px !important;
+            margin: 0 !important;
+          }
+
+          /* Remove background colors */
+          body,
           #__next,
           main {
             background: white !important;
           }
-          div[ref] {
-            visibility: visible !important;
-            position: absolute !important;
-            left: 0 !important;
-            top: 0 !important;
-          }
-          div[ref] * {
-            visibility: visible !important;
+
+          /* Ensure proper page breaks */
+          @page {
+            margin: 0.5cm;
+            size: A4;
           }
         }
       `}</style>

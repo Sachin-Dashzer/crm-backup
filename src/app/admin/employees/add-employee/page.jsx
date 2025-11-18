@@ -78,24 +78,36 @@ const RoleDescriptionCard = ({ role }) => {
   if (!role || !roleDescriptions[role]) return null;
 
   const roleInfo = roleDescriptions[role];
+  
+  // Use static color classes instead of template strings
+  const colorClasses = {
+    blue: { bg: "bg-blue-50", border: "border-blue-500", text: "text-blue-600", textDark: "text-blue-900", textMedium: "text-blue-700", textLight: "text-blue-800" },
+    green: { bg: "bg-green-50", border: "border-green-500", text: "text-green-600", textDark: "text-green-900", textMedium: "text-green-700", textLight: "text-green-800" },
+    red: { bg: "bg-red-50", border: "border-red-500", text: "text-red-600", textDark: "text-red-900", textMedium: "text-red-700", textLight: "text-red-800" },
+    orange: { bg: "bg-orange-50", border: "border-orange-500", text: "text-orange-600", textDark: "text-orange-900", textMedium: "text-orange-700", textLight: "text-orange-800" },
+    purple: { bg: "bg-purple-50", border: "border-purple-500", text: "text-purple-600", textDark: "text-purple-900", textMedium: "text-purple-700", textLight: "text-purple-800" },
+    indigo: { bg: "bg-indigo-50", border: "border-indigo-500", text: "text-indigo-600", textDark: "text-indigo-900", textMedium: "text-indigo-700", textLight: "text-indigo-800" },
+  };
+
+  const colors = colorClasses[roleInfo.color];
 
   return (
-    <div className={`bg-${roleInfo.color}-50 border-l-4 border-${roleInfo.color}-500 rounded-lg p-6`}>
+    <div className={`${colors.bg} border-l-4 ${colors.border} rounded-lg p-6`}>
       <div className="flex items-start">
-        <AlertCircle className={`text-${roleInfo.color}-600 mr-3 flex-shrink-0 mt-1`} size={20} />
+        <AlertCircle className={`${colors.text} mr-3 flex-shrink-0 mt-1`} size={20} />
         <div>
-          <h4 className={`text-sm font-bold text-${roleInfo.color}-900 mb-2`}>
+          <h4 className={`text-sm font-bold ${colors.textDark} mb-2`}>
             Role: {role}
           </h4>
-          <p className={`text-sm text-${roleInfo.color}-700 mb-3`}>
+          <p className={`text-sm ${colors.textMedium} mb-3`}>
             {roleInfo.description}
           </p>
           <div className="space-y-1">
-            <p className={`text-xs font-semibold text-${roleInfo.color}-800 mb-1`}>
+            <p className={`text-xs font-semibold ${colors.textLight} mb-1`}>
               Key Responsibilities:
             </p>
             {roleInfo.responsibilities.map((resp, index) => (
-              <p key={index} className={`text-xs text-${roleInfo.color}-600 ml-4`}>
+              <p key={index} className={`text-xs ${colors.textMedium} ml-4`}>
                 • {resp}
               </p>
             ))}
@@ -110,14 +122,14 @@ export default function EmployeeRegistration() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const router = useRouter();
-  const toast = useToast();
+  const toast = useToast(); // Fixed: destructure toast from useToast
 
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
     email: "",
     role: "",
-    isactive: true,
+    isactive: true
   });
 
   const handleChange = (field, value) => {
@@ -136,8 +148,6 @@ export default function EmployeeRegistration() {
   };
 
   const validateForm = () => {
-    // Clear previous status
-
     if (!formData.name.trim()) {
       toast.error("Employee name is required");
       return false;
@@ -186,7 +196,7 @@ export default function EmployeeRegistration() {
 
       const result = await response.json();
 
-      toast.sucess("Employee data loaded successfully");
+      toast.success("Employee registered successfully!");
 
       // Reset form after successful submission
       setTimeout(() => {
@@ -199,8 +209,7 @@ export default function EmployeeRegistration() {
         });
       }, 2000);
     } catch (error) {
-
-      toast.error("Error submitting employee data:", error.message);
+      toast.error(`Error submitting employee data: ${error.message}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -241,7 +250,6 @@ export default function EmployeeRegistration() {
               </div>
             </div>
 
-            
             {/* Form */}
             <form onSubmit={handleSubmit} className="px-8 py-8">
               <div className="space-y-8">

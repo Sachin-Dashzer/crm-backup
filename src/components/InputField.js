@@ -1,133 +1,115 @@
-import React from 'react';
+// src/components/InputField.js
+"use client";
 
-const InputField = ({
-  label,
-  type = "text",
-  required = false,
-  value,
-  onChange,
-  placeholder,
-  options = [],
-  className = "",
+import { useId } from 'react';
+
+export default function InputField({ 
+  label, 
+  type = "text", 
+  value, 
+  onChange, 
+  placeholder, 
+  required = false, 
   disabled = false,
-  error = "",
-  id,
-  name,
-}) => {
-  const inputId = id || `input-${Math.random().toString(36).substr(2, 9)}`;
+  options = [],
+  className = ""
+}) {
+  const id = useId();
   
-  const baseInputClasses = `
-    w-full px-4 py-3 rounded-lg border border-gray-300 
-    focus:ring-2 focus:ring-blue-500 focus:border-transparent 
-    transition-all duration-200 shadow-sm
-    disabled:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-70
-  `;
-
-  const renderInput = () => {
-    switch (type) {
-      case "select":
-        return (
-          <select
-            id={inputId}
-            name={name || inputId}
-            className={`${baseInputClasses} ${error ? 'border-red-500' : ''}`}
-            value={value}
-            onChange={onChange}
-            required={required}
-            disabled={disabled}
-            aria-invalid={!!error}
-            aria-describedby={error ? `${inputId}-error` : undefined}
-          >
-            <option value="">Select {label}</option>
-            {options.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        );
-      
-      case "textarea":
-        return (
-          <textarea
-            id={inputId}
-            name={name || inputId}
-            className={`${baseInputClasses} ${error ? 'border-red-500' : ''} resize-none`}
-            rows="4"
-            value={value}
-            onChange={onChange}
-            placeholder={placeholder}
-            required={required}
-            disabled={disabled}
-            aria-invalid={!!error}
-            aria-describedby={error ? `${inputId}-error` : undefined}
-          />
-        );
-      
-      case "checkbox":
-        return (
-          <div className="flex items-center space-x-3">
-            <input
-              id={inputId}
-              name={name || inputId}
-              type="checkbox"
-              className={`h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded 
-                ${error ? 'border-red-500' : ''}`}
-              checked={Boolean(value)}
-              onChange={onChange}
-              disabled={disabled}
-              aria-invalid={!!error}
-              aria-describedby={error ? `${inputId}-error` : undefined}
-            />
-            <label htmlFor={inputId} className="text-sm text-gray-700 cursor-pointer">
-              {placeholder || label}
-            </label>
-          </div>
-        );
-      
-      default:
-        return (
-          <input
-            id={inputId}
-            name={name || inputId}
-            type={type}
-            className={`${baseInputClasses} ${error ? 'border-red-500' : ''}`}
-            value={value}
-            onChange={onChange}
-            placeholder={placeholder}
-            required={required}
-            disabled={disabled}
-            aria-invalid={!!error}
-            aria-describedby={error ? `${inputId}-error` : undefined}
-          />
-        );
-    }
-  };
-
   return (
     <div className={`space-y-2 ${className}`}>
       {label && type !== "checkbox" && (
         <label 
-          htmlFor={inputId} 
+          htmlFor={id} 
           className="block text-sm font-semibold text-gray-700"
         >
-          {label} {required && <span className="text-red-500">*</span>}
+          {label}
+          {required && <span className="text-red-500 ml-1">*</span>}
         </label>
       )}
       
-      {renderInput()}
-      
-      {error && (
-        <p 
-          id={`${inputId}-error`} 
-          className="text-sm text-red-600 mt-1"
-          role="alert"
+      {type === "textarea" ? (
+        <textarea
+          id={id}
+          className={`
+            w-full px-4 py-3 rounded-lg border border-gray-300 
+            focus:ring-2 focus:ring-blue-500 focus:border-transparent
+            transition-all duration-200 ease-in-out
+            placeholder:text-gray-400
+            ${disabled ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'}
+          `}
+          rows="4"
+          value={value}
+          onChange={onChange}
+          placeholder={placeholder}
+          required={required}
+          disabled={disabled}
+        />
+      ) : type === "select" ? (
+        <select
+          id={id}
+          className={`
+            w-full px-4 py-3 rounded-lg border border-gray-300 
+            focus:ring-2 focus:ring-blue-500 focus:border-transparent
+            transition-all duration-200 ease-in-out
+            ${disabled ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'}
+          `}
+          value={value}
+          onChange={onChange}
+          required={required}
+          disabled={disabled}
         >
-          {error}
-        </p>
+          <option value="">Select {label}</option>
+          {options.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      ) : type === "checkbox" ? (
+        <div className="flex items-center">
+          <input
+            id={id}
+            type="checkbox"
+            className={`
+              h-5 w-5 rounded border-gray-300 
+              focus:ring-2 focus:ring-blue-500
+              text-blue-600 transition-all duration-200
+              ${disabled ? 'bg-gray-100 cursor-not-allowed' : ''}
+            `}
+            checked={value}
+            onChange={onChange}
+            required={required}
+            disabled={disabled}
+          />
+          {label && (
+            <label 
+              htmlFor={id} 
+              className="ml-3 block text-sm font-semibold text-gray-700"
+            >
+              {label}
+              {required && <span className="text-red-500 ml-1">*</span>}
+            </label>
+          )}
+        </div>
+      ) : (
+        <input
+          id={id}
+          type={type}
+          className={`
+            w-full px-4 py-3 rounded-lg border border-gray-300 
+            focus:ring-2 focus:ring-blue-500 focus:border-transparent
+            transition-all duration-200 ease-in-out
+            placeholder:text-gray-400
+            ${disabled ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'}
+          `}
+          value={value}
+          onChange={onChange}
+          placeholder={placeholder}
+          required={required}
+          disabled={disabled}
+        />
       )}
     </div>
   );
-};
-
-export default InputField;
+}

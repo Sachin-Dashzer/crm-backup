@@ -32,7 +32,10 @@ const handler = async (req) => {
     // For revenue transactions, patient is required
     if (data.costType === "Revenue" && !data.patient) {
       return NextResponse.json(
-        { message: "Patient is required for revenue transactions", success: false },
+        {
+          message: "Patient is required for revenue transactions",
+          success: false,
+        },
         { status: 400 }
       );
     }
@@ -54,11 +57,14 @@ const handler = async (req) => {
     });
 
     // Update patient payments only for revenue transactions
+    let updatedPatient = null; // ✅ Changed from const to let and moved outside
     if (data.patient && data.costType === "Revenue") {
       const patient = await Patient.findById(data.patient);
-      
+
       if (!patient) {
-        console.warn(`Patient ${data.patient} not found after transaction creation`);
+        console.warn(
+          `Patient ${data.patient} not found after transaction creation`
+        );
       } else {
         // Initialize payments object if it doesn't exist
         if (!patient.payments) {
@@ -67,51 +73,61 @@ const handler = async (req) => {
             pendingAmount: 0,
             medicineAmount: 0,
             totalAmount: 0,
-            transactions: []
+            transactions: [],
           };
         }
-        
+
         // Initialize transactions array if it doesn't exist
         if (!patient.payments.transactions) {
           patient.payments.transactions = [];
         }
-        
+
         // Add the new transaction ID to the array
         patient.payments.transactions.push(newTransaction._id);
-        
+
         // Check if procedure is medicine
-        const isMedicine = data.procedure?.toLowerCase() === 'medicine';
-        
+        const isMedicine = data.procedure?.toLowerCase() === "medicine";
+
         // Update the payment amounts based on procedure type
         if (isMedicine) {
           // Add to medicine amount
           const currentMedicineAmount = patient.payments.medicineAmount || 0;
-          patient.payments.medicineAmount = currentMedicineAmount + parseFloat(data.amount);
+          patient.payments.medicineAmount =
+            currentMedicineAmount + parseFloat(data.amount);
         } else {
           // Add to regular amount received
           const currentAmountReceived = patient.payments.amountReceived || 0;
-          patient.payments.amountReceived = currentAmountReceived + parseFloat(data.amount);
+          patient.payments.amountReceived =
+            currentAmountReceived + parseFloat(data.amount);
         }
-        
+
         // Calculate pending amount (totalAmount - (amountReceived + medicineAmount))
         const totalAmount = patient.payments.totalAmount || 0;
-        const totalReceived = (patient.payments.amountReceived || 0) + (patient.payments.medicineAmount || 0);
-        patient.payments.pendingAmount = Math.max(0, totalAmount - totalReceived);
-        
+        const totalReceived =
+          (patient.payments.amountReceived || 0) +
+          (patient.payments.medicineAmount || 0);
+        patient.payments.pendingAmount = Math.max(
+          0,
+          totalAmount - totalReceived
+        );
+
         // Save the updated patient
-        const updatedPatient = await patient.save();
+        updatedPatient = await patient.save(); // ✅ Assign to outer variable
 
         if (!updatedPatient) {
           console.warn(
             `Transaction created but failed to update patient ${data.patient}`
           );
         } else {
-          console.log(`Successfully updated patient ${data.patient} payments:`, {
-            amountReceived: updatedPatient.payments.amountReceived,
-            medicineAmount: updatedPatient.payments.medicineAmount,
-            pendingAmount: updatedPatient.payments.pendingAmount,
-            totalAmount: updatedPatient.payments.totalAmount
-          });
+          console.log(
+            `Successfully updated patient ${data.patient} payments:`,
+            {
+              amountReceived: updatedPatient.payments.amountReceived,
+              medicineAmount: updatedPatient.payments.medicineAmount,
+              pendingAmount: updatedPatient.payments.pendingAmount,
+              totalAmount: updatedPatient.payments.totalAmount,
+            }
+          );
         }
       }
     }
@@ -120,13 +136,12 @@ const handler = async (req) => {
       {
         message: "Transaction created successfully",
         data: newTransaction,
+        updatedPatient: updatedPatient, // ✅ Include updated patient data
         success: true,
       },
       { status: 201 }
     );
   } catch (error) {
-    console.error("Error creating transaction:", error);
-
     if (error.name === "ValidationError") {
       return NextResponse.json(
         { message: "Validation Error", error: error.message, success: false },
