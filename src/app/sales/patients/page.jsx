@@ -22,7 +22,7 @@ import {
 
 /* -------------------- Constants -------------------- */
 const STATUS_OPTIONS = [
-  "NEW", "NOT-VISITED", "CONSULTED", "SURGERY_BOOKED", "CLOSED",
+  "NEW", "NOT_VISITED", "CONSULTED", "SURGERY_BOOKED", "CLOSED",
 ];
 const STATUS_COLORS = {
   NEW: "bg-blue-100 text-blue-800",
