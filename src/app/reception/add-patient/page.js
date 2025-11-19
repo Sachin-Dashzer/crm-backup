@@ -226,7 +226,10 @@ const DocumentUpload = ({
                 className="flex items-center justify-between bg-white px-4 py-3 rounded-md border"
               >
                 <div className="flex items-center space-x-3 flex-1 min-w-0">
-                  <Icon size={16} className={`text-${color}-500 flex-shrink-0`} />
+                  <Icon
+                    size={16}
+                    className={`text-${color}-500 flex-shrink-0`}
+                  />
                   <div className="min-w-0 flex-1">
                     <span className="text-sm font-medium text-gray-700 block truncate">
                       {filePath.split("/").pop()}
@@ -348,9 +351,7 @@ export default function PatientRegistration() {
   useEffect(() => {
     const fetchEmployees = async () => {
       try {
-        const response = await fetch(
-          "/api/employees/get-id"
-        );
+        const response = await fetch("/api/employees/get-id");
         const result = await response.json();
         if (result.success) {
           setEmployees(result.data);
@@ -580,7 +581,9 @@ export default function PatientRegistration() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+        throw new Error(
+          errorData.message || `HTTP error! status: ${response.status}`
+        );
       }
 
       const result = await response.json();
@@ -665,7 +668,8 @@ export default function PatientRegistration() {
       console.error("Error submitting patient data:", error);
       setSubmitStatus({
         type: "error",
-        message: error.message || "Failed to save patient data. Please try again.",
+        message:
+          error.message || "Failed to save patient data. Please try again.",
       });
     } finally {
       setIsSubmitting(false);
@@ -677,7 +681,10 @@ export default function PatientRegistration() {
 
   return (
     <section className="flex min-h-screen">
-      <ReceptionSidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
+      <ReceptionSidebar
+        sidebarOpen={sidebarOpen}
+        setSidebarOpen={setSidebarOpen}
+      />
 
       <main className="flex-1 px-12 py-4">
         <div className="bg-white rounded-lg shadow-sm overflow-hidden">
@@ -859,10 +866,11 @@ export default function PatientRegistration() {
                     options={[
                       { value: "FUE", label: "FUE" },
                       { value: "INDIAN DHI", label: "Indian DHI" },
-                      { value: "DHI", label: "DHI" },
+                      { value: "Turkish DHI", label: "Turkish DHI" },
                       { value: "HYBRID", label: "HYBRID" },
                       { value: "PRP", label: "PRP" },
                       { value: "GFC", label: "GFC" },
+                      { value: "Alopecia", label: "Alopecia" },
                       { value: "Other", label: "Other" },
                     ]}
                   />
@@ -919,11 +927,12 @@ export default function PatientRegistration() {
                     )}
                     options={[
                       { value: "FUE", label: "FUE" },
-                      { value: "INDIAN DHI", label: "INDIAN DHI" },
-                      { value: "DHI", label: "DHI" },
+                      { value: "Indian DHI", label: "Indian DHI" },
+                      { value: "Turkish DHI", label: "Turkish DHI" },
                       { value: "HYBRID", label: "HYBRID" },
                       { value: "PRP", label: "PRP" },
                       { value: "GFC", label: "GFC" },
+                      { value: "Alopecia", label: "Alopecia" },
                       { value: "Other", label: "Other" },
                     ]}
                   />
@@ -1027,7 +1036,11 @@ export default function PatientRegistration() {
                       addArrayItem("counselling", "additionalbenefits")
                     }
                     onRemove={(index) =>
-                      removeArrayItem("counselling", "additionalbenefits", index)
+                      removeArrayItem(
+                        "counselling",
+                        "additionalbenefits",
+                        index
+                      )
                     }
                   />
 
@@ -1081,7 +1094,7 @@ export default function PatientRegistration() {
                     ]}
                   />
 
-                  <InputField
+                  {/* <InputField
                     label="Blood Group"
                     type="select"
                     value={formData.medical.bloodGroup}
@@ -1096,7 +1109,7 @@ export default function PatientRegistration() {
                       { value: "O+", label: "O+" },
                       { value: "O-", label: "O-" },
                     ]}
-                  />
+                  /> */}
 
                   <InputField
                     label="Sugar Level"
@@ -1132,18 +1145,26 @@ export default function PatientRegistration() {
 
                   <InputField
                     label="HIV Status"
-                    type="text"
                     value={formData.medical.hiv}
                     onChange={createChangeHandler("medical", "hiv")}
                     placeholder="HIV status"
+                    type="select"
+                    options={[
+                      { value: "Positive", label: "Positive" },
+                      { value: "Negative", label: "Negative" },
+                    ]}
                   />
 
                   <InputField
                     label="HCV Status"
-                    type="text"
                     value={formData.medical.hcv}
                     onChange={createChangeHandler("medical", "hcv")}
                     placeholder="HCV status"
+                    type="select"
+                    options={[
+                      { value: "Positive", label: "Positive" },
+                      { value: "Negative", label: "Negative" },
+                    ]}
                   />
                 </div>
               </div>

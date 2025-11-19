@@ -122,7 +122,7 @@ export default function EmployeeRegistration() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const router = useRouter();
-  const toast = useToast(); // Fixed: destructure toast from useToast
+  const toast = useToast(); 
 
   const [formData, setFormData] = useState({
     name: "",

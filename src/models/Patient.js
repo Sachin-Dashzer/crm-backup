@@ -127,7 +127,7 @@ const patientSchema = new mongoose.Schema(
 
 patientSchema.pre("save", function (next) {
   const patient = this;
-  const currentDate = new Date();
+  const currentDate = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
   const isVisitDatePast =
     patient.personal?.visitDate && patient.personal.visitDate < currentDate;
