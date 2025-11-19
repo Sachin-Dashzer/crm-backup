@@ -109,7 +109,7 @@ const handler = async (req) => {
               {
                 $match: {
                   "personal.visitDate": { $gte: fromDate, $lte: toDate },
-                  "counselling.counsellor": { $exists: true, $ne: "" },
+                  "counselling.counsellor": { $exists: true, $ne: "" , $ne: null },
                 },
               },
               { $count: "count" },
@@ -118,7 +118,7 @@ const handler = async (req) => {
               {
                 $match: {
                   "personal.visitDate": { $gte: fromDate, $lte: toDate },
-                  "counselling.readyForSurgery": true,
+                  "surgery.surgeryDate": { $exists: true, $ne: "" , $ne: null },
                 },
               },
               { $count: "count" },

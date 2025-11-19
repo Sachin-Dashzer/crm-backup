@@ -9,7 +9,7 @@ const handler = async (req) => {
     
     // Update each employee to set patient to null
     const updatePromises = data.map(async (employee) => {
-      employee.patient = null;
+      employee.patient = [];
       return await employee.save();
     });
     
