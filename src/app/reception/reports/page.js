@@ -136,7 +136,7 @@ export default function ReportsPage() {
     {
       id: 10,
       name: "Surgical Technique Analysis",
-      description: "Analysis of surgical techniques (FUE, DHI, INDIAN DHI, HYBRID) with success rates",
+      description: "Analysis of surgical techniques (FUE, TURKISH DHI, INDIAN DHI, HYBRID) with success rates",
       category: "Medical Reports",
       type: "techniques",
       icon: PieChart,

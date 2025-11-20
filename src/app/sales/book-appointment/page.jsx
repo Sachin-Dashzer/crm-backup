@@ -301,7 +301,7 @@ export default function BookAppointment() {
                     { value: "", label: "Not sure yet" },
                     { value: "FUE", label: "FUE" },
                     { value: "INDIAN DHI", label: "Indian DHI" },
-                    { value: "DHI", label: "DHI" },
+                    { value: "TURKISH DHI", label: "Turkish DHI" },
                     { value: "HYBRID", label: "HYBRID" },
                     { value: "PRP", label: "PRP" },
                     { value: "GFC", label: "GFC" },

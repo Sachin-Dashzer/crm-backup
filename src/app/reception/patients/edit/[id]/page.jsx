@@ -21,92 +21,8 @@ import {
 } from "lucide-react";
 import ReceptionSidebar from "@/components/ReceptionSidebar";
 
-const InputField = ({
-  label,
-  type = "text",
-  value,
-  onChange,
-  placeholder,
-  required = false,
-  className = "",
-  options = [],
-}) => {
-  const baseClasses =
-    "w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 shadow-sm";
+import InputField from "@/components/InputField";
 
-  if (type === "select") {
-    return (
-      <div className={className}>
-        <label className="block text-sm font-semibold text-gray-700 mb-2">
-          {label} {required && <span className="text-red-500">*</span>}
-        </label>
-        <select
-          className={baseClasses}
-          value={value}
-          onChange={onChange}
-          required={required}
-        >
-          <option value="">Select {label}</option>
-          {options.map((option, index) => (
-            <option key={index} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-      </div>
-    );
-  }
-
-  if (type === "textarea") {
-    return (
-      <div className={className}>
-        <label className="block text-sm font-semibold text-gray-700 mb-2">
-          {label} {required && <span className="text-red-500">*</span>}
-        </label>
-        <textarea
-          className={`${baseClasses} min-h-[120px] resize-vertical`}
-          value={value}
-          onChange={onChange}
-          placeholder={placeholder}
-          required={required}
-          rows={4}
-        />
-      </div>
-    );
-  }
-
-  if (type === "checkbox") {
-    return (
-      <div className={`flex items-center space-x-3 ${className}`}>
-        <input
-          type="checkbox"
-          className="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-          checked={value}
-          onChange={onChange}
-        />
-        <label className="text-sm font-medium text-gray-700">
-          {placeholder}
-        </label>
-      </div>
-    );
-  }
-
-  return (
-    <div className={className}>
-      <label className="block text-sm font-semibold text-gray-700 mb-2">
-        {label} {required && <span className="text-red-500">*</span>}
-      </label>
-      <input
-        type={type}
-        className={baseClasses}
-        value={value}
-        onChange={onChange}
-        placeholder={placeholder}
-        required={required}
-      />
-    </div>
-  );
-};
 
 const StepHeader = ({ icon: Icon, title, description, color }) => (
   <div className="text-center mb-8">
@@ -1032,7 +948,7 @@ export default function PatientEditDetails() {
                     options={[
                       { value: "FUE", label: "FUE" },
                       { value: "INDIAN DHI", label: "Indian DHI" },
-                      { value: "DHI", label: "DHI" },
+                      { value: "TURKISH DHI", label: "Turkish DHI" },
                       { value: "HYBRID", label: "HYBRID" },
                       { value: "PRP", label: "PRP" },
                       { value: "GFC", label: "GFC" },
@@ -1093,7 +1009,7 @@ export default function PatientEditDetails() {
                     options={[
                       { value: "FUE", label: "FUE" },
                       { value: "INDIAN DHI", label: "INDIAN DHI" },
-                      { value: "DHI", label: "DHI" },
+                      { value: "TURKISH DHI", label: "Turkish DHI" },
                       { value: "HYBRID", label: "HYBRID" },
                       { value: "PRP", label: "PRP" },
                       { value: "GFC", label: "GFC" },

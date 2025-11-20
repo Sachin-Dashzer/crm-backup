@@ -40,7 +40,7 @@ const PAYMENT_STATUS_COLORS = {
 
 const LOCATION_OPTIONS = ["Delhi", "Mumbai", "Hyderabad"];
 
-const TECHNIQUE_OPTIONS = ["FUE", "INDIAN DHI", "DHI", "HYBRID", "PRP", "GFC", "Other"];
+const TECHNIQUE_OPTIONS = ["FUE", "INDIAN DHI", "TURKISH DHI", "HYBRID", "PRP", "GFC", "Other"];
 
 /* -------------------- Helpers -------------------- */
 const formatDate = (date) =>

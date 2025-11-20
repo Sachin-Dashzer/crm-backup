@@ -148,7 +148,7 @@ export default function SurgeryDashboard() {
   const getTechniqueColor = (technique) => {
     const colors = {
       FUE: "bg-blue-100 text-blue-700",
-      DHI: "bg-purple-100 text-purple-700",
+      "TURKISH DHI": "bg-purple-100 text-purple-700",
       "INDIAN DHI": "bg-pink-100 text-pink-700",
       HYBRID: "bg-green-100 text-green-700",
       PRP: "bg-yellow-100 text-yellow-700",

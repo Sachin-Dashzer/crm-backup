@@ -850,7 +850,7 @@ export default function PatientRegistration() {
                     options={[
                       { value: "FUE", label: "FUE" },
                       { value: "INDIAN DHI", label: "Indian DHI" },
-                      { value: "DHI", label: "DHI" },
+                      { value: "TURKISH DHI", label: "Turkish DHI" },
                       { value: "HYBRID", label: "HYBRID" },
                       { value: "PRP", label: "PRP" },
                       { value: "GFC", label: "GFC" },
@@ -910,8 +910,8 @@ export default function PatientRegistration() {
                     )}
                     options={[
                       { value: "FUE", label: "FUE" },
-                      { value: "INDIAN DHI", label: "INDIAN DHI" },
-                      { value: "DHI", label: "DHI" },
+                      { value: "INDIAN DHI", label: "Indian DHI" },
+                      { value: "TURKISH DHI", label: "Turkish DHI" },
                       { value: "HYBRID", label: "HYBRID" },
                       { value: "PRP", label: "PRP" },
                       { value: "GFC", label: "GFC" },

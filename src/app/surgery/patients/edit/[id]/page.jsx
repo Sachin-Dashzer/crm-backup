@@ -167,8 +167,8 @@ export default function EditPatient() {
                     options={[
                       { value: '', label: 'Select Technique' },
                       { value: 'FUE', label: 'FUE' },
-                      { value: 'DHI', label: 'DHI' },
-                      { value: 'INDIAN DHI', label: 'INDIAN DHI' },
+                      { value: 'TURKISH DHI', label: 'Turkish DHI' },
+                      { value: 'INDIAN DHI', label: 'Indian DHI' },
                       { value: 'HYBRID', label: 'HYBRID' },
                       { value: 'PRP', label: 'PRP' },
                       { value: 'GFC', label: 'GFC' },

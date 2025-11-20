@@ -114,7 +114,7 @@ export default function PatientDetail() {
   const getTechniqueColor = (technique) => {
     const colors = {
       FUE: "bg-blue-100 text-blue-700 border-blue-200",
-      DHI: "bg-purple-100 text-purple-700 border-purple-200",
+      "TURKISH DHI": "bg-purple-100 text-purple-700 border-purple-200",
       "INDIAN DHI": "bg-pink-100 text-pink-700 border-pink-200",
       HYBRID: "bg-green-100 text-green-700 border-green-200",
       PRP: "bg-yellow-100 text-yellow-700 border-yellow-200",
