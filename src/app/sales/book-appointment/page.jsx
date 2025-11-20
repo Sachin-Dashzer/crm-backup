@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import SalesSidebar from "@/components/SalesSidebar";
+import { useToast } from "@/components/Toast";
+import InputField from "@/components/InputField";
 import {
   User,
   Calendar,
@@ -14,84 +16,16 @@ import {
   CheckCircle,
 } from "lucide-react";
 
-const InputField = ({
-  label,
-  type = "text",
-  value,
-  onChange,
-  placeholder,
-  required = false,
-  className = "",
-  options = [],
-}) => {
-  const baseClasses =
-    "w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 shadow-sm";
 
-  if (type === "select") {
-    return (
-      <div className={className}>
-        <label className="block text-sm font-semibold text-gray-700 mb-2">
-          {label} {required && <span className="text-red-500">*</span>}
-        </label>
-        <select
-          className={baseClasses}
-          value={value}
-          onChange={onChange}
-          required={required}
-        >
-          <option value="">Select {label}</option>
-          {options.map((option, index) => (
-            <option key={index} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-      </div>
-    );
-  }
-
-  if (type === "textarea") {
-    return (
-      <div className={className}>
-        <label className="block text-sm font-semibold text-gray-700 mb-2">
-          {label} {required && <span className="text-red-500">*</span>}
-        </label>
-        <textarea
-          className={`${baseClasses} min-h-[120px] resize-vertical`}
-          value={value}
-          onChange={onChange}
-          placeholder={placeholder}
-          required={required}
-          rows={4}
-        />
-      </div>
-    );
-  }
-
-  return (
-    <div className={className}>
-      <label className="block text-sm font-semibold text-gray-700 mb-2">
-        {label} {required && <span className="text-red-500">*</span>}
-      </label>
-      <input
-        type={type}
-        className={baseClasses}
-        value={value}
-        onChange={onChange}
-        placeholder={placeholder}
-        required={required}
-      />
-    </div>
-  );
-};
 
 export default function BookAppointment() {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitStatus, setSubmitStatus] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [employees, setEmployees] = useState({
     Agent: [],
   });
+
+  const toast = useToast();
 
   const [formData, setFormData] = useState({
     personal: {
@@ -171,14 +105,11 @@ export default function BookAppointment() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
-    setSubmitStatus(null);
 
     // Basic validation
     if (!formData.personal.name || !formData.personal.phone) {
-      setSubmitStatus({
-        type: "error",
-        message: "Please fill in all required fields (Name and Phone are required)",
-      });
+      toast.error("Please fill in all required fields (Name and Phone are required)");
+      
       setIsSubmitting(false);
       return;
     }
@@ -201,11 +132,8 @@ export default function BookAppointment() {
       }
 
       const result = await response.json();
+      toast.success("Appointment booked successfully! Our team will contact you soon.");
 
-      setSubmitStatus({
-        type: "success",
-        message: "Appointment booked successfully! Our team will contact you soon.",
-      });
 
       // Reset form after successful submission
       setTimeout(() => {
@@ -229,14 +157,10 @@ export default function BookAppointment() {
             status: "NEW",
           },
         });
-        setSubmitStatus(null);
       }, 3000);
     } catch (error) {
-      console.error("Error booking appointment:", error);
-      setSubmitStatus({
-        type: "error",
-        message: error.message || "Failed to book appointment. Please try again.",
-      });
+      toast.error(`Error booking appointment: ${error.message}`);
+      
     } finally {
       setIsSubmitting(false);
     }
@@ -261,31 +185,7 @@ export default function BookAppointment() {
             </p>
           </div>
 
-          {/* Success Message */}
-          {submitStatus?.type === "success" && (
-            <div className="mb-6 bg-green-50 border border-green-200 rounded-lg p-6 text-center">
-              <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-3" />
-              <h3 className="text-lg font-semibold text-green-800 mb-2">
-                Appointment Booked Successfully!
-              </h3>
-              <p className="text-green-700">{submitStatus.message}</p>
-            </div>
-          )}
-
-          {/* Error Message */}
-          {submitStatus?.type === "error" && (
-            <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <span className="text-red-500 text-lg">⚠</span>
-                </div>
-                <div className="ml-3">
-                  <p className="text-red-700 font-medium">{submitStatus.message}</p>
-                </div>
-              </div>
-            </div>
-          )}
-
+         
           {/* Appointment Form */}
           <div className=" overflow-hidden">
             

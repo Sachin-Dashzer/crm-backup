@@ -552,7 +552,6 @@ function SalesPatientDashboardContent() {
                       onSort={toggleSort}
                     />
                    
-                    <Th label="Payment Status" />
                     {/* <Th label="Actions" /> */}
                   </tr>
                 </thead>
@@ -616,7 +615,7 @@ function SalesPatientDashboardContent() {
                           {formatCurrency(p.payments?.amountReceived)}
                         </td>
                         
-                        <td className="px-6 py-4">
+                        {/* <td className="px-6 py-4">
                           <span
                             className={`px-2.5 py-1 rounded-full text-xs font-medium ${
                               PAYMENT_STATUS_COLORS[
@@ -626,7 +625,7 @@ function SalesPatientDashboardContent() {
                           >
                             {p?.payments?.paymentStatus}
                           </span>
-                        </td>
+                        </td> */}
                         {/* <td className="px-6 py-4">
                           <button
                             onClick={() =>

@@ -7,25 +7,25 @@ const handler = async (req) => {
     const data = await Employee.find({})
      
     // Use the data array, not the Employee model
-    // const employeesByRole = data.reduce((acc, employee) => {
-    //   const role = employee.role || "Other";
+    const employeesByRole = data.reduce((acc, employee) => {
+      const role = employee.role || "Other";
 
-    //   if (!acc[role]) {
-    //     acc[role] = [];
-    //   }
+      if (!acc[role]) {
+        acc[role] = [];
+      }
 
-    //   acc[role].push({
-    //     name: employee.name,
-    //     _id: employee._id,
-    //   });
+      acc[role].push({
+        name: employee.name,
+        _id: employee._id,
+      });
 
-    //   return acc;
-    // }, {});
+      return acc;
+    }, {});
 
     return NextResponse.json({
       success: true,
-      data: data,
-      // roles: Object.keys(employeesByRole),
+      data: employeesByRole,
+      roles: Object.keys(employeesByRole),
     });
   } catch (error) {
     console.error("Error fetching employees:", error);
