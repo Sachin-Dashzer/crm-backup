@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 import { useToast } from "@/components/Toast";
 import InputField from "@/components/InputField";
@@ -121,7 +120,6 @@ const RoleDescriptionCard = ({ role }) => {
 export default function EmployeeRegistration() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const router = useRouter();
   const toast = useToast(); 
 
   const [formData, setFormData] = useState({

@@ -1,48 +1,38 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Logo from "@/../public/logo-2.png";
 import {
-  DollarSign,
-  Save,
   Search,
-  X,
   User,
   Phone,
-  Calendar,
-  FileText,
   Printer,
   Download,
-  ChevronDown,
+  ArrowLeft,
+  FileText,
+  MapPin,
+  Calendar,
+  CreditCard,
+  Receipt,
+  IndianRupee,
+  Clock,
 } from "lucide-react";
 import ReceptionSidebar from "@/components/ReceptionSidebar";
 import { useToast } from "@/components/Toast";
 
-export default function CreateBill() {
+export default function ViewBills() {
   const router = useRouter();
   const toast = useToast();
   const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [patients, setPatients] = useState([]);
   const [selectedPatient, setSelectedPatient] = useState(null);
+  const [patientTransactions, setPatientTransactions] = useState([]);
   const [showPrintPreview, setShowPrintPreview] = useState(false);
-  const [createdTransaction, setCreatedTransaction] = useState(null);
-  const [showDropdown, setShowDropdown] = useState(false);
   const billRef = useRef();
-  const dropdownRef = useRef();
-
-  const [billData, setBillData] = useState({
-    costType: "Revenue",
-    method: "cash",
-    procedure: "hair transplant",
-    paymentType: "Booking",
-    amount: "",
-    date: new Date().toISOString().split("T")[0],
-    remarks: "",
-    branch: "",
-  });
 
   const CLINIC_BRANCHES = {
     Delhi: {
@@ -73,20 +63,7 @@ export default function CreateBill() {
     },
   };
 
-  const getClinicConfig = (branch) => {
-    return CLINIC_BRANCHES[branch] || CLINIC_BRANCHES.Delhi;
-  };
-
   useEffect(() => {
-    const userBranch = document.cookie
-      .split("; ")
-      .find((row) => row.startsWith("userBranch="))
-      ?.split("=")[1];
-
-    if (userBranch) {
-      setBillData((prev) => ({ ...prev, branch: userBranch }));
-    }
-
     fetchPatients();
   }, []);
 
@@ -99,126 +76,43 @@ export default function CreateBill() {
       }
     } catch (e) {
       toast.error("Failed to fetch patients");
+    } finally {
+      setInitialLoading(false);
     }
   };
 
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setShowDropdown(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  const filteredPatients = useMemo(() => {
-    if (!searchQuery.trim()) return [];
-
-    return patients
-      .filter(
-        (p) =>
-          p.personal?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          p.personal?.phone?.includes(searchQuery)
-      )
-      .slice(0, 10);
-  }, [patients, searchQuery]);
-
-  useEffect(() => {
-    if (searchQuery.trim()) {
-      setShowDropdown(true);
-    } else {
-      setShowDropdown(false);
-    }
-  }, [searchQuery]);
-
-  const handleSelectPatient = (patient) => {
-    setSelectedPatient(patient);
-    setSearchQuery("");
-    setShowDropdown(false);
-    setBillData((prev) => ({
-      ...prev,
-      branch: patient.personal?.branch || prev.branch,
-    }));
-  };
-
-  const handleChange = (field, value) => {
-    setBillData((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    if (!selectedPatient) {
-      toast.error("Please select a patient");
-      return;
-    }
-
-    if (!billData.amount || billData.amount <= 0) {
-      toast.error("Please enter a valid amount");
-      return;
-    }
-
+  const fetchPatientTransactions = async (patientId) => {
     setLoading(true);
     try {
-      const payload = {
-        ...billData,
-        patient: selectedPatient._id,
-        amount: Number(billData.amount),
-      };
-
-      const res = await fetch("/api/transactions/create", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
+      const res = await fetch(`/api/reception/bill?patientId=${patientId}`);
       const data = await res.json();
 
-      if (res.ok) {
-        // ✅ Update patient with live data from API response
-        if (data.updatedPatient) {
-          setSelectedPatient(data.updatedPatient);
-        }
-
-        toast.success("Bill created successfully!");
-        setCreatedTransaction(data.data);
-        setShowPrintPreview(true);
+      if (data.success) {
+        setPatientTransactions(data.transactions || []);
       } else {
-        toast.error(data.error || "Failed to create bill");
+        toast.error("Failed to fetch transactions");
+        setPatientTransactions([]);
       }
     } catch (error) {
-      console.error("Error:", error);
-      toast.error("Failed to create bill");
+      console.error("Error fetching transactions:", error);
+      toast.error("Failed to fetch transactions");
+      setPatientTransactions([]);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSelectPatient = async (patient) => {
+    setSelectedPatient(patient);
+    setSearchQuery("");
+    await fetchPatientTransactions(patient._id);
   };
 
   const handleReset = () => {
     setSelectedPatient(null);
     setSearchQuery("");
     setShowPrintPreview(false);
-    setCreatedTransaction(null);
-    setShowDropdown(false);
-    const userBranch = document.cookie
-      .split("; ")
-      .find((row) => row.startsWith("userBranch="))
-      ?.split("=")[1];
-    setBillData({
-      costType: "Revenue",
-      method: "cash",
-      procedure: "hair transplant",
-      paymentType: "Booking",
-      amount: "",
-      date: new Date().toISOString().split("T")[0],
-      remarks: "",
-      branch: userBranch || "",
-    });
+    setPatientTransactions([]);
   };
 
   const generatePDF = async () => {
@@ -229,38 +123,27 @@ export default function CreateBill() {
 
     try {
       const html2pdf = (await import("html2pdf.js")).default;
-
       const element = billRef.current;
       const invoiceNo =
-        createdTransaction?._id?.slice(-6).toUpperCase() || "INV001";
+        selectedPatient?._id?.slice(-5).toUpperCase() || "29537B";
 
       const opt = {
-        margin: [5, 5, 5, 5],
+        margin: [10, 10, 10, 10],
         filename: `invoice-${invoiceNo}.pdf`,
         image: { type: "jpeg", quality: 0.98 },
         html2canvas: {
-          scale: 3,
+          scale: 2,
           useCORS: true,
           logging: false,
-          letterRendering: true,
-          scrollY: 0,
-          scrollX: 0,
         },
         jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
       };
 
-      html2pdf()
-        .set(opt)
-        .from(element)
-        .save()
-        .then(() => {
-          toast.success("PDF downloaded successfully!");
-        })
-        .catch((error) => {
-          toast.error("Failed to generate PDF");
-        });
+      html2pdf().set(opt).from(element).save();
+      toast.success("PDF downloaded successfully!");
     } catch (error) {
-      toast.error("Failed to load PDF library");
+      console.error("PDF generation error:", error);
+      toast.error("Failed to generate PDF");
     }
   };
 
@@ -296,306 +179,594 @@ export default function CreateBill() {
     });
   };
 
-  const currentClinic = getClinicConfig(billData.branch);
+  const totalPaid = patientTransactions.reduce(
+    (sum, transaction) => sum + transaction.amount,
+    0
+  );
+  const totalPending =
+    (selectedPatient?.payments?.totalAmount || 0) - totalPaid;
+  const currentClinic = getClinicConfig(
+    selectedPatient?.personal?.branch || "Delhi"
+  );
+
+  function getClinicConfig(branch) {
+    return CLINIC_BRANCHES[branch] || CLINIC_BRANCHES.Delhi;
+  }
+
+  // Get counsellor name - check multiple possible fields and handle object
+  const getCounsellorName = () => {
+    const counsellor = selectedPatient?.counselling?.counsellor;
+    
+    // If counsellor is an object with name property
+    if (counsellor && typeof counsellor === 'object' && counsellor.name) {
+      return counsellor.name;
+    }
+    
+    // If counsellor is a string
+    if (typeof counsellor === 'string') {
+      return counsellor;
+    }
+    
+    // Check other possible fields
+    const counsellorName = selectedPatient?.counselling?.counsellorName;
+    if (counsellorName && typeof counsellorName === 'object' && counsellorName.name) {
+      return counsellorName.name;
+    }
+    if (typeof counsellorName === 'string') {
+      return counsellorName;
+    }
+    
+    const assignedDoctor = selectedPatient?.assignedDoctor;
+    if (assignedDoctor && typeof assignedDoctor === 'object' && assignedDoctor.name) {
+      return assignedDoctor.name;
+    }
+    if (typeof assignedDoctor === 'string') {
+      return assignedDoctor;
+    }
+    
+    return "Dr. Ryan";
+  };
+
+  const filteredPatients = searchQuery
+    ? patients.filter(
+        (p) =>
+          p.personal?.name
+            ?.toLowerCase()
+            .includes(searchQuery.toLowerCase()) ||
+          p.personal?.phone?.includes(searchQuery)
+      )
+    : [];
+
+  // Get recent patients with pending amounts
+  const recentPatients = patients
+    .filter((p) => p.payments?.pendingAmount > 0)
+    .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
+    .slice(0, 6);
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <ReceptionSidebar />
 
-      <main className="flex-1 p-4 lg:p-8">
-        <div className="mb-6 no-print">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-lg bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center">
-              <DollarSign className="w-6 h-6 text-white" />
+      <main className="flex-1 p-8">
+        {/* Header */}
+        <div className="mb-8 no-print">
+          <div className="flex items-center gap-4 mb-3">
+            <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg">
+              <Receipt className="w-7 h-7 text-white" />
             </div>
-            <h1 className="text-3xl font-bold text-gray-900">Create Bill</h1>
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">
+                Patient Bills & Invoices
+              </h1>
+              <p className="text-gray-600 mt-1">
+                View, print, and download patient transaction history
+              </p>
+            </div>
           </div>
-          <p className="text-gray-600 ml-13">
-            Generate a new transaction/bill for a patient
-          </p>
         </div>
 
+        {initialLoading ? (
+          <div className="flex items-center justify-center min-h-[500px]">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-16 w-16 border-4 border-blue-600 border-t-transparent mx-auto mb-4"></div>
+              <p className="text-gray-600 font-medium text-lg">Loading patients...</p>
+              <p className="text-gray-500 text-sm mt-2">Please wait while we fetch the data</p>
+            </div>
+          </div>
+        ) : (
+          <>
         {!showPrintPreview ? (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100">
-            <div className="p-6 border-b border-gray-200">
-              <label className="block text-sm font-semibold text-gray-900 mb-3">
-                Select Patient <span className="text-red-500">*</span>
-              </label>
+          <div className="space-y-6">
+            {/* Statistics Cards - Show when no patient selected */}
+            {!selectedPatient && patients.length > 0 && (
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white shadow-lg">
+                  <div className="flex items-center justify-between mb-2">
+                    <User className="w-8 h-8 opacity-80" />
+                  </div>
+                  <p className="text-3xl font-bold mb-1">
+                    {patients.length}
+                  </p>
+                  <p className="text-blue-100 text-sm font-medium">
+                    Total Patients
+                  </p>
+                </div>
 
-              {selectedPatient ? (
-                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 border-2 border-blue-200">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center">
+                <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-6 text-white shadow-lg">
+                  <div className="flex items-center justify-between mb-2">
+                    <IndianRupee className="w-8 h-8 opacity-80" />
+                  </div>
+                  <p className="text-3xl font-bold mb-1">
+                    {formatCurrency(
+                      patients.reduce(
+                        (sum, p) => sum + (p.payments?.amountReceived || 0),
+                        0
+                      )
+                    ).replace('₹', '')}
+                  </p>
+                  <p className="text-green-100 text-sm font-medium">
+                    Total Received
+                  </p>
+                </div>
+
+                <div className="bg-gradient-to-br from-red-500 to-red-600 rounded-xl p-6 text-white shadow-lg">
+                  <div className="flex items-center justify-between mb-2">
+                    <Clock className="w-8 h-8 opacity-80" />
+                  </div>
+                  <p className="text-3xl font-bold mb-1">
+                    {formatCurrency(
+                      patients.reduce(
+                        (sum, p) => sum + (p.payments?.pendingAmount || 0),
+                        0
+                      )
+                    ).replace('₹', '')}
+                  </p>
+                  <p className="text-red-100 text-sm font-medium">
+                    Total Pending
+                  </p>
+                </div>
+
+                <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-6 text-white shadow-lg">
+                  <div className="flex items-center justify-between mb-2">
+                    <Receipt className="w-8 h-8 opacity-80" />
+                  </div>
+                  <p className="text-3xl font-bold mb-1">
+                    {patients.filter((p) => p.payments?.pendingAmount > 0).length}
+                  </p>
+                  <p className="text-purple-100 text-sm font-medium">
+                    Pending Bills
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Patient Search */}
+            <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
+              <div className="flex items-center gap-3 mb-6">
+                <Search className="w-6 h-6 text-blue-600" />
+                <h2 className="text-xl font-semibold text-gray-900">
+                  Search Patient
+                </h2>
+              </div>
+
+              <div className="relative">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search by patient name or phone number..."
+                  className="w-full pl-12 pr-4 py-4 text-lg border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                />
+              </div>
+
+              {/* Patients Dropdown List */}
+              {searchQuery && filteredPatients.length > 0 && (
+                <div className="mt-4 max-h-80 overflow-y-auto border-2 border-gray-200 rounded-xl shadow-lg">
+                  {filteredPatients.slice(0, 10).map((patient, index) => (
+                    <div
+                      key={patient._id}
+                      onClick={() => handleSelectPatient(patient)}
+                      className={`p-5 hover:bg-blue-50 cursor-pointer transition-colors ${
+                        index !== filteredPatients.length - 1
+                          ? "border-b border-gray-200"
+                          : ""
+                      }`}
+                    >
+                      <div className="flex justify-between items-start">
+                        <div className="flex items-start gap-4">
+                          <div className="p-2 bg-blue-100 rounded-lg">
+                            <User className="w-5 h-5 text-blue-600" />
+                          </div>
+                          <div>
+                            <p className="font-semibold text-lg text-gray-900">
+                              {patient.personal?.name}
+                            </p>
+                            <div className="flex items-center gap-4 mt-2 text-sm text-gray-600">
+                              <span className="flex items-center gap-1">
+                                <Phone className="w-4 h-4" />
+                                {patient.personal?.phone}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <MapPin className="w-4 h-4" />
+                                {patient.personal?.branch}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="flex items-center gap-2 justify-end mb-2">
+                            <IndianRupee className="w-4 h-4 text-gray-500" />
+                            <span className="text-lg font-bold text-gray-900">
+                              {formatCurrency(
+                                patient.payments?.totalAmount || 0
+                              )}
+                            </span>
+                          </div>
+                          <div className="inline-flex items-center gap-1 px-3 py-1 bg-red-100 text-red-700 rounded-full text-sm font-medium">
+                            <span>Pending:</span>
+                            <span>
+                              {formatCurrency(
+                                patient.payments?.pendingAmount || 0
+                              )}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {searchQuery && filteredPatients.length === 0 && (
+                <div className="mt-4 p-8 text-center bg-gray-50 rounded-xl border-2 border-dashed border-gray-300">
+                  <Search className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                  <p className="text-gray-600 font-medium">
+                    No patients found matching "{searchQuery}"
+                  </p>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Try searching with a different name or phone number
+                  </p>
+                </div>
+              )}
+
+              {/* Recent Patients Dashboard - Show when no search query */}
+              {!searchQuery && !selectedPatient && recentPatients.length > 0 && (
+                <div className="mt-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                    Recent Patients with Pending Payments
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {recentPatients.map((patient) => (
+                      <div
+                        key={patient._id}
+                        onClick={() => handleSelectPatient(patient)}
+                        className="p-5 bg-gradient-to-br from-white to-gray-50 border-2 border-gray-200 rounded-xl hover:border-blue-400 hover:shadow-lg cursor-pointer transition-all"
+                      >
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex items-center gap-3">
+                            <div className="p-2 bg-blue-100 rounded-lg">
+                              <User className="w-5 h-5 text-blue-600" />
+                            </div>
+                            <div>
+                              <p className="font-semibold text-gray-900">
+                                {patient.personal?.name}
+                              </p>
+                              <p className="text-sm text-gray-600">
+                                {patient.personal?.phone}
+                              </p>
+                            </div>
+                          </div>
+                          <span className="px-2 py-1 bg-gray-200 text-gray-700 rounded text-xs font-medium">
+                            {patient.personal?.branch}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-end pt-3 border-t border-gray-200">
+                          <div>
+                            <p className="text-xs text-gray-600 mb-1">
+                              Total Amount
+                            </p>
+                            <p className="text-lg font-bold text-gray-900">
+                              {formatCurrency(patient.payments?.totalAmount || 0)}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-xs text-red-600 mb-1">
+                              Pending
+                            </p>
+                            <p className="text-lg font-bold text-red-600">
+                              {formatCurrency(patient.payments?.pendingAmount || 0)}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {!searchQuery && !selectedPatient && recentPatients.length === 0 && patients.length > 0 && (
+                <div className="mt-6 p-8 text-center bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl border-2 border-green-200">
+                  <div className="p-4 bg-green-100 rounded-full w-20 h-20 mx-auto mb-4 flex items-center justify-center">
+                    <Receipt className="w-10 h-10 text-green-600" />
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">
+                    All Payments Clear! 🎉
+                  </h3>
+                  <p className="text-gray-600">
+                    No patients with pending payments at the moment
+                  </p>
+                  <p className="text-sm text-gray-500 mt-2">
+                    Search for a patient above to view their billing history
+                  </p>
+                </div>
+              )}
+
+              {/* Selected Patient Info Card */}
+              {selectedPatient && (
+                <div className="mt-6 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl">
+                  <div className="flex justify-between items-start">
+                    <div className="flex items-start gap-4">
+                      <div className="p-3 bg-blue-600 rounded-xl">
                         <User className="w-6 h-6 text-white" />
                       </div>
                       <div>
-                        <h3 className="font-semibold text-gray-900 text-lg">
+                        <h3 className="text-xl font-bold text-gray-900 mb-2">
                           {selectedPatient.personal?.name}
                         </h3>
-                        <div className="flex items-center gap-4 mt-1">
-                          <span className="text-sm text-gray-600 flex items-center gap-1">
-                            <Phone className="w-3 h-3" />
-                            {selectedPatient.personal?.phone}
-                          </span>
-                          <span className="text-sm text-gray-600">
-                            {selectedPatient.personal?.branch}
-                          </span>
-                        </div>
-                        <div className="text-xs text-gray-500 mt-2">
-                          Total: {selectedPatient.payments?.totalAmount || 0} ||
-                          Received:{" "}
-                          {selectedPatient.payments?.amountReceived || 0} ||
-                          Pending:{" "}
-                          {selectedPatient.payments?.pendingAmount || 0} ||
-                          Medicine:{" "}
-                          {selectedPatient.payments?.medicineAmount || 0}
+                        <div className="space-y-1 text-sm text-gray-700">
+                          <p className="flex items-center gap-2">
+                            <Phone className="w-4 h-4" />
+                            <span className="font-medium">
+                              {selectedPatient.personal?.phone}
+                            </span>
+                          </p>
+                          <p className="flex items-center gap-2">
+                            <MapPin className="w-4 h-4" />
+                            <span className="font-medium">
+                              {selectedPatient.personal?.branch} Branch
+                            </span>
+                          </p>
                         </div>
                       </div>
                     </div>
-                    <button
-                      onClick={() => setSelectedPatient(null)}
-                      className="p-2 hover:bg-white rounded-lg transition-colors"
-                    >
-                      <X className="w-5 h-5 text-gray-600" />
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="relative" ref={dropdownRef}>
-                  <div className="relative">
-                    <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                    <input
-                      type="text"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="Search patient by name or phone..."
-                      className="w-full pl-12 pr-4 py-4 text-base border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all"
-                    />
-                  </div>
 
-                  {showDropdown && filteredPatients.length > 0 && (
-                    <div className="absolute z-50 w-full mt-2 bg-white border-2 border-gray-200 rounded-xl shadow-xl max-h-80 overflow-y-auto">
-                      {filteredPatients.map((patient) => (
-                        <div
-                          key={patient._id}
-                          onClick={() => handleSelectPatient(patient)}
-                          className="p-4 hover:bg-gray-50 cursor-pointer border-b last:border-b-0 transition-colors"
-                        >
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <p className="font-semibold text-gray-900 text-base mb-1">
-                                {patient.personal?.name} -{" "}
-                                {patient.personal?.phone}
-                              </p>
-                              <div className="text-sm text-gray-600 space-y-0.5">
-                                <p>
-                                  Total -: {patient.payments?.totalAmount || 0}
-                                  <span className="mx-2">||</span>
-                                  Received -:{" "}
-                                  {patient.payments?.amountReceived || 0}
-                                  <span className="mx-2">||</span>
-                                  Pending -:{" "}
-                                  {patient.payments?.pendingAmount || 0}
-                                  <span className="mx-2">||</span>
-                                  Medicine -:{" "}
-                                  {patient.payments?.medicineAmount || 0}
-                                </p>
-                              </div>
-                            </div>
-                            <ChevronDown className="w-5 h-5 text-gray-400 flex-shrink-0 ml-2" />
-                          </div>
+                    <div className="flex flex-col gap-3 items-end">
+                      <div className="grid grid-cols-3 gap-4 text-right">
+                        <div className="bg-white p-3 rounded-lg shadow-sm">
+                          <p className="text-xs text-gray-600 mb-1">
+                            Total Amount
+                          </p>
+                          <p className="text-lg font-bold text-gray-900">
+                            {formatCurrency(
+                              selectedPatient.payments?.totalAmount || 0
+                            )}
+                          </p>
                         </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {showDropdown &&
-                    searchQuery &&
-                    filteredPatients.length === 0 && (
-                      <div className="absolute z-50 w-full mt-2 bg-white border-2 border-gray-200 rounded-xl shadow-xl p-4">
-                        <p className="text-center text-gray-500">
-                          No patients found
-                        </p>
+                        <div className="bg-white p-3 rounded-lg shadow-sm">
+                          <p className="text-xs text-gray-600 mb-1">Received</p>
+                          <p className="text-lg font-bold text-green-600">
+                            {formatCurrency(
+                              selectedPatient.payments?.amountReceived || 0
+                            )}
+                          </p>
+                        </div>
+                        <div className="bg-white p-3 rounded-lg shadow-sm">
+                          <p className="text-xs text-gray-600 mb-1">Pending</p>
+                          <p className="text-lg font-bold text-red-600">
+                            {formatCurrency(
+                              selectedPatient.payments?.pendingAmount || 0
+                            )}
+                          </p>
+                        </div>
                       </div>
-                    )}
+                      <button
+                        onClick={handleReset}
+                        className="px-4 py-2 bg-white border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium transition-colors flex items-center gap-2"
+                      >
+                        <ArrowLeft className="w-4 h-4" />
+                        Change Patient
+                      </button>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
 
-            <form onSubmit={handleSubmit}>
-              <div className="p-6 space-y-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">
-                  Transaction Details
-                </h2>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Payment Method <span className="text-red-500">*</span>
-                    </label>
-                    <select
-                      value={billData.method}
-                      onChange={(e) => handleChange("method", e.target.value)}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                    >
-                      <option value="cash">Cash</option>
-                      <option value="Gpay">Gpay</option>
-                      <option value="upi">UPI</option>
-                      <option value="card">Card</option>
-                      <option value="banking">Net Banking</option>
-                      <option value="Loan">Loan</option>
-                      <option value="other">Other</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Procedure <span className="text-red-500">*</span>
-                    </label>
-                    <select
-                      value={billData.procedure}
-                      onChange={(e) =>
-                        handleChange("procedure", e.target.value)
-                      }
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                    >
-                      <option value="TURKEY,S DHI SURGERY">
-                        TURKEY,S DHI SURGERY
-                      </option>
-                      <option value="hair transplant">Hair Transplant</option>
-                      <option value="prp">PRP</option>
-                      <option value="beard transplant">Beard Transplant</option>
-                      <option value="medicine">Medicine</option>
-                      <option value="gfc">GFC</option>
-                      <option value="Other">Other</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Payment Type <span className="text-red-500">*</span>
-                    </label>
-                    <select
-                      value={billData.paymentType}
-                      onChange={(e) =>
-                        handleChange("paymentType", e.target.value)
-                      }
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                    >
-                      <option value="Booking">Booking</option>
-                      <option value="Pending">Pending Payment</option>
-                      <option value="Full-payment">Full Payment</option>
-                      <option value="Other">Other</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Amount (₹) <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="number"
-                      required
-                      value={billData.amount}
-                      onChange={(e) => handleChange("amount", e.target.value)}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                      placeholder="Enter amount"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Date <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="date"
-                      value={billData.date}
-                      onChange={(e) => handleChange("date", e.target.value)}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Branch
-                    </label>
-                    <input
-                      type="text"
-                      value={billData.branch}
-                      readOnly
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50"
-                    />
-                  </div>
-
-                  <div className="md:col-span-3">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Remarks
-                    </label>
-                    <textarea
-                      value={billData.remarks}
-                      onChange={(e) => handleChange("remarks", e.target.value)}
-                      rows={3}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                      placeholder="Additional notes..."
-                    />
+            {/* Transactions Table */}
+            {selectedPatient && (
+              <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+                <div className="p-6 bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-3">
+                      <FileText className="w-6 h-6 text-gray-700" />
+                      <h2 className="text-xl font-bold text-gray-900">
+                        Transaction History
+                      </h2>
+                      {patientTransactions.length > 0 && (
+                        <span className="px-3 py-1 bg-blue-600 text-white rounded-full text-sm font-medium">
+                          {patientTransactions.length} Transactions
+                        </span>
+                      )}
+                    </div>
+                    {patientTransactions.length > 0 && (
+                      <button
+                        onClick={() => setShowPrintPreview(true)}
+                        className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg hover:shadow-xl flex items-center gap-2 font-medium"
+                      >
+                        <Printer className="w-5 h-5" />
+                        View Printable Bill
+                      </button>
+                    )}
                   </div>
                 </div>
-              </div>
 
-              <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 rounded-b-xl flex items-center justify-end gap-3">
-                <button
-                  type="button"
-                  onClick={handleReset}
-                  className="px-6 py-2.5 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-100 transition-colors flex items-center gap-2"
-                >
-                  <X className="w-4 h-4" />
-                  Reset
-                </button>
-                <button
-                  type="submit"
-                  disabled={loading || !selectedPatient}
-                  className="px-6 py-2.5 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-lg font-medium hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                >
-                  <Save className="w-4 h-4" />
-                  {loading ? "Creating..." : "Create Bill"}
-                </button>
+                <div className="p-6">
+                  {loading ? (
+                    <div className="text-center py-16">
+                      <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent mx-auto"></div>
+                      <p className="text-gray-600 mt-4 font-medium">
+                        Loading transactions...
+                      </p>
+                    </div>
+                  ) : patientTransactions.length > 0 ? (
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full">
+                        <thead>
+                          <tr className="bg-gray-50 border-b-2 border-gray-200">
+                            <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                              <div className="flex items-center gap-2">
+                                <Calendar className="w-4 h-4" />
+                                Date
+                              </div>
+                            </th>
+                            <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                              Procedure
+                            </th>
+                            <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                              Type
+                            </th>
+                            <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                              <div className="flex items-center gap-2">
+                                <CreditCard className="w-4 h-4" />
+                                Method
+                              </div>
+                            </th>
+                            <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                              Remarks
+                            </th>
+                            <th className="px-6 py-4 text-right text-xs font-bold text-gray-700 uppercase tracking-wider">
+                              <div className="flex items-center gap-2 justify-end">
+                                <IndianRupee className="w-4 h-4" />
+                                Amount
+                              </div>
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {patientTransactions.map((transaction, index) => (
+                            <tr
+                              key={transaction._id}
+                              className="hover:bg-blue-50 transition-colors"
+                            >
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="flex items-center gap-2">
+                                  <Clock className="w-4 h-4 text-gray-400" />
+                                  <span className="text-sm font-medium text-gray-900">
+                                    {formatDate(transaction.date)}
+                                  </span>
+                                </div>
+                              </td>
+                              <td className="px-6 py-4">
+                                <span className="text-sm font-medium text-gray-900">
+                                  {transaction.procedure}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-700">
+                                  {transaction.paymentType}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+                                  {transaction.method}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4">
+                                <span className="text-sm text-gray-600">
+                                  {transaction.remarks || "-"}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-right">
+                                <span className="text-sm font-bold text-green-600">
+                                  {formatCurrency(transaction.amount)}
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                        <tfoot className="bg-gradient-to-r from-gray-50 to-gray-100 border-t-2 border-gray-200">
+                          <tr>
+                            <td
+                              colSpan="5"
+                              className="px-6 py-4 text-right text-sm font-bold text-gray-900"
+                            >
+                              Total Paid:
+                            </td>
+                            <td className="px-6 py-4 text-right">
+                              <span className="text-lg font-bold text-green-600">
+                                {formatCurrency(totalPaid)}
+                              </span>
+                            </td>
+                          </tr>
+                          <tr className="border-t border-gray-200">
+                            <td
+                              colSpan="5"
+                              className="px-6 py-4 text-right text-sm font-bold text-gray-900"
+                            >
+                              Pending Amount:
+                            </td>
+                            <td className="px-6 py-4 text-right">
+                              <span className="text-lg font-bold text-red-600">
+                                {formatCurrency(totalPending)}
+                              </span>
+                            </td>
+                          </tr>
+                        </tfoot>
+                      </table>
+                    </div>
+                  ) : (
+                    <div className="text-center py-16">
+                      <div className="p-4 bg-gray-100 rounded-full w-24 h-24 mx-auto mb-4 flex items-center justify-center">
+                        <FileText className="w-12 h-12 text-gray-400" />
+                      </div>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                        No Transactions Found
+                      </h3>
+                      <p className="text-gray-600">
+                        This patient has no transaction history yet
+                      </p>
+                    </div>
+                  )}
+                </div>
               </div>
-            </form>
+            )}
           </div>
         ) : (
           <div className="space-y-6">
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 no-print">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold text-gray-900">
-                  Bill Created Successfully!
+            {/* Print Controls */}
+            <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 no-print">
+              <div className="flex justify-between items-center">
+                <h2 className="text-2xl font-bold text-gray-900">
+                  Printable Invoice
                 </h2>
                 <div className="flex gap-3">
                   <button
-                    onClick={handleReset}
-                    className="px-6 py-2.5 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-100 transition-colors flex items-center gap-2"
+                    onClick={() => setShowPrintPreview(false)}
+                    className="px-5 py-3 border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors flex items-center gap-2 font-medium"
                   >
-                    <X className="w-4 h-4" />
-                    Create New
+                    <ArrowLeft className="w-5 h-5" />
+                    Back to Transactions
                   </button>
                   <button
                     onClick={printBill}
-                    className="px-6 py-2.5 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition-colors flex items-center gap-2"
+                    className="px-5 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg hover:shadow-xl flex items-center gap-2 font-medium"
                   >
-                    <Printer className="w-4 h-4" />
-                    Print
+                    <Printer className="w-5 h-5" />
+                    Print Bill
                   </button>
                   <button
                     onClick={generatePDF}
-                    className="px-6 py-2.5 bg-green-500 text-white rounded-lg font-medium hover:bg-green-600 transition-colors flex items-center gap-2"
+                    className="px-5 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-xl hover:from-green-700 hover:to-green-800 transition-all shadow-lg hover:shadow-xl flex items-center gap-2 font-medium"
                   >
-                    <Download className="w-4 h-4" />
+                    <Download className="w-5 h-5" />
                     Download PDF
                   </button>
                 </div>
               </div>
             </div>
 
+            {/* Printable Bill - EXACT design from your PDF */}
             <div
               ref={billRef}
               id="printable-bill"
@@ -607,7 +778,7 @@ export default function CreateBill() {
                 fontFamily: "Arial, sans-serif",
               }}
             >
-              {/* Header */}
+              {/* Header - EXACT layout from PDF */}
               <div
                 style={{
                   display: "flex",
@@ -697,7 +868,7 @@ export default function CreateBill() {
                 </div>
               </div>
 
-              {/* Patient & Invoice Info */}
+              {/* Patient & Invoice Info - EXACT from PDF */}
               <div
                 style={{
                   display: "flex",
@@ -712,6 +883,8 @@ export default function CreateBill() {
                   <p style={{ margin: "5px 0", fontSize: "14px" }}>
                     {selectedPatient?.personal?.gender || "Male"},
                   </p>
+                </div>
+                <div>
                   <p
                     style={{
                       margin: "5px 0",
@@ -721,7 +894,7 @@ export default function CreateBill() {
                       gap: "5px",
                     }}
                   >
-                    📞 {selectedPatient?.personal?.phone}
+                    <strong>Phone :</strong> {selectedPatient?.personal?.phone}
                   </p>
                   <p
                     style={{
@@ -732,7 +905,8 @@ export default function CreateBill() {
                       gap: "5px",
                     }}
                   >
-                    📍 {billData.branch}
+                    <strong>Branch :</strong>{" "}
+                    {selectedPatient?.personal?.branch}
                   </p>
                 </div>
                 <div style={{ textAlign: "right" }}>
@@ -741,7 +915,7 @@ export default function CreateBill() {
                   </p>
                   <p style={{ margin: "5px 0", fontSize: "14px" }}>
                     <strong>Invoice No:</strong> #INV
-                    {createdTransaction?._id?.slice(-4).toUpperCase() || "0638"}
+                    {selectedPatient?._id?.slice(-5).toUpperCase() || "29537B"}
                   </p>
                 </div>
               </div>
@@ -758,7 +932,7 @@ export default function CreateBill() {
                 Invoice
               </h2>
 
-              {/* Services Table */}
+              {/* Services Table - EXACT from PDF */}
               <table
                 style={{
                   width: "100%",
@@ -876,7 +1050,7 @@ export default function CreateBill() {
                         borderRight: "1px solid #000",
                       }}
                     >
-                      Service {billData.procedure}
+                      Service {patientTransactions[0]?.procedure}
                     </td>
                     <td
                       style={{
@@ -885,9 +1059,7 @@ export default function CreateBill() {
                         borderRight: "1px solid #000",
                       }}
                     >
-                      Dr amar deepak
-                      <br />
-                      shinde
+                      {getCounsellorName()}
                     </td>
                     <td
                       style={{
@@ -907,7 +1079,9 @@ export default function CreateBill() {
                         borderRight: "1px solid #000",
                       }}
                     >
-                      {Number(billData.amount).toFixed(2)}
+                      {Number(selectedPatient?.payments?.totalAmount).toFixed(
+                        2
+                      )}
                     </td>
                     <td
                       style={{
@@ -927,13 +1101,15 @@ export default function CreateBill() {
                         fontWeight: "bold",
                       }}
                     >
-                      {Number(billData.amount).toFixed(2)}
+                      {Number(selectedPatient?.payments?.totalAmount).toFixed(
+                        2
+                      )}
                     </td>
                   </tr>
                 </tbody>
               </table>
 
-              {/* Paid Amounts */}
+              {/* Paid Amounts - EXACT from PDF */}
               <div style={{ marginBottom: "30px" }}>
                 <h3
                   style={{
@@ -984,40 +1160,45 @@ export default function CreateBill() {
                     </tr>
                   </thead>
                   <tbody>
-                    <tr style={{ borderBottom: "1px solid #000" }}>
-                      <td
-                        style={{
-                          padding: "8px",
-                          fontSize: "13px",
-                          borderRight: "1px solid #000",
-                        }}
+                    {patientTransactions.map((transaction) => (
+                      <tr
+                        key={transaction._id}
+                        style={{ borderBottom: "1px solid #000" }}
                       >
-                        {formatDate(billData.date)}
-                      </td>
-                      <td
-                        style={{
-                          padding: "8px",
-                          fontSize: "13px",
-                          borderRight: "1px solid #000",
-                        }}
-                      >
-                        {billData.method}
-                      </td>
-                      <td
-                        style={{
-                          padding: "8px",
-                          textAlign: "right",
-                          fontSize: "13px",
-                        }}
-                      >
-                        {Number(billData.amount).toFixed(2)}
-                      </td>
-                    </tr>
+                        <td
+                          style={{
+                            padding: "8px",
+                            fontSize: "13px",
+                            borderRight: "1px solid #000",
+                          }}
+                        >
+                          {formatDate(transaction.date)}
+                        </td>
+                        <td
+                          style={{
+                            padding: "8px",
+                            fontSize: "13px",
+                            borderRight: "1px solid #000",
+                          }}
+                        >
+                          {transaction.method}
+                        </td>
+                        <td
+                          style={{
+                            padding: "8px",
+                            textAlign: "right",
+                            fontSize: "13px",
+                          }}
+                        >
+                          {Number(transaction.amount).toFixed(2)}
+                        </td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>
 
-              {/* Summary */}
+              {/* Summary - EXACT from PDF */}
               <div
                 style={{
                   display: "flex",
@@ -1034,15 +1215,21 @@ export default function CreateBill() {
                 <div style={{ textAlign: "left" }}>
                   <p style={{ margin: "5px 0", fontSize: "14px" }}>
                     <strong>Total:</strong>{" "}
-                    {formatCurrency(selectedPatient.payments?.totalAmount)}
+                    {formatCurrency(
+                      selectedPatient?.payments?.totalAmount || 0
+                    )}
                   </p>
                   <p style={{ margin: "5px 0", fontSize: "14px" }}>
                     <strong>Received:</strong>{" "}
-                    {formatCurrency(selectedPatient.payments?.amountReceived)}
+                    {formatCurrency(
+                      selectedPatient?.payments?.amountReceived || 0
+                    )}
                   </p>
                   <p style={{ margin: "5px 0", fontSize: "14px" }}>
                     <strong>Pending:</strong>{" "}
-                    {formatCurrency(selectedPatient.payments?.pendingAmount)}
+                    {formatCurrency(
+                      selectedPatient?.payments?.pendingAmount || 0
+                    )}
                   </p>
                   <p style={{ margin: "5px 0", fontSize: "14px" }}>
                     <strong>Tax :</strong> 0
@@ -1054,60 +1241,55 @@ export default function CreateBill() {
                       fontWeight: "bold",
                     }}
                   >
-                    <strong>Amount Paid:</strong>{" "}
-                    {formatCurrency(billData.amount)}
+                    <strong>Amount Paid:</strong> {formatCurrency(totalPaid)}
                   </p>
                 </div>
               </div>
             </div>
           </div>
         )}
+        </>
+        )}
+
+        <style jsx global>{`
+          @media print {
+            body * {
+              visibility: hidden;
+            }
+
+            .no-print,
+            .no-print * {
+              display: none !important;
+            }
+
+            #printable-bill,
+            #printable-bill * {
+              visibility: visible !important;
+            }
+
+            #printable-bill {
+              position: absolute !important;
+              left: 0 !important;
+              top: 0 !important;
+              width: 100% !important;
+              max-width: 100% !important;
+              padding: 20px !important;
+              margin: 0 !important;
+            }
+
+            body,
+            #__next,
+            main {
+              background: white !important;
+            }
+
+            @page {
+              margin: 0.5cm;
+              size: A4;
+            }
+          }
+        `}</style>
       </main>
-
-      <style jsx global>{`
-        @media print {
-          /* Hide everything except the bill */
-          body * {
-            visibility: hidden;
-          }
-
-          /* Hide non-printable elements */
-          .no-print,
-          .no-print * {
-            display: none !important;
-          }
-
-          /* Show only the bill */
-          #printable-bill,
-          #printable-bill * {
-            visibility: visible !important;
-          }
-
-          /* Position bill at top of page */
-          #printable-bill {
-            position: absolute !important;
-            left: 0 !important;
-            top: 0 !important;
-            width: 100% !important;
-            max-width: 100% !important;
-            padding: 20px !important;
-            margin: 0 !important;
-          }
-
-          /* Remove background colors */
-          body,
-          #__next,
-          main {
-            background: white !important;
-          }
-
-          /* Ensure proper page breaks */
-          @page {
-            margin: 0.5cm;
-            size: A4;
-          }
-        }
-      `}</style>
     </div>
   );
 }
