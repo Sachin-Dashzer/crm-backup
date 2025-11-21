@@ -4,8 +4,8 @@ import { NextResponse } from "next/server";
 
 const handler = async (req) => {
   try {
-    const data = await Employee.find({})
-     
+    const data = await Employee.find({}).sort({ name: 1 });
+
     // Use the data array, not the Employee model
     const employeesByRole = data.reduce((acc, employee) => {
       const role = employee.role || "Other";
@@ -30,9 +30,9 @@ const handler = async (req) => {
   } catch (error) {
     console.error("Error fetching employees:", error);
     return NextResponse.json(
-      { 
-        success: false, 
-        error: "Failed to fetch employees" 
+      {
+        success: false,
+        error: "Failed to fetch employees",
       },
       { status: 500 }
     );
