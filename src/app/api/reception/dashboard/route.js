@@ -138,6 +138,7 @@ const handler = async (req) => {
             $lte: new Date(toDate.getTime() + 5 * 24 * 60 * 60 * 1000), // +5 days
           },
           "ops.status": "NOT_VISITED",
+          "ops.status": "NEW",
         })
           .sort({ "personal.visitDate": 1 })
           .limit(5)
