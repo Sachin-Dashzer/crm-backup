@@ -19,12 +19,18 @@ const handler = async (req) => {
     }
 
     const today = new Date();
-    let fromDate = from ? new Date(from) : new Date(today);
-    fromDate.setDate(fromDate.getDate() - 1);
-    fromDate.setHours(23, 59, 59, 999);
 
+    // ✅ FIX: Set fromDate to start of today by default
+    let fromDate = from ? new Date(from) : new Date(today);
+    if (!from) {
+      fromDate.setHours(0, 0, 0, 0); // Start of today
+    } else {
+      fromDate.setHours(0, 0, 0, 0); // Start of the selected date
+    }
+
+    // ✅ Set toDate to end of today by default
     const toDate = to ? new Date(to) : new Date(today);
-    toDate.setHours(23, 59, 59, 999);
+    toDate.setHours(23, 59, 59, 999); // End of the selected date
 
     if (isNaN(fromDate.getTime()) || isNaN(toDate.getTime())) {
       return NextResponse.json(
@@ -44,7 +50,7 @@ const handler = async (req) => {
     const daysDifference =
       Math.ceil((toDate - fromDate) / (1000 * 60 * 60 * 24)) + 1;
 
-    // ✅ Calculate yesterday's date range (same duration as selected range, but shifted back)
+    // ✅ Calculate comparison period (previous period of same duration)
     const yesterdayEnd = new Date(fromDate);
     yesterdayEnd.setDate(yesterdayEnd.getDate() - 1);
     yesterdayEnd.setHours(23, 59, 59, 999);
@@ -109,7 +115,11 @@ const handler = async (req) => {
               {
                 $match: {
                   "personal.visitDate": { $gte: fromDate, $lte: toDate },
-                  "counselling.counsellor": { $exists: true, $ne: "" , $ne: null },
+                  "counselling.counsellor": {
+                    $exists: true,
+                    $ne: "",
+                    $ne: null,
+                  },
                 },
               },
               { $count: "count" },
@@ -118,7 +128,7 @@ const handler = async (req) => {
               {
                 $match: {
                   "personal.visitDate": { $gte: fromDate, $lte: toDate },
-                  "surgery.surgeryDate": { $exists: true, $ne: "" , $ne: null },
+                  "surgery.surgeryDate": { $exists: true, $ne: "", $ne: null },
                 },
               },
               { $count: "count" },
