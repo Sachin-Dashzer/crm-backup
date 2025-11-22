@@ -170,50 +170,47 @@ export default function SalesDashboard() {
   const [customDates, setCustomDates] = useState({ from: "", to: "" });
 
   const [loading, setLoading] = useState(true);
-  const [dashboardData, setDashboardData] = useState(null);
+  const [dashboardData, setDashboardData] = useState({
+    totalLeads: 0,
+    newPatients: 0,
+    contacted: 0,
+    converted: 0,
+    notConverted: 0,
+    revenue: 0,
+    activeAgents: 0,
+    agentPerformance: [],
+    trends: {
+      totalLeads: 0,
+      newPatients: 0,
+      contacted: 0,
+      converted: 0,
+      revenue: 0
+    }
+  });
 
-  // Date helpers
-  const getToday = () => {
-    const d = new Date();
-    d.setHours(0, 0, 0, 0);
-    return d;
-  };
-
-  const getYesterday = () => {
-    const d = new Date();
-    d.setDate(d.getDate() - 1);
-    d.setHours(0, 0, 0, 0);
-    return d;
-  };
-
-  const getWeekRange = () => {
-    const today = new Date();
-    today.setHours(23, 59, 59, 999);
-    const last7 = new Date();
-    last7.setDate(today.getDate() - 6);
-    last7.setHours(0, 0, 0, 0);
-    return { from: last7, to: today };
-  };
-
+  // Fixed buildPayload function for consistent timezone handling
   const buildPayload = () => {
-    let fromDate = getToday();
+    // Always use ISO strings and let the server handle timezone conversion
+    let fromDate = new Date();
     let toDate = new Date();
-    toDate.setHours(23, 59, 59, 999);
 
-    if (dateRange === "Yesterday") {
-      fromDate = getYesterday();
-      toDate = getYesterday();
+    if (dateRange === "Today") {
+      fromDate.setHours(0, 0, 0, 0);
+      toDate.setHours(23, 59, 59, 999);
+    } else if (dateRange === "Yesterday") {
+      fromDate.setDate(fromDate.getDate() - 1);
+      fromDate.setHours(0, 0, 0, 0);
+      toDate = new Date(fromDate);
       toDate.setHours(23, 59, 59, 999);
     } else if (dateRange === "Last 7 Days") {
-      const { from, to } = getWeekRange();
-      fromDate = from;
-      toDate = to;
+      toDate.setHours(23, 59, 59, 999);
+      fromDate = new Date(toDate);
+      fromDate.setDate(fromDate.getDate() - 6);
+      fromDate.setHours(0, 0, 0, 0);
     } else if (dateRange === "Custom" && customDates.from) {
       fromDate = new Date(customDates.from);
       fromDate.setHours(0, 0, 0, 0);
-      toDate = customDates.to
-        ? new Date(customDates.to)
-        : new Date(customDates.from);
+      toDate = customDates.to ? new Date(customDates.to) : new Date(customDates.from);
       toDate.setHours(23, 59, 59, 999);
     }
 
@@ -224,22 +221,27 @@ export default function SalesDashboard() {
     };
   };
 
-  // FIXED: API response handling
+  // Fixed API response handling for Vercel
   const fetchData = async () => {
     setLoading(true);
     try {
       const payload = buildPayload();
+      console.log('Sending payload to admin API:', payload);
+      
       const res = await fetch("/api/sales/dashboard", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
       
+      console.log('Admin API response status:', res.status);
+      
       if (!res.ok) {
-        throw new Error("Failed to fetch dashboard data");
+        throw new Error(`HTTP error! status: ${res.status}`);
       }
       
       const responseData = await res.json();
+      console.log('Admin API full response:', responseData);
       
       if (responseData.success) {
         setDashboardData(responseData.data);
@@ -247,7 +249,8 @@ export default function SalesDashboard() {
         throw new Error(responseData.error || "Failed to fetch data");
       }
     } catch (err) {
-      console.error("Error fetching dashboard:", err);
+      console.error("Error fetching admin dashboard:", err);
+      // Set fallback data
       setDashboardData({
         totalLeads: 0,
         newPatients: 0,
@@ -282,7 +285,6 @@ export default function SalesDashboard() {
     }).format(amount || 0);
   };
 
-  // FIXED: Handle number trends instead of strings
   const getTrendIcon = (trend) => {
     if (trend === undefined || trend === null || trend === 0) return null;
     const isPositive = trend >= 0;
@@ -293,13 +295,11 @@ export default function SalesDashboard() {
     );
   };
 
-  // FIXED: Handle number trends instead of strings
   const getTrendColor = (trend) => {
     if (trend === undefined || trend === null || trend === 0) return "text-gray-600";
     return trend >= 0 ? "text-green-600" : "text-red-600";
   };
 
-  // FIXED: Format trend display for numbers
   const formatTrendDisplay = (trend) => {
     if (trend === undefined || trend === null) return "0%";
     const sign = trend >= 0 ? "+" : "";
@@ -437,7 +437,7 @@ export default function SalesDashboard() {
                   value={dashboardData?.activeAgents || 0}
                   icon={TrendingUp}
                   color="from-orange-500 to-orange-600"
-                  trend={0} // Hardcoded since we don't have trend data for agents
+                  trend={0}
                   onClick={() => handleMetricClick("agents")}
                 />
               </div>
@@ -456,7 +456,7 @@ export default function SalesDashboard() {
                   value={dashboardData?.notConverted || 0}
                   icon={XCircle}
                   color="from-red-500 to-red-600"
-                  trend={0} // Hardcoded since we don't have trend data for not converted
+                  trend={0}
                   onClick={() => handleMetricClick("notConverted")}
                 />
                 <MetricCard
@@ -530,7 +530,7 @@ export default function SalesDashboard() {
                                     {agent.name || "N/A"}
                                   </div>
                                   <div className="text-sm text-gray-500">
-                                    {agent.phone || "N/A"}
+                                    {agent.email || agent.phone || "N/A"}
                                   </div>
                                 </div>
                               </div>
