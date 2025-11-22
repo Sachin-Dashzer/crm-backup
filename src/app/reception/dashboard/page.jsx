@@ -219,35 +219,29 @@ export default function ReceptionDashboard() {
   };
 
   const buildPayload = () => {
+    // Always use ISO strings and let the server handle timezone conversion
     let fromDate = new Date();
-    fromDate.setHours(0, 0, 0, 0); // Start of today
-
     let toDate = new Date();
-    toDate.setHours(23, 59, 59, 999); // End of today
 
-    if (timeRange === "Yesterday") {
-      fromDate = new Date();
+    if (timeRange === "Today") {
+      fromDate.setHours(0, 0, 0, 0);
+      toDate.setHours(23, 59, 59, 999);
+    } else if (timeRange === "Yesterday") {
       fromDate.setDate(fromDate.getDate() - 1);
       fromDate.setHours(0, 0, 0, 0);
-
       toDate = new Date(fromDate);
       toDate.setHours(23, 59, 59, 999);
     } else if (timeRange === "Last 7 Days") {
-      const { from, to } = getWeekRange();
-
-      fromDate = new Date(from);
-      fromDate.setHours(0, 0, 0, 0);
-
-      toDate = new Date(to);
       toDate.setHours(23, 59, 59, 999);
+      fromDate = new Date(toDate);
+      fromDate.setDate(fromDate.getDate() - 6);
+      fromDate.setHours(0, 0, 0, 0);
     } else if (timeRange === "Custom" && customDates.from) {
       fromDate = new Date(customDates.from);
       fromDate.setHours(0, 0, 0, 0);
-
       toDate = customDates.to
         ? new Date(customDates.to)
         : new Date(customDates.from);
-
       toDate.setHours(23, 59, 59, 999);
     }
 

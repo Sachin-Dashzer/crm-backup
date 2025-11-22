@@ -2,18 +2,51 @@ import { NextResponse } from "next/server";
 import { withDB } from "@/lib/withDB";
 import Patient from "@/models/Patient";
 import Transactions from "@/models/Transactions";
-import { 
-  getISTStartOfDay, 
-  getISTEndOfDay, 
-  formatISTDate, 
-  logDateInfo 
-} from "@/lib/dateHelpers.js";
 
 const VALID_BRANCHES = ["All", "Delhi", "Mumbai", "Hyderabad"];
 
+// Improved date helpers that work consistently across timezones
+const getISTStartOfDay = (date = null) => {
+  const d = date ? new Date(date) : new Date();
+  
+  // Create date in IST timezone (UTC+5:30)
+  const istDate = new Date(d.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
+  const year = istDate.getFullYear();
+  const month = istDate.getMonth();
+  const day = istDate.getDate();
+  
+  // Return as UTC date that represents IST start of day
+  return new Date(Date.UTC(year, month, day, 0, 0, 0, 0));
+};
+
+const getISTEndOfDay = (date = null) => {
+  const d = date ? new Date(date) : new Date();
+  
+  // Create date in IST timezone (UTC+5:30)
+  const istDate = new Date(d.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
+  const year = istDate.getFullYear();
+  const month = istDate.getMonth();
+  const day = istDate.getDate();
+  
+  // Return as UTC date that represents IST end of day
+  return new Date(Date.UTC(year, month, day, 23, 59, 59, 999));
+};
+
+const formatISTDate = (date) => {
+  return date.toLocaleString('en-IN', {
+    timeZone: 'Asia/Kolkata',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit'
+  });
+};
+
 const handler = async (req) => {
   try {
-    console.log('Reception Dashboard API called');
+    console.log('Reception Dashboard API called - Vercel Compatible');
     
     const data = await req.json();
     const { branch = "All", from, to } = data;
@@ -22,28 +55,28 @@ const handler = async (req) => {
 
     // Validate branch
     if (!VALID_BRANCHES.includes(branch)) {
-      console.error('Invalid branch:', branch);
       return NextResponse.json(
         { error: "Invalid branch specified" },
         { status: 400 }
       );
     }
 
-    // Use IST timezone for date calculations
+    // Use consistent IST timezone for date calculations
     const fromDate = from ? getISTStartOfDay(from) : getISTStartOfDay();
     const toDate = to ? getISTEndOfDay(to) : getISTEndOfDay();
 
-    // Debug logging
-    console.log('Date range:', {
+    // Debug logging with both UTC and IST
+    console.log('Date range UTC:', {
       from: fromDate.toISOString(),
-      to: toDate.toISOString(),
-      fromIST: formatISTDate(fromDate),
-      toIST: formatISTDate(toDate)
+      to: toDate.toISOString()
+    });
+    console.log('Date range IST:', {
+      from: formatISTDate(fromDate),
+      to: formatISTDate(toDate)
     });
 
     // Validate dates
     if (isNaN(fromDate.getTime()) || isNaN(toDate.getTime())) {
-      console.error('Invalid dates:', { fromDate, toDate });
       return NextResponse.json(
         { error: "Invalid date provided" },
         { status: 400 }
@@ -51,7 +84,6 @@ const handler = async (req) => {
     }
 
     if (fromDate > toDate) {
-      console.error('From date after to date:', { fromDate, toDate });
       return NextResponse.json(
         { error: "From date cannot be after to date" },
         { status: 400 }
@@ -69,17 +101,26 @@ const handler = async (req) => {
     comparisonStart.setDate(comparisonStart.getDate() - (daysDifference - 1));
     comparisonStart.setHours(0, 0, 0, 0);
 
-    console.log('Comparison period:', {
+    console.log('Comparison period UTC:', {
       comparisonStart: comparisonStart.toISOString(),
       comparisonEnd: comparisonEnd.toISOString()
+    });
+    console.log('Comparison period IST:', {
+      comparisonStart: formatISTDate(comparisonStart),
+      comparisonEnd: formatISTDate(comparisonEnd)
     });
 
     // Branch filter
     const branchFilter = branch === "All" ? {} : { "personal.branch": branch };
 
-    // Get patient statistics - FIXED: Handle empty string counsellor values
+    // Get patient statistics
     const getPatientStats = async () => {
       try {
+        console.log('Fetching patient stats with date range:', {
+          current: { from: fromDate.toISOString(), to: toDate.toISOString() },
+          comparison: { from: comparisonStart.toISOString(), to: comparisonEnd.toISOString() }
+        });
+
         const result = await Patient.aggregate([
           {
             $match: {
@@ -92,24 +133,15 @@ const handler = async (req) => {
           },
           {
             $facet: {
-              // Current period
               currentAppointments: [
-                {
-                  $match: {
-                    "personal.visitDate": { $gte: fromDate, $lte: toDate },
-                  },
-                },
+                { $match: { "personal.visitDate": { $gte: fromDate, $lte: toDate } } },
                 { $count: "count" },
               ],
               currentVisited: [
                 {
                   $match: {
                     "personal.visitDate": { $gte: fromDate, $lte: toDate },
-                    "counselling.counsellor": { 
-                      $exists: true, 
-                      $ne: null, 
-                      $ne: "" 
-                    },
+                    "counselling.counsellor": { $exists: true, $ne: null, $ne: "" },
                   },
                 },
                 { $count: "count" },
@@ -127,24 +159,15 @@ const handler = async (req) => {
                 },
                 { $count: "count" },
               ],
-              // Comparison period
               comparisonAppointments: [
-                {
-                  $match: {
-                    "personal.visitDate": { $gte: comparisonStart, $lte: comparisonEnd },
-                  },
-                },
+                { $match: { "personal.visitDate": { $gte: comparisonStart, $lte: comparisonEnd } } },
                 { $count: "count" },
               ],
               comparisonVisited: [
                 {
                   $match: {
                     "personal.visitDate": { $gte: comparisonStart, $lte: comparisonEnd },
-                    "counselling.counsellor": { 
-                      $exists: true, 
-                      $ne: null, 
-                      $ne: "" 
-                    },
+                    "counselling.counsellor": { $exists: true, $ne: null, $ne: "" },
                   },
                 },
                 { $count: "count" },
@@ -157,13 +180,18 @@ const handler = async (req) => {
         return result[0] || {};
       } catch (error) {
         console.error('Error in getPatientStats:', error);
-        throw error;
+        return {};
       }
     };
 
     // Get revenue statistics
     const getRevenueStats = async () => {
       try {
+        console.log('Fetching revenue stats with date range:', {
+          current: { from: fromDate.toISOString(), to: toDate.toISOString() },
+          comparison: { from: comparisonStart.toISOString(), to: comparisonEnd.toISOString() }
+        });
+
         const result = await Transactions.aggregate([
           {
             $match: {
@@ -193,46 +221,13 @@ const handler = async (req) => {
         return result[0] || {};
       } catch (error) {
         console.error('Error in getRevenueStats:', error);
-        throw error;
+        return {};
       }
     };
 
-    // Get recent patients - FIXED: Handle ObjectId casting issues
+    // Get recent patients - Safe approach for Vercel
     const getRecentPatients = async () => {
       try {
-        // First, let's check what counsellor values actually exist
-        const counsellorStats = await Patient.aggregate([
-          {
-            $match: {
-              ...branchFilter,
-              "personal.visitDate": { $gte: fromDate, $lte: toDate }
-            }
-          },
-          {
-            $project: {
-              counsellorType: { $type: "$counselling.counsellor" },
-              counsellorValue: "$counselling.counsellor",
-              hasCounsellor: {
-                $and: [
-                  { $ne: ["$counselling.counsellor", null] },
-                  { $ne: ["$counselling.counsellor", ""] },
-                  { $ne: ["$counselling.counsellor", undefined] }
-                ]
-              }
-            }
-          },
-          {
-            $group: {
-              _id: "$counsellorType",
-              count: { $sum: 1 },
-              sampleValues: { $push: "$counsellorValue" }
-            }
-          }
-        ]);
-
-        console.log('Counsellor field analysis:', JSON.stringify(counsellorStats, null, 2));
-
-        // Use a safer query that avoids ObjectId casting issues
         const patients = await Patient.aggregate([
           {
             $match: {
@@ -245,16 +240,6 @@ const handler = async (req) => {
                   { $ne: ["$counselling.counsellor", undefined] }
                 ]
               }
-            }
-          },
-          {
-            $addFields: {
-              counsellorString: { $toString: "$counselling.counsellor" }
-            }
-          },
-          {
-            $match: {
-              counsellorString: { $ne: "" }
             }
           },
           {
@@ -279,18 +264,23 @@ const handler = async (req) => {
         return patients;
       } catch (error) {
         console.error('Error in getRecentPatients:', error);
-        // Return empty array instead of failing completely
         return [];
       }
     };
 
-    // Get upcoming appointments - FIXED: Handle status field properly
+    // Get upcoming appointments
     const getUpcomingAppointments = async () => {
       try {
-        const now = new Date();
+        const now = new Date(); // Current server time (UTC)
         const endOfDay = getISTEndOfDay();
         
-        // Use aggregation to handle potential missing status fields
+        console.log('Upcoming appointments time range:', {
+          now: now.toISOString(),
+          endOfDay: endOfDay.toISOString(),
+          nowIST: formatISTDate(now),
+          endOfDayIST: formatISTDate(endOfDay)
+        });
+
         const appointments = await Patient.aggregate([
           {
             $match: {
@@ -330,7 +320,6 @@ const handler = async (req) => {
         return appointments;
       } catch (error) {
         console.error('Error in getUpcomingAppointments:', error);
-        // Return empty array instead of failing completely
         return [];
       }
     };
@@ -343,13 +332,13 @@ const handler = async (req) => {
       getUpcomingAppointments()
     ]);
 
-    // Handle promise results
+    // Handle promise results with safe defaults
     const patientStatsResult = patientStats.status === 'fulfilled' ? patientStats.value : {};
     const revenueStatsResult = revenueStats.status === 'fulfilled' ? revenueStats.value : {};
     const recentPatientsResult = recentPatients.status === 'fulfilled' ? recentPatients.value : [];
     const upcomingAppointmentsResult = upcomingAppointments.status === 'fulfilled' ? upcomingAppointments.value : [];
 
-    // Process patient stats with safe defaults
+    // Process stats with safe defaults
     const currentAppointments = patientStatsResult.currentAppointments?.[0]?.count || 0;
     const currentVisited = patientStatsResult.currentVisited?.[0]?.count || 0;
     const currentPending = patientStatsResult.currentPending?.[0]?.count || 0;
@@ -369,14 +358,14 @@ const handler = async (req) => {
     const visitsGrowth = calculateGrowth(currentVisited, comparisonVisited);
     const revenueGrowth = calculateGrowth(currentRevenue, comparisonRevenue);
 
-    // Prepare response matching the frontend expected structure
+    // Prepare final response
     const response = {
       success: true,
       data: {
         todayAppointments: currentAppointments,
         todayVisits: currentVisited,
         pendingAppointments: currentPending,
-        totalPatients: currentAppointments, // Using appointments as total patients for now
+        totalPatients: currentAppointments,
         todayRevenue: currentRevenue,
         recentPatients: recentPatientsResult,
         upcomingAppointments: upcomingAppointmentsResult,
@@ -385,20 +374,35 @@ const handler = async (req) => {
           visits: visitsGrowth,
           revenue: revenueGrowth,
         },
+        // Include debug info for Vercel
+        _debug: process.env.NODE_ENV === 'development' ? {
+          dateRanges: {
+            current: { from: fromDate.toISOString(), to: toDate.toISOString() },
+            comparison: { from: comparisonStart.toISOString(), to: comparisonEnd.toISOString() }
+          },
+          counts: {
+            currentAppointments,
+            currentVisited,
+            currentPending,
+            currentRevenue,
+            comparisonAppointments,
+            comparisonVisited,
+            comparisonRevenue
+          }
+        } : undefined
       },
     };
 
-    console.log('API response prepared successfully');
+    console.log('API response prepared successfully for Vercel');
     return NextResponse.json(response);
 
   } catch (error) {
-    console.error("Reception Dashboard API error:", error);
+    console.error("Reception Dashboard API error on Vercel:", error);
     return NextResponse.json(
       { 
         success: false,
         error: "Internal server error", 
-        details: error.message,
-        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        details: error.message
       },
       { status: 500 }
     );
