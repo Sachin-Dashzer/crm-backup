@@ -1,120 +1,328 @@
 import { NextResponse } from "next/server";
-import connectDB from "@/lib/db";
+import { withDB } from "@/lib/withDB";
 import Patient from "@/models/Patient";
+import { 
+  getISTStartOfDay, 
+  getISTEndOfDay, 
+  formatISTDate,
+  getISTDate 
+} from "@/lib/dateHelpers.js";
 
-export async function GET(req) {
+const VALID_BRANCHES = ["All", "Delhi", "Mumbai", "Hyderabad"];
+
+const handler = async (req) => {
   try {
-    await connectDB();
+    const data = await req.json();
+    const { branch = "All", from, to } = data;
+
+    // Validate branch
+    if (!VALID_BRANCHES.includes(branch)) {
+      return NextResponse.json(
+        { error: "Invalid branch specified" },
+        { status: 400 }
+      );
+    }
+
+    // Use IST timezone for date calculations
+    const fromDate = from ? getISTStartOfDay(from) : getISTStartOfDay();
+    const toDate = to ? getISTEndOfDay(to) : getISTEndOfDay();
+
+    console.log('Surgery Dashboard Date Range:', {
+      from: fromDate.toISOString(),
+      to: toDate.toISOString(),
+      fromIST: formatISTDate(fromDate),
+      toIST: formatISTDate(toDate)
+    });
+
+    // Calculate comparison period
+    const daysDifference = Math.ceil((toDate - fromDate) / (1000 * 60 * 60 * 24)) + 1;
     
-    const { searchParams } = new URL(req.url);
-    const branch = searchParams.get("branch") || "All";
-    const dateRange = searchParams.get("dateRange") || "Today";
+    const yesterdayEnd = new Date(fromDate);
+    yesterdayEnd.setDate(yesterdayEnd.getDate() - 1);
+    yesterdayEnd.setHours(23, 59, 59, 999);
 
-    // Date filtering
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
+    const yesterdayStart = new Date(yesterdayEnd);
+    yesterdayStart.setDate(yesterdayStart.getDate() - (daysDifference - 1));
+    yesterdayStart.setHours(0, 0, 0, 0);
 
-    let dateFilter = {};
-    if (dateRange === "Today") {
-      dateFilter = {
-        $gte: today,
-        $lt: tomorrow
+    // Branch filter
+    const branchFilter = branch === "All" ? {} : { "personal.branch": branch };
+
+    // Get surgery statistics
+    const getSurgeryStats = async () => {
+      const result = await Patient.aggregate([
+        {
+          $match: {
+            ...branchFilter,
+            $or: [
+              { "surgery.surgeryDate": { $gte: fromDate, $lte: toDate } },
+              { "surgery.surgeryDate": { $gte: yesterdayStart, $lte: yesterdayEnd } },
+              { "personal.visitDate": { $gte: fromDate, $lte: toDate } }
+            ],
+          },
+        },
+        {
+          $facet: {
+            // Current period
+            currentScheduled: [
+              {
+                $match: {
+                  "surgery.surgeryDate": { $gte: fromDate, $lte: toDate },
+                  "surgery.doctor": { $exists: false }
+                },
+              },
+              { $count: "count" },
+            ],
+            currentCompleted: [
+              {
+                $match: {
+                  "surgery.surgeryDate": { $gte: fromDate, $lte: toDate },
+                  "surgery.doctor": { $exists: true, $ne: null }
+                },
+              },
+              { $count: "count" },
+            ],
+            currentPending: [
+              {
+                $match: {
+                  "counselling.readyForSurgery": true,
+                  "surgery.surgeryDate": { $exists: false },
+                  "personal.visitDate": { $lte: toDate }
+                },
+              },
+              { $count: "count" },
+            ],
+            // Total grafts for current period
+            currentGrafts: [
+              {
+                $match: {
+                  "surgery.surgeryDate": { $gte: fromDate, $lte: toDate },
+                  "surgery.graftsImplanted": { $exists: true }
+                },
+              },
+              {
+                $group: {
+                  _id: null,
+                  totalGrafts: { $sum: "$surgery.graftsImplanted" },
+                  avgGrafts: { $avg: "$surgery.graftsImplanted" }
+                }
+              }
+            ],
+            // Comparison period
+            comparisonScheduled: [
+              {
+                $match: {
+                  "surgery.surgeryDate": { $gte: yesterdayStart, $lte: yesterdayEnd },
+                  "surgery.doctor": { $exists: false }
+                },
+              },
+              { $count: "count" },
+            ],
+            comparisonCompleted: [
+              {
+                $match: {
+                  "surgery.surgeryDate": { $gte: yesterdayStart, $lte: yesterdayEnd },
+                  "surgery.doctor": { $exists: true, $ne: null }
+                },
+              },
+              { $count: "count" },
+            ],
+            comparisonGrafts: [
+              {
+                $match: {
+                  "surgery.surgeryDate": { $gte: yesterdayStart, $lte: yesterdayEnd },
+                  "surgery.graftsImplanted": { $exists: true }
+                },
+              },
+              {
+                $group: {
+                  _id: null,
+                  totalGrafts: { $sum: "$surgery.graftsImplanted" }
+                }
+              }
+            ],
+          },
+        },
+      ]);
+
+      return {
+        current: {
+          scheduled: result[0]?.currentScheduled[0]?.count || 0,
+          completed: result[0]?.currentCompleted[0]?.count || 0,
+          pending: result[0]?.currentPending[0]?.count || 0,
+          totalGrafts: result[0]?.currentGrafts[0]?.totalGrafts || 0,
+          avgGrafts: Math.round(result[0]?.currentGrafts[0]?.avgGrafts || 0),
+        },
+        comparison: {
+          scheduled: result[0]?.comparisonScheduled[0]?.count || 0,
+          completed: result[0]?.comparisonCompleted[0]?.count || 0,
+          totalGrafts: result[0]?.comparisonGrafts[0]?.totalGrafts || 0,
+        },
       };
-    }
+    };
 
-    // Branch filtering
-    let branchFilter = {};
-    if (branch !== "All") {
-      branchFilter = { "personal.branch": branch };
-    }
+    // Get today's surgeries
+    const getTodaySurgeries = async () => {
+      const todayStart = getISTStartOfDay();
+      const todayEnd = getISTEndOfDay();
+      
+      const surgeries = await Patient.find({
+        ...branchFilter,
+        "surgery.surgeryDate": { $gte: todayStart, $lte: todayEnd }
+      })
+        .select("personal.name personal.phone surgery.surgeryDate surgery.technique surgery.graftsneed surgery.OT surgery.location ops.status")
+        .populate("surgery.doctor", "name")
+        .sort({ "surgery.surgeryDate": 1 })
+        .lean();
 
-    // Get today's upcoming surgeries (surgery date is today and not completed)
-    const upcomingSurgeries = await Patient.find({
-      ...branchFilter,
-      "surgery.surgeryDate": dateFilter,
-      $or: [
-        { "surgery.graftsImplanted": { $exists: false } },
-        { "surgery.graftsImplanted": null },
-        { "surgery.graftsImplanted": 0 }
-      ]
-    })
-      .select("personal surgery counselling")
-      .limit(10)
-      .lean();
+      return surgeries;
+    };
 
-    // Get today's performed surgeries (surgery date is today and completed)
-    const performedSurgeries = await Patient.find({
-      ...branchFilter,
-      "surgery.surgeryDate": dateFilter,
-      "surgery.graftsImplanted": { $gt: 0 }
-    })
-      .select("personal surgery")
-      .limit(10)
-      .lean();
+    // Get upcoming surgeries (next 7 days)
+    const getUpcomingSurgeries = async () => {
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const nextWeek = new Date();
+      nextWeek.setDate(nextWeek.getDate() + 7);
+      
+      const upcomingStart = getISTStartOfDay(tomorrow);
+      const upcomingEnd = getISTEndOfDay(nextWeek);
+      
+      const surgeries = await Patient.find({
+        ...branchFilter,
+        "surgery.surgeryDate": { $gte: upcomingStart, $lte: upcomingEnd }
+      })
+        .select("personal.name personal.phone surgery.surgeryDate surgery.technique surgery.location")
+        .sort({ "surgery.surgeryDate": 1 })
+        .limit(10)
+        .lean();
 
-    // Get counts for metrics
-    const scheduledCount = await Patient.countDocuments({
-      ...branchFilter,
-      "surgery.surgeryDate": dateFilter
-    });
+      return surgeries;
+    };
 
-    const completedCount = await Patient.countDocuments({
-      ...branchFilter,
-      "surgery.surgeryDate": dateFilter,
-      "surgery.graftsImplanted": { $gt: 0 }
-    });
+    // Get surgery techniques distribution
+    const getTechniqueDistribution = async () => {
+      const distribution = await Patient.aggregate([
+        {
+          $match: {
+            ...branchFilter,
+            "surgery.surgeryDate": { $gte: fromDate, $lte: toDate },
+            "surgery.technique": { $exists: true, $ne: null }
+          }
+        },
+        {
+          $group: {
+            _id: "$surgery.technique",
+            count: { $sum: 1 },
+            avgGrafts: { $avg: "$surgery.graftsImplanted" }
+          }
+        },
+        {
+          $sort: { count: -1 }
+        }
+      ]);
 
-    const pendingCount = scheduledCount - completedCount;
+      return distribution.map(item => ({
+        technique: item._id || "Not Specified",
+        count: item.count,
+        avgGrafts: Math.round(item.avgGrafts || 0)
+      }));
+    };
 
-    const readyForSurgeryCount = await Patient.countDocuments({
-      ...branchFilter,
-      "counselling.readyForSurgery": true,
-      "surgery.surgeryDate": { $exists: false }
-    });
+    // Get post-surgery patients (for follow-up)
+    const getPostSurgeryPatients = async () => {
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      
+      const patients = await Patient.find({
+        ...branchFilter,
+        "surgery.surgeryDate": { 
+          $gte: getISTStartOfDay(thirtyDaysAgo), 
+          $lte: getISTEndOfDay() 
+        },
+        "surgery.doctor": { $exists: true, $ne: null }
+      })
+        .select("personal.name personal.phone surgery.surgeryDate surgery.technique")
+        .sort({ "surgery.surgeryDate": -1 })
+        .limit(20)
+        .lean();
 
-    // Get technique breakdown for today
-    const techniqueBreakdown = {};
-    const todaySurgeries = await Patient.find({
-      ...branchFilter,
-      "surgery.surgeryDate": dateFilter
-    }).select("surgery.technique").lean();
+      return patients;
+    };
 
-    todaySurgeries.forEach(patient => {
-      const technique = patient.surgery?.technique;
-      if (technique) {
-        techniqueBreakdown[technique] = (techniqueBreakdown[technique] || 0) + 1;
-      }
-    });
+    // Execute all queries in parallel
+    const [
+      surgeryStats, 
+      todaySurgeries, 
+      upcomingSurgeries, 
+      techniqueDistribution,
+      postSurgeryPatients
+    ] = await Promise.all([
+      getSurgeryStats(),
+      getTodaySurgeries(),
+      getUpcomingSurgeries(),
+      getTechniqueDistribution(),
+      getPostSurgeryPatients()
+    ]);
 
-    // Get location breakdown for today
-    const locationBreakdown = {};
-    todaySurgeries.forEach(patient => {
-      const location = patient.surgery?.location;
-      if (location) {
-        locationBreakdown[location] = (locationBreakdown[location] || 0) + 1;
-      }
-    });
+    // Calculate growth percentages
+    const calculateGrowth = (current, comparison) => {
+      if (comparison === 0 && current > 0) return 100;
+      if (comparison === 0 && current === 0) return 0;
+      return Math.round(((current - comparison) / comparison) * 100);
+    };
 
-    return NextResponse.json({
-      metrics: {
-        scheduledSurgeries: scheduledCount,
-        completedSurgeries: completedCount,
-        pendingSurgeries: pendingCount,
-        readyForSurgery: readyForSurgeryCount,
-        techniqueBreakdown,
-        locationBreakdown
+    // Prepare response
+    const response = {
+      dateRange: {
+        from: fromDate.toISOString(),
+        to: toDate.toISOString(),
+        fromIST: formatISTDate(fromDate),
+        toIST: formatISTDate(toDate),
       },
+      branch,
+      scheduledSurgeries: {
+        count: surgeryStats.current.scheduled,
+        growth: calculateGrowth(
+          surgeryStats.current.scheduled,
+          surgeryStats.comparison.scheduled
+        ),
+      },
+      completedSurgeries: {
+        count: surgeryStats.current.completed,
+        growth: calculateGrowth(
+          surgeryStats.current.completed,
+          surgeryStats.comparison.completed
+        ),
+      },
+      pendingSurgeries: {
+        count: surgeryStats.current.pending,
+      },
+      graftsData: {
+        total: surgeryStats.current.totalGrafts,
+        average: surgeryStats.current.avgGrafts,
+        growth: calculateGrowth(
+          surgeryStats.current.totalGrafts,
+          surgeryStats.comparison.totalGrafts
+        ),
+      },
+      todaySurgeries,
       upcomingSurgeries,
-      performedSurgeries
-    });
+      techniqueDistribution,
+      postSurgeryPatients,
+      surgeryRate: surgeryStats.current.scheduled > 0
+        ? Math.round((surgeryStats.current.completed / (surgeryStats.current.scheduled + surgeryStats.current.completed)) * 100)
+        : 0,
+    };
 
+    return NextResponse.json(response);
   } catch (error) {
-    console.error("Error fetching surgery dashboard:", error);
+    console.error("Surgery Dashboard API error:", error);
     return NextResponse.json(
-      { error: "Failed to fetch dashboard data" },
+      { error: "Internal server error", details: error.message },
       { status: 500 }
     );
   }
-}
+};
+
+export const POST = withDB(handler);

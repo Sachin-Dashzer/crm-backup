@@ -1,7 +1,14 @@
 import { NextResponse } from "next/server";
 import { withDB } from "@/lib/withDB";
 import Patient from "@/models/Patient";
+import Transactions from "@/models/Transactions";
 import Employee from "@/models/Employee";
+import { 
+  getISTStartOfDay, 
+  getISTEndOfDay, 
+  formatISTDate,
+  getISTDate 
+} from "@/lib/dateHelpers.js";
 
 const VALID_BRANCHES = ["All", "Delhi", "Mumbai", "Hyderabad"];
 
@@ -10,7 +17,7 @@ const handler = async (req) => {
     const data = await req.json();
     const { branch = "All", from, to } = data;
 
-    // ✅ Validate branch
+    // Validate branch
     if (!VALID_BRANCHES.includes(branch)) {
       return NextResponse.json(
         { error: "Invalid branch specified" },
@@ -18,33 +25,13 @@ const handler = async (req) => {
       );
     }
 
-    // ✅ Date range setup - FIXED to match admin dashboard
-    const today = new Date();
-    const fromDate = from ? new Date(from) : new Date(today);
-    fromDate.setHours(0, 0, 0, 0);
+    // Use IST timezone for date calculations
+    const fromDate = from ? getISTStartOfDay(from) : getISTStartOfDay();
+    const toDate = to ? getISTEndOfDay(to) : getISTEndOfDay();
 
-    const toDate = to ? new Date(to) : new Date(today);
-    toDate.setHours(23, 59, 59, 999);
-
-    if (isNaN(fromDate.getTime()) || isNaN(toDate.getTime())) {
-      return NextResponse.json(
-        { error: "Invalid date provided" },
-        { status: 400 }
-      );
-    }
-
-    if (fromDate > toDate) {
-      return NextResponse.json(
-        { error: "From date cannot be after to date" },
-        { status: 400 }
-      );
-    }
-
-    // ✅ Calculate the number of days in the selected range
-    const daysDifference =
-      Math.ceil((toDate - fromDate) / (1000 * 60 * 60 * 24)) + 1;
-
-    // ✅ Calculate yesterday's date range (same duration as selected range, but shifted back)
+    // Calculate comparison period
+    const daysDifference = Math.ceil((toDate - fromDate) / (1000 * 60 * 60 * 24)) + 1;
+    
     const yesterdayEnd = new Date(fromDate);
     yesterdayEnd.setDate(yesterdayEnd.getDate() - 1);
     yesterdayEnd.setHours(23, 59, 59, 999);
@@ -53,55 +40,28 @@ const handler = async (req) => {
     yesterdayStart.setDate(yesterdayStart.getDate() - (daysDifference - 1));
     yesterdayStart.setHours(0, 0, 0, 0);
 
-    // ✅ Centralized filter objects
+    // Branch filter
     const branchFilter = branch === "All" ? {} : { "personal.branch": branch };
-    const branchFilterEmployee = branch === "All" ? {} : { branch };
 
-    // ✅ FIXED: Single aggregation for all patient counts using visitDate like admin dashboard
-    const getPatientStats = async () => {
+    // Get sales statistics
+    const getSalesStats = async () => {
       const result = await Patient.aggregate([
         {
           $match: {
             ...branchFilter,
             $or: [
               { "personal.visitDate": { $gte: fromDate, $lte: toDate } },
-              {
-                "personal.visitDate": {
-                  $gte: yesterdayStart,
-                  $lte: yesterdayEnd,
-                },
-              },
+              { "personal.visitDate": { $gte: yesterdayStart, $lte: yesterdayEnd } }
             ],
           },
         },
         {
           $facet: {
-            // Current period counts
-            currentTotalLeads: [
+            // Current period
+            currentLeads: [
               {
                 $match: {
                   "personal.visitDate": { $gte: fromDate, $lte: toDate },
-                },
-              },
-              { $count: "count" },
-            ],
-            currentNewPatients: [
-              {
-                $match: {
-                  "personal.visitDate": { $gte: fromDate, $lte: toDate },
-                  $or: [
-                    { "counselling.counsellor": { $exists: false } },
-                    { "counselling.counsellor": "" },
-                  ],
-                },
-              },
-              { $count: "count" },
-            ],
-            currentContacted: [
-              {
-                $match: {
-                  "personal.visitDate": { $gte: fromDate, $lte: toDate },
-                  "counselling.counsellor": { $exists: true, $ne: "" },
                 },
               },
               { $count: "count" },
@@ -110,59 +70,25 @@ const handler = async (req) => {
               {
                 $match: {
                   "personal.visitDate": { $gte: fromDate, $lte: toDate },
-                  "surgery.surgeryDate": { $exists: true, $ne: "" },
+                  "counselling.readyForSurgery": true,
                 },
               },
               { $count: "count" },
             ],
-            currentNotConverted: [
+            currentBooked: [
               {
                 $match: {
                   "personal.visitDate": { $gte: fromDate, $lte: toDate },
-                  "counselling.counsellor": { $exists: true, $ne: "" },
-                  $or: [
-                    { "surgery.surgeryDate": { $exists: false } },
-                    { "surgery.surgeryDate": "" },
-                  ],
+                  "surgery.surgeryDate": { $exists: true, $ne: null },
                 },
               },
               { $count: "count" },
             ],
-            // Comparison period counts
-            comparisonTotalLeads: [
+            // Comparison period
+            comparisonLeads: [
               {
                 $match: {
-                  "personal.visitDate": {
-                    $gte: yesterdayStart,
-                    $lte: yesterdayEnd,
-                  },
-                },
-              },
-              { $count: "count" },
-            ],
-            comparisonNewPatients: [
-              {
-                $match: {
-                  "personal.visitDate": {
-                    $gte: yesterdayStart,
-                    $lte: yesterdayEnd,
-                  },
-                  $or: [
-                    { "ops.status": "NEW" },
-                    { "ops.status": "APPOINTMENT_BOOKED" },
-                  ],
-                },
-              },
-              { $count: "count" },
-            ],
-            comparisonContacted: [
-              {
-                $match: {
-                  "personal.visitDate": {
-                    $gte: yesterdayStart,
-                    $lte: yesterdayEnd,
-                  },
-                  "counselling.counsellor": { $exists: true, $ne: "" },
+                  "personal.visitDate": { $gte: yesterdayStart, $lte: yesterdayEnd },
                 },
               },
               { $count: "count" },
@@ -170,11 +96,17 @@ const handler = async (req) => {
             comparisonConverted: [
               {
                 $match: {
-                  "personal.visitDate": {
-                    $gte: yesterdayStart,
-                    $lte: yesterdayEnd,
-                  },
-                  "counselling.converted": true,
+                  "personal.visitDate": { $gte: yesterdayStart, $lte: yesterdayEnd },
+                  "counselling.readyForSurgery": true,
+                },
+              },
+              { $count: "count" },
+            ],
+            comparisonBooked: [
+              {
+                $match: {
+                  "personal.visitDate": { $gte: yesterdayStart, $lte: yesterdayEnd },
+                  "surgery.surgeryDate": { $exists: true, $ne: null },
                 },
               },
               { $count: "count" },
@@ -183,234 +115,159 @@ const handler = async (req) => {
         },
       ]);
 
-      // FIXED: Revenue calculation using Transactions model like admin dashboard
-      const revenueResult = await Patient.aggregate([
-        {
-          $match: {
-            ...branchFilter,
-            $or: [
-              { "personal.visitDate": { $gte: fromDate, $lte: toDate } },
-              { createdAt: { $gte: fromDate, $lte: toDate } },
-            ],
-          },
+      return {
+        current: {
+          leads: result[0]?.currentLeads[0]?.count || 0,
+          converted: result[0]?.currentConverted[0]?.count || 0,
+          booked: result[0]?.currentBooked[0]?.count || 0,
         },
-        {
-          $group: {
-            _id: null,
-            totalRevenue: {
-              $sum: {
-                $ifNull: ["$payments.amountReceived", 0],
-              },
-            },
-          },
+        comparison: {
+          leads: result[0]?.comparisonLeads[0]?.count || 0,
+          converted: result[0]?.comparisonConverted[0]?.count || 0,
+          booked: result[0]?.comparisonBooked[0]?.count || 0,
         },
-      ]);
+      };
+    };
 
-      const comparisonRevenueResult = await Patient.aggregate([
+    // Get revenue statistics
+    const getRevenueStats = async () => {
+      const result = await Transactions.aggregate([
         {
           $match: {
-            ...branchFilter,
+            costType: "Revenue",
+            ...(branch === "All" ? {} : { branch }),
             $or: [
-              { "personal.visitDate": { $gte: fromDate, $lte: toDate } },
-              { createdAt: { $gte: fromDate, $lte: toDate } },
+              { date: { $gte: fromDate, $lte: toDate } },
+              { date: { $gte: yesterdayStart, $lte: yesterdayEnd } },
             ],
           },
         },
         {
-          $group: {
-            _id: null,
-            totalRevenue: {
-              $sum: {
-                $ifNull: ["$payments.amountReceived", 0],
-              },
-            },
+          $facet: {
+            current: [
+              { $match: { date: { $gte: fromDate, $lte: toDate } } },
+              { $group: { _id: null, total: { $sum: "$amount" } } },
+            ],
+            comparison: [
+              { $match: { date: { $gte: yesterdayStart, $lte: yesterdayEnd } } },
+              { $group: { _id: null, total: { $sum: "$amount" } } },
+            ],
           },
         },
       ]);
 
       return {
-        current: {
-          totalLeads: result[0]?.currentTotalLeads[0]?.count || 0,
-          newPatients: result[0]?.currentNewPatients[0]?.count || 0,
-          contacted: result[0]?.currentContacted[0]?.count || 0,
-          converted: result[0]?.currentConverted[0]?.count || 0,
-          notConverted: result[0]?.currentNotConverted[0]?.count || 0,
-          revenue: revenueResult[0]?.totalRevenue || 0,
-        },
-        comparison: {
-          totalLeads: result[0]?.comparisonTotalLeads[0]?.count || 0,
-          newPatients: result[0]?.comparisonNewPatients[0]?.count || 0,
-          contacted: result[0]?.comparisonContacted[0]?.count || 0,
-          converted: result[0]?.comparisonConverted[0]?.count || 0,
-          revenue: comparisonRevenueResult[0]?.totalRevenue || 0,
-        },
+        current: result[0]?.current[0]?.total || 0,
+        comparison: result[0]?.comparison[0]?.total || 0,
       };
     };
 
-    // ✅ OPTIMIZED: Agent performance aggregation (unchanged - it's working)
+    // Get agent performance
     const getAgentPerformance = async () => {
-      const result = await Employee.aggregate([
-        {
-          $match: {
-            ...branchFilterEmployee,
-            role: { $regex: "agent", $options: "i" },
+      const agents = await Employee.find({
+        role: "Agent",
+        isactive: true
+      })
+        .populate({
+          path: 'patient',
+          match: {
+            ...branchFilter,
+            "personal.visitDate": { $gte: fromDate, $lte: toDate }
           },
-        },
-        {
-          $lookup: {
-            from: "patients",
-            localField: "_id",
-            foreignField: "personal.reference",
-            as: "patients",
-          },
-        },
-        {
-          $project: {
-            name: 1,
-            phone: 1,
-            branch: 1,
-            totalLeads: {
-              $size: {
-                $filter: {
-                  input: "$patients",
-                  as: "patient",
-                  cond: {
-                    $and: [
-                      { $gte: ["$$patient.personal.visitDate", fromDate] },
-                      { $lte: ["$$patient.personal.visitDate", toDate] },
-                    ],
-                  },
-                },
-              },
-            },
-            converted: {
-              $size: {
-                $filter: {
-                  input: "$patients",
-                  as: "patient",
-                  cond: {
-                    $and: [
-                      { $gte: ["$$patient.personal.visitDate", fromDate] },
-                      { $lte: ["$$patient.personal.visitDate", toDate] },
-                      { $eq: ["$$patient.counselling.readyForSurgery", true] },
-                    ],
-                  },
-                },
-              },
-            },
-          },
-        },
-        {
-          $addFields: {
-            conversionRate: {
-              $cond: {
-                if: { $gt: ["$totalLeads", 0] },
-                then: {
-                  $multiply: [{ $divide: ["$converted", "$totalLeads"] }, 100],
-                },
-                else: 0,
-              },
-            },
-          },
-        },
-        {
-          $match: {
-            totalLeads: { $gt: 0 },
-          },
-        },
-        {
-          $sort: { conversionRate: -1 },
-        },
-        {
-          $limit: 10,
-        },
-      ]);
+          select: 'personal.name personal.visitDate counselling.readyForSurgery'
+        })
+        .select('name email patient')
+        .lean();
 
-      return result.map((agent) => ({
+      return agents.map(agent => ({
         name: agent.name,
-        phone: agent.phone,
-        branch: "Delhi",
-        totalLeads: agent.totalLeads,
-        converted: agent.converted,
-        conversionRate: Math.round(agent.conversionRate * 100) / 100,
+        email: agent.email,
+        leadsGenerated: agent.patient?.length || 0,
+        conversions: agent.patient?.filter(p => p.counselling?.readyForSurgery).length || 0
       }));
     };
 
-    // ✅ Get active agents count
-    const getActiveAgents = async () => {
-      const result = await Employee.countDocuments({
-        ...branchFilterEmployee,
-        role: { $regex: "agent", $options: "i" },
-      });
-      return result;
+    // Get upcoming appointments
+    const getUpcomingAppointments = async () => {
+      const now = getISTDate();
+      const endOfDay = getISTEndOfDay();
+      
+      const appointments = await Patient.find({
+        ...branchFilter,
+        "personal.visitDate": { $gt: now, $lte: endOfDay },
+      })
+        .select("personal.name personal.visitDate personal.phone personal.branch")
+        .sort({ "personal.visitDate": 1 })
+        .limit(10)
+        .lean();
+
+      return appointments;
     };
 
-    // ✅ Execute all aggregations in parallel
-    const [patientStats, agentPerformance, activeAgents] = await Promise.all([
-      getPatientStats(),
+    // Execute all queries in parallel
+    const [salesStats, revenueStats, agentPerformance, upcomingAppointments] = await Promise.all([
+      getSalesStats(),
+      getRevenueStats(),
       getAgentPerformance(),
-      getActiveAgents(),
+      getUpcomingAppointments()
     ]);
 
-    // ✅ FIXED: Calculate growth percentage to match admin dashboard format
+    // Calculate growth percentages
     const calculateGrowth = (current, comparison) => {
-      if (comparison === 0) return current > 0 ? 100 : 0;
-      return Number((((current - comparison) / comparison) * 100).toFixed(2));
+      if (comparison === 0 && current > 0) return 100;
+      if (comparison === 0 && current === 0) return 0;
+      return Math.round(((current - comparison) / comparison) * 100);
     };
 
-    // ✅ Prepare final response
-    return NextResponse.json({
-      success: true,
-      data: {
-        totalLeads: patientStats.current.totalLeads,
-        newPatients: patientStats.current.newPatients,
-        contacted: patientStats.current.contacted,
-        converted: patientStats.current.converted,
-        notConverted: patientStats.current.notConverted,
-        revenue: patientStats.current.revenue,
-        activeAgents: activeAgents,
-        agentPerformance: agentPerformance,
-        trends: {
-          totalLeads: calculateGrowth(
-            patientStats.current.totalLeads,
-            patientStats.comparison.totalLeads
-          ),
-          newPatients: calculateGrowth(
-            patientStats.current.newPatients,
-            patientStats.comparison.newPatients
-          ),
-          contacted: calculateGrowth(
-            patientStats.current.contacted,
-            patientStats.comparison.contacted
-          ),
-          converted: calculateGrowth(
-            patientStats.current.converted,
-            patientStats.comparison.converted
-          ),
-          revenue: calculateGrowth(
-            patientStats.current.revenue,
-            patientStats.comparison.revenue
-          ),
-        },
-        dateRange: {
-          from: fromDate.toISOString().split("T")[0],
-          to: toDate.toISOString().split("T")[0],
-          comparisonPeriod: {
-            from: yesterdayStart.toISOString().split("T")[0],
-            to: yesterdayEnd.toISOString().split("T")[0],
-          },
-        },
-        branch,
+    // Calculate conversion rate
+    const conversionRate = salesStats.current.leads > 0
+      ? Math.round((salesStats.current.converted / salesStats.current.leads) * 100)
+      : 0;
+
+    // Prepare response
+    const response = {
+      dateRange: {
+        from: fromDate.toISOString(),
+        to: toDate.toISOString(),
+        fromIST: formatISTDate(fromDate),
+        toIST: formatISTDate(toDate),
       },
-    });
+      branch,
+      newLeads: {
+        count: salesStats.current.leads,
+        growth: calculateGrowth(
+          salesStats.current.leads,
+          salesStats.comparison.leads
+        ),
+      },
+      conversions: {
+        count: salesStats.current.converted,
+        growth: calculateGrowth(
+          salesStats.current.converted,
+          salesStats.comparison.converted
+        ),
+        rate: conversionRate
+      },
+      bookings: {
+        count: salesStats.current.booked,
+        growth: calculateGrowth(
+          salesStats.current.booked,
+          salesStats.comparison.booked
+        ),
+      },
+      revenue: {
+        total: revenueStats.current,
+        growth: calculateGrowth(revenueStats.current, revenueStats.comparison),
+      },
+      agentPerformance,
+      upcomingAppointments,
+    };
+
+    return NextResponse.json(response);
   } catch (error) {
-    console.error("Sales dashboard error:", error);
+    console.error("Sales Dashboard API error:", error);
     return NextResponse.json(
-      {
-        success: false,
-        error: "Internal server error",
-        details: error.message,
-      },
+      { error: "Internal server error", details: error.message },
       { status: 500 }
     );
   }

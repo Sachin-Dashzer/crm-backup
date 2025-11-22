@@ -2,31 +2,48 @@ import { NextResponse } from "next/server";
 import { withDB } from "@/lib/withDB";
 import Patient from "@/models/Patient";
 import Transactions from "@/models/Transactions";
+import { 
+  getISTStartOfDay, 
+  getISTEndOfDay, 
+  formatISTDate, 
+  logDateInfo 
+} from "@/lib/dateHelpers.js";
 
 const VALID_BRANCHES = ["All", "Delhi", "Mumbai", "Hyderabad"];
 
 const handler = async (req) => {
   try {
+    console.log('Reception Dashboard API called');
+    
     const data = await req.json();
     const { branch = "All", from, to } = data;
 
-    // ✅ Validate branch
+    console.log('Request data:', { branch, from, to });
+
+    // Validate branch
     if (!VALID_BRANCHES.includes(branch)) {
+      console.error('Invalid branch:', branch);
       return NextResponse.json(
         { error: "Invalid branch specified" },
         { status: 400 }
       );
     }
 
-    // ✅ Date range setup - matching sales dashboard
-    const today = new Date();
-    const fromDate = from ? new Date(from) : new Date(today);
-    fromDate.setHours(0, 0, 0, 0);
+    // Use IST timezone for date calculations
+    const fromDate = from ? getISTStartOfDay(from) : getISTStartOfDay();
+    const toDate = to ? getISTEndOfDay(to) : getISTEndOfDay();
 
-    const toDate = to ? new Date(to) : new Date(today);
-    toDate.setHours(23, 59, 59, 999);
+    // Debug logging
+    console.log('Date range:', {
+      from: fromDate.toISOString(),
+      to: toDate.toISOString(),
+      fromIST: formatISTDate(fromDate),
+      toIST: formatISTDate(toDate)
+    });
 
+    // Validate dates
     if (isNaN(fromDate.getTime()) || isNaN(toDate.getTime())) {
+      console.error('Invalid dates:', { fromDate, toDate });
       return NextResponse.json(
         { error: "Invalid date provided" },
         { status: 400 }
@@ -34,16 +51,16 @@ const handler = async (req) => {
     }
 
     if (fromDate > toDate) {
+      console.error('From date after to date:', { fromDate, toDate });
       return NextResponse.json(
         { error: "From date cannot be after to date" },
         { status: 400 }
       );
     }
 
-    // ✅ Calculate comparison period (same duration as selected range, but previous period)
-    const daysDifference =
-      Math.ceil((toDate - fromDate) / (1000 * 60 * 60 * 24)) + 1;
-
+    // Calculate comparison period (previous period for trends)
+    const daysDifference = Math.ceil((toDate - fromDate) / (1000 * 60 * 60 * 24)) + 1;
+    
     const comparisonEnd = new Date(fromDate);
     comparisonEnd.setDate(comparisonEnd.getDate() - 1);
     comparisonEnd.setHours(23, 59, 59, 999);
@@ -52,206 +69,336 @@ const handler = async (req) => {
     comparisonStart.setDate(comparisonStart.getDate() - (daysDifference - 1));
     comparisonStart.setHours(0, 0, 0, 0);
 
-    // ✅ Centralized filter objects
+    console.log('Comparison period:', {
+      comparisonStart: comparisonStart.toISOString(),
+      comparisonEnd: comparisonEnd.toISOString()
+    });
+
+    // Branch filter
     const branchFilter = branch === "All" ? {} : { "personal.branch": branch };
 
-    // ✅ Get current period stats
-    const getCurrentStats = async () => {
-      const [
-        todayAppointments,
-        todayVisits,
-        pendingAppointments,
-        totalPatients,
-        revenueData,
-        recentPatients,
-        upcomingAppointments,
-      ] = await Promise.all([
-        // Today's appointments
-        Patient.countDocuments({
-          ...branchFilter,
-          "personal.visitDate": {
-            $gte: fromDate,
-            $lte: toDate,
+    // Get patient statistics - FIXED: Handle empty string counsellor values
+    const getPatientStats = async () => {
+      try {
+        const result = await Patient.aggregate([
+          {
+            $match: {
+              ...branchFilter,
+              $or: [
+                { "personal.visitDate": { $gte: fromDate, $lte: toDate } },
+                { "personal.visitDate": { $gte: comparisonStart, $lte: comparisonEnd } }
+              ],
+            },
           },
-        }),
-
-        // Today's visits (patients who have been counselled)
-        Patient.countDocuments({
-          ...branchFilter,
-          "personal.visitDate": {
-            $gte: fromDate,
-            $lte: toDate,
+          {
+            $facet: {
+              // Current period
+              currentAppointments: [
+                {
+                  $match: {
+                    "personal.visitDate": { $gte: fromDate, $lte: toDate },
+                  },
+                },
+                { $count: "count" },
+              ],
+              currentVisited: [
+                {
+                  $match: {
+                    "personal.visitDate": { $gte: fromDate, $lte: toDate },
+                    "counselling.counsellor": { 
+                      $exists: true, 
+                      $ne: null, 
+                      $ne: "" 
+                    },
+                  },
+                },
+                { $count: "count" },
+              ],
+              currentPending: [
+                {
+                  $match: {
+                    "personal.visitDate": { $gte: fromDate, $lte: toDate },
+                    $or: [
+                      { "counselling.counsellor": { $exists: false } },
+                      { "counselling.counsellor": null },
+                      { "counselling.counsellor": "" }
+                    ]
+                  },
+                },
+                { $count: "count" },
+              ],
+              // Comparison period
+              comparisonAppointments: [
+                {
+                  $match: {
+                    "personal.visitDate": { $gte: comparisonStart, $lte: comparisonEnd },
+                  },
+                },
+                { $count: "count" },
+              ],
+              comparisonVisited: [
+                {
+                  $match: {
+                    "personal.visitDate": { $gte: comparisonStart, $lte: comparisonEnd },
+                    "counselling.counsellor": { 
+                      $exists: true, 
+                      $ne: null, 
+                      $ne: "" 
+                    },
+                  },
+                },
+                { $count: "count" },
+              ],
+            },
           },
-          "counselling.counsellor": { $exists: true, $ne: null },
-        }),
+        ]);
 
-        Patient.countDocuments({
-          ...branchFilter,
-          "personal.visitDate": { $gte: fromDate, $lte: toDate },
-          "counselling.counsellor": { $in: [null, undefined] },
-        }),
-        // Total patients (within date range)
-        Patient.countDocuments({
-          ...branchFilter,
-          "personal.visitDate": {
-            $gte: fromDate,
-            $lte: toDate,
-          },
-        }),
+        console.log('Patient stats result:', JSON.stringify(result, null, 2));
+        return result[0] || {};
+      } catch (error) {
+        console.error('Error in getPatientStats:', error);
+        throw error;
+      }
+    };
 
-        // Today's revenue
-        Transactions.aggregate([
+    // Get revenue statistics
+    const getRevenueStats = async () => {
+      try {
+        const result = await Transactions.aggregate([
           {
             $match: {
               costType: "Revenue",
-              date: {
-                $gte: fromDate,
-                $lte: toDate,
-              },
+              ...(branch === "All" ? {} : { branch }),
+              $or: [
+                { date: { $gte: fromDate, $lte: toDate } },
+                { date: { $gte: comparisonStart, $lte: comparisonEnd } },
+              ],
             },
           },
           {
-            $group: {
-              _id: null,
-              total: { $sum: "$amount" },
+            $facet: {
+              current: [
+                { $match: { date: { $gte: fromDate, $lte: toDate } } },
+                { $group: { _id: null, total: { $sum: "$amount" } } },
+              ],
+              comparison: [
+                { $match: { date: { $gte: comparisonStart, $lte: comparisonEnd } } },
+                { $group: { _id: null, total: { $sum: "$amount" } } },
+              ],
             },
           },
-        ]),
-
-        // Recent patients (last 5 within date range)
-        Patient.find({
-          ...branchFilter,
-          "personal.visitDate": {
-            $gte: fromDate,
-            $lte: toDate,
-          },
-        })
-          .sort({ createdAt: -1 })
-          .limit(5)
-          .select("personal ops"),
-
-        // Upcoming appointments (next 5 days from selected range)
-        Patient.find({
-          ...branchFilter,
-          "personal.visitDate": {
-            $gte: fromDate,
-            $lte: new Date(toDate.getTime() + 5 * 24 * 60 * 60 * 1000), // +5 days
-          },
-          "ops.status": "NOT_VISITED",
-          "ops.status": "NEW",
-        })
-          .sort({ "personal.visitDate": 1 })
-          .limit(5)
-          .select("personal"),
-      ]);
-
-      return {
-        todayAppointments,
-        todayVisits,
-        pendingAppointments,
-        totalPatients,
-        todayRevenue: revenueData[0]?.total || 0,
-        recentPatients,
-        upcomingAppointments,
-      };
-    };
-
-    // ✅ Get comparison period stats
-    const getComparisonStats = async () => {
-      const [comparisonAppointments, comparisonVisits, comparisonRevenueData] =
-        await Promise.all([
-          Patient.countDocuments({
-            ...branchFilter,
-            "personal.visitDate": {
-              $gte: comparisonStart,
-              $lte: comparisonEnd,
-            },
-          }),
-
-          Patient.countDocuments({
-            ...branchFilter,
-            "personal.visitDate": {
-              $gte: comparisonStart,
-              $lte: comparisonEnd,
-            },
-            "counselling.counsellor": { $exists: true, $ne: null },
-          }),
-
-          Transactions.aggregate([
-            {
-              $match: {
-                costType: "Revenue",
-                date: {
-                  $gte: comparisonStart,
-                  $lte: comparisonEnd,
-                },
-              },
-            },
-            {
-              $group: {
-                _id: null,
-                total: { $sum: "$amount" },
-              },
-            },
-          ]),
         ]);
 
-      return {
-        appointments: comparisonAppointments,
-        visits: comparisonVisits,
-        revenue: comparisonRevenueData[0]?.total || 0,
-      };
+        console.log('Revenue stats result:', JSON.stringify(result, null, 2));
+        return result[0] || {};
+      } catch (error) {
+        console.error('Error in getRevenueStats:', error);
+        throw error;
+      }
     };
 
-    // ✅ Calculate growth percentage
-    const calculateGrowth = (current, comparison) => {
-      if (comparison === 0) return current > 0 ? 100 : 0;
-      return Number((((current - comparison) / comparison) * 100).toFixed(2));
+    // Get recent patients - FIXED: Handle ObjectId casting issues
+    const getRecentPatients = async () => {
+      try {
+        // First, let's check what counsellor values actually exist
+        const counsellorStats = await Patient.aggregate([
+          {
+            $match: {
+              ...branchFilter,
+              "personal.visitDate": { $gte: fromDate, $lte: toDate }
+            }
+          },
+          {
+            $project: {
+              counsellorType: { $type: "$counselling.counsellor" },
+              counsellorValue: "$counselling.counsellor",
+              hasCounsellor: {
+                $and: [
+                  { $ne: ["$counselling.counsellor", null] },
+                  { $ne: ["$counselling.counsellor", ""] },
+                  { $ne: ["$counselling.counsellor", undefined] }
+                ]
+              }
+            }
+          },
+          {
+            $group: {
+              _id: "$counsellorType",
+              count: { $sum: 1 },
+              sampleValues: { $push: "$counsellorValue" }
+            }
+          }
+        ]);
+
+        console.log('Counsellor field analysis:', JSON.stringify(counsellorStats, null, 2));
+
+        // Use a safer query that avoids ObjectId casting issues
+        const patients = await Patient.aggregate([
+          {
+            $match: {
+              ...branchFilter,
+              "personal.visitDate": { $gte: fromDate, $lte: toDate },
+              $expr: {
+                $and: [
+                  { $ne: ["$counselling.counsellor", null] },
+                  { $ne: ["$counselling.counsellor", ""] },
+                  { $ne: ["$counselling.counsellor", undefined] }
+                ]
+              }
+            }
+          },
+          {
+            $addFields: {
+              counsellorString: { $toString: "$counselling.counsellor" }
+            }
+          },
+          {
+            $match: {
+              counsellorString: { $ne: "" }
+            }
+          },
+          {
+            $project: {
+              "personal.name": 1,
+              "personal.phone": 1,
+              "personal.branch": 1,
+              "ops.status": 1,
+              "counselling.counsellor": 1,
+              "personal.visitDate": 1
+            }
+          },
+          {
+            $sort: { "personal.visitDate": -1 }
+          },
+          {
+            $limit: 5
+          }
+        ]);
+
+        console.log('Recent patients count:', patients.length);
+        return patients;
+      } catch (error) {
+        console.error('Error in getRecentPatients:', error);
+        // Return empty array instead of failing completely
+        return [];
+      }
     };
 
-    // ✅ Execute all queries in parallel
-    const [currentStats, comparisonStats] = await Promise.all([
-      getCurrentStats(),
-      getComparisonStats(),
+    // Get upcoming appointments - FIXED: Handle status field properly
+    const getUpcomingAppointments = async () => {
+      try {
+        const now = new Date();
+        const endOfDay = getISTEndOfDay();
+        
+        // Use aggregation to handle potential missing status fields
+        const appointments = await Patient.aggregate([
+          {
+            $match: {
+              ...branchFilter,
+              "personal.visitDate": { $gt: now, $lte: endOfDay }
+            }
+          },
+          {
+            $addFields: {
+              status: {
+                $ifNull: ["$ops.status", "NEW"]
+              }
+            }
+          },
+          {
+            $match: {
+              status: { $in: ["NEW", "NOT_VISITED"] }
+            }
+          },
+          {
+            $project: {
+              "personal.name": 1,
+              "personal.visitDate": 1,
+              "personal.branch": 1,
+              "ops.status": 1
+            }
+          },
+          {
+            $sort: { "personal.visitDate": 1 }
+          },
+          {
+            $limit: 5
+          }
+        ]);
+
+        console.log('Upcoming appointments count:', appointments.length);
+        return appointments;
+      } catch (error) {
+        console.error('Error in getUpcomingAppointments:', error);
+        // Return empty array instead of failing completely
+        return [];
+      }
+    };
+
+    // Execute all queries in parallel with error handling
+    const [patientStats, revenueStats, recentPatients, upcomingAppointments] = await Promise.allSettled([
+      getPatientStats(),
+      getRevenueStats(),
+      getRecentPatients(),
+      getUpcomingAppointments()
     ]);
 
-    // ✅ Prepare final response
-    return NextResponse.json({
+    // Handle promise results
+    const patientStatsResult = patientStats.status === 'fulfilled' ? patientStats.value : {};
+    const revenueStatsResult = revenueStats.status === 'fulfilled' ? revenueStats.value : {};
+    const recentPatientsResult = recentPatients.status === 'fulfilled' ? recentPatients.value : [];
+    const upcomingAppointmentsResult = upcomingAppointments.status === 'fulfilled' ? upcomingAppointments.value : [];
+
+    // Process patient stats with safe defaults
+    const currentAppointments = patientStatsResult.currentAppointments?.[0]?.count || 0;
+    const currentVisited = patientStatsResult.currentVisited?.[0]?.count || 0;
+    const currentPending = patientStatsResult.currentPending?.[0]?.count || 0;
+    const comparisonAppointments = patientStatsResult.comparisonAppointments?.[0]?.count || 0;
+    const comparisonVisited = patientStatsResult.comparisonVisited?.[0]?.count || 0;
+    const currentRevenue = revenueStatsResult.current?.[0]?.total || 0;
+    const comparisonRevenue = revenueStatsResult.comparison?.[0]?.total || 0;
+
+    // Calculate growth percentages
+    const calculateGrowth = (current, comparison) => {
+      if (comparison === 0 && current > 0) return 100;
+      if (comparison === 0 && current === 0) return 0;
+      return Math.round(((current - comparison) / comparison) * 100);
+    };
+
+    const appointmentsGrowth = calculateGrowth(currentAppointments, comparisonAppointments);
+    const visitsGrowth = calculateGrowth(currentVisited, comparisonVisited);
+    const revenueGrowth = calculateGrowth(currentRevenue, comparisonRevenue);
+
+    // Prepare response matching the frontend expected structure
+    const response = {
       success: true,
       data: {
-        ...currentStats,
+        todayAppointments: currentAppointments,
+        todayVisits: currentVisited,
+        pendingAppointments: currentPending,
+        totalPatients: currentAppointments, // Using appointments as total patients for now
+        todayRevenue: currentRevenue,
+        recentPatients: recentPatientsResult,
+        upcomingAppointments: upcomingAppointmentsResult,
         trends: {
-          appointments: calculateGrowth(
-            currentStats.todayAppointments,
-            comparisonStats.appointments
-          ),
-          visits: calculateGrowth(
-            currentStats.todayVisits,
-            comparisonStats.visits
-          ),
-          revenue: calculateGrowth(
-            currentStats.todayRevenue,
-            comparisonStats.revenue
-          ),
+          appointments: appointmentsGrowth,
+          visits: visitsGrowth,
+          revenue: revenueGrowth,
         },
-        dateRange: {
-          from: fromDate.toISOString().split("T")[0],
-          to: toDate.toISOString().split("T")[0],
-          comparisonPeriod: {
-            from: comparisonStart.toISOString().split("T")[0],
-            to: comparisonEnd.toISOString().split("T")[0],
-          },
-        },
-        branch,
       },
-    });
+    };
+
+    console.log('API response prepared successfully');
+    return NextResponse.json(response);
+
   } catch (error) {
-    console.error("Reception dashboard error:", error);
+    console.error("Reception Dashboard API error:", error);
     return NextResponse.json(
-      {
+      { 
         success: false,
-        error: "Internal server error",
+        error: "Internal server error", 
         details: error.message,
+        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
       },
       { status: 500 }
     );
