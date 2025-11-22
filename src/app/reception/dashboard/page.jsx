@@ -20,21 +20,21 @@ import ReceptionSidebar from "@/components/ReceptionSidebar";
 import { useToast } from "@/components/Toast";
 
 // Topbar Component with Filters
-const Topbar = ({ 
-  setSidebarOpen, 
-  timeRange, 
-  setTimeRange, 
-  branch, 
-  setBranch, 
-  customDates, 
-  setCustomDates 
+const Topbar = ({
+  setSidebarOpen,
+  timeRange,
+  setTimeRange,
+  branch,
+  setBranch,
+  customDates,
+  setCustomDates,
 }) => {
   const [showDatePicker, setShowDatePicker] = useState(false);
 
   const handleCustomDateChange = (field, value) => {
-    setCustomDates(prev => ({
+    setCustomDates((prev) => ({
       ...prev,
-      [field]: value
+      [field]: value,
     }));
   };
 
@@ -59,8 +59,12 @@ const Topbar = ({
             <div className="flex items-center gap-3">
               <Building className="h-6 w-6 text-indigo-600" />
               <div>
-                <h2 className="text-lg font-semibold text-gray-900">Reception Overview</h2>
-                <p className="text-sm text-gray-600">Patient management and appointments</p>
+                <h2 className="text-lg font-semibold text-gray-900">
+                  Reception Overview
+                </h2>
+                <p className="text-sm text-gray-600">
+                  Patient management and appointments
+                </p>
               </div>
             </div>
           </div>
@@ -121,7 +125,9 @@ const Topbar = ({
                       <input
                         type="date"
                         value={customDates.from}
-                        onChange={(e) => handleCustomDateChange("from", e.target.value)}
+                        onChange={(e) =>
+                          handleCustomDateChange("from", e.target.value)
+                        }
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
                       />
                     </div>
@@ -132,7 +138,9 @@ const Topbar = ({
                       <input
                         type="date"
                         value={customDates.to}
-                        onChange={(e) => handleCustomDateChange("to", e.target.value)}
+                        onChange={(e) =>
+                          handleCustomDateChange("to", e.target.value)
+                        }
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
                       />
                     </div>
@@ -165,12 +173,12 @@ export default function ReceptionDashboard() {
   const router = useRouter();
   const toast = useToast();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  
+
   // Filter states
   const [branch, setBranch] = useState("All");
   const [timeRange, setTimeRange] = useState("Today");
   const [customDates, setCustomDates] = useState({ from: "", to: "" });
-  
+
   const [loading, setLoading] = useState(true);
   const [dashboardData, setDashboardData] = useState({
     todayAppointments: 0,
@@ -183,8 +191,8 @@ export default function ReceptionDashboard() {
     trends: {
       appointments: 0,
       visits: 0,
-      revenue: 0
-    }
+      revenue: 0,
+    },
   });
 
   // Date helpers (same as sales dashboard)
@@ -211,24 +219,35 @@ export default function ReceptionDashboard() {
   };
 
   const buildPayload = () => {
-    let fromDate = getToday();
+    let fromDate = new Date();
+    fromDate.setHours(0, 0, 0, 0); // Start of today
+
     let toDate = new Date();
-    toDate.setHours(23, 59, 59, 999);
+    toDate.setHours(23, 59, 59, 999); // End of today
 
     if (timeRange === "Yesterday") {
-      fromDate = getYesterday();
-      toDate = getYesterday();
+      fromDate = new Date();
+      fromDate.setDate(fromDate.getDate() - 1);
+      fromDate.setHours(0, 0, 0, 0);
+
+      toDate = new Date(fromDate);
       toDate.setHours(23, 59, 59, 999);
     } else if (timeRange === "Last 7 Days") {
       const { from, to } = getWeekRange();
-      fromDate = from;
-      toDate = to;
+
+      fromDate = new Date(from);
+      fromDate.setHours(0, 0, 0, 0);
+
+      toDate = new Date(to);
+      toDate.setHours(23, 59, 59, 999);
     } else if (timeRange === "Custom" && customDates.from) {
       fromDate = new Date(customDates.from);
       fromDate.setHours(0, 0, 0, 0);
+
       toDate = customDates.to
         ? new Date(customDates.to)
         : new Date(customDates.from);
+
       toDate.setHours(23, 59, 59, 999);
     }
 
@@ -248,11 +267,11 @@ export default function ReceptionDashboard() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      
+
       if (!res.ok) throw new Error("Failed to fetch dashboard data");
-      
+
       const responseData = await res.json();
-      
+
       if (responseData.success) {
         setDashboardData(responseData.data);
       } else {
@@ -273,8 +292,8 @@ export default function ReceptionDashboard() {
         trends: {
           appointments: 0,
           visits: 0,
-          revenue: 0
-        }
+          revenue: 0,
+        },
       });
     } finally {
       setLoading(false);
@@ -297,7 +316,8 @@ export default function ReceptionDashboard() {
   };
 
   const getTrendColor = (trend) => {
-    if (trend === undefined || trend === null || trend === 0) return "text-gray-600";
+    if (trend === undefined || trend === null || trend === 0)
+      return "text-gray-600";
     return trend >= 0 ? "text-green-600" : "text-red-600";
   };
 
@@ -455,7 +475,9 @@ export default function ReceptionDashboard() {
 
           {/* Quick Actions */}
           <div className="mb-8">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">Quick Actions</h2>
+            <h2 className="text-xl font-bold text-gray-900 mb-4">
+              Quick Actions
+            </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <QuickAction
                 title="Add New Patient"
