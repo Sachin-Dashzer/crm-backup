@@ -18,19 +18,9 @@ const handler = async (req) => {
       );
     }
 
-    const today = new Date();
-
-    // ✅ FIX: Set fromDate to start of today by default
-    let fromDate = from ? new Date(from) : new Date(today);
-    if (!from) {
-      fromDate.setHours(0, 0, 0, 0); // Start of today
-    } else {
-      fromDate.setHours(0, 0, 0, 0); // Start of the selected date
-    }
-
-    // ✅ Set toDate to end of today by default
-    const toDate = to ? new Date(to) : new Date(today);
-    toDate.setHours(23, 59, 59, 999); // End of the selected date
+    // ✅ Parse dates from ISO strings (already include proper time boundaries)
+    const fromDate = new Date(from);
+    const toDate = new Date(to);
 
     if (isNaN(fromDate.getTime()) || isNaN(toDate.getTime())) {
       return NextResponse.json(
@@ -47,8 +37,7 @@ const handler = async (req) => {
     }
 
     // ✅ Calculate the number of days in the selected range
-    const daysDifference =
-      Math.ceil((toDate - fromDate) / (1000 * 60 * 60 * 24)) + 1;
+    const daysDifference = Math.ceil((toDate - fromDate) / (1000 * 60 * 60 * 24)) + 1;
 
     // ✅ Calculate comparison period (previous period of same duration)
     const yesterdayEnd = new Date(fromDate);
@@ -73,8 +62,7 @@ const handler = async (req) => {
 
     // ✅ Centralized filter objects
     const branchFilter = branch === "All" ? {} : { "personal.branch": branch };
-    const branchFilterPatient =
-      branch === "All" ? {} : { "patientData.personal.branch": branch };
+    const branchFilterPatient = branch === "All" ? {} : { "patientData.personal.branch": branch };
 
     // ✅ OPTIMIZED: Single aggregation for all patient counts (current period & comparison period)
     const getPatientStats = async () => {
@@ -352,11 +340,11 @@ const handler = async (req) => {
     // ✅ Prepare final response
     return NextResponse.json({
       dateRange: {
-        from: fromDate.toISOString().split("T")[0],
-        to: toDate.toISOString().split("T")[0],
+        from: fromDate.toISOString(),
+        to: toDate.toISOString(),
         comparisonPeriod: {
-          from: yesterdayStart.toISOString().split("T")[0],
-          to: yesterdayEnd.toISOString().split("T")[0],
+          from: yesterdayStart.toISOString(),
+          to: yesterdayEnd.toISOString(),
         },
       },
       branch,
