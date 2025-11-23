@@ -27,46 +27,30 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [dashboardData, setDashboardData] = useState(null);
 
-  // --- Date helpers ---
-  const getToday = () => {
-    const d = new Date();
-    d.setHours(0, 0, 0, 0);
-    return d;
-  };
-
-  const getYesterday = () => {
-    const d = new Date();
-    d.setDate(d.getDate() - 1);
-    d.setHours(0, 0, 0, 0);
-    return d;
-  };
-
-  const getWeekRange = () => {
-    const today = new Date();
-    today.setHours(23, 59, 59, 999);
-    const last7 = new Date();
-    last7.setDate(today.getDate() - 6);
-    last7.setHours(0, 0, 0, 0);
-    return { from: last7, to: today };
-  };
-
-  // --- Build payload for API ---
+  // Fixed buildPayload function for consistent timezone handling
   const buildPayload = () => {
-    let fromDate = getToday();
-    let toDate = getToday();
+    // Always use ISO strings and let the server handle timezone conversion
+    let fromDate = new Date();
+    let toDate = new Date();
 
-    if (dateRange === "Yesterday") {
-      fromDate = getYesterday();
-      toDate = getYesterday();
+    if (dateRange === "Today") {
+      fromDate.setHours(0, 0, 0, 0);
+      toDate.setHours(23, 59, 59, 999);
+    } else if (dateRange === "Yesterday") {
+      fromDate.setDate(fromDate.getDate() - 1);
+      fromDate.setHours(0, 0, 0, 0);
+      toDate = new Date(fromDate);
+      toDate.setHours(23, 59, 59, 999);
     } else if (dateRange === "Last 7 Days") {
-      const { from, to } = getWeekRange();
-      fromDate = from;
-      toDate = to;
+      toDate.setHours(23, 59, 59, 999);
+      fromDate = new Date(toDate);
+      fromDate.setDate(fromDate.getDate() - 6);
+      fromDate.setHours(0, 0, 0, 0);
     } else if (dateRange === "Custom" && customDates.from) {
       fromDate = new Date(customDates.from);
-      toDate = customDates.to
-        ? new Date(customDates.to)
-        : new Date(customDates.from);
+      fromDate.setHours(0, 0, 0, 0);
+      toDate = customDates.to ? new Date(customDates.to) : new Date(customDates.from);
+      toDate.setHours(23, 59, 59, 999);
     }
 
     return {
@@ -105,6 +89,7 @@ export default function AdminDashboard() {
     d.setUTCDate(d.getUTCDate() + days);
     return d.toISOString();
   };
+
   const handleMetricClick = (metricTitle) => {
     if (!dashboardData) return;
 
@@ -163,35 +148,35 @@ export default function AdminDashboard() {
     {
       title: "Appointments",
       value: dashboardData?.appointment?.count || 0,
-      trend: `${dashboardData?.appointment?.growth > 0 ? "↑" : "↓"} ${dashboardData?.appointment?.growth || 0}% from yesrterday`,
+      trend: `${dashboardData?.appointment?.growth > 0 ? "↑" : "↓"} ${dashboardData?.appointment?.growth || 0}% from yesterday`,
       icon: Calendar,
       color: "from-indigo-500 to-indigo-600",
     },
     {
       title: "Patients Visited",
       value: dashboardData?.visitPatient?.count || 0,
-      trend: `${dashboardData?.visitPatient?.growth > 0 ? "↑" : "↓"} ${dashboardData?.visitPatient?.growth || 0}% from yesrterday`,
+      trend: `${dashboardData?.visitPatient?.growth > 0 ? "↑" : "↓"} ${dashboardData?.visitPatient?.growth || 0}% from yesterday`,
       icon: Activity,
       color: "from-green-500 to-green-600",
     },
     {
       title: "Surgery Ready",
       value: dashboardData?.readyforSurgery?.count || 0,
-      trend: `${dashboardData?.readyforSurgery?.growth > 0 ? "↑" : "↓"} ${dashboardData?.readyforSurgery?.growth || 0}% from yesrterday`,
+      trend: `${dashboardData?.readyforSurgery?.growth > 0 ? "↑" : "↓"} ${dashboardData?.readyforSurgery?.growth || 0}% from yesterday`,
       icon: CheckCircle,
       color: "from-amber-500 to-amber-600",
     },
     {
       title: "Total Surgeries",
       value: dashboardData?.surgeryPatient?.count || 0,
-      trend: `${dashboardData?.surgeryPatient?.growth > 0 ? "↑" : "↓"} ${dashboardData?.surgeryPatient?.growth || 0}% from yesrterday`,
+      trend: `${dashboardData?.surgeryPatient?.growth > 0 ? "↑" : "↓"} ${dashboardData?.surgeryPatient?.growth || 0}% from yesterday`,
       icon: Stethoscope,
       color: "from-rose-500 to-rose-600",
     },
     {
       title: "Amount Received",
       value: formatCurrency(dashboardData?.amountReceived?.total || 0),
-      trend: `${dashboardData?.amountReceived?.growth > 0 ? "↑" : "↓"} ${formatCurrency(dashboardData?.amountReceived?.growth || 0)}% from yesrterday`,
+      trend: `${dashboardData?.amountReceived?.growth > 0 ? "↑" : "↓"} ${formatCurrency(dashboardData?.amountReceived?.growth || 0)}% from yesterday`,
       icon: Wallet,
       color: "from-purple-500 to-purple-600",
       isCurrency: true,
