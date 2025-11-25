@@ -5,6 +5,11 @@ export function middleware(req) {
   const userRole = req.cookies.get("userRole")?.value;
   const { pathname } = req.nextUrl;
 
+  if (!isLoggedIn) {
+    isLoggedIn = req.headers.get("x-is-loggedin") === "true";
+    userRole = req.headers.get("x-user-role");
+  }
+
   // Public paths that don't require authentication
   const publicPaths = ["/login", "/"];
 
@@ -33,13 +38,7 @@ export function middleware(req) {
 
   // Define allowed paths for each role
   const roleAllowedPaths = {
-    admin: [
-      "/admin",
-      "/sales",
-      "/counsellor", 
-      "/reception",
-      "/surgery"
-    ],
+    admin: ["/admin", "/sales", "/counsellor", "/reception", "/surgery"],
     sales: ["/sales"],
     counsellor: ["/counsellor"],
     reception: ["/reception"],
@@ -48,7 +47,7 @@ export function middleware(req) {
 
   // Check if user has access to the requested path
   const allowedPaths = roleAllowedPaths[userRole] || [];
-  const hasAccess = allowedPaths.some(path => pathname.startsWith(path));
+  const hasAccess = allowedPaths.some((path) => pathname.startsWith(path));
 
   if (!hasAccess) {
     // User doesn't have access to this path, redirect to their dashboard
@@ -59,10 +58,14 @@ export function middleware(req) {
       reception: "/reception/dashboard",
       surgery: "/surgery/dashboard",
     };
-    
-    console.warn(`Access denied: User with role '${userRole}' attempted to access '${pathname}'`);
-    
-    return NextResponse.redirect(new URL(roleRoutes[userRole] || "/login", req.url));
+
+    console.warn(
+      `Access denied: User with role '${userRole}' attempted to access '${pathname}'`
+    );
+
+    return NextResponse.redirect(
+      new URL(roleRoutes[userRole] || "/login", req.url)
+    );
   }
 
   return NextResponse.next();
