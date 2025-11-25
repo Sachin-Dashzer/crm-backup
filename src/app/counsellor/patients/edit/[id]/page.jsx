@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/Toast";
 import { useParams } from "next/navigation";
@@ -24,8 +24,13 @@ const BenefitsManager = ({ benefits, onChange, onAdd, onRemove }) => {
     "Post-op Care Package",
   ];
 
+  const initialized = useRef(false);
+
   // Auto-select all predefined benefits on component mount
   useEffect(() => {
+    if (initialized.current) return;
+    initialized.current = true;
+
     // Check if any predefined benefits are missing from current benefits
     const missingBenefits = predefinedBenefits.filter(
       (benefit) => !benefits.includes(benefit)

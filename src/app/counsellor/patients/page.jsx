@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Filter,
   X,
@@ -10,6 +11,7 @@ import {
   ChevronLeft,
   Search,
   Calendar,
+  LogOut,
 } from "lucide-react";
 
 /* -------------------- Constants -------------------- */
@@ -63,6 +65,7 @@ function PatientDashboardContent() {
 
   /* ------------ State ------------ */
   const [patients, setPatients] = useState([]);
+  const router = useRouter();
   const [filters, setFilters] = useState(() =>
     getInitialFiltersFromURL(searchParams)
   );
@@ -319,6 +322,15 @@ function PatientDashboardContent() {
     return chips;
   }, [filters]);
 
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+      router.push("/login");
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
+  };
+
   const removeChip = (k) => setFilters((f) => ({ ...f, [k]: "" }));
 
   /* ------------ Render ------------ */
@@ -340,9 +352,10 @@ function PatientDashboardContent() {
       <main className="flex-1 flex flex-col px-24">
         {/* Header */}
         <header className=" bg-white sticky top-0 z-10">
-
           <div className="py-3 mt-4">
-            <h1 className="text-3xl underline pl-6 font-semibold">All Patients Data</h1>
+            <h1 className="text-3xl underline pl-6 font-semibold">
+              All Patients Data
+            </h1>
           </div>
 
           <div className="px-6 py-4 flex items-center justify-between">
@@ -373,7 +386,14 @@ function PatientDashboardContent() {
                   </span>
                 )}
               </button>
-              
+
+              <button
+                onClick={handleLogout}
+                className="w-full px-4 py-2.5 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors flex items-center justify-center gap-2 font-medium"
+              >
+                <LogOut className="w-4 h-4" />
+                Logout
+              </button>
             </div>
           </div>
 
@@ -478,14 +498,14 @@ function PatientDashboardContent() {
                         {/* Actions column */}
                         <td className="px-6 py-4">
                           <div className=" space-x-2">
-                         
                             <Link
                               href={`/counsellor/patients/edit/${p._id}`}
                               className="p-2 rounded-lg flex hover:bg-blue-50 text-blue-600 transition-colors"
                               title="Edit patient"
                               target="_blank"
                             >
-                               Update &nbsp;<Edit className="w-6 h-6" />
+                              Update &nbsp;
+                              <Edit className="w-6 h-6" />
                             </Link>
                           </div>
                         </td>
