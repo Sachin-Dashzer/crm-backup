@@ -16,76 +16,131 @@ const StepHeader = ({ icon: Icon, title, description, color }) => (
   </div>
 );
 
-const MedicineManager = ({ medicines, onChange, onAdd, onRemove }) => (
-  <div className="md:col-span-2">
-    <label className="block text-sm font-semibold text-gray-700 mb-3">
-      Medicines
-    </label>
-    {medicines.map((medicine, index) => (
-      <div key={index} className="flex items-center space-x-3 mb-3">
-        <input
-          type="text"
-          className="flex-1 px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 shadow-sm"
-          value={medicine}
-          onChange={(e) => onChange(e.target.value, index)}
-          placeholder="Medicine name"
-        />
-        <button
-          type="button"
-          className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors duration-200"
-          onClick={() => onRemove(index)}
-        >
-          <X size={16} />
-        </button>
-      </div>
-    ))}
-    <button
-      type="button"
-      className="px-6 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors duration-200 font-medium"
-      onClick={onAdd}
-    >
-      + Add Medicine
-    </button>
-  </div>
-);
+const BenefitsManager = ({ benefits, onChange, onAdd, onRemove }) => {
+  const predefinedBenefits = [
+    "5 Free PRP Sessions",
+    "Lifetime Warranty",
+    "5 Days Medicines Included",
+    "Post-op Care Package",
+  ];
 
-const BenefitsManager = ({ benefits, onChange, onAdd, onRemove }) => (
-  <div className="md:col-span-2">
-    <label className="block text-sm font-semibold text-gray-700 mb-3">
-      Additional Benefits
-    </label>
-    {benefits.map((benefit, index) => (
-      <div key={index} className="flex items-center space-x-3 mb-3">
-        <input
-          type="text"
-          className="flex-1 px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 shadow-sm"
-          value={benefit}
-          onChange={(e) => onChange(e.target.value, index)}
-          placeholder="Benefit description"
-        />
-        <button
-          type="button"
-          className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors duration-200"
-          onClick={() => onRemove(index)}
-        >
-          <X size={16} />
-        </button>
+  // Auto-select all predefined benefits on component mount
+  useEffect(() => {
+    // Check if any predefined benefits are missing from current benefits
+    const missingBenefits = predefinedBenefits.filter(
+      (benefit) => !benefits.includes(benefit)
+    );
+
+    // Add all missing predefined benefits
+    missingBenefits.forEach((benefit) => {
+      onAdd(benefit);
+    });
+  }, []); // Empty dependency array to run only on mount
+
+  const handleBenefitToggle = (benefit) => {
+    const currentBenefits = [...benefits];
+    const benefitIndex = currentBenefits.indexOf(benefit);
+
+    if (benefitIndex > -1) {
+      onRemove(benefitIndex);
+    } else {
+      onAdd(benefit);
+    }
+  };
+
+  const handleCustomBenefitAdd = (customBenefit) => {
+    if (customBenefit.trim() && !benefits.includes(customBenefit.trim())) {
+      onAdd(customBenefit.trim());
+    }
+  };
+
+  return (
+    <div className="md:col-span-2">
+      <label className="block text-md underline font-semibold text-gray-700 mb-4">
+        Additional Benefits *
+      </label>
+
+      {/* Predefined Benefits as Radio-style Checkboxes */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
+        {predefinedBenefits.map((benefit) => (
+          <label
+            key={benefit}
+            className="flex items-center space-x-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors duration-200"
+          >
+            <input
+              type="checkbox"
+              checked={benefits.includes(benefit)}
+              onChange={() => handleBenefitToggle(benefit)}
+              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+            />
+            <span className="text-sm font-medium text-gray-700">{benefit}</span>
+          </label>
+        ))}
       </div>
-    ))}
-    <button
-      type="button"
-      className="px-6 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors duration-200 font-medium"
-      onClick={onAdd}
-    >
-      + Add Benefit
-    </button>
-  </div>
-);
+
+      {/* Custom Benefits Input */}
+      <div className="mb-4">
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Add Custom Benefit
+        </label>
+        <div className="flex space-x-3">
+          <input
+            type="text"
+            className="flex-1 px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 shadow-sm"
+            placeholder="Enter custom benefit"
+            onKeyPress={(e) => {
+              if (e.key === "Enter") {
+                handleCustomBenefitAdd(e.target.value);
+                e.target.value = "";
+              }
+            }}
+          />
+          <button
+            type="button"
+            className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors duration-200 font-medium"
+            onClick={(e) => {
+              const input = e.target.previousElementSibling;
+              handleCustomBenefitAdd(input.value);
+              input.value = "";
+            }}
+          >
+            Add
+          </button>
+        </div>
+      </div>
+
+      {/* Selected Benefits Display */}
+      {benefits.length > 0 && (
+        <div className="mt-4">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Selected Benefits ({benefits.length})
+          </label>
+          <div className="flex flex-wrap gap-2">
+            {benefits.map((benefit, index) => (
+              <div
+                key={index}
+                className="flex items-center space-x-2 bg-blue-100 text-blue-800 px-3 py-2 rounded-lg"
+              >
+                <span className="text-sm font-medium">{benefit}</span>
+                <button
+                  type="button"
+                  className="text-blue-600 hover:text-blue-800 transition-colors duration-200"
+                  onClick={() => onRemove(index)}
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 export default function PatientEditDetails() {
   const [step, setStep] = useState(1);
   const [isUpdating, setIsUpdating] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [updateStatus, setUpdateStatus] = useState(null);
   const [employees, setEmployees] = useState({
     Agent: [],
@@ -257,12 +312,12 @@ export default function PatientEditDetails() {
     }));
   };
 
-  const addArrayItem = (section, field) => {
+  const addArrayItem = (section, field, value = "") => {
     setFormData((prev) => ({
       ...prev,
       [section]: {
         ...prev[section],
-        [field]: [...prev[section][field], ""],
+        [field]: [...prev[section][field], value],
       },
     }));
   };
@@ -546,17 +601,6 @@ export default function PatientEditDetails() {
                     onChange={createChangeHandler("personal", "visitDate")}
                   />
 
-                  {/* <InputField
-                    label="Reference Source (Agent)"
-                    type="select"
-                    value={formData.personal.reference}
-                    onChange={createChangeHandler("personal", "reference")}
-                    options={employees.Agent.map((emp) => ({
-                      value: emp._id,
-                      label: emp.name,
-                    }))}
-                  /> */}
-
                   <InputField
                     label="Package Quoted (₹)"
                     type="number"
@@ -664,48 +708,235 @@ export default function PatientEditDetails() {
                     placeholder="Number of grafts"
                   />
 
-                  <InputField
-                    label="Hair Loss Type"
-                    type="text"
-                    value={formData.counselling.hairlossType}
-                    onChange={createChangeHandler(
-                      "counselling",
-                      "hairlossType"
-                    )}
-                    placeholder="Type of hair loss"
+                  {/* Hair Loss Type - Radio Buttons */}
+                  <div className="space-y-3 my-3">
+                    <label className="block mb-4 text-md underline font-bold text-gray-700">
+                      Hair Loss Type *
+                    </label>
+                    <div className="space-y-2 flex flex-wrap space-x-7">
+                      {[
+                        {
+                          value: "male_pattern",
+                          label: "Male Pattern Baldness",
+                        },
+                        {
+                          value: "female_pattern",
+                          label: "Female Pattern Baldness",
+                        },
+                        {
+                          value: "receding_hairline",
+                          label: "Receding Hairline",
+                        },
+                        { value: "crown_thinning", label: "Crown Thinning" },
+                        {
+                          value: "diffuse_thinning",
+                          label: "Diffuse Thinning",
+                        },
+                        { value: "frontal_loss", label: "Frontal Hair Loss" },
+                        {
+                          value: "traction_alopecia",
+                          label: "Traction Alopecia",
+                        },
+                        { value: "other", label: "Other" },
+                      ].map((option) => (
+                        <label
+                          key={option.value}
+                          className="flex items-center align-middle space-x-1"
+                        >
+                          <input
+                            type="radio"
+                            name="hairlossType"
+                            value={option.value}
+                            checked={
+                              formData.counselling.hairlossType === option.value
+                            }
+                            onChange={createChangeHandler(
+                              "counselling",
+                              "hairlossType"
+                            )}
+                            className="text-blue-600 focus:ring-blue-500"
+                          />
+                          <span className="text-md text-gray-700">
+                            {option.label}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Area of Concern - Radio Buttons */}
+                  <div className="space-y-3 my-3">
+                    <label className="block mb-4 text-md underline font-bold text-gray-700">
+                      Area of Concern *
+                    </label>
+                    <div className="space-y-2 flex flex-wrap space-x-7">
+                      {[
+                        { value: "frontal", label: "Frontal Area" },
+                        { value: "mid_scalp", label: "Mid Scalp" },
+                        { value: "crown", label: "Crown/Vortex" },
+                        { value: "hairline", label: "Hairline Design" },
+                        { value: "temples", label: "Temples" },
+                        { value: "beard", label: "Beard/Moustache" },
+                        { value: "multiple_areas", label: "Multiple Areas" },
+                      ].map((option) => (
+                        <label
+                          key={option.value}
+                          className="flex items-center align-baseline space-x-1"
+                        >
+                          <input
+                            type="radio"
+                            name="areaofConcern"
+                            value={option.value}
+                            checked={
+                              formData.counselling.areaofConcern ===
+                              option.value
+                            }
+                            onChange={createChangeHandler(
+                              "counselling",
+                              "areaofConcern"
+                            )}
+                            className="text-blue-600 focus:ring-blue-500"
+                          />
+                          <span className="text-md text-gray-700">
+                            {option.label}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Hair Loss Reason - Radio Buttons */}
+                  <div className="space-y-3">
+                    <label className="block mb-4 text-lg underline font-bold text-gray-700">
+                      Hair Loss Reason *
+                    </label>
+                    <div className="flex flex-wrap space-x-7 space-y-2">
+                      {[
+                        { value: "genetic", label: "Genetic/Hereditary" },
+                        { value: "hormonal", label: "Hormonal Changes" },
+                        { value: "stress", label: "Stress Related" },
+                        {
+                          value: "nutritional",
+                          label: "Nutritional Deficiency",
+                        },
+                        { value: "medical", label: "Medical Condition" },
+                        {
+                          value: "medication",
+                          label: "Medication Side Effects",
+                        },
+                        { value: "lifestyle", label: "Lifestyle Factors" },
+                        { value: "ageing", label: "Ageing Process" },
+                        { value: "unknown", label: "Unknown/Idiopathic" },
+                      ].map((option) => (
+                        <label
+                          key={option.value}
+                          className="flex items-center align-middle space-x-1"
+                        >
+                          <input
+                            type="radio"
+                            name="hairlossreason"
+                            value={option.value}
+                            checked={
+                              formData.counselling.hairlossreason ===
+                              option.value
+                            }
+                            onChange={createChangeHandler(
+                              "counselling",
+                              "hairlossreason"
+                            )}
+                            className="text-blue-600 focus:ring-blue-500"
+                          />
+                          <span className="text-md text-gray-700">
+                            {option.label}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Hair Loss Duration - Radio Buttons */}
+                  <div className="space-y-3">
+                    <label className="block mb-4 text-md underline font-bold text-gray-700">
+                      Hair Loss Duration *
+                    </label>
+                    <div className="space-y-2 flex flex-wrap space-x-5">
+                      {[
+                        {
+                          value: "less_than_1_year",
+                          label: "Less than 1 year",
+                        },
+                        { value: "1_2_years", label: "1-2 years" },
+                        { value: "2_5_years", label: "2-5 years" },
+                        { value: "5_10_years", label: "5-10 years" },
+                        {
+                          value: "more_than_10_years",
+                          label: "More than 10 years",
+                        },
+                        {
+                          value: "progressive",
+                          label: "Progressive (ongoing)",
+                        },
+                        {
+                          value: "recent_accelerated",
+                          label: "Recent accelerated loss",
+                        },
+                      ].map((option) => (
+                        <label
+                          key={option.value}
+                          className="flex items-center space-x-1"
+                        >
+                          <input
+                            type="radio"
+                            name="hairlossduration"
+                            value={option.value}
+                            checked={
+                              formData.counselling.hairlossduration ===
+                              option.value
+                            }
+                            onChange={createChangeHandler(
+                              "counselling",
+                              "hairlossduration"
+                            )}
+                            className="text-blue-600 focus:ring-blue-500"
+                          />
+                          <span className="text-md text-gray-700">
+                            {option.label}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Updated Benefits Manager */}
+                  <BenefitsManager
+                    benefits={formData.counselling.additionalbenefits}
+                    onChange={(value, index) =>
+                      handleArrayChange(
+                        "counselling",
+                        "additionalbenefits",
+                        value,
+                        index
+                      )
+                    }
+                    onAdd={(value) =>
+                      addArrayItem("counselling", "additionalbenefits", value)
+                    }
+                    onRemove={(index) =>
+                      removeArrayItem(
+                        "counselling",
+                        "additionalbenefits",
+                        index
+                      )
+                    }
                   />
 
                   <InputField
-                    label="Area of Concern"
-                    type="text"
-                    value={formData.counselling.areaofConcern}
-                    onChange={createChangeHandler(
-                      "counselling",
-                      "areaofConcern"
-                    )}
-                    placeholder="Area of concern"
-                  />
-
-                  <InputField
-                    label="Hair Loss Reason"
-                    type="text"
-                    value={formData.counselling.hairlossreason}
-                    onChange={createChangeHandler(
-                      "counselling",
-                      "hairlossreason"
-                    )}
-                    placeholder="Reason for hair loss"
-                  />
-
-                  <InputField
-                    label="Hair Loss Duration"
-                    type="text"
-                    value={formData.counselling.hairlossduration}
-                    onChange={createChangeHandler(
-                      "counselling",
-                      "hairlossduration"
-                    )}
-                    placeholder="Duration of hair loss"
+                    label="Notes"
+                    type="textarea"
+                    value={formData.counselling.notes}
+                    onChange={createChangeHandler("counselling", "notes")}
+                    placeholder="Additional counselling notes"
+                    className="md:col-span-2 mt-3"
                   />
 
                   <div className="md:col-span-2">
@@ -717,56 +948,10 @@ export default function PatientEditDetails() {
                         "counselling",
                         "readyForSurgery"
                       )}
+                      className="mt-4"
                       placeholder="Patient is ready for surgery"
                     />
                   </div>
-
-                  <InputField
-                    label="Notes"
-                    type="textarea"
-                    value={formData.counselling.notes}
-                    onChange={createChangeHandler("counselling", "notes")}
-                    placeholder="Additional counselling notes"
-                    className="md:col-span-2"
-                  />
-
-                  <BenefitsManager
-                    benefits={formData.counselling.additionalbenefits}
-                    onChange={(value, index) =>
-                      handleArrayChange(
-                        "counselling",
-                        "additionalbenefits",
-                        value,
-                        index
-                      )
-                    }
-                    onAdd={() =>
-                      addArrayItem("counselling", "additionalbenefits")
-                    }
-                    onRemove={(index) =>
-                      removeArrayItem(
-                        "counselling",
-                        "additionalbenefits",
-                        index
-                      )
-                    }
-                  />
-
-                  <MedicineManager
-                    medicines={formData.counselling.medicines}
-                    onChange={(value, index) =>
-                      handleArrayChange(
-                        "counselling",
-                        "medicines",
-                        value,
-                        index
-                      )
-                    }
-                    onAdd={() => addArrayItem("counselling", "medicines")}
-                    onRemove={(index) =>
-                      removeArrayItem("counselling", "medicines", index)
-                    }
-                  />
                 </div>
               </div>
             )}
