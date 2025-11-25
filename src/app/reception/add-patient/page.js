@@ -18,7 +18,6 @@ import {
   UserPlus,
 } from "lucide-react";
 
-import MedicineManager from "@/components/MedicineManager";
 import BenefitsManager from "@/components/BenefitsManager";
 
 const StepHeader = ({ icon: Icon, title, description, color }) => (
@@ -862,21 +861,7 @@ export default function PatientRegistration() {
                     }
                   />
 
-                  <MedicineManager
-                    medicines={formData.counselling.medicines}
-                    onChange={(value, index) =>
-                      handleArrayChange(
-                        "counselling",
-                        "medicines",
-                        value,
-                        index
-                      )
-                    }
-                    onAdd={() => addArrayItem("counselling", "medicines")}
-                    onRemove={(index) =>
-                      removeArrayItem("counselling", "medicines", index)
-                    }
-                  />
+                 
                 </div>
               </div>
             )}

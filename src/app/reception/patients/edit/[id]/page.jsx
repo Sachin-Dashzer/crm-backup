@@ -20,7 +20,7 @@ import {
   Edit3,
 } from "lucide-react";
 import ReceptionSidebar from "@/components/ReceptionSidebar";
-
+import BenefitsManager from "@/components/BenefitsManager";
 import InputField from "@/components/InputField";
 
 
@@ -32,71 +32,6 @@ const StepHeader = ({ icon: Icon, title, description, color }) => (
   </div>
 );
 
-const MedicineManager = ({ medicines, onChange, onAdd, onRemove }) => (
-  <div className="md:col-span-2">
-    <label className="block text-sm font-semibold text-gray-700 mb-3">
-      Medicines
-    </label>
-    {medicines.map((medicine, index) => (
-      <div key={index} className="flex items-center space-x-3 mb-3">
-        <input
-          type="text"
-          className="flex-1 px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 shadow-sm"
-          value={medicine}
-          onChange={(e) => onChange(e.target.value, index)}
-          placeholder="Medicine name"
-        />
-        <button
-          type="button"
-          className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors duration-200"
-          onClick={() => onRemove(index)}
-        >
-          <X size={16} />
-        </button>
-      </div>
-    ))}
-    <button
-      type="button"
-      className="px-6 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors duration-200 font-medium"
-      onClick={onAdd}
-    >
-      + Add Medicine
-    </button>
-  </div>
-);
-
-const BenefitsManager = ({ benefits, onChange, onAdd, onRemove }) => (
-  <div className="md:col-span-2">
-    <label className="block text-sm font-semibold text-gray-700 mb-3">
-      Additional Benefits
-    </label>
-    {benefits.map((benefit, index) => (
-      <div key={index} className="flex items-center space-x-3 mb-3">
-        <input
-          type="text"
-          className="flex-1 px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 shadow-sm"
-          value={benefit}
-          onChange={(e) => onChange(e.target.value, index)}
-          placeholder="Benefit description"
-        />
-        <button
-          type="button"
-          className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors duration-200"
-          onClick={() => onRemove(index)}
-        >
-          <X size={16} />
-        </button>
-      </div>
-    ))}
-    <button
-      type="button"
-      className="px-6 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors duration-200 font-medium"
-      onClick={onAdd}
-    >
-      + Add Benefit
-    </button>
-  </div>
-);
 
 const TransactionManager = ({ transactions, onChange, onAdd, onRemove }) => (
   <div className="md:col-span-2">
@@ -1124,21 +1059,6 @@ export default function PatientEditDetails() {
                     }
                   />
 
-                  <MedicineManager
-                    medicines={formData.counselling.medicines}
-                    onChange={(value, index) =>
-                      handleArrayChange(
-                        "counselling",
-                        "medicines",
-                        value,
-                        index
-                      )
-                    }
-                    onAdd={() => addArrayItem("counselling", "medicines")}
-                    onRemove={(index) =>
-                      removeArrayItem("counselling", "medicines", index)
-                    }
-                  />
                 </div>
               </div>
             )}
