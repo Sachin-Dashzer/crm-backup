@@ -43,6 +43,7 @@ const handler = async (req) => {
 
         employeeData = {
           _id: employee._id,
+          isactive: employee.isactive,
           name: employee.name,
           totalPatient: patientCount,
           readyForSurgery: readyForSurgery,
@@ -56,6 +57,7 @@ const handler = async (req) => {
 
         employeeData = {
           _id: employee._id,
+          isactive: employee.isactive,
           name: employee.name,
           totalPatient: patientCount,
           graftsImplanted: graftsImplanted,

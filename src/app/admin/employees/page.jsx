@@ -55,6 +55,7 @@ export default function StaffDashboard() {
   const [filters, setFilters] = useState({
     search: "",
     category: "",
+    status: "",
     minPatients: "",
     maxPatients: "",
     minAmount: "",
@@ -77,14 +78,24 @@ export default function StaffDashboard() {
     const fetchData = async () => {
       try {
         setLoading(true);
-        // Replace with your actual API endpoint
         const res = await fetch("/api/employees/get-patients");
         if (!res.ok) throw new Error("Failed to fetch staff data");
         const responseData = await res.json();
-        setData(responseData || {});
+        
+        // Transform the API data to match frontend expectations
+        const transformedData = {};
+        Object.keys(responseData).forEach(category => {
+          transformedData[category] = responseData[category].map(employee => ({
+            ...employee,
+            // Convert isactive boolean to status string
+            status: employee.isactive ? "active" : "inactive"
+          }));
+        });
+        
+        setData(transformedData || {});
       } catch (e) {
         setError(e.message || "Error");
-        // Use mock data for demonstration
+        // Use mock data for demonstration (updated with status field)
         setData({
           Doctor: [
             {
@@ -92,18 +103,24 @@ export default function StaffDashboard() {
               totalPatient: 9,
               graftsImplanted: 18430,
               amountReceived: 271000,
+              status: "active",
+              _id: "1"
             },
             {
               name: "Nisha Agarwal",
               totalPatient: 8,
               graftsImplanted: 10200,
               amountReceived: 278000,
+              status: "inactive",
+              _id: "2"
             },
             {
               name: "Swati Banerjee",
               totalPatient: 9,
               graftsImplanted: 20700,
               amountReceived: 244000,
+              status: "active",
+              _id: "3"
             },
           ],
           Agent: [
@@ -112,18 +129,24 @@ export default function StaffDashboard() {
               totalPatient: 1,
               readyForSurgery: 1,
               amountReceived: 35000,
+              status: "active",
+              _id: "4"
             },
             {
               name: "Anjali Reddy",
               totalPatient: 1,
               readyForSurgery: 1,
               amountReceived: 18000,
+              status: "active",
+              _id: "5"
             },
             {
               name: "Arun Joshi",
               totalPatient: 3,
               readyForSurgery: 1,
               amountReceived: 90000,
+              status: "inactive",
+              _id: "6"
             },
           ],
           Counsellor: [
@@ -132,12 +155,16 @@ export default function StaffDashboard() {
               totalPatient: 7,
               readyForSurgery: 7,
               amountReceived: 257000,
+              status: "active",
+              _id: "7"
             },
             {
               name: "Deepak Sharma",
               totalPatient: 6,
               readyForSurgery: 5,
               amountReceived: 173000,
+              status: "active",
+              _id: "8"
             },
           ],
           Technician: [
@@ -146,12 +173,16 @@ export default function StaffDashboard() {
               totalPatient: 12,
               graftsImplanted: 24080,
               amountReceived: 368000,
+              status: "active",
+              _id: "9"
             },
             {
               name: "Harish Chandra",
               totalPatient: 7,
               graftsImplanted: 16100,
               amountReceived: 165000,
+              status: "inactive",
+              _id: "10"
             },
           ],
           Implanter: [
@@ -160,12 +191,16 @@ export default function StaffDashboard() {
               totalPatient: 11,
               graftsImplanted: 25650,
               amountReceived: 393000,
+              status: "active",
+              _id: "11"
             },
             {
               name: "Madhuri Sen",
               totalPatient: 10,
               graftsImplanted: 17180,
               amountReceived: 272000,
+              status: "active",
+              _id: "12"
             },
           ],
           Others: [
@@ -174,12 +209,16 @@ export default function StaffDashboard() {
               totalPatient: 2,
               graftsImplanted: 6500,
               amountReceived: 58000,
+              status: "active",
+              _id: "13"
             },
             {
               name: "Gaurav Tiwari",
               totalPatient: 4,
               graftsImplanted: 10600,
               amountReceived: 103000,
+              status: "inactive",
+              _id: "14"
             },
           ],
         });
@@ -204,6 +243,11 @@ export default function StaffDashboard() {
     if (filters.search) {
       const q = filters.search.toLowerCase();
       list = list.filter((item) => item.name.toLowerCase().includes(q));
+    }
+
+    // Status filter - fixed to work with status string
+    if (filters.status) {
+      list = list.filter((item) => item.status === filters.status);
     }
 
     // Patient count filters
@@ -287,6 +331,7 @@ export default function StaffDashboard() {
     setFilters({
       search: "",
       category: "",
+      status: "",
       minPatients: "",
       maxPatients: "",
       minAmount: "",
@@ -306,6 +351,8 @@ export default function StaffDashboard() {
     const chips = [];
     if (filters.category)
       chips.push({ k: "category", label: `Category: ${filters.category}` });
+    if (filters.status)
+      chips.push({ k: "status", label: `Status: ${filters.status === "active" ? "Active" : "Inactive"}` });
     if (filters.minPatients)
       chips.push({
         k: "minPatients",
@@ -506,6 +553,7 @@ export default function StaffDashboard() {
                 <thead className="bg-gray-50 text-gray-700 text-xs uppercase">
                   <tr>
                     <Th label="Name" />
+                    <Th label="Status" />
                     <Th
                       label="Total Patients"
                       sortKey="totalPatient"
@@ -541,8 +589,8 @@ export default function StaffDashboard() {
                 <tbody className="divide-y divide-gray-100">
                   {rows.length === 0 ? (
                     <tr>
-                      <td
-                        colSpan={hasGrafts ? 6 : hasReadyForSurgery ? 6 : 5}
+                      <td 
+                        colSpan={hasGrafts ? 8 : hasReadyForSurgery ? 8 : 7}
                         className="py-12 text-center text-gray-500"
                       >
                         <div className="flex flex-col items-center justify-center">
@@ -558,7 +606,6 @@ export default function StaffDashboard() {
                     </tr>
                   ) : (
                     rows.map((item, idx) => {
-
                       const avgPerPatient = item.totalPatient
                         ? item.amountReceived / item.totalPatient
                         : 0;
@@ -569,6 +616,9 @@ export default function StaffDashboard() {
                         >
                           <td className="px-6 py-4 font-medium text-gray-900">
                             {item.name}
+                          </td>
+                          <td className="px-6 py-4">
+                            <StatusBadge status={item.status} />
                           </td>
                           <td className="px-6 py-4 text-gray-700">
                             {item.totalPatient}
@@ -593,7 +643,7 @@ export default function StaffDashboard() {
                             <Link
                               href={`/admin/employees/update/${item._id}`}
                               className="p-2 rounded-lg hover:bg-blue-50 text-blue-600 transition-colors"
-                              title="Edit patient"
+                              title="Edit employee"
                             >
                               <Edit className="w-4 h-4" />
                             </Link>
@@ -607,6 +657,7 @@ export default function StaffDashboard() {
                   <tfoot className="bg-gray-50 border-t-2 border-gray-200 font-semibold">
                     <tr>
                       <td className="px-6 py-4 text-gray-900">Total</td>
+                      <td className="px-6 py-4 text-gray-900"></td>
                       <td className="px-6 py-4 text-gray-900">
                         {totals.totalPatient}
                       </td>
@@ -630,6 +681,7 @@ export default function StaffDashboard() {
                             )
                           : "—"}
                       </td>
+                      <td className="px-6 py-4 text-gray-600"></td>
                     </tr>
                   </tfoot>
                 )}
@@ -725,6 +777,24 @@ export default function StaffDashboard() {
                             label: c,
                             value: c,
                           })),
+                        ]}
+                      />
+                    </Field>
+                  </Section>
+
+                  {/* Status Filter */}
+                  <Section
+                    title="Status"
+                    icon={<Activity className="w-4 h-4" />}
+                  >
+                    <Field label="Employee Status">
+                      <Select
+                        value={filters.status}
+                        onChange={(v) => setFilters((f) => ({ ...f, status: v }))}
+                        options={[
+                          { label: "All Status", value: "" },
+                          { label: "Active", value: "active" },
+                          { label: "Inactive", value: "inactive" },
                         ]}
                       />
                     </Field>
@@ -945,5 +1015,29 @@ function SummaryCard({ title, value, icon, color }) {
         <div className={`p-3 rounded-lg ${colorClasses[color]}`}>{icon}</div>
       </div>
     </div>
+  );
+}
+
+function StatusBadge({ status }) {
+  const statusConfig = {
+    active: {
+      label: "Active",
+      className: "bg-green-100 text-green-800 border-green-200"
+    },
+    inactive: {
+      label: "Inactive", 
+      className: "bg-red-100 text-red-800 border-red-200"
+    }
+  };
+
+  const config = statusConfig[status] || {
+    label: "Unknown",
+    className: "bg-gray-100 text-gray-800 border-gray-200"
+  };
+
+  return (
+    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${config.className}`}>
+      {config.label}
+    </span>
   );
 }
