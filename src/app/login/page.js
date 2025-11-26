@@ -27,6 +27,7 @@ export default function LoginPage() {
       const roleRoutes = {
         admin: '/admin/dashboard',
         sales: '/sales/dashboard',
+        counsellor: '/counsellor/patients',
         reception: '/reception/dashboard',
         surgery: '/surgery/dashboard',
       };
