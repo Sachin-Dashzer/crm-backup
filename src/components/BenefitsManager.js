@@ -3,9 +3,11 @@ import { X } from "lucide-react";
 const BenefitsManager = ({ benefits, onChange, onAdd, onRemove }) => {
   const predefinedBenefits = [
     "5 Free PRP Sessions",
-    "Lifetime Warranty",
+    "Deep Headwash",
     "5 Days Medicines Included",
-    "Post-op Care Package",
+    "Bandage Removal",
+    "GFC",
+    "",
   ];
 
   const handleBenefitToggle = (benefit) => {

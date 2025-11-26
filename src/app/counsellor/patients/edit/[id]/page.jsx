@@ -654,7 +654,7 @@ export default function PatientEditDetails() {
                         { value: "frontal", label: "Frontal Area" },
                         { value: "mid_scalp", label: "Mid Scalp" },
                         { value: "crown", label: "Crown/Vortex" },
-                        { value: "hairline", label: "Hairline Design" },
+                        { value: "hairline", label: "Hairline Correction" },
                         { value: "temples", label: "Temples" },
                         { value: "beard", label: "Beard/Moustache" },
                         { value: "multiple_areas", label: "Multiple Areas" },
