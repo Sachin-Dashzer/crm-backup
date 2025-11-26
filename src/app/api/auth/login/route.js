@@ -52,6 +52,7 @@ export async function POST(req) {
     const roleRoutes = {
       admin: '/admin/dashboard',
       sales: '/sales/dashboard',
+      sales: '/counsellor/patients',
       reception: '/reception/dashboard',
       surgery: '/surgery/dashboard',
     };

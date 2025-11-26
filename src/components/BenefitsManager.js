@@ -1,6 +1,4 @@
-
 import { X } from "lucide-react";
-import { useRef , useEffect } from "react";
 
 const BenefitsManager = ({ benefits, onChange, onAdd, onRemove }) => {
   const predefinedBenefits = [
@@ -9,24 +7,6 @@ const BenefitsManager = ({ benefits, onChange, onAdd, onRemove }) => {
     "5 Days Medicines Included",
     "Post-op Care Package",
   ];
-
-  const initialized = useRef(false);
-
-  // Auto-select all predefined benefits on component mount
-  useEffect(() => {
-    if (initialized.current) return;
-    initialized.current = true;
-
-    // Check if any predefined benefits are missing from current benefits
-    const missingBenefits = predefinedBenefits.filter(
-      (benefit) => !benefits.includes(benefit)
-    );
-
-    // Add all missing predefined benefits
-    missingBenefits.forEach((benefit) => {
-      onAdd(benefit);
-    });
-  }, []); // Empty dependency array to run only on mount
 
   const handleBenefitToggle = (benefit) => {
     const currentBenefits = [...benefits];
