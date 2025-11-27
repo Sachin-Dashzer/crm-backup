@@ -43,14 +43,30 @@ const PROCEDURES = [
 const COST_TYPES = ["Revenue", "Expenses"];
 const PAYMENT_TYPES = ["Booking", "Pending", "Full-payment", "Other"];
 
-const formatDate = (date) =>
-  date
-    ? new Date(date).toLocaleDateString("en-IN", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      })
-    : "N/A";
+// Timezone-aware date functions for Vercel (UTC)
+const getTodayDate = () => {
+  // Get current date in IST (UTC+5:30)
+  const now = new Date();
+  // Convert to IST (India Standard Time)
+  const istOffset = 5.5 * 60 * 60 * 1000; // IST is UTC+5:30
+  const istDate = new Date(now.getTime() + istOffset);
+  return istDate.toISOString().split('T')[0];
+};
+
+const formatDateForDisplay = (date) => {
+  if (!date) return "N/A";
+  
+  // Convert to IST for display
+  const dateObj = new Date(date);
+  const istOffset = 5.5 * 60 * 60 * 1000;
+  const istDate = new Date(dateObj.getTime() + istOffset);
+  
+  return istDate.toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+};
 
 const formatCurrency = (amount) => {
   return new Intl.NumberFormat("en-IN", {
@@ -61,14 +77,45 @@ const formatCurrency = (amount) => {
   }).format(amount);
 };
 
+// Stat Card Component
+function StatCard({
+  title,
+  value,
+  icon: Icon,
+  gradient,
+  count,
+  iconBg,
+  iconColor,
+}) {
+  return (
+    <div
+      className={`bg-gradient-to-br ${gradient} p-4 sm:p-6 rounded-2xl shadow-lg text-white relative overflow-hidden transform hover:scale-105 transition-transform duration-300`}
+    >
+      <div className="absolute top-0 right-0 w-24 h-24 sm:w-32 sm:h-32 bg-white/10 rounded-full -mr-12 -mt-12 sm:-mr-16 sm:-mt-16" />
+      <div className="relative">
+        <div className="flex justify-between items-start mb-3 sm:mb-4">
+          <div className="flex-1 min-w-0">
+            <p className="text-white/90 text-xs sm:text-sm font-medium mb-1 truncate">{title}</p>
+            <h3 className="text-xl sm:text-2xl lg:text-3xl font-bold truncate">{value}</h3>
+          </div>
+          <div className={`${iconBg} p-2 sm:p-3 rounded-xl flex-shrink-0 ml-2`}>
+            <Icon className={`w-4 h-4 sm:w-6 sm:h-6 ${iconColor}`} />
+          </div>
+        </div>
+        <p className="text-white/80 text-xs sm:text-sm font-medium truncate">{count}</p>
+      </div>
+    </div>
+  );
+}
+
 export default function AmountDashboard() {
   const [revenue, setRevenue] = useState([]);
   const [expenses, setExpenses] = useState([]);
   const [patients, setPatients] = useState([]);
   const [filters, setFilters] = useState({
     branch: "",
-    dateFrom: "",
-    dateTo: "",
+    dateFrom: getTodayDate(), // Set today as default
+    dateTo: getTodayDate(),   // Set today as default
     paymentMethod: "",
     procedure: "",
   });
@@ -142,7 +189,37 @@ export default function AmountDashboard() {
     await fetchPatients();
   };
 
-  // Filtering
+  // Timezone-aware date filtering
+  const filterByDateRange = (items, dateFrom, dateTo) => {
+    if (!dateFrom && !dateTo) return items;
+
+    return items.filter((item) => {
+      const itemDate = new Date(item.date);
+      
+      // Convert filter dates to start and end of day in IST
+      if (dateFrom) {
+        const fromDate = new Date(dateFrom);
+        fromDate.setHours(0, 0, 0, 0);
+        // Adjust for IST (UTC+5:30)
+        const fromDateIST = new Date(fromDate.getTime() - (5.5 * 60 * 60 * 1000));
+        
+        if (itemDate < fromDateIST) return false;
+      }
+      
+      if (dateTo) {
+        const toDate = new Date(dateTo);
+        toDate.setHours(23, 59, 59, 999);
+        // Adjust for IST (UTC+5:30)
+        const toDateIST = new Date(toDate.getTime() - (5.5 * 60 * 60 * 1000));
+        
+        if (itemDate > toDateIST) return false;
+      }
+      
+      return true;
+    });
+  };
+
+  // Filtering with timezone support
   const filteredRevenue = useMemo(() => {
     let list = [...revenue];
     if (filters.branch)
@@ -157,13 +234,10 @@ export default function AmountDashboard() {
       list = list.filter(
         (t) => t.procedure.toLowerCase() === filters.procedure.toLowerCase()
       );
-    if (filters.dateFrom)
-      list = list.filter((t) => new Date(t.date) >= new Date(filters.dateFrom));
-    if (filters.dateTo) {
-      const to = new Date(filters.dateTo);
-      to.setHours(23, 59, 59, 999);
-      list = list.filter((t) => new Date(t.date) <= to);
-    }
+    
+    // Use timezone-aware date filtering
+    list = filterByDateRange(list, filters.dateFrom, filters.dateTo);
+    
     return list;
   }, [revenue, filters]);
 
@@ -177,13 +251,10 @@ export default function AmountDashboard() {
       list = list.filter(
         (e) => e.method.toLowerCase() === filters.paymentMethod.toLowerCase()
       );
-    if (filters.dateFrom)
-      list = list.filter((e) => new Date(e.date) >= new Date(filters.dateFrom));
-    if (filters.dateTo) {
-      const to = new Date(filters.dateTo);
-      to.setHours(23, 59, 59, 999);
-      list = list.filter((e) => new Date(e.date) <= to);
-    }
+    
+    // Use timezone-aware date filtering
+    list = filterByDateRange(list, filters.dateFrom, filters.dateTo);
+    
     return list;
   }, [expenses, filters]);
 
@@ -279,8 +350,8 @@ export default function AmountDashboard() {
   const clearFilters = () => {
     setFilters({
       branch: "",
-      dateFrom: "",
-      dateTo: "",
+      dateFrom: getTodayDate(), // Reset to today
+      dateTo: getTodayDate(),   // Reset to today
       paymentMethod: "",
       procedure: "",
     });
@@ -692,7 +763,7 @@ function DeleteConfirmModal({ transaction, onClose, onConfirm }) {
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-600">Date:</span>
               <span className="font-medium text-gray-900 text-sm sm:text-base">
-                {formatDate(transaction?.date)}
+                {formatDateForDisplay(transaction?.date)}
               </span>
             </div>
           </div>
@@ -728,7 +799,7 @@ function DeleteConfirmModal({ transaction, onClose, onConfirm }) {
   );
 }
 
-// Transaction Modal Component - UPDATED WITH FIXES
+// Transaction Modal Component
 function TransactionModal({ transaction, patients, onClose, onSuccess }) {
   const isEdit = !!transaction;
   const [loading, setLoading] = useState(false);
@@ -1111,37 +1182,6 @@ function TransactionModal({ transaction, patients, onClose, onSuccess }) {
   );
 }
 
-// Stat Card Component
-function StatCard({
-  title,
-  value,
-  icon: Icon,
-  gradient,
-  count,
-  iconBg,
-  iconColor,
-}) {
-  return (
-    <div
-      className={`bg-gradient-to-br ${gradient} p-4 sm:p-6 rounded-2xl shadow-lg text-white relative overflow-hidden transform hover:scale-105 transition-transform duration-300`}
-    >
-      <div className="absolute top-0 right-0 w-24 h-24 sm:w-32 sm:h-32 bg-white/10 rounded-full -mr-12 -mt-12 sm:-mr-16 sm:-mt-16" />
-      <div className="relative">
-        <div className="flex justify-between items-start mb-3 sm:mb-4">
-          <div className="flex-1 min-w-0">
-            <p className="text-white/90 text-xs sm:text-sm font-medium mb-1 truncate">{title}</p>
-            <h3 className="text-xl sm:text-2xl lg:text-3xl font-bold truncate">{value}</h3>
-          </div>
-          <div className={`${iconBg} p-2 sm:p-3 rounded-xl flex-shrink-0 ml-2`}>
-            <Icon className={`w-4 h-4 sm:w-6 sm:h-6 ${iconColor}`} />
-          </div>
-        </div>
-        <p className="text-white/80 text-xs sm:text-sm font-medium truncate">{count}</p>
-      </div>
-    </div>
-  );
-}
-
 // Data Table Component
 function DataTable({
   type,
@@ -1301,7 +1341,7 @@ function DataTable({
                         {formatCurrency(row.amount)}
                       </td>
                       <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 text-gray-700 font-medium text-sm">
-                        {formatDate(row.date)}
+                        {formatDateForDisplay(row.date)}
                       </td>
                       <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4">
                         <span className="px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg text-xs font-semibold bg-blue-100 text-blue-700 border border-blue-200">
@@ -1353,7 +1393,7 @@ function DataTable({
                         {formatCurrency(row.amount)}
                       </td>
                       <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 text-gray-700 font-medium text-sm">
-                        {formatDate(row.date)}
+                        {formatDateForDisplay(row.date)}
                       </td>
                       <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4">
                         <span className="px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg text-xs font-semibold bg-blue-100 text-blue-700 border border-blue-200">
