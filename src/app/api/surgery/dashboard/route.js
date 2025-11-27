@@ -27,12 +27,6 @@ const handler = async (req) => {
     const fromDate = from ? getISTStartOfDay(from) : getISTStartOfDay();
     const toDate = to ? getISTEndOfDay(to) : getISTEndOfDay();
 
-    console.log('Surgery Dashboard Date Range:', {
-      from: fromDate.toISOString(),
-      to: toDate.toISOString(),
-      fromIST: formatISTDate(fromDate),
-      toIST: formatISTDate(toDate)
-    });
 
     // Calculate comparison period
     const daysDifference = Math.ceil((toDate - fromDate) / (1000 * 60 * 60 * 24)) + 1;

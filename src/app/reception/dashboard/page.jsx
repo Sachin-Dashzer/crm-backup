@@ -46,8 +46,8 @@ const Topbar = ({
   };
 
   return (
-    <div className="bg-white shadow-sm border-b border-gray-200">
-      <div className="px-4 lg:px-8 py-4">
+    <div className="">
+      <div className="px-4 lg:p-8 lg:pb-4">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div className="flex items-center gap-4">
             <button
@@ -56,28 +56,27 @@ const Topbar = ({
             >
               <Filter className="h-5 w-5 text-gray-600" />
             </button>
-            <div className="flex items-center gap-3">
-              <Building className="h-6 w-6 text-indigo-600" />
+            <div className="ml-3">
               <div>
-                <h2 className="text-lg font-semibold text-gray-900">
+                <h2 className="text-3xl font-semibold text-gray-900">
                   Reception Overview
                 </h2>
-                <p className="text-sm text-gray-600">
+                <p className="text-lg mt-1 text-gray-600">
                   Patient management and appointments
                 </p>
               </div>
             </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-3">
+          <div className="flex flex-col sm:flex-row gap-8">
             <div className="flex items-center gap-2">
-              <label className="text-sm font-medium text-gray-700 whitespace-nowrap">
+              <label className="text-md font-bold text-gray-700 whitespace-nowrap">
                 Branch:
               </label>
               <select
                 value={branch}
                 onChange={(e) => setBranch(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
+                className="px-3 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-md"
               >
                 <option value="All">All Branches</option>
                 <option value="Delhi">Delhi</option>
@@ -87,7 +86,7 @@ const Topbar = ({
             </div>
 
             <div className="flex items-center gap-2 relative">
-              <label className="text-sm font-medium text-gray-700 whitespace-nowrap">
+              <label className="text-md font-bold text-gray-700 whitespace-nowrap">
                 Date Range:
               </label>
               <select
@@ -98,7 +97,7 @@ const Topbar = ({
                     setShowDatePicker(false);
                   }
                 }}
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
+                className="px-3 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-md"
               >
                 <option value="Today">Today</option>
                 <option value="Yesterday">Yesterday</option>
@@ -422,16 +421,7 @@ export default function ReceptionDashboard() {
         />
 
         <div className="p-4 lg:p-8">
-          {/* Header */}
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              Reception Dashboard
-            </h1>
-            <p className="text-gray-600">
-              Welcome back! Here's what's happening today.
-            </p>
-          </div>
-
+         
           {/* Metrics Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <MetricCard

@@ -22,7 +22,6 @@ export async function DELETE(request) {
       );
     }
 
-    console.log("Attempting to delete transactions with ID:", _id);
 
     // Find and delete the transactions
     const deletedTransactions = await Transactions.findByIdAndDelete(_id);
@@ -38,7 +37,6 @@ export async function DELETE(request) {
       );
     }
 
-    console.log("Successfully deleted transactions:", deletedTransactions);
 
     return NextResponse.json(
       {

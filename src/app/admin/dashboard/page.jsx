@@ -98,7 +98,6 @@ export default function AdminDashboard() {
     const to = dashboardData?.dateRange?.to;
     const branchParam = dashboardData?.branch ?? "All";
 
-    console.log("Original data:", { from, to, branchParam, metricTitle });
 
     const filterParams = new URLSearchParams({
       dateFrom: plusDaysUTC(from, 1),
@@ -106,7 +105,6 @@ export default function AdminDashboard() {
       branch: branchParam,
     });
 
-    console.log("Before switch:", filterParams.toString());
 
     switch (metricTitle) {
       case "Appointments":
@@ -129,8 +127,6 @@ export default function AdminDashboard() {
         break;
     }
 
-    console.log("After switch:", filterParams.toString());
-    console.log("Final URL:", `/admin/patients?${filterParams.toString()}`);
 
     router.push(`/admin/patients?${filterParams.toString()}`);
   };

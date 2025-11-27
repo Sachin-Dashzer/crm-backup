@@ -226,7 +226,6 @@ export default function SalesDashboard() {
     setLoading(true);
     try {
       const payload = buildPayload();
-      console.log('Sending payload to admin API:', payload);
       
       const res = await fetch("/api/sales/dashboard", {
         method: "POST",
@@ -234,14 +233,12 @@ export default function SalesDashboard() {
         body: JSON.stringify(payload),
       });
       
-      console.log('Admin API response status:', res.status);
       
       if (!res.ok) {
         throw new Error(`HTTP error! status: ${res.status}`);
       }
       
       const responseData = await res.json();
-      console.log('Admin API full response:', responseData);
       
       if (responseData.success) {
         setDashboardData(responseData.data);

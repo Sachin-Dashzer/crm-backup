@@ -120,7 +120,6 @@ const handler = async (req) => {
       const updateResults = await Promise.all(employeeUpdatePromises);
       const successfulUpdates = updateResults.filter(result => result !== null).length;
       
-      console.log(`Updated ${successfulUpdates} employee records across ${savedPatients.length} patients`);
     }
 
     return NextResponse.json(

@@ -53,6 +53,7 @@ export default function ReceptionSidebar() {
   const navItems = [
     { name: "Dashboard", path: "/reception/dashboard", icon: LayoutDashboard },
     { name: "Patients", path: "/reception/patients", icon: Users },
+    { name: "Book Consult", path: "/reception/book-consult", icon: Users },
     { name: "Add Patient", path: "/reception/add-patient", icon: UserPlus },
     { name: "Not Visited", path: "/reception/not-visited", icon: UserX },
     { name: "Transactions", path: "/reception/transactions", icon: DollarSign },

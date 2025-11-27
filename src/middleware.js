@@ -13,8 +13,6 @@ export function middleware(req) {
 
   const { pathname } = req.nextUrl;
 
-  // Debug logging (remove in production)
-  console.log('Middleware Debug:', { isLoggedIn, userRole, pathname });
 
   // Public paths that don't require authentication
   const publicPaths = ["/login", "/", "/api/auth"];
@@ -30,7 +28,6 @@ export function middleware(req) {
         surgery: "/surgery/dashboard",
       };
       const redirectUrl = roleRoutes[userRole] || "/login";
-      console.log('Redirecting from login to:', redirectUrl);
       return NextResponse.redirect(new URL(redirectUrl, req.url));
     }
     return NextResponse.next();
@@ -38,7 +35,6 @@ export function middleware(req) {
 
   // Protected paths - require authentication
   if (!isLoggedIn || !userRole) {
-    console.log('Not authenticated, redirecting to login');
     return NextResponse.redirect(new URL("/login", req.url));
   }
 
@@ -67,7 +63,6 @@ export function middleware(req) {
     console.warn(`Access denied: User with role '${userRole}' attempted to access '${pathname}'`);
     
     const redirectUrl = roleRoutes[userRole] || "/login";
-    console.log('Redirecting to:', redirectUrl);
     return NextResponse.redirect(new URL(redirectUrl, req.url));
   }
 

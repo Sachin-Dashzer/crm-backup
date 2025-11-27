@@ -249,11 +249,8 @@ export default function ViewBills() {
 
       <main className="flex-1 p-8">
         {/* Header */}
-        <div className="mb-8 no-print">
+        <div className="mb-4 no-print">
           <div className="flex items-center gap-4 mb-3">
-            <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg">
-              <Receipt className="w-7 h-7 text-white" />
-            </div>
             <div>
               <h1 className="text-3xl font-bold text-gray-900">
                 Patient Bills & Invoices
@@ -277,78 +274,11 @@ export default function ViewBills() {
           <>
         {!showPrintPreview ? (
           <div className="space-y-6">
-            {/* Statistics Cards - Show when no patient selected */}
-            {!selectedPatient && patients.length > 0 && (
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white shadow-lg">
-                  <div className="flex items-center justify-between mb-2">
-                    <User className="w-8 h-8 opacity-80" />
-                  </div>
-                  <p className="text-3xl font-bold mb-1">
-                    {patients.length}
-                  </p>
-                  <p className="text-blue-100 text-sm font-medium">
-                    Total Patients
-                  </p>
-                </div>
-
-                <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-6 text-white shadow-lg">
-                  <div className="flex items-center justify-between mb-2">
-                    <IndianRupee className="w-8 h-8 opacity-80" />
-                  </div>
-                  <p className="text-3xl font-bold mb-1">
-                    {formatCurrency(
-                      patients.reduce(
-                        (sum, p) => sum + (p.payments?.amountReceived || 0),
-                        0
-                      )
-                    ).replace('₹', '')}
-                  </p>
-                  <p className="text-green-100 text-sm font-medium">
-                    Total Received
-                  </p>
-                </div>
-
-                <div className="bg-gradient-to-br from-red-500 to-red-600 rounded-xl p-6 text-white shadow-lg">
-                  <div className="flex items-center justify-between mb-2">
-                    <Clock className="w-8 h-8 opacity-80" />
-                  </div>
-                  <p className="text-3xl font-bold mb-1">
-                    {formatCurrency(
-                      patients.reduce(
-                        (sum, p) => sum + (p.payments?.pendingAmount || 0),
-                        0
-                      )
-                    ).replace('₹', '')}
-                  </p>
-                  <p className="text-red-100 text-sm font-medium">
-                    Total Pending
-                  </p>
-                </div>
-
-                <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-6 text-white shadow-lg">
-                  <div className="flex items-center justify-between mb-2">
-                    <Receipt className="w-8 h-8 opacity-80" />
-                  </div>
-                  <p className="text-3xl font-bold mb-1">
-                    {patients.filter((p) => p.payments?.pendingAmount > 0).length}
-                  </p>
-                  <p className="text-purple-100 text-sm font-medium">
-                    Pending Bills
-                  </p>
-                </div>
-              </div>
-            )}
+            
 
             {/* Patient Search */}
-            <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
-              <div className="flex items-center gap-3 mb-6">
-                <Search className="w-6 h-6 text-blue-600" />
-                <h2 className="text-xl font-semibold text-gray-900">
-                  Search Patient
-                </h2>
-              </div>
-
+            <div className="">
+              
               <div className="relative">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
@@ -356,7 +286,7 @@ export default function ViewBills() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search by patient name or phone number..."
-                  className="w-full pl-12 pr-4 py-4 text-lg border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                  className="w-full bg-white pl-12 pr-4 py-4 text-md border-2 border-gray-200 rounded-xl transition-all"
                 />
               </div>
 
@@ -432,11 +362,8 @@ export default function ViewBills() {
 
               {/* Recent Patients Dashboard - Show when no search query */}
               {!searchQuery && !selectedPatient && recentPatients.length > 0 && (
-                <div className="mt-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                    Recent Patients with Pending Payments
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="mt-10">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {recentPatients.map((patient) => (
                       <div
                         key={patient._id}

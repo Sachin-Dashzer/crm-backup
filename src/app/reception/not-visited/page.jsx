@@ -93,19 +93,16 @@ export default function NotVisited() {
       <main className="flex-1 p-4 lg:p-8">
         {/* Header */}
         <div className="mb-6">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 flex items-center justify-center">
-              <UserX className="w-6 h-6 text-white" />
-            </div>
-            <h1 className="text-3xl font-bold text-gray-900">Not Visited Patients</h1>
+          <div className=" mb-2">
+            <h1 className="text-2xl font-bold text-gray-900">Not Visited Patients</h1>
           </div>
-          <p className="text-gray-600 ml-13">
+          <p className="text-gray-600">
             Patients who haven't been counselled yet
           </p>
         </div>
 
         {/* Filters */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
+        <div className="rounded-xl mb-6">
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />

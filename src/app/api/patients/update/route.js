@@ -165,9 +165,7 @@ const handler = async (req) => {
     // Execute all employee updates
     if (employeeUpdatePromises.length > 0) {
       await Promise.all(employeeUpdatePromises);
-      console.log(
-        `Updated ${employeeUpdatePromises.length} employee records for patient reference changes`
-      );
+      
     }
 
     return NextResponse.json(

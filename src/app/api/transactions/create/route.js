@@ -118,17 +118,7 @@ const handler = async (req) => {
           console.warn(
             `Transaction created but failed to update patient ${data.patient}`
           );
-        } else {
-          console.log(
-            `Successfully updated patient ${data.patient} payments:`,
-            {
-              amountReceived: updatedPatient.payments.amountReceived,
-              medicineAmount: updatedPatient.payments.medicineAmount,
-              pendingAmount: updatedPatient.payments.pendingAmount,
-              totalAmount: updatedPatient.payments.totalAmount,
-            }
-          );
-        }
+        } 
       }
     }
 

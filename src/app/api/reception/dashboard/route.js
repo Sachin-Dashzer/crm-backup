@@ -46,12 +46,10 @@ const formatISTDate = (date) => {
 
 const handler = async (req) => {
   try {
-    console.log('Reception Dashboard API called - Vercel Compatible');
     
     const data = await req.json();
     const { branch = "All", from, to } = data;
 
-    console.log('Request data:', { branch, from, to });
 
     // Validate branch
     if (!VALID_BRANCHES.includes(branch)) {
@@ -65,16 +63,7 @@ const handler = async (req) => {
     const fromDate = from ? getISTStartOfDay(from) : getISTStartOfDay();
     const toDate = to ? getISTEndOfDay(to) : getISTEndOfDay();
 
-    // Debug logging with both UTC and IST
-    console.log('Date range UTC:', {
-      from: fromDate.toISOString(),
-      to: toDate.toISOString()
-    });
-    console.log('Date range IST:', {
-      from: formatISTDate(fromDate),
-      to: formatISTDate(toDate)
-    });
-
+    
     // Validate dates
     if (isNaN(fromDate.getTime()) || isNaN(toDate.getTime())) {
       return NextResponse.json(
@@ -101,26 +90,14 @@ const handler = async (req) => {
     comparisonStart.setDate(comparisonStart.getDate() - (daysDifference - 1));
     comparisonStart.setHours(0, 0, 0, 0);
 
-    console.log('Comparison period UTC:', {
-      comparisonStart: comparisonStart.toISOString(),
-      comparisonEnd: comparisonEnd.toISOString()
-    });
-    console.log('Comparison period IST:', {
-      comparisonStart: formatISTDate(comparisonStart),
-      comparisonEnd: formatISTDate(comparisonEnd)
-    });
-
+    
     // Branch filter
     const branchFilter = branch === "All" ? {} : { "personal.branch": branch };
 
     // Get patient statistics
     const getPatientStats = async () => {
       try {
-        console.log('Fetching patient stats with date range:', {
-          current: { from: fromDate.toISOString(), to: toDate.toISOString() },
-          comparison: { from: comparisonStart.toISOString(), to: comparisonEnd.toISOString() }
-        });
-
+       
         const result = await Patient.aggregate([
           {
             $match: {
@@ -176,7 +153,6 @@ const handler = async (req) => {
           },
         ]);
 
-        console.log('Patient stats result:', JSON.stringify(result, null, 2));
         return result[0] || {};
       } catch (error) {
         console.error('Error in getPatientStats:', error);
@@ -187,10 +163,7 @@ const handler = async (req) => {
     // Get revenue statistics
     const getRevenueStats = async () => {
       try {
-        console.log('Fetching revenue stats with date range:', {
-          current: { from: fromDate.toISOString(), to: toDate.toISOString() },
-          comparison: { from: comparisonStart.toISOString(), to: comparisonEnd.toISOString() }
-        });
+       
 
         const result = await Transactions.aggregate([
           {
@@ -217,7 +190,6 @@ const handler = async (req) => {
           },
         ]);
 
-        console.log('Revenue stats result:', JSON.stringify(result, null, 2));
         return result[0] || {};
       } catch (error) {
         console.error('Error in getRevenueStats:', error);
@@ -260,7 +232,6 @@ const handler = async (req) => {
           }
         ]);
 
-        console.log('Recent patients count:', patients.length);
         return patients;
       } catch (error) {
         console.error('Error in getRecentPatients:', error);
@@ -274,13 +245,7 @@ const handler = async (req) => {
         const now = new Date(); // Current server time (UTC)
         const endOfDay = getISTEndOfDay();
         
-        console.log('Upcoming appointments time range:', {
-          now: now.toISOString(),
-          endOfDay: endOfDay.toISOString(),
-          nowIST: formatISTDate(now),
-          endOfDayIST: formatISTDate(endOfDay)
-        });
-
+        
         const appointments = await Patient.aggregate([
           {
             $match: {
@@ -316,10 +281,8 @@ const handler = async (req) => {
           }
         ]);
 
-        console.log('Upcoming appointments count:', appointments.length);
         return appointments;
       } catch (error) {
-        console.error('Error in getUpcomingAppointments:', error);
         return [];
       }
     };
@@ -393,7 +356,6 @@ const handler = async (req) => {
       },
     };
 
-    console.log('API response prepared successfully for Vercel');
     return NextResponse.json(response);
 
   } catch (error) {

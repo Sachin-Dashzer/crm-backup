@@ -86,7 +86,6 @@ const handler = async (req) => {
     // Execute all employee updates in parallel
     if (employeeUpdatePromises.length > 0) {
       await Promise.all(employeeUpdatePromises);
-      console.log(`Updated ${employeeUpdatePromises.length} employee records with new patient reference`);
     }
 
     return NextResponse.json({ 

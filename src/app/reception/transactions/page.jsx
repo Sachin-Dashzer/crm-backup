@@ -504,7 +504,7 @@ export default function AmountDashboard() {
               >
                 <Plus size={18} strokeWidth={2.5} />
                 <span className="font-semibold hidden xs:inline">Add Transaction</span>
-                <span className="font-semibold xs:hidden">Add</span>
+                <span className="font-semibold xs:hidden">Add Transaction</span>
               </button>
             </div>
           </div>

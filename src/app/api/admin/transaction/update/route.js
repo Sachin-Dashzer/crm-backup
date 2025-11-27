@@ -8,7 +8,7 @@ const handler = async (req) => {
   try {
     const data = await req.json();
 
-    console.log("Update transaction data:", data);
+    
 
     // Validate transaction ID
     if (!data._id || !mongoose.Types.ObjectId.isValid(data._id)) {
@@ -185,7 +185,7 @@ const handler = async (req) => {
 
       // Scenario 1: Patient changed (both original and new patient exist)
       if (originalPatientId && newPatientId && originalPatientId.toString() !== newPatientId.toString()) {
-        console.log(`Patient changed from ${originalPatientId} to ${newPatientId}`);
+        
 
         // Remove amount and reference from original patient
         patientUpdatePromises.push(
@@ -200,7 +200,7 @@ const handler = async (req) => {
       } 
       // Scenario 2: New patient assigned (no original patient)
       else if (!originalPatientId && newPatientId) {
-        console.log(`New patient assigned: ${newPatientId}`);
+        
         
         patientUpdatePromises.push(
           updatePatientPaymentAmounts(newPatientId, newAmount, 'add', isNowMedicine)
@@ -209,7 +209,7 @@ const handler = async (req) => {
       } 
       // Scenario 3: Patient removed (original patient exists but new patient is empty)
       else if (originalPatientId && !newPatientId) {
-        console.log(`Patient removed: ${originalPatientId}`);
+        
         
         patientUpdatePromises.push(
           updatePatientPaymentAmounts(originalPatientId, originalAmount, 'remove', wasMedicine)
@@ -219,7 +219,7 @@ const handler = async (req) => {
       // Scenario 4: Same patient, amount or procedure changed
       else if (originalPatientId && newPatientId && originalPatientId.toString() === newPatientId.toString() && 
                (originalAmount !== newAmount || wasMedicine !== isNowMedicine)) {
-        console.log(`Changes for patient ${originalPatientId}: Amount ${originalAmount}->${newAmount}, Medicine ${wasMedicine}->${isNowMedicine}`);
+        
         
         if (wasMedicine === isNowMedicine) {
           // Same procedure type, just amount changed
@@ -237,19 +237,19 @@ const handler = async (req) => {
       }
       // Scenario 5: Same patient, same amount, same procedure - no payment update needed
       else {
-        console.log("No payment amount changes needed");
+        
       }
 
       // Execute all patient updates
       if (patientUpdatePromises.length > 0) {
         const results = await Promise.all(patientUpdatePromises);
         const successfulUpdates = results.filter(result => result !== null);
-        console.log(`Successfully updated ${successfulUpdates.length} patient payment records`);
+        
       }
     } 
     // Handle expense transactions - remove from patient payments if cost type changed from Revenue to Expenses
     else if (originalCostType === "Revenue" && newCostType === "Expenses" && originalPatientId) {
-      console.log(`Transaction type changed from Revenue to Expenses, removing from patient ${originalPatientId}`);
+      
       
       // Remove the amount from the original patient
       await updatePatientPaymentAmounts(originalPatientId, originalAmount, 'remove', wasMedicine);
