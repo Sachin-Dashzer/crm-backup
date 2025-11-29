@@ -37,7 +37,8 @@ const handler = async (req) => {
     }
 
     // ✅ Calculate the number of days in the selected range
-    const daysDifference = Math.ceil((toDate - fromDate) / (1000 * 60 * 60 * 24)) + 1;
+    const daysDifference =
+      Math.ceil((toDate - fromDate) / (1000 * 60 * 60 * 24)) + 1;
 
     // ✅ Calculate comparison period (previous period of same duration)
     const yesterdayEnd = new Date(fromDate);
@@ -62,7 +63,8 @@ const handler = async (req) => {
 
     // ✅ Centralized filter objects
     const branchFilter = branch === "All" ? {} : { "personal.branch": branch };
-    const branchFilterPatient = branch === "All" ? {} : { "patientData.personal.branch": branch };
+    const branchFilterPatient =
+      branch === "All" ? {} : { "patientData.personal.branch": branch };
 
     // ✅ OPTIMIZED: Single aggregation for all patient counts (current period & comparison period)
     const getPatientStats = async () => {
@@ -116,7 +118,8 @@ const handler = async (req) => {
               {
                 $match: {
                   "personal.visitDate": { $gte: fromDate, $lte: toDate },
-                  "surgery.surgeryDate": { $exists: true, $ne: "", $ne: null },
+                  "counselling.readyForSurgery": true,
+                  "payments.transactions": { $exists: true, $ne: [] },
                 },
               },
               { $count: "count" },
