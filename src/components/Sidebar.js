@@ -203,13 +203,13 @@ export default function AdminSidebar() {
               }
               onClick={() => setSidebarOpen(false)}
             />
-            <NavItem
+            {/* <NavItem
               item="Add Patient"
               href="/admin/add-patient"
               icon={UserPlus}
               isActive={pathname === "/admin/add-patient"}
               onClick={() => setSidebarOpen(false)}
-            />
+            /> */}
             <NavItem
               item="Employees"
               href="/admin/employees"

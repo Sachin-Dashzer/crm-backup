@@ -25,21 +25,7 @@ const handler = async (req) => {
     }
 
     // Validation: Discount cannot be negative or greater than amount
-    if (data.discount) {
-      if (data.discount < 0) {
-        return NextResponse.json(
-          { message: "Discount cannot be negative", success: false },
-          { status: 400 }
-        );
-      }
-      if (data.discount > data.amount) {
-        return NextResponse.json(
-          { message: "Discount cannot exceed transaction amount", success: false },
-          { status: 400 }
-        );
-      }
-    }
-
+   
     // Validation: Patient ID format
     if (data.patient && !mongoose.Types.ObjectId.isValid(data.patient)) {
       return NextResponse.json(
