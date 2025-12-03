@@ -29,6 +29,10 @@ const transactionSchema = new mongoose.Schema({
     enum : ["Delhi" , "Mumbai" , "Hyderabad"],
   },
   expense: String,
+  discount: {
+    type: Number,
+    default: 0  
+  },
   amount: {
     type: Number,
     required: true,

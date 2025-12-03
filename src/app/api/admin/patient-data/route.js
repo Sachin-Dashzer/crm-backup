@@ -62,7 +62,7 @@ const handler = async (req) => {
             })              
             .populate({
                 path: 'payments.transactions',
-                select: 'date branch paymentType method amount',
+                select: 'date branch paymentType procedure method amount',
                 model: 'Transactions'
             });
 

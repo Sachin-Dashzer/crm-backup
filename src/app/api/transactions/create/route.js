@@ -8,6 +8,7 @@ const handler = async (req) => {
   try {
     const data = await req.json();
 
+    // Validation: Required fields
     if (!data.costType || !data.method || !data.amount) {
       return NextResponse.json(
         { message: "All fields are required", success: false },
@@ -15,6 +16,7 @@ const handler = async (req) => {
       );
     }
 
+    // Validation: Amount must be positive
     if (data.amount <= 0) {
       return NextResponse.json(
         { message: "Amount must be a positive number", success: false },
@@ -22,6 +24,23 @@ const handler = async (req) => {
       );
     }
 
+    // Validation: Discount cannot be negative or greater than amount
+    if (data.discount) {
+      if (data.discount < 0) {
+        return NextResponse.json(
+          { message: "Discount cannot be negative", success: false },
+          { status: 400 }
+        );
+      }
+      if (data.discount > data.amount) {
+        return NextResponse.json(
+          { message: "Discount cannot exceed transaction amount", success: false },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Validation: Patient ID format
     if (data.patient && !mongoose.Types.ObjectId.isValid(data.patient)) {
       return NextResponse.json(
         { message: "Invalid patient ID", success: false },
@@ -40,6 +59,7 @@ const handler = async (req) => {
       );
     }
 
+    // Check if patient exists
     let existingPatient = null;
     if (data.patient) {
       existingPatient = await Patient.findById(data.patient);
@@ -51,13 +71,16 @@ const handler = async (req) => {
       }
     }
 
+    // Create the transaction
     const newTransaction = await Transactions.create({
       ...data,
+      discount: data.discount || 0,
       date: data.date || new Date(),
     });
 
-    // Update patient payments only for revenue transactions
-    let updatedPatient = null; // ✅ Changed from const to let and moved outside
+    let updatedPatient = null;
+    
+    // Update patient payment details for Revenue transactions
     if (data.patient && data.costType === "Revenue") {
       const patient = await Patient.findById(data.patient);
 
@@ -66,59 +89,71 @@ const handler = async (req) => {
           `Patient ${data.patient} not found after transaction creation`
         );
       } else {
-        // Initialize payments object if it doesn't exist
+        // Initialize payments object if not exists
         if (!patient.payments) {
           patient.payments = {
             amountReceived: 0,
             pendingAmount: 0,
             medicineAmount: 0,
+            discount: 0,
             totalAmount: 0,
             transactions: [],
           };
         }
 
-        // Initialize transactions array if it doesn't exist
         if (!patient.payments.transactions) {
           patient.payments.transactions = [];
         }
 
-        // Add the new transaction ID to the array
+        // Add transaction reference
         patient.payments.transactions.push(newTransaction._id);
 
-        // Check if procedure is medicine
+        // Determine if this is a medicine transaction
         const isMedicine = data.procedure?.toLowerCase() === "medicine";
 
-        // Update the payment amounts based on procedure type
+        // Update amounts
         if (isMedicine) {
-          // Add to medicine amount
           const currentMedicineAmount = patient.payments.medicineAmount || 0;
           patient.payments.medicineAmount =
             currentMedicineAmount + parseFloat(data.amount);
         } else {
-          // Add to regular amount received
           const currentAmountReceived = patient.payments.amountReceived || 0;
           patient.payments.amountReceived =
             currentAmountReceived + parseFloat(data.amount);
         }
 
-        // Calculate pending amount (totalAmount - (amountReceived + medicineAmount))
+        // Recalculate total discount from all transactions
+        // This ensures accuracy even if transactions are edited/deleted
+        const allTransactions = await Transactions.find({
+          _id: { $in: patient.payments.transactions },
+          costType: "Revenue",
+        });
+
+        const totalDiscount = allTransactions.reduce(
+          (sum, transaction) => sum + (transaction.discount || 0),
+          0
+        );
+        patient.payments.discount = totalDiscount;
+
+        // Calculate pending amount
+        // Formula: Pending = (TotalAmount - TotalDiscount) - AmountReceived
         const totalAmount = patient.payments.totalAmount || 0;
-        const totalReceived =
-          (patient.payments.amountReceived || 0) +
-          (patient.payments.medicineAmount || 0);
+        const amountReceived = patient.payments.amountReceived || 0;
+        const adjustedTotal = Math.max(0, totalAmount - totalDiscount);
+        
         patient.payments.pendingAmount = Math.max(
           0,
-          totalAmount - totalReceived
+          adjustedTotal - amountReceived
         );
 
         // Save the updated patient
-        updatedPatient = await patient.save(); // ✅ Assign to outer variable
+        updatedPatient = await patient.save();
 
         if (!updatedPatient) {
           console.warn(
             `Transaction created but failed to update patient ${data.patient}`
           );
-        } 
+        }
       }
     }
 
@@ -126,12 +161,19 @@ const handler = async (req) => {
       {
         message: "Transaction created successfully",
         data: newTransaction,
-        updatedPatient: updatedPatient, // ✅ Include updated patient data
+        updatedPatient: updatedPatient
+          ? {
+              _id: updatedPatient._id,
+              payments: updatedPatient.payments,
+            }
+          : null,
         success: true,
       },
       { status: 201 }
     );
   } catch (error) {
+    console.error("Transaction creation error:", error);
+
     if (error.name === "ValidationError") {
       return NextResponse.json(
         { message: "Validation Error", error: error.message, success: false },

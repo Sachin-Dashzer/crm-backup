@@ -118,7 +118,11 @@ const handler = async (req) => {
               {
                 $match: {
                   "personal.visitDate": { $gte: fromDate, $lte: toDate },
-                  "counselling.readyForSurgery": true,
+                  "counselling.counsellor": {
+                    $exists: true,
+                    $ne: "",
+                    $ne: null,
+                  },
                   "payments.transactions": { $exists: true, $ne: [] },
                 },
               },

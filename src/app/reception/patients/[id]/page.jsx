@@ -29,6 +29,7 @@ const PatientProfile = () => {
         }
 
         const data = await res.json();
+
         if (data.success && data.patient) {
           setPatientData(data.patient);
         } else {
@@ -471,6 +472,9 @@ const PatientProfile = () => {
               <div class="info-item"><span class="info-label">Amount Received:</span> <span class="info-value amount-positive">${formatCurrencyPDF(
                 data.payments?.amountReceived
               )}</span></div>
+              <div class="info-item"><span class="info-label">Total Discount:</span> <span class="info-value amount-positive">${formatCurrencyPDF(
+                data.payments?.discount
+              )}</span></div>
               <div class="info-item"><span class="info-label">Pending Amount:</span> <span class="info-value amount-negative">${formatCurrencyPDF(
                 data.payments?.pendingAmount
               )}</span></div>
@@ -489,6 +493,7 @@ const PatientProfile = () => {
                 <tr>
                   <th>Date</th>
                   <th>Payment Type</th>
+                  <th>Procedure</th>
                   <th>Branch</th>
                   <th>Amount</th>
                 </tr>
@@ -500,6 +505,7 @@ const PatientProfile = () => {
                   <tr>
                     <td>${formatDatePDF(txn.date)}</td>
                     <td>${txn.paymentType || "N/A"}</td>
+                    <td>${txn.procedure || "N/A"}</td>
                     <td>${txn.branch || "N/A"}</td>
                     <td><strong>${formatCurrencyPDF(txn.amount)}</strong></td>
                   </tr>
@@ -1114,6 +1120,14 @@ const PatientProfile = () => {
                       {formatCurrency(patientData.payments?.amountReceived)}
                     </p>
                   </div>
+                  <div className="bg-green-50 p-4 rounded border text-center">
+                    <label className="block text-sm text-gray-600 mb-1">
+                      Total Discount
+                    </label>
+                    <p className="text-lg font-bold text-green-600">
+                      {formatCurrency(patientData.payments?.discount)}
+                    </p>
+                  </div>
                   <div className="bg-red-50 p-4 rounded border text-center">
                     <label className="block text-sm text-gray-600 mb-1">
                       Pending Amount
@@ -1150,6 +1164,9 @@ const PatientProfile = () => {
                                 Payment Type
                               </th>
                               <th className="border border-gray-300 px-4 py-2 text-left text-sm font-medium text-gray-700">
+                                Procedure
+                              </th>
+                              <th className="border border-gray-300 px-4 py-2 text-left text-sm font-medium text-gray-700">
                                 Branch
                               </th>
                               <th className="border border-gray-300 px-4 py-2 text-right text-sm font-medium text-gray-700">
@@ -1166,6 +1183,9 @@ const PatientProfile = () => {
                                   </td>
                                   <td className="border border-gray-300 px-4 py-2 text-sm">
                                     {transaction.paymentType || "N/A"}
+                                  </td>
+                                  <td className="border border-gray-300 px-4 py-2 text-sm">
+                                    {transaction.procedure || "N/A"}
                                   </td>
                                   <td className="border border-gray-300 px-4 py-2 text-sm">
                                     {transaction.branch || "N/A"}

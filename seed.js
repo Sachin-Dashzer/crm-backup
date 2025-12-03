@@ -1,0 +1,290 @@
+{
+    "data": [       
+        {
+            "_id": "692e7a3b5be3075961f1a931",
+            "costType": "Revenue",
+            "method": "upi",
+            "patient": "692f21a06de2946ff7696d96",
+            "procedure": "hair transplant",
+            "paymentType": "Pending",
+            "branch": "Delhi",
+            "expense": "",
+            "amount": 40000,
+            "date": "2025-12-02T00:00:00.000Z",
+            "remarks": "",
+            "__v": 0,
+            "discount": 0
+        },
+        {
+            "_id": "692e85565be3075961f1a998",
+            "costType": "Revenue",
+            "method": "cash",
+            "patient": "692f21a06de2946ff7696d97",
+            "procedure": "hair transplant",
+            "paymentType": "Booking",
+            "branch": "Delhi",
+            "expense": "",
+            "amount": 1000,
+            "date": "2025-12-02T00:00:00.000Z",
+            "remarks": "",
+            "__v": 0,
+            "discount": 0
+        },
+        {
+            "_id": "692e876f5be3075961f1a9b7",
+            "costType": "Expenses",
+            "method": "upi",
+            "patient": null,
+            "procedure": "hair transplant",
+            "paymentType": "Booking",
+            "branch": "Delhi",
+            "expense": "meta ads ",
+            "amount": 10000,
+            "date": "2025-12-02T00:00:00.000Z",
+            "remarks": "",
+            "__v": 0,
+            "discount": 0
+        },
+        {
+            "_id": "692e8910de5ededa27d049c4",
+            "costType": "Revenue",
+            "method": "upi",
+            "patient": "692f21a06de2946ff7696d98",
+            "procedure": "hair transplant",
+            "paymentType": "Booking",
+            "branch": "Delhi",
+            "expense": "",
+            "amount": 1000,
+            "date": "2025-12-02T00:00:00.000Z",
+            "remarks": "",
+            "__v": 0,
+            "discount": 0
+        },
+        {
+            "_id": "692e9cce98786ece6ece8ab4",
+            "costType": "Revenue",
+            "method": "cash",
+            "patient": "692f21a06de2946ff7696d9a",
+            "procedure": "hair transplant",
+            "paymentType": "Booking",
+            "branch": "Delhi",
+            "expense": "",
+            "amount": 2000,
+            "date": "2025-12-02T00:00:00.000Z",
+            "remarks": "",
+            "__v": 0,
+                        "discount": 0
+
+        },
+        {
+            "_id": "692e9d3198786ece6ece8abb",
+            "costType": "Revenue",
+            "method": "banking",
+            "patient": "692f21a06de2946ff7696d9a",
+            "procedure": "gfc",
+            "paymentType": "Booking",
+            "branch": "Delhi",
+            "expense": "",
+            "amount": 10000,
+            "date": "2025-12-02T00:00:00.000Z",
+            "remarks": "",
+            "__v": 0,
+                        "discount": 0
+
+        },
+        {
+            "_id": "692e9db698786ece6ece8ad3",
+            "costType": "Revenue",
+            "method": "upi",
+            "patient": "692f21a06de2946ff7696d9b",
+            "procedure": "hair transplant",
+            "paymentType": "Booking",
+            "branch": "Delhi",
+            "expense": "",
+            "amount": 20000,
+            "date": "2025-12-02T00:00:00.000Z",
+            "remarks": "",
+            "__v": 0,
+                        "discount": 0
+
+        },
+        {
+            "_id": "692ea35d1133b91af80576c2",
+            "costType": "Revenue",
+            "method": "cash",
+            "patient": "692f21a06de2946ff7696d9f",
+            "procedure": "hair transplant",
+            "paymentType": "Booking",
+            "branch": "Delhi",
+            "expense": "",
+            "amount": 1000,
+            "date": "2025-12-02T00:00:00.000Z",
+            "remarks": "",
+            "__v": 0,
+                        "discount": 0
+
+        },
+        
+        {
+            "_id": "692ea58c1133b91af80576eb",
+            "costType": "Revenue",
+            "method": "upi",
+            "patient": "692f21a06de2946ff7696da0",
+            "procedure": "hair transplant",
+            "paymentType": "Booking",
+            "branch": "Delhi",
+            "expense": "",
+            "amount": 1000,
+            "date": "2025-12-02T00:00:00.000Z",
+            "remarks": "",
+            "__v": 0,
+                        "discount": 0
+
+        },
+      
+        {
+            "_id": "692eab87d8383bc7d2077bbf",
+            "costType": "Revenue",
+            "method": "cash",
+            "patient": "692f21a06de2946ff7696d99",
+            "procedure": "hair transplant",
+            "paymentType": "Booking",
+            "branch": "Delhi",
+            "expense": "",
+            "amount": 13500,
+            "date": "2025-12-02T00:00:00.000Z",
+            "remarks": "",
+            "__v": 0,
+                        "discount": 0
+
+        },
+        {
+            "_id": "692eab98d8383bc7d2077bcb",
+            "costType": "Revenue",
+            "method": "upi",
+            "patient": "692f21a06de2946ff7696d99",
+            "procedure": "hair transplant",
+            "paymentType": "Booking",
+            "branch": "Delhi",
+            "expense": "",
+            "amount": 6500,
+            "date": "2025-12-02T00:00:00.000Z",
+            "remarks": "",
+            "__v": 0,
+                        "discount": 0
+
+        },
+        {
+            "_id": "692ead6f1133b91af8057707",
+            "costType": "Expenses",
+            "method": "upi",
+            "patient": null,
+            "procedure": "hair transplant",
+            "paymentType": "Booking",
+            "branch": "Delhi",
+            "expense": "GOOGLE ADS ",
+            "amount": 20000,
+            "date": "2025-12-02T00:00:00.000Z",
+            "remarks": "",
+            "__v": 0,
+                        "discount": 0
+
+        },
+        {
+            "_id": "692ead9f1133b91af805770b",
+            "costType": "Expenses",
+            "method": "upi",
+            "patient": null,
+            "procedure": "hair transplant",
+            "paymentType": "Booking",
+            "branch": "Delhi",
+            "expense": "META ADS ",
+            "amount": 20000,
+            "date": "2025-12-02T00:00:00.000Z",
+            "remarks": "",
+            "__v": 0,
+                        "discount": 0
+
+        },
+        {
+            "_id": "692eaf261133b91af8057713",
+            "costType": "Expenses",
+            "method": "cash",
+            "patient": null,
+            "procedure": "hair transplant",
+            "paymentType": "Booking",
+            "branch": "Delhi",
+            "expense": "SALARY SHABBIR ",
+            "amount": 10000,
+            "date": "2025-12-02T00:00:00.000Z",
+            "remarks": "",
+            "__v": 0,
+                        "discount": 0
+
+        },
+        {
+            "_id": "692ebe7be28d3061f4767d5f",
+            "costType": "Revenue",
+            "method": "cash",
+            "patient": "692f21a06de2946ff7696da1",
+            "procedure": "gfc",
+            "paymentType": "Booking",
+            "branch": "Delhi",
+            "expense": "",
+            "amount": 15000,
+            "date": "2025-12-02T00:00:00.000Z",
+            "remarks": "",
+            "__v": 0,
+                        "discount": 0
+
+        },
+        {
+            "_id": "692ebfd21133b91af8057729",
+            "costType": "Revenue",
+            "method": "Loan",
+            "patient": "692f21a06de2946ff7696da2",
+            "procedure": "hair transplant",
+            "paymentType": "Booking",
+            "branch": "Delhi",
+            "expense": "",
+            "amount": 46460,
+            "date": "2025-12-02T00:00:00.000Z",
+            "remarks": "",
+            "__v": 0,
+                        "discount": 0
+
+        },
+        {
+            "_id": "692ec892c6fa4111fb74b197",
+            "costType": "Expenses",
+            "method": "cash",
+            "patient": null,
+            "procedure": "hair transplant",
+            "paymentType": "Booking",
+            "branch": "Delhi",
+            "expense": "SALARY PAYAL OT STAFF  OCT ",
+            "amount": 15000,
+            "date": "2025-12-02T00:00:00.000Z",
+            "remarks": "",
+            "__v": 0,
+                        "discount": 0
+
+        },
+        {
+            "_id": "692ec8a6c6fa4111fb74b19b",
+            "costType": "Expenses",
+            "method": "cash",
+            "patient": null,
+            "procedure": "hair transplant",
+            "paymentType": "Booking",
+            "branch": "Delhi",
+            "expense": "FNF AMOUNT AMOUNT MANNU ",
+            "amount": 3000,
+            "date": "2025-12-02T00:00:00.000Z",
+            "remarks": "",
+            "__v": 0,
+                        "discount": 0
+
+        }
+    ]
+}

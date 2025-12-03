@@ -102,6 +102,7 @@ const patientSchema = new mongoose.Schema(
       amountReceived: { type: Number, default: 0 },
       pendingAmount: { type: Number, default: 0 },
       medicineAmount: { type: Number, default: 0 },
+      discount: { type: Number, default: 0 },
       totalAmount: { type: Number, default: 0 },
       transactions: [
         { type: mongoose.Schema.Types.ObjectId, ref: "Transactions" },
@@ -117,7 +118,14 @@ const patientSchema = new mongoose.Schema(
     ops: {
       status: {
         type: String,
-        enum: ["NEW", "NOT_VISITED", "CONSULTED", "SURGERY_BOOKED", "CLOSED"],
+        enum: [
+          "NEW",
+          "NOT_VISITED",
+          "NOT_CONVERTED",
+          "CONSULTED",
+          "SURGERY_BOOKED",
+          "CLOSED",
+        ],
         default: "NEW",
       },
     },
@@ -132,33 +140,33 @@ patientSchema.pre("save", function (next) {
   const isVisitDatePast =
     patient.personal?.visitDate && patient.personal.visitDate < currentDate;
 
+  if (!patient.ops) {
+    patient.ops = {};
+  }
+
   if (patient.counselling?.finlpackage) {
     patient.payments = patient.payments || {};
     patient.payments.totalAmount = patient.counselling.finlpackage;
   }
 
-  if (!patient.counselling?.counsellor) {
-    if (isVisitDatePast) {
-      patient.ops.status = "NOT_VISITED";
-    } else {
-      patient.ops.status = "NEW";
-    }
-  } else if (patient.counselling.counsellor && !patient.surgery?.surgeryDate) {
-    patient.ops.status = "CONSULTED";
-  } else if (patient.counselling.counsellor && patient.surgery?.surgeryDate) {
-    patient.ops.status = "SURGERY_BOOKED";
-  }
-
   if (patient.surgery?.doctor) {
     patient.ops.status = "CLOSED";
-  }
-
-  if (!patient.ops) {
-    patient.ops = {};
+  } else if (
+    patient.counselling?.counsellor &&
+    patient.counselling?.readyForSurgery === false
+  ) {
+    patient.ops.status = "NOT_CONVERTED";
+  } else if (patient.counselling?.counsellor && patient.surgery?.surgeryDate) {
+    patient.ops.status = "SURGERY_BOOKED";
+  } else if (patient.counselling?.counsellor) {
+    patient.ops.status = "CONSULTED";
+  } else if (isVisitDatePast) {
+    patient.ops.status = "NOT_VISITED";
+  } else {
+    patient.ops.status = "NEW";
   }
 
   next();
 });
-
 export default mongoose.models.Patient ||
   mongoose.model("Patient", patientSchema);

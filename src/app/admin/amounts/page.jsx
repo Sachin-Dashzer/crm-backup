@@ -23,44 +23,31 @@ import {
   Trash2,
   RefreshCw,
   Loader2,
-  Download,
-  Upload,
-  Eye,
-  ArrowUpDown,
   Menu,
+  Tag,
+  ArrowUpDown,
 } from "lucide-react";
 
-const BRANCHES = ["Delhi", "Mumbai", "Hyderabad"];
-const PAYMENT_METHODS = ["cash", "upi", "banking", "other", "Loan"];
-const PROCEDURES = [
-  "hair transplant",
-  "beard transplant",
-  "prp",
-  "gfc",
-  "medicine",
-  "Other",
-];
-const COST_TYPES = ["Revenue", "Expenses"];
-const PAYMENT_TYPES = ["Booking", "Pending", "Full-payment", "Other"];
+// ========== UTILITY FUNCTIONS ==========
+const calculateNetAmount = (transaction) => {
+  if (!transaction) return 0;
+  const amount = parseFloat(transaction.amount) || 0;
+  const discount = parseFloat(transaction.discount) || 0;
+  return Math.max(0, amount - discount);
+};
 
-// Timezone-aware date functions for Vercel (UTC)
 const getTodayDate = () => {
-  // Get current date in IST (UTC+5:30)
   const now = new Date();
-  // Convert to IST (India Standard Time)
-  const istOffset = 5.5 * 60 * 60 * 1000; // IST is UTC+5:30
+  const istOffset = 5.5 * 60 * 60 * 1000;
   const istDate = new Date(now.getTime() + istOffset);
   return istDate.toISOString().split('T')[0];
 };
 
 const formatDateForDisplay = (date) => {
   if (!date) return "N/A";
-  
-  // Convert to IST for display
   const dateObj = new Date(date);
   const istOffset = 5.5 * 60 * 60 * 1000;
   const istDate = new Date(dateObj.getTime() + istOffset);
-  
   return istDate.toLocaleDateString("en-IN", {
     day: "2-digit",
     month: "short",
@@ -77,7 +64,20 @@ const formatCurrency = (amount) => {
   }).format(amount);
 };
 
-// Stat Card Component
+const BRANCHES = ["Delhi", "Mumbai", "Hyderabad"];
+const PAYMENT_METHODS = ["upi", "cash", "card", "banking", "Loan", "other"];
+const PROCEDURES = [
+  "hair transplant",
+  "beard transplant",
+  "prp",
+  "gfc",
+  "medicine",
+  "Other",
+];
+const COST_TYPES = ["Revenue", "Expenses"];
+const PAYMENT_TYPES = ["Booking", "Pending", "Full-payment", "Other"];
+
+// ========== STAT CARD COMPONENT ==========
 function StatCard({
   title,
   value,
@@ -108,14 +108,112 @@ function StatCard({
   );
 }
 
+// ========== DELETE CONFIRM MODAL COMPONENT ==========
+function DeleteConfirmModal({ transaction, onClose, onConfirm }) {
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDelete = async () => {
+    setDeleting(true);
+    await onConfirm();
+    setDeleting(false);
+  };
+
+  const netAmount = calculateNetAmount(transaction);
+  const hasDiscount = parseFloat(transaction?.discount || 0) > 0;
+
+  return (
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full mx-4">
+        <div className="p-6 sm:p-8">
+          <div className="w-12 h-12 sm:w-16 sm:h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <AlertCircle className="w-6 h-6 sm:w-8 sm:h-8 text-red-600" />
+          </div>
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 text-center mb-2">
+            Delete Transaction?
+          </h2>
+          <p className="text-gray-600 text-center mb-4 sm:mb-6 text-sm sm:text-base">
+            Are you sure you want to delete this transaction? This action cannot
+            be undone and will update patient balance if applicable.
+          </p>
+          <div className="bg-gray-50 rounded-xl p-3 sm:p-4 mb-4 sm:mb-6 space-y-2">
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-600">Original Amount:</span>
+              <span className={`font-bold text-gray-900 text-sm sm:text-base ${hasDiscount ? 'line-through text-gray-500' : ''}`}>
+                {formatCurrency(transaction?.amount || 0)}
+              </span>
+            </div>
+            {hasDiscount && (
+              <>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">Discount:</span>
+                  <span className="font-bold text-amber-600 text-sm sm:text-base">
+                    -{formatCurrency(transaction?.discount || 0)}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center pt-2 border-t border-gray-200">
+                  <span className="text-sm font-semibold text-gray-700">Net Amount:</span>
+                  <span className="font-bold text-emerald-600 text-sm sm:text-base">
+                    {formatCurrency(netAmount)}
+                  </span>
+                </div>
+              </>
+            )}
+            <div className="flex justify-between items-center pt-2 border-t border-gray-200">
+              <span className="text-sm text-gray-600">Date:</span>
+              <span className="font-medium text-gray-900 text-sm sm:text-base">
+                {formatDateForDisplay(transaction?.date)}
+              </span>
+            </div>
+            {transaction?.patient && (
+              <div className="mt-2 pt-2 border-t border-gray-200">
+                <div className="text-xs text-gray-500 flex items-center gap-1">
+                  <AlertCircle className="w-3 h-3" />
+                  Patient balance will be updated automatically
+                </div>
+              </div>
+            )}
+          </div>
+          <div className="flex flex-col xs:flex-row gap-3">
+            <button
+              onClick={onClose}
+              disabled={deleting}
+              className="flex-1 px-4 sm:px-6 py-2.5 sm:py-3 border-2 border-gray-200 rounded-xl hover:bg-gray-50 transition-all font-semibold text-gray-700 disabled:opacity-50 text-sm sm:text-base"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleDelete}
+              disabled={deleting}
+              className="flex-1 px-4 sm:px-6 py-2.5 sm:py-3 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-all font-semibold disabled:opacity-50 flex items-center justify-center gap-2 text-sm sm:text-base"
+            >
+              {deleting ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="w-4 h-4" />
+                  Delete
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ========== MAIN COMPONENT ==========
 export default function AmountDashboard() {
   const [revenue, setRevenue] = useState([]);
   const [expenses, setExpenses] = useState([]);
   const [patients, setPatients] = useState([]);
   const [filters, setFilters] = useState({
     branch: "",
-    dateFrom: getTodayDate(), // Set today as default
-    dateTo: getTodayDate(),   // Set today as default
+    dateFrom: getTodayDate(),
+    dateTo: getTodayDate(),
     paymentMethod: "",
     procedure: "",
   });
@@ -179,7 +277,7 @@ export default function AmountDashboard() {
         setPatients(data.patients || []);
       }
     } catch (e) {
-      toast.error("Failed to fetch patients:");
+      toast.error("Failed to fetch patients");
     }
   };
 
@@ -196,22 +294,17 @@ export default function AmountDashboard() {
     return items.filter((item) => {
       const itemDate = new Date(item.date);
       
-      // Convert filter dates to start and end of day in IST
       if (dateFrom) {
         const fromDate = new Date(dateFrom);
         fromDate.setHours(0, 0, 0, 0);
-        // Adjust for IST (UTC+5:30)
         const fromDateIST = new Date(fromDate.getTime() - (5.5 * 60 * 60 * 1000));
-        
         if (itemDate < fromDateIST) return false;
       }
       
       if (dateTo) {
         const toDate = new Date(dateTo);
         toDate.setHours(23, 59, 59, 999);
-        // Adjust for IST (UTC+5:30)
         const toDateIST = new Date(toDate.getTime() - (5.5 * 60 * 60 * 1000));
-        
         if (itemDate > toDateIST) return false;
       }
       
@@ -235,9 +328,7 @@ export default function AmountDashboard() {
         (t) => t.procedure.toLowerCase() === filters.procedure.toLowerCase()
       );
     
-    // Use timezone-aware date filtering
     list = filterByDateRange(list, filters.dateFrom, filters.dateTo);
-    
     return list;
   }, [revenue, filters]);
 
@@ -252,11 +343,27 @@ export default function AmountDashboard() {
         (e) => e.method.toLowerCase() === filters.paymentMethod.toLowerCase()
       );
     
-    // Use timezone-aware date filtering
     list = filterByDateRange(list, filters.dateFrom, filters.dateTo);
-    
     return list;
   }, [expenses, filters]);
+
+  // Calculate totals with discount
+  const totalIncome = useMemo(() => {
+    return filteredRevenue.reduce((sum, t) => sum + calculateNetAmount(t), 0);
+  }, [filteredRevenue]);
+
+  const totalExpense = useMemo(() => {
+    return filteredExpenses.reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
+  }, [filteredExpenses]);
+
+  // Calculate total discount
+  const totalDiscount = useMemo(() => {
+    return filteredRevenue.reduce((sum, t) => sum + (parseFloat(t.discount) || 0), 0);
+  }, [filteredRevenue]);
+
+  const netBalance = totalIncome - totalExpense;
+  const totalTransactions = filteredRevenue.length;
+  const totalExpenseItems = filteredExpenses.length;
 
   const searchedRows = useMemo(() => {
     const rows = activeTab === "revenue" ? filteredRevenue : filteredExpenses;
@@ -272,7 +379,8 @@ export default function AmountDashboard() {
           row.method?.toLowerCase().includes(searchLower) ||
           row.branch?.toLowerCase().includes(searchLower) ||
           row.remarks?.toLowerCase().includes(searchLower) ||
-          row.amount.toString().includes(searchLower)
+          row.amount.toString().includes(searchLower) ||
+          (row.discount && row.discount.toString().includes(searchLower))
         );
       } else {
         return (
@@ -300,6 +408,12 @@ export default function AmountDashboard() {
           bVal = b.patient?.personal?.name || "Walk-in Customer";
         }
 
+        // Handle net amount calculation for amount sorting
+        if (sortConfig.key === "amount" && activeTab === "revenue") {
+          aVal = calculateNetAmount(a);
+          bVal = calculateNetAmount(b);
+        }
+
         // Handle dates
         if (sortConfig.key === "date") {
           aVal = new Date(aVal);
@@ -321,19 +435,6 @@ export default function AmountDashboard() {
     }));
   };
 
-  // Totals
-  const totalIncome = filteredRevenue.reduce(
-    (sum, t) => sum + (t.amount || 0),
-    0
-  );
-  const totalExpense = filteredExpenses.reduce(
-    (sum, e) => sum + (e.amount || 0),
-    0
-  );
-  const netBalance = totalIncome - totalExpense;
-  const totalTransactions = filteredRevenue.length;
-  const totalExpenseItems = filteredExpenses.length;
-
   // Pagination
   const total = sortedRows.length;
   const pages = Math.max(1, Math.ceil(total / perPage));
@@ -350,8 +451,8 @@ export default function AmountDashboard() {
   const clearFilters = () => {
     setFilters({
       branch: "",
-      dateFrom: getTodayDate(), // Reset to today
-      dateTo: getTodayDate(),   // Reset to today
+      dateFrom: getTodayDate(),
+      dateTo: getTodayDate(),
       paymentMethod: "",
       procedure: "",
     });
@@ -383,7 +484,9 @@ export default function AmountDashboard() {
 
   const handleSuccess = () => {
     fetchData();
+    fetchPatients();
     closeModal();
+    toast.success("Transaction saved successfully");
   };
 
   const openDeleteConfirm = (transaction) => {
@@ -395,7 +498,7 @@ export default function AmountDashboard() {
     if (!deletingTransaction) return;
 
     try {
-      const res = await fetch("/api/admin/transaction/delete", {
+      const res = await fetch("/api/transactions/delete", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ _id: deletingTransaction._id }),
@@ -404,7 +507,9 @@ export default function AmountDashboard() {
       const data = await res.json();
 
       if (data.success) {
+        toast.success("Transaction deleted successfully");
         fetchData();
+        fetchPatients();
         setShowDeleteConfirm(false);
         setDeletingTransaction(null);
       } else {
@@ -544,11 +649,11 @@ export default function AmountDashboard() {
             iconColor={netBalance >= 0 ? "text-indigo-600" : "text-gray-600"}
           />
           <StatCard
-            title="Total Transactions"
-            value={(totalTransactions + totalExpenseItems).toLocaleString()}
-            icon={CreditCard}
+            title="Total Discount"
+            value={formatCurrency(totalDiscount)}
+            icon={Tag}
             gradient="from-amber-400 to-orange-500"
-            count="All time"
+            count={`On ${filteredRevenue.filter(t => (t.discount || 0) > 0).length} transactions`}
             iconBg="bg-amber-100"
             iconColor="text-amber-600"
           />
@@ -729,83 +834,14 @@ export default function AmountDashboard() {
   );
 }
 
-// Delete Confirmation Modal
-function DeleteConfirmModal({ transaction, onClose, onConfirm }) {
-  const [deleting, setDeleting] = useState(false);
-
-  const handleDelete = async () => {
-    setDeleting(true);
-    await onConfirm();
-    setDeleting(false);
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full mx-4">
-        <div className="p-6 sm:p-8">
-          <div className="w-12 h-12 sm:w-16 sm:h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <AlertCircle className="w-6 h-6 sm:w-8 sm:h-8 text-red-600" />
-          </div>
-          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 text-center mb-2">
-            Delete Transaction?
-          </h2>
-          <p className="text-gray-600 text-center mb-4 sm:mb-6 text-sm sm:text-base">
-            Are you sure you want to delete this transaction? This action cannot
-            be undone.
-          </p>
-          <div className="bg-gray-50 rounded-xl p-3 sm:p-4 mb-4 sm:mb-6">
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-sm text-gray-600">Amount:</span>
-              <span className="font-bold text-gray-900 text-sm sm:text-base">
-                {formatCurrency(transaction?.amount || 0)}
-              </span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">Date:</span>
-              <span className="font-medium text-gray-900 text-sm sm:text-base">
-                {formatDateForDisplay(transaction?.date)}
-              </span>
-            </div>
-          </div>
-          <div className="flex flex-col xs:flex-row gap-3">
-            <button
-              onClick={onClose}
-              disabled={deleting}
-              className="flex-1 px-4 sm:px-6 py-2.5 sm:py-3 border-2 border-gray-200 rounded-xl hover:bg-gray-50 transition-all font-semibold text-gray-700 disabled:opacity-50 text-sm sm:text-base"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleDelete}
-              disabled={deleting}
-              className="flex-1 px-4 sm:px-6 py-2.5 sm:py-3 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-all font-semibold disabled:opacity-50 flex items-center justify-center gap-2 text-sm sm:text-base"
-            >
-              {deleting ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Deleting...
-                </>
-              ) : (
-                <>
-                  <Trash2 className="w-4 h-4" />
-                  Delete
-                </>
-              )}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// Transaction Modal Component
+// ========== TRANSACTION MODAL COMPONENT ==========
 function TransactionModal({ transaction, patients, onClose, onSuccess }) {
   const isEdit = !!transaction;
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [searchPatient, setSearchPatient] = useState("");
   const [showPatientDropdown, setShowPatientDropdown] = useState(false);
+  const toast = useToast();
 
   const [formData, setFormData] = useState({
     _id: transaction?._id || "",
@@ -815,6 +851,7 @@ function TransactionModal({ transaction, patients, onClose, onSuccess }) {
     paymentType: transaction?.paymentType || "Booking",
     branch: transaction?.branch || "Delhi",
     amount: transaction?.amount || "",
+    discount: transaction?.discount || "0",
     date: transaction?.date
       ? new Date(transaction.date).toISOString().split("T")[0]
       : new Date().toISOString().split("T")[0],
@@ -822,6 +859,13 @@ function TransactionModal({ transaction, patients, onClose, onSuccess }) {
     remarks: transaction?.remarks || "",
     patient: transaction?.patient?._id || "",
   });
+
+  // Calculate net amount
+  const netAmount = useMemo(() => {
+    const amount = parseFloat(formData.amount) || 0;
+    const discount = parseFloat(formData.discount) || 0;
+    return Math.max(0, amount - discount);
+  }, [formData.amount, formData.discount]);
 
   // Update formData when transaction prop changes
   useEffect(() => {
@@ -834,6 +878,7 @@ function TransactionModal({ transaction, patients, onClose, onSuccess }) {
         paymentType: transaction.paymentType || "Booking",
         branch: transaction.branch || "Delhi",
         amount: transaction.amount || "",
+        discount: transaction.discount || "0",
         date: transaction.date
           ? new Date(transaction.date).toISOString().split("T")[0]
           : new Date().toISOString().split("T")[0],
@@ -868,8 +913,19 @@ function TransactionModal({ transaction, patients, onClose, onSuccess }) {
       return;
     }
 
-    if (!formData.amount || formData.amount <= 0) {
+    if (!formData.amount || parseFloat(formData.amount) <= 0) {
       setError("Please enter a valid amount");
+      return;
+    }
+
+    const discountValue = parseFloat(formData.discount) || 0;
+    if (discountValue < 0) {
+      setError("Discount cannot be negative");
+      return;
+    }
+
+    if (discountValue > parseFloat(formData.amount)) {
+      setError("Discount cannot be greater than amount");
       return;
     }
 
@@ -883,19 +939,20 @@ function TransactionModal({ transaction, patients, onClose, onSuccess }) {
 
     try {
       const url = isEdit
-        ? "/api/admin/transaction/update"
+        ? "/api/transactions/update"
         : "/api/transactions/create";
       const method = isEdit ? "PUT" : "POST";
 
-      // Prepare payload - set patient to null for expenses
+      // Prepare payload
       const payload = {
         ...formData,
-        // For expenses, explicitly set patient to null instead of empty string
         patient: formData.costType === "Expenses" ? null : formData.patient,
+        discount: formData.costType === "Revenue" ? (formData.discount || "0") : "0",
+        amount: formData.amount,
       };
 
       if (!isEdit) {
-        delete payload._id; // Remove _id for new transactions
+        delete payload._id;
       }
 
       const res = await fetch(url, {
@@ -908,13 +965,12 @@ function TransactionModal({ transaction, patients, onClose, onSuccess }) {
 
       if (data.success) {
         onSuccess();
-        // You need to import toast or use the toast hook
-        // toast.success("Data Updated Successfully");
       } else {
         setError(data.message || "Failed to save transaction");
       }
     } catch (err) {
       setError("An error occurred while saving");
+      console.error("Transaction save error:", err);
     } finally {
       setLoading(false);
     }
@@ -945,14 +1001,6 @@ function TransactionModal({ transaction, patients, onClose, onSuccess }) {
             </div>
           )}
 
-          {/* Debug info - remove in production */}
-          {isEdit && (
-            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-800">
-              <strong>Debug:</strong> Transaction ID:{" "}
-              {formData._id || "NOT FOUND"}
-            </div>
-          )}
-
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
             {/* Type Selection */}
             <div className="md:col-span-2">
@@ -969,6 +1017,7 @@ function TransactionModal({ transaction, patients, onClose, onSuccess }) {
                         ...formData,
                         costType: type,
                         patient: type === "Expenses" ? "" : formData.patient,
+                        discount: type === "Expenses" ? "0" : formData.discount,
                       })
                     }
                     className={`p-3 sm:p-4 rounded-xl border-2 transition-all font-semibold text-sm sm:text-base ${
@@ -1014,10 +1063,13 @@ function TransactionModal({ transaction, patients, onClose, onSuccess }) {
                           {selectedPatient.personal?.name}
                         </p>
                         <p className="text-xs sm:text-sm text-gray-600 truncate">
-                          Total: {selectedPatient.payments?.totalAmount} | 
-                          Received: {selectedPatient.payments?.amountReceived} | 
-                          Pending: {selectedPatient.payments?.pendingAmount} | 
-                          Medicine: {selectedPatient.payments?.medicineAmount}
+                          Total: {formatCurrency(selectedPatient.payments?.totalAmount || 0)} | 
+                          Received: {formatCurrency(selectedPatient.payments?.amountReceived || 0)} | 
+                          Pending: {formatCurrency(selectedPatient.payments?.pendingAmount || 0)}
+                        </p>
+                        <p className="text-xs sm:text-sm text-gray-600 truncate">
+                          Medicine: {formatCurrency(selectedPatient.payments?.medicineAmount || 0)} | 
+                          Discount: {formatCurrency(selectedPatient.payments?.discount || 0)}
                         </p>
                       </div>
                       <CheckCircle2 className="text-emerald-600 flex-shrink-0 ml-2" size={20} />
@@ -1053,10 +1105,13 @@ function TransactionModal({ transaction, patients, onClose, onSuccess }) {
                               {patient.personal?.name} - {patient.personal?.phone}
                             </p>
                             <p className="text-xs text-gray-600 truncate">
-                              Total: {patient.payments?.totalAmount} | 
-                              Received: {patient.payments?.amountReceived} | 
-                              Pending: {patient.payments?.pendingAmount} | 
-                              Medicine: {patient.payments?.medicineAmount}
+                              Total: {formatCurrency(patient.payments?.totalAmount || 0)} | 
+                              Received: {formatCurrency(patient.payments?.amountReceived || 0)} | 
+                              Pending: {formatCurrency(patient.payments?.pendingAmount || 0)}
+                            </p>
+                            <p className="text-xs text-gray-600 truncate">
+                              Medicine: {formatCurrency(patient.payments?.medicineAmount || 0)} | 
+                              Discount: {formatCurrency(patient.payments?.discount || 0)}
                             </p>
                           </button>
                         ))
@@ -1128,7 +1183,22 @@ function TransactionModal({ transaction, patients, onClose, onSuccess }) {
               icon={DollarSign}
               placeholder="0"
               min="1"
+              step="0.01"
             />
+
+            {/* Discount Field - Only for Revenue */}
+            {formData.costType === "Revenue" && (
+              <Input
+                label="Discount"
+                type="number"
+                value={formData.discount}
+                onChange={(val) => setFormData({ ...formData, discount: val })}
+                icon={Tag}
+                placeholder="0"
+                min="0"
+                step="0.01"
+              />
+            )}
 
             <Input
               label="Date"
@@ -1139,6 +1209,23 @@ function TransactionModal({ transaction, patients, onClose, onSuccess }) {
               icon={Calendar}
               max={new Date().toISOString().split("T")[0]}
             />
+
+            {/* Net Amount Display */}
+            {formData.costType === "Revenue" && formData.amount && (
+              <div className="flex items-end">
+                <div className="w-full p-3 bg-gradient-to-r from-emerald-50 to-green-50 border-2 border-emerald-200 rounded-xl">
+                  <p className="text-xs font-semibold text-emerald-700 mb-1">Net Amount</p>
+                  <p className="text-xl font-bold text-emerald-700">
+                    {formatCurrency(netAmount)}
+                  </p>
+                  {parseFloat(formData.discount) > 0 && (
+                    <p className="text-xs text-emerald-600 mt-1">
+                      After {formatCurrency(formData.discount)} discount
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
 
             <div className="md:col-span-2">
               <Input
@@ -1182,7 +1269,7 @@ function TransactionModal({ transaction, patients, onClose, onSuccess }) {
   );
 }
 
-// Data Table Component
+// ========== DATA TABLE COMPONENT ==========
 function DataTable({
   type,
   rows,
@@ -1302,129 +1389,153 @@ function DataTable({
                 </td>
               </tr>
             ) : (
-              rows.map((row, i) => (
-                <tr
-                  key={row._id || i}
-                  className="hover:bg-indigo-50/50 transition-colors"
-                >
-                  {type === "revenue" ? (
-                    <>
-                      <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <div className="w-6 h-6 sm:w-8 sm:h-8 bg-indigo-100 rounded-full flex items-center justify-center flex-shrink-0">
-                            <User className="w-3 h-3 sm:w-4 sm:h-4 text-indigo-600" />
+              rows.map((row, i) => {
+                const netAmount = calculateNetAmount(row);
+                const hasDiscount = parseFloat(row.discount || 0) > 0;
+
+                return (
+                  <tr
+                    key={row._id || i}
+                    className="hover:bg-indigo-50/50 transition-colors"
+                  >
+                    {type === "revenue" ? (
+                      <>
+                        <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <div className="w-6 h-6 sm:w-8 sm:h-8 bg-indigo-100 rounded-full flex items-center justify-center flex-shrink-0">
+                              <User className="w-3 h-3 sm:w-4 sm:h-4 text-indigo-600" />
+                            </div>
+                            <span className="font-medium text-gray-900 text-sm truncate">
+                              {getPatientName(row.patient)}
+                            </span>
                           </div>
-                          <span className="font-medium text-gray-900 text-sm truncate">
-                            {getPatientName(row.patient)}
+                        </td>
+                        <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4">
+                          <span
+                            className={`px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg text-xs font-semibold border ${getProcedureColor(
+                              row.procedure
+                            )}`}
+                          >
+                            {row.procedure}
                           </span>
-                        </div>
-                      </td>
-                      <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4">
-                        <span
-                          className={`px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg text-xs font-semibold border ${getProcedureColor(
-                            row.procedure
-                          )}`}
-                        >
-                          {row.procedure}
-                        </span>
-                      </td>
-                      <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4">
-                        <span
-                          className={`px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg text-xs font-semibold border ${getMethodColor(
-                            row.method
-                          )}`}
-                        >
-                          {row.method?.toUpperCase()}
-                        </span>
-                      </td>
-                      <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 text-right font-bold text-emerald-600 text-sm sm:text-base">
-                        {formatCurrency(row.amount)}
-                      </td>
-                      <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 text-gray-700 font-medium text-sm">
-                        {formatDateForDisplay(row.date)}
-                      </td>
-                      <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4">
-                        <span className="px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg text-xs font-semibold bg-blue-100 text-blue-700 border border-blue-200">
-                          {row.branch}
-                        </span>
-                      </td>
-                      <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 text-gray-600 text-sm max-w-[120px] lg:max-w-xs truncate">
-                        {row.remarks || "-"}
-                      </td>
-                      <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4">
-                        <div className="flex items-center gap-1 sm:gap-2">
-                          <button
-                            onClick={() => onEdit(row)}
-                            className="p-1.5 sm:p-2 hover:bg-indigo-100 rounded-lg transition-colors text-indigo-600"
-                            title="Edit transaction"
+                        </td>
+                        <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4">
+                          <span
+                            className={`px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg text-xs font-semibold border ${getMethodColor(
+                              row.method
+                            )}`}
                           >
-                            <Edit2 size={16} />
-                          </button>
-                          <button
-                            onClick={() => onDelete(row)}
-                            className="p-1.5 sm:p-2 hover:bg-red-100 rounded-lg transition-colors text-red-600"
-                            title="Delete transaction"
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        </div>
-                      </td>
-                    </>
-                  ) : (
-                    <>
-                      <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 font-medium text-gray-900 text-sm">
-                        {row.expense}
-                      </td>
-                      <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4">
-                        <span className="px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg text-xs font-semibold bg-amber-100 text-amber-700 border border-amber-200">
+                            {row.method?.toUpperCase()}
+                          </span>
+                        </td>
+                        <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4">
+                          <div className="text-right">
+                            {hasDiscount ? (
+                              <>
+                                <div className="font-bold text-emerald-600 text-sm sm:text-base">
+                                  {formatCurrency(netAmount)}
+                                </div>
+                                <div className="text-xs text-gray-500 line-through">
+                                  {formatCurrency(row.amount)}
+                                </div>
+                                <div className="text-xs text-amber-600 font-medium mt-0.5 flex items-center justify-end gap-1">
+                                  <Tag className="w-3 h-3" />
+                                  -{formatCurrency(row.discount)}
+                                </div>
+                              </>
+                            ) : (
+                              <div className="font-bold text-emerald-600 text-sm sm:text-base">
+                                {formatCurrency(netAmount)}
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 text-gray-700 font-medium text-sm">
+                          {formatDateForDisplay(row.date)}
+                        </td>
+                        <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4">
+                          <span className="px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg text-xs font-semibold bg-blue-100 text-blue-700 border border-blue-200">
+                            {row.branch}
+                          </span>
+                        </td>
+                        <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 text-gray-600 text-sm max-w-[120px] lg:max-w-xs truncate">
+                          {row.remarks || "-"}
+                        </td>
+                        <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4">
+                          <div className="flex items-center gap-1 sm:gap-2">
+                            <button
+                              onClick={() => onEdit(row)}
+                              className="p-1.5 sm:p-2 hover:bg-indigo-100 rounded-lg transition-colors text-indigo-600"
+                              title="Edit transaction"
+                            >
+                              <Edit2 size={16} />
+                            </button>
+                            <button
+                              onClick={() => onDelete(row)}
+                              className="p-1.5 sm:p-2 hover:bg-red-100 rounded-lg transition-colors text-red-600"
+                              title="Delete transaction"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        </td>
+                      </>
+                    ) : (
+                      <>
+                        <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 font-medium text-gray-900 text-sm">
                           {row.expense}
-                        </span>
-                      </td>
-                      <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4">
-                        <span
-                          className={`px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg text-xs font-semibold border ${getMethodColor(
-                            row.method
-                          )}`}
-                        >
-                          {row.method?.toUpperCase()}
-                        </span>
-                      </td>
-                      <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 text-right font-bold text-rose-600 text-sm sm:text-base">
-                        {formatCurrency(row.amount)}
-                      </td>
-                      <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 text-gray-700 font-medium text-sm">
-                        {formatDateForDisplay(row.date)}
-                      </td>
-                      <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4">
-                        <span className="px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg text-xs font-semibold bg-blue-100 text-blue-700 border border-blue-200">
-                          {row.branch}
-                        </span>
-                      </td>
-                      <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 text-gray-600 text-sm max-w-[120px] lg:max-w-xs truncate">
-                        {row.remarks || "-"}
-                      </td>
-                      <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4">
-                        <div className="flex items-center gap-1 sm:gap-2">
-                          <button
-                            onClick={() => onEdit(row)}
-                            className="p-1.5 sm:p-2 hover:bg-indigo-100 rounded-lg transition-colors text-indigo-600"
-                            title="Edit transaction"
+                        </td>
+                        <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4">
+                          <span className="px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg text-xs font-semibold bg-amber-100 text-amber-700 border border-amber-200">
+                            {row.expense}
+                          </span>
+                        </td>
+                        <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4">
+                          <span
+                            className={`px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg text-xs font-semibold border ${getMethodColor(
+                              row.method
+                            )}`}
                           >
-                            <Edit2 size={16} />
-                          </button>
-                          <button
-                            onClick={() => onDelete(row)}
-                            className="p-1.5 sm:p-2 hover:bg-red-100 rounded-lg transition-colors text-red-600"
-                            title="Delete transaction"
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        </div>
-                      </td>
-                    </>
-                  )}
-                </tr>
-              ))
+                            {row.method?.toUpperCase()}
+                          </span>
+                        </td>
+                        <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 text-right font-bold text-rose-600 text-sm sm:text-base">
+                          {formatCurrency(row.amount)}
+                        </td>
+                        <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 text-gray-700 font-medium text-sm">
+                          {formatDateForDisplay(row.date)}
+                        </td>
+                        <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4">
+                          <span className="px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg text-xs font-semibold bg-blue-100 text-blue-700 border border-blue-200">
+                            {row.branch}
+                          </span>
+                        </td>
+                        <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 text-gray-600 text-sm max-w-[120px] lg:max-w-xs truncate">
+                          {row.remarks || "-"}
+                        </td>
+                        <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4">
+                          <div className="flex items-center gap-1 sm:gap-2">
+                            <button
+                              onClick={() => onEdit(row)}
+                              className="p-1.5 sm:p-2 hover:bg-indigo-100 rounded-lg transition-colors text-indigo-600"
+                              title="Edit transaction"
+                            >
+                              <Edit2 size={16} />
+                            </button>
+                            <button
+                              onClick={() => onDelete(row)}
+                              className="p-1.5 sm:p-2 hover:bg-red-100 rounded-lg transition-colors text-red-600"
+                              title="Delete transaction"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        </td>
+                      </>
+                    )}
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>
@@ -1496,6 +1607,7 @@ function DataTable({
   );
 }
 
+// ========== HELPER COMPONENTS ==========
 function Input({
   label,
   type = "text",
@@ -1506,6 +1618,7 @@ function Input({
   placeholder,
   min,
   max,
+  step,
 }) {
   return (
     <label className="block">
@@ -1524,6 +1637,7 @@ function Input({
           placeholder={placeholder}
           min={min}
           max={max}
+          step={step}
           className={`w-full border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-100 focus:border-indigo-300 transition-all text-sm sm:text-base ${
             Icon ? "pl-9 sm:pl-11 pr-4" : "px-4"
           } py-2.5 sm:py-3`}

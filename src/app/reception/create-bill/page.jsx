@@ -18,6 +18,7 @@ import {
   Receipt,
   IndianRupee,
   Clock,
+  Tag,
 } from "lucide-react";
 import ReceptionSidebar from "@/components/ReceptionSidebar";
 import { useToast } from "@/components/Toast";
@@ -179,12 +180,21 @@ export default function ViewBills() {
     });
   };
 
+  // Total amount paid (sum of all transaction amounts)
   const totalPaid = patientTransactions.reduce(
-    (sum, transaction) => sum + transaction.amount,
+    (sum, transaction) => sum + (parseFloat(transaction.amount) || 0),
     0
   );
-  const totalPending =
-    (selectedPatient?.payments?.totalAmount || 0) - totalPaid;
+
+  // Discount is on total package amount (from patient data)
+  const totalDiscount = selectedPatient?.payments?.discount || 0;
+  
+  // Total package amount
+  const totalAmount = selectedPatient?.payments?.totalAmount || 0;
+  
+  // Pending = (Total - Discount) - Amount Received
+  const totalPending = selectedPatient?.payments?.pendingAmount || 0;
+
   const currentClinic = getClinicConfig(
     selectedPatient?.personal?.branch || "Delhi"
   );
@@ -193,21 +203,17 @@ export default function ViewBills() {
     return CLINIC_BRANCHES[branch] || CLINIC_BRANCHES.Delhi;
   }
 
-  // Get counsellor name - check multiple possible fields and handle object
   const getCounsellorName = () => {
     const counsellor = selectedPatient?.counselling?.counsellor;
     
-    // If counsellor is an object with name property
     if (counsellor && typeof counsellor === 'object' && counsellor.name) {
       return counsellor.name;
     }
     
-    // If counsellor is a string
     if (typeof counsellor === 'string') {
       return counsellor;
     }
     
-    // Check other possible fields
     const counsellorName = selectedPatient?.counselling?.counsellorName;
     if (counsellorName && typeof counsellorName === 'object' && counsellorName.name) {
       return counsellorName.name;
@@ -237,7 +243,6 @@ export default function ViewBills() {
       )
     : [];
 
-  // Get recent patients with pending amounts
   const recentPatients = patients
     .filter((p) => p.payments?.pendingAmount > 0)
     .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
@@ -274,11 +279,8 @@ export default function ViewBills() {
           <>
         {!showPrintPreview ? (
           <div className="space-y-6">
-            
-
             {/* Patient Search */}
             <div className="">
-              
               <div className="relative">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
@@ -333,13 +335,16 @@ export default function ViewBills() {
                               )}
                             </span>
                           </div>
-                          <div className="inline-flex items-center gap-1 px-3 py-1 bg-red-100 text-red-700 rounded-full text-sm font-medium">
-                            <span>Pending:</span>
-                            <span>
-                              {formatCurrency(
-                                patient.payments?.pendingAmount || 0
-                              )}
-                            </span>
+                          <div className="space-y-1">
+                            {(patient.payments?.discount || 0) > 0 && (
+                              <div className=" items-center gap-1 px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-sm font-medium mb-1 block">
+                                <Tag className="w-3 h-3" />
+                                <span>Discount: {formatCurrency(patient.payments?.discount || 0)}</span>
+                              </div>
+                            )}
+                            <div className=" items-center gap-1 px-3 py-1 bg-red-100 text-red-700 rounded-full text-sm font-medium block">
+                              <span>Pending: {formatCurrency(patient.payments?.pendingAmount || 0)}</span>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -360,7 +365,7 @@ export default function ViewBills() {
                 </div>
               )}
 
-              {/* Recent Patients Dashboard - Show when no search query */}
+              {/* Recent Patients Dashboard */}
               {!searchQuery && !selectedPatient && recentPatients.length > 0 && (
                 <div className="mt-10">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -388,19 +393,26 @@ export default function ViewBills() {
                             {patient.personal?.branch}
                           </span>
                         </div>
-                        <div className="flex justify-between items-end pt-3 border-t border-gray-200">
-                          <div>
-                            <p className="text-xs text-gray-600 mb-1">
-                              Total Amount
-                            </p>
+                        <div className="space-y-2 pt-3 border-t border-gray-200">
+                          <div className="flex justify-between items-center">
+                            <p className="text-xs text-gray-600">Total Amount</p>
                             <p className="text-lg font-bold text-gray-900">
                               {formatCurrency(patient.payments?.totalAmount || 0)}
                             </p>
                           </div>
-                          <div className="text-right">
-                            <p className="text-xs text-red-600 mb-1">
-                              Pending
-                            </p>
+                          {(patient.payments?.discount || 0) > 0 && (
+                            <div className="flex justify-between items-center">
+                              <p className="text-xs text-amber-600 flex items-center gap-1">
+                                <Tag className="w-3 h-3" />
+                                Discount
+                              </p>
+                              <p className="text-sm font-bold text-amber-600">
+                                -{formatCurrency(patient.payments?.discount || 0)}
+                              </p>
+                            </div>
+                          )}
+                          <div className="flex justify-between items-center">
+                            <p className="text-xs text-red-600">Pending</p>
                             <p className="text-lg font-bold text-red-600">
                               {formatCurrency(patient.payments?.pendingAmount || 0)}
                             </p>
@@ -461,29 +473,24 @@ export default function ViewBills() {
                     <div className="flex flex-col gap-3 items-end">
                       <div className="grid grid-cols-3 gap-4 text-right">
                         <div className="bg-white p-3 rounded-lg shadow-sm">
-                          <p className="text-xs text-gray-600 mb-1">
-                            Total Amount
+                          <p className="text-xs text-gray-600 mb-1 flex items-center justify-center gap-1">
+                            <Tag className="w-3 h-3" />
+                            Discount
                           </p>
-                          <p className="text-lg font-bold text-gray-900">
-                            {formatCurrency(
-                              selectedPatient.payments?.totalAmount || 0
-                            )}
+                          <p className="text-lg font-bold text-amber-600">
+                            {formatCurrency(totalDiscount)}
                           </p>
                         </div>
                         <div className="bg-white p-3 rounded-lg shadow-sm">
                           <p className="text-xs text-gray-600 mb-1">Received</p>
                           <p className="text-lg font-bold text-green-600">
-                            {formatCurrency(
-                              selectedPatient.payments?.amountReceived || 0
-                            )}
+                            {formatCurrency(selectedPatient.payments?.amountReceived || 0)}
                           </p>
                         </div>
                         <div className="bg-white p-3 rounded-lg shadow-sm">
                           <p className="text-xs text-gray-600 mb-1">Pending</p>
                           <p className="text-lg font-bold text-red-600">
-                            {formatCurrency(
-                              selectedPatient.payments?.pendingAmount || 0
-                            )}
+                            {formatCurrency(totalPending)}
                           </p>
                         </div>
                       </div>
@@ -571,7 +578,7 @@ export default function ViewBills() {
                           </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
-                          {patientTransactions.map((transaction, index) => (
+                          {patientTransactions.map((transaction) => (
                             <tr
                               key={transaction._id}
                               className="hover:bg-blue-50 transition-colors"
@@ -613,12 +620,30 @@ export default function ViewBills() {
                           ))}
                         </tbody>
                         <tfoot className="bg-gradient-to-r from-gray-50 to-gray-100 border-t-2 border-gray-200">
+                          {totalDiscount > 0 && (
+                            <tr>
+                              <td
+                                colSpan="5"
+                                className="px-6 py-4 text-right text-sm font-bold text-gray-900"
+                              >
+                                <div className="flex items-center justify-end gap-2">
+                                  <Tag className="w-4 h-4 text-amber-600" />
+                                  Total Discount (on package):
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 text-right">
+                                <span className="text-lg font-bold text-amber-600">
+                                  -{formatCurrency(totalDiscount)}
+                                </span>
+                              </td>
+                            </tr>
+                          )}
                           <tr>
                             <td
                               colSpan="5"
                               className="px-6 py-4 text-right text-sm font-bold text-gray-900"
                             >
-                              Total Paid:
+                              Amount Received:
                             </td>
                             <td className="px-6 py-4 text-right">
                               <span className="text-lg font-bold text-green-600">
@@ -693,7 +718,7 @@ export default function ViewBills() {
               </div>
             </div>
 
-            {/* Printable Bill - EXACT design from your PDF */}
+            {/* Printable Bill */}
             <div
               ref={billRef}
               id="printable-bill"
@@ -705,7 +730,7 @@ export default function ViewBills() {
                 fontFamily: "Arial, sans-serif",
               }}
             >
-              {/* Header - EXACT layout from PDF */}
+              {/* Header */}
               <div
                 style={{
                   display: "flex",
@@ -724,49 +749,19 @@ export default function ViewBills() {
                   >
                     {currentClinic.name}
                   </h1>
-                  <p
-                    style={{
-                      margin: "3px 0",
-                      fontSize: "14px",
-                      lineHeight: "1.5",
-                    }}
-                  >
+                  <p style={{ margin: "3px 0", fontSize: "14px", lineHeight: "1.5" }}>
                     {currentClinic.address}
                   </p>
-                  <p
-                    style={{
-                      margin: "3px 0",
-                      fontSize: "14px",
-                      lineHeight: "1.5",
-                    }}
-                  >
+                  <p style={{ margin: "3px 0", fontSize: "14px", lineHeight: "1.5" }}>
                     {currentClinic.city}
                   </p>
-                  <p
-                    style={{
-                      margin: "3px 0",
-                      fontSize: "14px",
-                      lineHeight: "1.5",
-                    }}
-                  >
+                  <p style={{ margin: "3px 0", fontSize: "14px", lineHeight: "1.5" }}>
                     <strong>Phone:</strong> {currentClinic.phone}
                   </p>
-                  <p
-                    style={{
-                      margin: "3px 0",
-                      fontSize: "14px",
-                      lineHeight: "1.5",
-                    }}
-                  >
+                  <p style={{ margin: "3px 0", fontSize: "14px", lineHeight: "1.5" }}>
                     <strong>Website:</strong> {currentClinic.website}
                   </p>
-                  <p
-                    style={{
-                      margin: "3px 0",
-                      fontSize: "14px",
-                      lineHeight: "1.5",
-                    }}
-                  >
+                  <p style={{ margin: "3px 0", fontSize: "14px", lineHeight: "1.5" }}>
                     <strong>GST No:</strong> {currentClinic.gstin}
                   </p>
                 </div>
@@ -795,7 +790,7 @@ export default function ViewBills() {
                 </div>
               </div>
 
-              {/* Patient & Invoice Info - EXACT from PDF */}
+              {/* Patient & Invoice Info */}
               <div
                 style={{
                   display: "flex",
@@ -821,7 +816,7 @@ export default function ViewBills() {
                       gap: "5px",
                     }}
                   >
-                    <strong>Phone :</strong> {selectedPatient?.personal?.phone}
+                    <strong>Phone:</strong> {selectedPatient?.personal?.phone}
                   </p>
                   <p
                     style={{
@@ -832,8 +827,7 @@ export default function ViewBills() {
                       gap: "5px",
                     }}
                   >
-                    <strong>Branch :</strong>{" "}
-                    {selectedPatient?.personal?.branch}
+                    <strong>Branch:</strong> {selectedPatient?.personal?.branch}
                   </p>
                 </div>
                 <div style={{ textAlign: "right" }}>
@@ -859,7 +853,7 @@ export default function ViewBills() {
                 Invoice
               </h2>
 
-              {/* Services Table - EXACT from PDF */}
+              {/* Services Table */}
               <table
                 style={{
                   width: "100%",
@@ -928,7 +922,7 @@ export default function ViewBills() {
                         borderRight: "1px solid #000",
                       }}
                     >
-                      Unit Cost
+                      Package Cost
                       <br />
                       (INR)
                     </th>
@@ -955,7 +949,7 @@ export default function ViewBills() {
                     >
                       Total
                       <br />
-                      Amount
+                      After Discount
                     </th>
                   </tr>
                 </thead>
@@ -977,7 +971,7 @@ export default function ViewBills() {
                         borderRight: "1px solid #000",
                       }}
                     >
-                      Service {patientTransactions[0]?.procedure}
+                      Service {patientTransactions[0]?.procedure || "Hair Transplant"}
                     </td>
                     <td
                       style={{
@@ -1006,9 +1000,7 @@ export default function ViewBills() {
                         borderRight: "1px solid #000",
                       }}
                     >
-                      {Number(selectedPatient?.payments?.totalAmount).toFixed(
-                        2
-                      )}
+                      {Number(totalAmount).toFixed(2)}
                     </td>
                     <td
                       style={{
@@ -1018,7 +1010,7 @@ export default function ViewBills() {
                         borderRight: "1px solid #000",
                       }}
                     >
-                      0
+                      {Number(totalDiscount).toFixed(2)}
                     </td>
                     <td
                       style={{
@@ -1028,15 +1020,13 @@ export default function ViewBills() {
                         fontWeight: "bold",
                       }}
                     >
-                      {Number(selectedPatient?.payments?.totalAmount).toFixed(
-                        2
-                      )}
+                      {Number(totalAmount - totalDiscount).toFixed(2)}
                     </td>
                   </tr>
                 </tbody>
               </table>
 
-              {/* Paid Amounts - EXACT from PDF */}
+              {/* Paid Amounts */}
               <div style={{ marginBottom: "30px" }}>
                 <h3
                   style={{
@@ -1115,6 +1105,7 @@ export default function ViewBills() {
                             padding: "8px",
                             textAlign: "right",
                             fontSize: "13px",
+                            fontWeight: "bold",
                           }}
                         >
                           {Number(transaction.amount).toFixed(2)}
@@ -1125,7 +1116,7 @@ export default function ViewBills() {
                 </table>
               </div>
 
-              {/* Summary - EXACT from PDF */}
+              {/* Summary */}
               <div
                 style={{
                   display: "flex",
@@ -1141,34 +1132,22 @@ export default function ViewBills() {
                 </div>
                 <div style={{ textAlign: "left" }}>
                   <p style={{ margin: "5px 0", fontSize: "14px" }}>
-                    <strong>Total:</strong>{" "}
-                    {formatCurrency(
-                      selectedPatient?.payments?.totalAmount || 0
-                    )}
+                    <strong>Package Total:</strong> {formatCurrency(totalAmount)}
                   </p>
                   <p style={{ margin: "5px 0", fontSize: "14px" }}>
-                    <strong>Received:</strong>{" "}
-                    {formatCurrency(
-                      selectedPatient?.payments?.amountReceived || 0
-                    )}
+                    <strong>Discount on Package:</strong> -{formatCurrency(totalDiscount)}
+                  </p>
+                  <p style={{ margin: "5px 0", fontSize: "14px", fontWeight: "bold", paddingTop: "5px", borderTop: "1px solid #ccc" }}>
+                    <strong>Amount After Discount:</strong> {formatCurrency(totalAmount - totalDiscount)}
                   </p>
                   <p style={{ margin: "5px 0", fontSize: "14px" }}>
-                    <strong>Pending:</strong>{" "}
-                    {formatCurrency(
-                      selectedPatient?.payments?.pendingAmount || 0
-                    )}
+                    <strong>Amount Received:</strong> {formatCurrency(totalPaid)}
                   </p>
                   <p style={{ margin: "5px 0", fontSize: "14px" }}>
-                    <strong>Tax :</strong> 0
+                    <strong>Pending:</strong> {formatCurrency(totalPending)}
                   </p>
-                  <p
-                    style={{
-                      margin: "5px 0",
-                      fontSize: "14px",
-                      fontWeight: "bold",
-                    }}
-                  >
-                    <strong>Amount Paid:</strong> {formatCurrency(totalPaid)}
+                  <p style={{ margin: "5px 0", fontSize: "14px" }}>
+                    <strong>Tax:</strong> 0
                   </p>
                 </div>
               </div>

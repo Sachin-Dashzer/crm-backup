@@ -479,7 +479,7 @@ function PatientDashboardContent() {
                           </span>
                         </td>
                         <td className="px-6 py-4 text-gray-700">
-                          {p.personal?.packageQuoted}
+                          {p.payments?.amountReceived}
                         </td>
 
                         {/* Actions column */}

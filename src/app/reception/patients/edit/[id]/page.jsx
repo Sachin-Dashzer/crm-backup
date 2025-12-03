@@ -18,6 +18,7 @@ import {
   Save,
   ArrowLeft,
   Edit3,
+  Tag,
 } from "lucide-react";
 import ReceptionSidebar from "@/components/ReceptionSidebar";
 import BenefitsManager from "@/components/BenefitsManager";
@@ -247,6 +248,7 @@ export default function PatientEditDetails() {
       amountReceived: "",
       pendingAmount: "",
       medicineAmount: "",
+      discount: "",
       transactions: [],
     },
     documents: {
@@ -370,6 +372,7 @@ export default function PatientEditDetails() {
               amountReceived: patientData.payments?.amountReceived || "",
               pendingAmount: patientData.payments?.pendingAmount || "",
               medicineAmount: patientData.payments?.medicineAmount || "",
+              discount: patientData.payments?.discount || "",
               transactions: patientData.payments?.transactions || [],
             },
             documents: {
@@ -612,6 +615,7 @@ export default function PatientEditDetails() {
         "amountReceived",
         "pendingAmount",
         "medicineAmount",
+        "discount",
       ],
     };
 
@@ -1315,6 +1319,15 @@ export default function PatientEditDetails() {
                   />
 
                   <InputField
+                    label="Discount (₹)"
+                    type="number"
+                    value={formData.payments.discount}
+                    onChange={createChangeHandler("payments", "discount")}
+                    placeholder="Discount on total package"
+                    icon={Tag}
+                  />
+
+                  <InputField
                     label="Amount Received (₹)"
                     type="number"
                     value={formData.payments.amountReceived}
@@ -1344,6 +1357,37 @@ export default function PatientEditDetails() {
                     onAdd={addTransaction}
                     onRemove={removeTransaction}
                   />
+                </div>
+
+                {/* Payment Summary Card */}
+                <div className="bg-gradient-to-br from-purple-50 to-indigo-50 p-6 rounded-xl border-2 border-purple-200">
+                  <h4 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                    <CreditCard className="w-5 h-5 text-purple-600" />
+                    Payment Summary
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="bg-white p-4 rounded-lg shadow-sm">
+                      <p className="text-sm text-gray-600 mb-1 flex items-center gap-1">
+                        <Tag className="w-4 h-4 text-amber-600" />
+                        Total Discount
+                      </p>
+                      <p className="text-2xl font-bold text-amber-600">
+                        ₹{formData.payments.discount || 0}
+                      </p>
+                    </div>
+                    <div className="bg-white p-4 rounded-lg shadow-sm">
+                      <p className="text-sm text-gray-600 mb-1">Amount Received</p>
+                      <p className="text-2xl font-bold text-green-600">
+                        ₹{formData.payments.amountReceived || 0}
+                      </p>
+                    </div>
+                    <div className="bg-white p-4 rounded-lg shadow-sm">
+                      <p className="text-sm text-gray-600 mb-1">Pending Amount</p>
+                      <p className="text-2xl font-bold text-red-600">
+                        ₹{formData.payments.pendingAmount || 0}
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
