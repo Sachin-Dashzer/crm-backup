@@ -65,15 +65,17 @@ const formatCurrency = (amount) => {
 };
 
 const BRANCHES = ["Delhi", "Mumbai", "Hyderabad"];
-const PAYMENT_METHODS = ["upi", "cash", "card", "banking", "Loan", "other"];
-const PROCEDURES = [
-  "hair transplant",
-  "beard transplant",
-  "prp",
-  "gfc",
-  "medicine",
+const PAYMENT_METHODS = ["upi", "cash", "card", "banking", "Loan", "other"];const PROCEDURES = [
+  "Sapphire FUE",
+  "DHI",
+  "Turkish DHI",
+  "Beard Transplant",
+  "PRP",
+  "GFC",
+  "Medicine",
   "Other",
 ];
+
 const COST_TYPES = ["Revenue", "Expenses"];
 const PAYMENT_TYPES = ["Booking", "Pending", "Full-payment", "Other"];
 
