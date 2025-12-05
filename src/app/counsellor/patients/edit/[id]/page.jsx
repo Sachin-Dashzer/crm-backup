@@ -26,7 +26,6 @@ const BenefitsManager = ({ benefits, onChange, onAdd, onRemove }) => {
     "5 Days Medicines Included",
     "Bandage Removal",
     "GFC",
-    "",
   ];
 
   const handleBenefitToggle = (benefit) => {
