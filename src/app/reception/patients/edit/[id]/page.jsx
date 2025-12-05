@@ -25,7 +25,6 @@ import InputField from "@/components/InputField";
 
 
 
-import { X } from "lucide-react";
 
 const BenefitsManager = ({ benefits, onChange, onAdd, onRemove }) => {
   const predefinedBenefits = [
