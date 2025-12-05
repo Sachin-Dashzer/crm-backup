@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Sidebar from "@/components/Sidebar";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/Toast";
 import { useParams } from "next/navigation";
+import InputField from "@/components/InputField";
 import {
   Upload,
   X,
@@ -19,16 +21,185 @@ import {
   ArrowLeft,
   Edit3,
 } from "lucide-react";
-import Sidebar from "@/components/SurgerySidebar";
-import BenefitsManager from "@/components/BenefitsManager";
-import InputField from "@/components/InputField";
 
+
+const BenefitsManager = ({ benefits, onChange, onAdd, onRemove }) => {
+  const predefinedBenefits = [
+    "5 Free PRP Sessions",
+    "Deep Headwash",
+    "5 Days Medicines Included",
+    "Bandage Removal",
+    "GFC",
+  ];
+
+  const handleBenefitToggle = (benefit) => {
+    const currentBenefits = [...benefits];
+    const benefitIndex = currentBenefits.indexOf(benefit);
+
+    if (benefitIndex > -1) {
+      onRemove(benefitIndex);
+    } else {
+      onAdd(benefit);
+    }
+  };
+
+  const handleCustomBenefitAdd = (customBenefit) => {
+    if (customBenefit.trim() && !benefits.includes(customBenefit.trim())) {
+      onAdd(customBenefit.trim());
+    }
+  };
+
+  return (
+    <div className="md:col-span-2">
+      <label className="block text-md underline font-semibold text-gray-700 mb-4">
+        Additional Benefits *
+      </label>
+
+      {/* Predefined Benefits as Radio-style Checkboxes */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
+        {predefinedBenefits.map((benefit) => (
+          <label
+            key={benefit}
+            className="flex items-center space-x-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors duration-200"
+          >
+            <input
+              type="checkbox"
+              checked={benefits.includes(benefit)}
+              onChange={() => handleBenefitToggle(benefit)}
+              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+            />
+            <span className="text-sm font-medium text-gray-700">{benefit}</span>
+          </label>
+        ))}
+      </div>
+
+      {/* Custom Benefits Input */}
+      <div className="mb-4">
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Add Custom Benefit
+        </label>
+        <div className="flex space-x-3">
+          <input
+            type="text"
+            className="flex-1 px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 shadow-sm"
+            placeholder="Enter custom benefit"
+            onKeyPress={(e) => {
+              if (e.key === "Enter") {
+                handleCustomBenefitAdd(e.target.value);
+                e.target.value = "";
+              }
+            }}
+          />
+          <button
+            type="button"
+            className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors duration-200 font-medium"
+            onClick={(e) => {
+              const input = e.target.previousElementSibling;
+              handleCustomBenefitAdd(input.value);
+              input.value = "";
+            }}
+          >
+            Add
+          </button>
+        </div>
+      </div>
+
+      {/* Selected Benefits Display */}
+      {benefits.length > 0 && (
+        <div className="mt-4">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Selected Benefits ({benefits.length})
+          </label>
+          <div className="flex flex-wrap gap-2">
+            {benefits.map((benefit, index) => (
+              <div
+                key={index}
+                className="flex items-center space-x-2 bg-blue-100 text-blue-800 px-3 py-2 rounded-lg"
+              >
+                <span className="text-sm font-medium">{benefit}</span>
+                <button
+                  type="button"
+                  className="text-blue-600 hover:text-blue-800 transition-colors duration-200"
+                  onClick={() => onRemove(index)}
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 const StepHeader = ({ icon: Icon, title, description, color }) => (
   <div className="text-center mb-8">
     <Icon className={`mx-auto h-16 w-16 text-${color}-500 mb-4`} />
     <h3 className="text-2xl font-bold text-gray-900">{title}</h3>
     <p className="text-gray-600">{description}</p>
+  </div>
+);
+
+const TransactionManager = ({ transactions, onChange, onAdd, onRemove }) => (
+  <div className="md:col-span-2">
+    <h4 className="text-lg font-semibold text-gray-700 mb-4">Transactions</h4>
+    {transactions.map((transaction, index) => (
+      <div key={index} className="bg-gray-50 p-6 rounded-lg mb-4 border">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <InputField
+            label="Date"
+            type="date"
+            value={transaction.date ? transaction.date.split("T")[0] : ""}
+            onChange={(e) => onChange(index, "date", e.target.value)}
+          />
+          <InputField
+            label="Payment Type"
+            type="select"
+            value={transaction.paymentType || ""}
+            onChange={(e) => onChange(index, "paymentType", e.target.value)}
+            options={[
+              { value: "Full-payment", label: "Full Payment" },
+              { value: "Advance", label: "Advance" },
+              { value: "Installment", label: "Installment" },
+              { value: "EMI", label: "EMI" },
+            ]}
+          />
+          <InputField
+            label="Branch"
+            type="select"
+            value={transaction.branch || ""}
+            onChange={(e) => onChange(index, "branch", e.target.value)}
+            options={[
+              { value: "Delhi", label: "Delhi" },
+              { value: "Mumbai", label: "Mumbai" },
+              { value: "Hyderabad", label: "Hyderabad" },
+            ]}
+          />
+          <InputField
+            label="Amount"
+            type="number"
+            value={transaction.amount || ""}
+            onChange={(e) => onChange(index, "amount", e.target.value)}
+            placeholder="Transaction amount"
+          />
+        </div>
+        <button
+          type="button"
+          className="mt-3 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors duration-200"
+          onClick={() => onRemove(index)}
+        >
+          Remove Transaction
+        </button>
+      </div>
+    ))}
+    <button
+      type="button"
+      className="px-6 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors duration-200 font-medium"
+      onClick={onAdd}
+    >
+      + Add Transaction
+    </button>
   </div>
 );
 
@@ -123,6 +294,9 @@ export default function PatientEditDetails() {
     Others: [],
   });
 
+  // Combined surgery team members for all surgery-related dropdowns
+  const [surgeryTeamMembers, setSurgeryTeamMembers] = useState([]);
+
   const [formData, setFormData] = useState({
     personal: {
       name: "",
@@ -179,7 +353,13 @@ export default function PatientEditDetails() {
       graftingPerson: "",
       helper: "",
     },
-    // Removed payments section completely
+    payments: {
+      totalAmount: "",
+      amountReceived: "",
+      pendingAmount: "",
+      medicineAmount: "",
+      transactions: [],
+    },
     documents: {
       images: [],
       consentForm: [],
@@ -202,12 +382,18 @@ export default function PatientEditDetails() {
   useEffect(() => {
     const fetchEmployees = async () => {
       try {
-        const response = await fetch(
-          "/api/employees/get-id"
-        );
+        const response = await fetch("/api/employees/get-id");
         const result = await response.json();
         if (result.success) {
           setEmployees(result.data);
+          
+          // Combine Technician, Implanter, and Others for surgery team dropdowns
+          const combinedTeam = [
+            ...result.data.Technician,
+            ...result.data.Implanter,
+            ...result.data.Others,
+          ];
+          setSurgeryTeamMembers(combinedTeam);
         }
       } catch (error) {
         console.error("Error fetching employees:", error);
@@ -296,7 +482,13 @@ export default function PatientEditDetails() {
               graftingPerson: patientData.surgery?.graftingPerson?._id || "",
               helper: patientData.surgery?.helper?._id || "",
             },
-            // Removed payments data fetching
+            payments: {
+              totalAmount: patientData.payments?.totalAmount || "",
+              amountReceived: patientData.payments?.amountReceived || "",
+              pendingAmount: patientData.payments?.pendingAmount || "",
+              medicineAmount: patientData.payments?.medicineAmount || "",
+              transactions: patientData.payments?.transactions || [],
+            },
             documents: {
               images: patientData.documents?.images || [],
               consentForm: patientData.documents?.consentForm || [],
@@ -324,7 +516,8 @@ export default function PatientEditDetails() {
     { number: 2, title: "Counsellor Details", icon: FileText, color: "green" },
     { number: 3, title: "Medical Information", icon: Heart, color: "red" },
     { number: 4, title: "Surgery Details", icon: Scissors, color: "orange" },
-    { number: 5, title: "Document Upload", icon: FileUp, color: "indigo" }, // Removed payment step
+    { number: 5, title: "Payment Details", icon: CreditCard, color: "purple" },
+    { number: 6, title: "Document Upload", icon: FileUp, color: "indigo" },
   ];
 
   const handleChange = (section, field, value) => {
@@ -465,6 +658,35 @@ export default function PatientEditDetails() {
     }
   };
 
+  const handleTransactionChange = (index, field, value) => {
+    const newTransactions = [...formData.payments.transactions];
+    newTransactions[index] = {
+      ...newTransactions[index],
+      [field]: value,
+      _id: newTransactions[index]._id || undefined,
+    };
+    handleChange("payments", "transactions", newTransactions);
+  };
+
+  const addTransaction = () => {
+    handleChange("payments", "transactions", [
+      ...formData.payments.transactions,
+      {
+        date: "",
+        paymentType: "",
+        branch: "",
+        amount: "",
+      },
+    ]);
+  };
+
+  const removeTransaction = (index) => {
+    const newTransactions = formData.payments.transactions.filter(
+      (_, i) => i !== index
+    );
+    handleChange("payments", "transactions", newTransactions);
+  };
+
   // Clean empty ObjectId fields before sending to API
   const cleanObjectIdFields = (data) => {
     const cleaned = JSON.parse(JSON.stringify(data)); // Deep clone
@@ -502,6 +724,12 @@ export default function PatientEditDetails() {
       personal: ["age", "packageQuoted"],
       counselling: ["finlpackage", "graftsSuggested"],
       surgery: ["OT", "graftsneed", "graftsImplanted"],
+      payments: [
+        "totalAmount",
+        "amountReceived",
+        "pendingAmount",
+        "medicineAmount",
+      ],
     };
 
     Object.keys(numberFields).forEach((section) => {
@@ -559,7 +787,6 @@ export default function PatientEditDetails() {
         });
       } else {
         toast.error("Update failed!");
-
       }
     } catch (error) {
       console.error("Error updating patient data:", error);
@@ -572,7 +799,7 @@ export default function PatientEditDetails() {
     }
   };
 
-  const nextStep = () => setStep(Math.min(step + 1, 5)); // Updated to 5 steps
+  const nextStep = () => setStep(Math.min(step + 1, 6));
   const prevStep = () => setStep(Math.max(step - 1, 1));
 
   return (
@@ -947,8 +1174,6 @@ export default function PatientEditDetails() {
                       )
                     }
                   />
-
-                  
                 </div>
               </div>
             )}
@@ -1133,7 +1358,7 @@ export default function PatientEditDetails() {
                     type="select"
                     value={formData.surgery.seniorTech}
                     onChange={createChangeHandler("surgery", "seniorTech")}
-                    options={employees.Technician.map((emp) => ({
+                    options={surgeryTeamMembers.map((emp) => ({
                       value: emp._id,
                       label: emp.name,
                     }))}
@@ -1144,7 +1369,7 @@ export default function PatientEditDetails() {
                     type="select"
                     value={formData.surgery.implanterRight}
                     onChange={createChangeHandler("surgery", "implanterRight")}
-                    options={employees.Implanter.map((emp) => ({
+                    options={surgeryTeamMembers.map((emp) => ({
                       value: emp._id,
                       label: emp.name,
                     }))}
@@ -1155,7 +1380,7 @@ export default function PatientEditDetails() {
                     type="select"
                     value={formData.surgery.implanterLeft}
                     onChange={createChangeHandler("surgery", "implanterLeft")}
-                    options={employees.Implanter.map((emp) => ({
+                    options={surgeryTeamMembers.map((emp) => ({
                       value: emp._id,
                       label: emp.name,
                     }))}
@@ -1166,7 +1391,7 @@ export default function PatientEditDetails() {
                     type="select"
                     value={formData.surgery.graftingPerson}
                     onChange={createChangeHandler("surgery", "graftingPerson")}
-                    options={employees.Others.map((emp) => ({
+                    options={surgeryTeamMembers.map((emp) => ({
                       value: emp._id,
                       label: emp.name,
                     }))}
@@ -1177,7 +1402,7 @@ export default function PatientEditDetails() {
                     type="select"
                     value={formData.surgery.helper}
                     onChange={createChangeHandler("surgery", "helper")}
-                    options={employees.Others.map((emp) => ({
+                    options={surgeryTeamMembers.map((emp) => ({
                       value: emp._id,
                       label: emp.name,
                     }))}
@@ -1187,6 +1412,58 @@ export default function PatientEditDetails() {
             )}
 
             {step === 5 && (
+              <div className="space-y-8">
+                <StepHeader
+                  icon={CreditCard}
+                  title="Payment Details"
+                  description="Update financial information and transactions"
+                  color="purple"
+                />
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 gap-x-12">
+                  <InputField
+                    label="Total Amount (₹)"
+                    type="number"
+                    value={formData.payments.totalAmount}
+                    onChange={createChangeHandler("payments", "totalAmount")}
+                    placeholder="Total amount quoted"
+                  />
+
+                  <InputField
+                    label="Amount Received (₹)"
+                    type="number"
+                    value={formData.payments.amountReceived}
+                    onChange={createChangeHandler("payments", "amountReceived")}
+                    placeholder="Amount received"
+                  />
+
+                  <InputField
+                    label="Pending Amount (₹)"
+                    type="number"
+                    value={formData.payments.pendingAmount}
+                    onChange={createChangeHandler("payments", "pendingAmount")}
+                    placeholder="Pending amount"
+                  />
+
+                  <InputField
+                    label="Medicine Amount (₹)"
+                    type="number"
+                    value={formData.payments.medicineAmount}
+                    onChange={createChangeHandler("payments", "medicineAmount")}
+                    placeholder="Medicine cost"
+                  />
+
+                  <TransactionManager
+                    transactions={formData.payments.transactions}
+                    onChange={handleTransactionChange}
+                    onAdd={addTransaction}
+                    onRemove={removeTransaction}
+                  />
+                </div>
+              </div>
+            )}
+
+            {step === 6 && (
               <div className="space-y-8">
                 <StepHeader
                   icon={FileUp}
@@ -1263,7 +1540,7 @@ export default function PatientEditDetails() {
               )}
 
               <div className="flex space-x-4">
-                {step < 5 && ( // Updated to 5 steps
+                {step < 6 && (
                   <button
                     type="button"
                     className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 transition-colors duration-200"

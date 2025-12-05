@@ -294,6 +294,9 @@ export default function PatientEditDetails() {
     Others: [],
   });
 
+  // Combined surgery team members for all surgery-related dropdowns
+  const [surgeryTeamMembers, setSurgeryTeamMembers] = useState([]);
+
   const [formData, setFormData] = useState({
     personal: {
       name: "",
@@ -383,6 +386,14 @@ export default function PatientEditDetails() {
         const result = await response.json();
         if (result.success) {
           setEmployees(result.data);
+          
+          // Combine Technician, Implanter, and Others for surgery team dropdowns
+          const combinedTeam = [
+            ...result.data.Technician,
+            ...result.data.Implanter,
+            ...result.data.Others,
+          ];
+          setSurgeryTeamMembers(combinedTeam);
         }
       } catch (error) {
         console.error("Error fetching employees:", error);
@@ -1347,7 +1358,7 @@ export default function PatientEditDetails() {
                     type="select"
                     value={formData.surgery.seniorTech}
                     onChange={createChangeHandler("surgery", "seniorTech")}
-                    options={employees.Technician.map((emp) => ({
+                    options={surgeryTeamMembers.map((emp) => ({
                       value: emp._id,
                       label: emp.name,
                     }))}
@@ -1358,7 +1369,7 @@ export default function PatientEditDetails() {
                     type="select"
                     value={formData.surgery.implanterRight}
                     onChange={createChangeHandler("surgery", "implanterRight")}
-                    options={employees.Implanter.map((emp) => ({
+                    options={surgeryTeamMembers.map((emp) => ({
                       value: emp._id,
                       label: emp.name,
                     }))}
@@ -1369,7 +1380,7 @@ export default function PatientEditDetails() {
                     type="select"
                     value={formData.surgery.implanterLeft}
                     onChange={createChangeHandler("surgery", "implanterLeft")}
-                    options={employees.Implanter.map((emp) => ({
+                    options={surgeryTeamMembers.map((emp) => ({
                       value: emp._id,
                       label: emp.name,
                     }))}
@@ -1380,7 +1391,7 @@ export default function PatientEditDetails() {
                     type="select"
                     value={formData.surgery.graftingPerson}
                     onChange={createChangeHandler("surgery", "graftingPerson")}
-                    options={employees.Others.map((emp) => ({
+                    options={surgeryTeamMembers.map((emp) => ({
                       value: emp._id,
                       label: emp.name,
                     }))}
@@ -1391,7 +1402,7 @@ export default function PatientEditDetails() {
                     type="select"
                     value={formData.surgery.helper}
                     onChange={createChangeHandler("surgery", "helper")}
-                    options={employees.Others.map((emp) => ({
+                    options={surgeryTeamMembers.map((emp) => ({
                       value: emp._id,
                       label: emp.name,
                     }))}

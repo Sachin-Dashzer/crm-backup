@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Sidebar from "@/components/Sidebar";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/Toast";
 import { useParams } from "next/navigation";
+import InputField from "@/components/InputField";
 import {
   Upload,
   X,
@@ -18,12 +20,7 @@ import {
   Save,
   ArrowLeft,
   Edit3,
-  Tag,
 } from "lucide-react";
-import ReceptionSidebar from "@/components/ReceptionSidebar";
-import InputField from "@/components/InputField";
-
-
 
 
 const BenefitsManager = ({ benefits, onChange, onAdd, onRemove }) => {
@@ -136,7 +133,6 @@ const BenefitsManager = ({ benefits, onChange, onAdd, onRemove }) => {
   );
 };
 
-
 const StepHeader = ({ icon: Icon, title, description, color }) => (
   <div className="text-center mb-8">
     <Icon className={`mx-auto h-16 w-16 text-${color}-500 mb-4`} />
@@ -144,7 +140,6 @@ const StepHeader = ({ icon: Icon, title, description, color }) => (
     <p className="text-gray-600">{description}</p>
   </div>
 );
-
 
 const TransactionManager = ({ transactions, onChange, onAdd, onRemove }) => (
   <div className="md:col-span-2">
@@ -299,6 +294,9 @@ export default function PatientEditDetails() {
     Others: [],
   });
 
+  // Combined surgery team members for all surgery-related dropdowns
+  const [surgeryTeamMembers, setSurgeryTeamMembers] = useState([]);
+
   const [formData, setFormData] = useState({
     personal: {
       name: "",
@@ -360,7 +358,6 @@ export default function PatientEditDetails() {
       amountReceived: "",
       pendingAmount: "",
       medicineAmount: "",
-      discount: "",
       transactions: [],
     },
     documents: {
@@ -385,12 +382,18 @@ export default function PatientEditDetails() {
   useEffect(() => {
     const fetchEmployees = async () => {
       try {
-        const response = await fetch(
-          "/api/employees/get-id"
-        );
+        const response = await fetch("/api/employees/get-id");
         const result = await response.json();
         if (result.success) {
           setEmployees(result.data);
+          
+          // Combine Technician, Implanter, and Others for surgery team dropdowns
+          const combinedTeam = [
+            ...result.data.Technician,
+            ...result.data.Implanter,
+            ...result.data.Others,
+          ];
+          setSurgeryTeamMembers(combinedTeam);
         }
       } catch (error) {
         console.error("Error fetching employees:", error);
@@ -484,7 +487,6 @@ export default function PatientEditDetails() {
               amountReceived: patientData.payments?.amountReceived || "",
               pendingAmount: patientData.payments?.pendingAmount || "",
               medicineAmount: patientData.payments?.medicineAmount || "",
-              discount: patientData.payments?.discount || "",
               transactions: patientData.payments?.transactions || [],
             },
             documents: {
@@ -727,7 +729,6 @@ export default function PatientEditDetails() {
         "amountReceived",
         "pendingAmount",
         "medicineAmount",
-        "discount",
       ],
     };
 
@@ -786,7 +787,6 @@ export default function PatientEditDetails() {
         });
       } else {
         toast.error("Update failed!");
-
       }
     } catch (error) {
       console.error("Error updating patient data:", error);
@@ -804,7 +804,7 @@ export default function PatientEditDetails() {
 
   return (
     <section className="flex min-h-screen">
-      <ReceptionSidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
+      <Sidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
 
       <main className="flex-1 px-12 py-4">
         <div className="bg-white rounded-lg shadow-sm overflow-hidden">
@@ -1174,7 +1174,6 @@ export default function PatientEditDetails() {
                       )
                     }
                   />
-
                 </div>
               </div>
             )}
@@ -1359,7 +1358,7 @@ export default function PatientEditDetails() {
                     type="select"
                     value={formData.surgery.seniorTech}
                     onChange={createChangeHandler("surgery", "seniorTech")}
-                    options={employees.Technician.map((emp) => ({
+                    options={surgeryTeamMembers.map((emp) => ({
                       value: emp._id,
                       label: emp.name,
                     }))}
@@ -1370,7 +1369,7 @@ export default function PatientEditDetails() {
                     type="select"
                     value={formData.surgery.implanterRight}
                     onChange={createChangeHandler("surgery", "implanterRight")}
-                    options={employees.Implanter.map((emp) => ({
+                    options={surgeryTeamMembers.map((emp) => ({
                       value: emp._id,
                       label: emp.name,
                     }))}
@@ -1381,7 +1380,7 @@ export default function PatientEditDetails() {
                     type="select"
                     value={formData.surgery.implanterLeft}
                     onChange={createChangeHandler("surgery", "implanterLeft")}
-                    options={employees.Implanter.map((emp) => ({
+                    options={surgeryTeamMembers.map((emp) => ({
                       value: emp._id,
                       label: emp.name,
                     }))}
@@ -1392,7 +1391,7 @@ export default function PatientEditDetails() {
                     type="select"
                     value={formData.surgery.graftingPerson}
                     onChange={createChangeHandler("surgery", "graftingPerson")}
-                    options={employees.Others.map((emp) => ({
+                    options={surgeryTeamMembers.map((emp) => ({
                       value: emp._id,
                       label: emp.name,
                     }))}
@@ -1403,7 +1402,7 @@ export default function PatientEditDetails() {
                     type="select"
                     value={formData.surgery.helper}
                     onChange={createChangeHandler("surgery", "helper")}
-                    options={employees.Others.map((emp) => ({
+                    options={surgeryTeamMembers.map((emp) => ({
                       value: emp._id,
                       label: emp.name,
                     }))}
@@ -1428,15 +1427,6 @@ export default function PatientEditDetails() {
                     value={formData.payments.totalAmount}
                     onChange={createChangeHandler("payments", "totalAmount")}
                     placeholder="Total amount quoted"
-                  />
-
-                  <InputField
-                    label="Discount (₹)"
-                    type="number"
-                    value={formData.payments.discount}
-                    onChange={createChangeHandler("payments", "discount")}
-                    placeholder="Discount on total package"
-                    icon={Tag}
                   />
 
                   <InputField
@@ -1469,37 +1459,6 @@ export default function PatientEditDetails() {
                     onAdd={addTransaction}
                     onRemove={removeTransaction}
                   />
-                </div>
-
-                {/* Payment Summary Card */}
-                <div className="bg-gradient-to-br from-purple-50 to-indigo-50 p-6 rounded-xl border-2 border-purple-200">
-                  <h4 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                    <CreditCard className="w-5 h-5 text-purple-600" />
-                    Payment Summary
-                  </h4>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="bg-white p-4 rounded-lg shadow-sm">
-                      <p className="text-sm text-gray-600 mb-1 flex items-center gap-1">
-                        <Tag className="w-4 h-4 text-amber-600" />
-                        Total Discount
-                      </p>
-                      <p className="text-2xl font-bold text-amber-600">
-                        ₹{formData.payments.discount || 0}
-                      </p>
-                    </div>
-                    <div className="bg-white p-4 rounded-lg shadow-sm">
-                      <p className="text-sm text-gray-600 mb-1">Amount Received</p>
-                      <p className="text-2xl font-bold text-green-600">
-                        ₹{formData.payments.amountReceived || 0}
-                      </p>
-                    </div>
-                    <div className="bg-white p-4 rounded-lg shadow-sm">
-                      <p className="text-sm text-gray-600 mb-1">Pending Amount</p>
-                      <p className="text-2xl font-bold text-red-600">
-                        ₹{formData.payments.pendingAmount || 0}
-                      </p>
-                    </div>
-                  </div>
                 </div>
               </div>
             )}
