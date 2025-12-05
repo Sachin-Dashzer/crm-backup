@@ -40,7 +40,7 @@ const getTodayDate = () => {
   const now = new Date();
   const istOffset = 5.5 * 60 * 60 * 1000;
   const istDate = new Date(now.getTime() + istOffset);
-  return istDate.toISOString().split('T')[0];
+  return istDate.toISOString().split("T")[0];
 };
 
 const formatDateForDisplay = (date) => {
@@ -95,14 +95,20 @@ function StatCard({
       <div className="relative">
         <div className="flex justify-between items-start mb-3 sm:mb-4">
           <div className="flex-1 min-w-0">
-            <p className="text-white/90 text-xs sm:text-sm font-medium mb-1 truncate">{title}</p>
-            <h3 className="text-xl sm:text-2xl lg:text-3xl font-bold truncate">{value}</h3>
+            <p className="text-white/90 text-xs sm:text-sm font-medium mb-1 truncate">
+              {title}
+            </p>
+            <h3 className="text-xl sm:text-2xl lg:text-3xl font-bold truncate">
+              {value}
+            </h3>
           </div>
           <div className={`${iconBg} p-2 sm:p-3 rounded-xl flex-shrink-0 ml-2`}>
             <Icon className={`w-4 h-4 sm:w-6 sm:h-6 ${iconColor}`} />
           </div>
         </div>
-        <p className="text-white/80 text-xs sm:text-sm font-medium truncate">{count}</p>
+        <p className="text-white/80 text-xs sm:text-sm font-medium truncate">
+          {count}
+        </p>
       </div>
     </div>
   );
@@ -138,7 +144,11 @@ function DeleteConfirmModal({ transaction, onClose, onConfirm }) {
           <div className="bg-gray-50 rounded-xl p-3 sm:p-4 mb-4 sm:mb-6 space-y-2">
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-600">Original Amount:</span>
-              <span className={`font-bold text-gray-900 text-sm sm:text-base ${hasDiscount ? 'line-through text-gray-500' : ''}`}>
+              <span
+                className={`font-bold text-gray-900 text-sm sm:text-base ${
+                  hasDiscount ? "line-through text-gray-500" : ""
+                }`}
+              >
                 {formatCurrency(transaction?.amount || 0)}
               </span>
             </div>
@@ -151,7 +161,9 @@ function DeleteConfirmModal({ transaction, onClose, onConfirm }) {
                   </span>
                 </div>
                 <div className="flex justify-between items-center pt-2 border-t border-gray-200">
-                  <span className="text-sm font-semibold text-gray-700">Net Amount:</span>
+                  <span className="text-sm font-semibold text-gray-700">
+                    Net Amount:
+                  </span>
                   <span className="font-bold text-emerald-600 text-sm sm:text-base">
                     {formatCurrency(netAmount)}
                   </span>
@@ -293,21 +305,21 @@ export default function AmountDashboard() {
 
     return items.filter((item) => {
       const itemDate = new Date(item.date);
-      
+
       if (dateFrom) {
         const fromDate = new Date(dateFrom);
         fromDate.setHours(0, 0, 0, 0);
-        const fromDateIST = new Date(fromDate.getTime() - (5.5 * 60 * 60 * 1000));
+        const fromDateIST = new Date(fromDate.getTime() - 5.5 * 60 * 60 * 1000);
         if (itemDate < fromDateIST) return false;
       }
-      
+
       if (dateTo) {
         const toDate = new Date(dateTo);
         toDate.setHours(23, 59, 59, 999);
-        const toDateIST = new Date(toDate.getTime() - (5.5 * 60 * 60 * 1000));
+        const toDateIST = new Date(toDate.getTime() - 5.5 * 60 * 60 * 1000);
         if (itemDate > toDateIST) return false;
       }
-      
+
       return true;
     });
   };
@@ -327,7 +339,7 @@ export default function AmountDashboard() {
       list = list.filter(
         (t) => t.procedure.toLowerCase() === filters.procedure.toLowerCase()
       );
-    
+
     list = filterByDateRange(list, filters.dateFrom, filters.dateTo);
     return list;
   }, [revenue, filters]);
@@ -342,7 +354,7 @@ export default function AmountDashboard() {
       list = list.filter(
         (e) => e.method.toLowerCase() === filters.paymentMethod.toLowerCase()
       );
-    
+
     list = filterByDateRange(list, filters.dateFrom, filters.dateTo);
     return list;
   }, [expenses, filters]);
@@ -353,12 +365,18 @@ export default function AmountDashboard() {
   }, [filteredRevenue]);
 
   const totalExpense = useMemo(() => {
-    return filteredExpenses.reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
+    return filteredExpenses.reduce(
+      (sum, e) => sum + (parseFloat(e.amount) || 0),
+      0
+    );
   }, [filteredExpenses]);
 
   // Calculate total discount
   const totalDiscount = useMemo(() => {
-    return filteredRevenue.reduce((sum, t) => sum + (parseFloat(t.discount) || 0), 0);
+    return filteredRevenue.reduce(
+      (sum, t) => sum + (parseFloat(t.discount) || 0),
+      0
+    );
   }, [filteredRevenue]);
 
   const netBalance = totalIncome - totalExpense;
@@ -555,17 +573,19 @@ export default function AmountDashboard() {
     <div className="flex min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
       {/* Mobile Sidebar Overlay */}
       {sidebarOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
-      
+
       {/* Sidebar */}
-      <div className={`
+      <div
+        className={`
         fixed lg:static inset-y-0 left-0 z-50 transform transition-transform duration-300 ease-in-out
-        ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0
-      `}>
+        ${sidebarOpen ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0
+      `}
+      >
         <AdminSidebar onClose={() => setSidebarOpen(false)} />
       </div>
 
@@ -608,7 +628,9 @@ export default function AmountDashboard() {
                 className="bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white px-3 sm:px-5 py-2 sm:py-3 rounded-xl flex items-center gap-1 sm:gap-2 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 text-sm sm:text-base flex-shrink-0"
               >
                 <Plus size={18} strokeWidth={2.5} />
-                <span className="font-semibold hidden xs:inline">Add Transaction</span>
+                <span className="font-semibold hidden xs:inline">
+                  Add Transaction
+                </span>
                 <span className="font-semibold xs:hidden">Add</span>
               </button>
             </div>
@@ -653,7 +675,9 @@ export default function AmountDashboard() {
             value={formatCurrency(totalDiscount)}
             icon={Tag}
             gradient="from-amber-400 to-orange-500"
-            count={`On ${filteredRevenue.filter(t => (t.discount || 0) > 0).length} transactions`}
+            count={`On ${
+              filteredRevenue.filter((t) => (t.discount || 0) > 0).length
+            } transactions`}
             iconBg="bg-amber-100"
             iconColor="text-amber-600"
           />
@@ -835,6 +859,7 @@ export default function AmountDashboard() {
 }
 
 // ========== TRANSACTION MODAL COMPONENT ==========
+// ========== TRANSACTION MODAL COMPONENT ==========
 function TransactionModal({ transaction, patients, onClose, onSuccess }) {
   const isEdit = !!transaction;
   const [loading, setLoading] = useState(false);
@@ -859,13 +884,6 @@ function TransactionModal({ transaction, patients, onClose, onSuccess }) {
     remarks: transaction?.remarks || "",
     patient: transaction?.patient?._id || "",
   });
-
-  // Calculate net amount
-  const netAmount = useMemo(() => {
-    const amount = parseFloat(formData.amount) || 0;
-    const discount = parseFloat(formData.discount) || 0;
-    return Math.max(0, amount - discount);
-  }, [formData.amount, formData.discount]);
 
   // Update formData when transaction prop changes
   useEffect(() => {
@@ -902,7 +920,22 @@ function TransactionModal({ transaction, patients, onClose, onSuccess }) {
       .slice(0, 10);
   }, [patients, searchPatient]);
 
-  const selectedPatient = patients.find((p) => p._id === formData.patient);
+  // Define selectedPatient BEFORE using it in pendingAmount
+  const selectedPatient = useMemo(() => {
+    return patients.find((p) => p._id === formData.patient);
+  }, [patients, formData.patient]);
+
+  // Calculate pending amount for the patient
+  const pendingAmount = useMemo(() => {
+    if (formData.costType !== "Revenue" || !selectedPatient) return 0;
+
+    const existingPendingAmount =
+      parseFloat(selectedPatient.payments?.pendingAmount) || 0;
+    const formAmount = parseFloat(formData.amount) || 0;
+    const formDiscount = parseFloat(formData.discount) || 0;
+
+    return Math.max(0, existingPendingAmount - formAmount - formDiscount);
+  }, [formData.amount, formData.discount, formData.costType, selectedPatient]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -947,7 +980,8 @@ function TransactionModal({ transaction, patients, onClose, onSuccess }) {
       const payload = {
         ...formData,
         patient: formData.costType === "Expenses" ? null : formData.patient,
-        discount: formData.costType === "Revenue" ? (formData.discount || "0") : "0",
+        discount:
+          formData.costType === "Revenue" ? formData.discount || "0" : "0",
         amount: formData.amount,
       };
 
@@ -1063,16 +1097,34 @@ function TransactionModal({ transaction, patients, onClose, onSuccess }) {
                           {selectedPatient.personal?.name}
                         </p>
                         <p className="text-xs sm:text-sm text-gray-600 truncate">
-                          Total: {formatCurrency(selectedPatient.payments?.totalAmount || 0)} | 
-                          Received: {formatCurrency(selectedPatient.payments?.amountReceived || 0)} | 
-                          Pending: {formatCurrency(selectedPatient.payments?.pendingAmount || 0)}
+                          Total:{" "}
+                          {formatCurrency(
+                            selectedPatient.payments?.totalAmount || 0
+                          )}{" "}
+                          | Received:{" "}
+                          {formatCurrency(
+                            selectedPatient.payments?.amountReceived || 0
+                          )}{" "}
+                          | Pending:{" "}
+                          {formatCurrency(
+                            selectedPatient.payments?.pendingAmount || 0
+                          )}
                         </p>
                         <p className="text-xs sm:text-sm text-gray-600 truncate">
-                          Medicine: {formatCurrency(selectedPatient.payments?.medicineAmount || 0)} | 
-                          Discount: {formatCurrency(selectedPatient.payments?.discount || 0)}
+                          Medicine:{" "}
+                          {formatCurrency(
+                            selectedPatient.payments?.medicineAmount || 0
+                          )}{" "}
+                          | Discount:{" "}
+                          {formatCurrency(
+                            selectedPatient.payments?.discount || 0
+                          )}
                         </p>
                       </div>
-                      <CheckCircle2 className="text-emerald-600 flex-shrink-0 ml-2" size={20} />
+                      <CheckCircle2
+                        className="text-emerald-600 flex-shrink-0 ml-2"
+                        size={20}
+                      />
                     </div>
                   )}
 
@@ -1102,16 +1154,30 @@ function TransactionModal({ transaction, patients, onClose, onSuccess }) {
                             }`}
                           >
                             <p className="font-medium text-gray-900 text-sm sm:text-base truncate">
-                              {patient.personal?.name} - {patient.personal?.phone}
+                              {patient.personal?.name} -{" "}
+                              {patient.personal?.phone}
                             </p>
                             <p className="text-xs text-gray-600 truncate">
-                              Total: {formatCurrency(patient.payments?.totalAmount || 0)} | 
-                              Received: {formatCurrency(patient.payments?.amountReceived || 0)} | 
-                              Pending: {formatCurrency(patient.payments?.pendingAmount || 0)}
+                              Total:{" "}
+                              {formatCurrency(
+                                patient.payments?.totalAmount || 0
+                              )}{" "}
+                              | Received:{" "}
+                              {formatCurrency(
+                                patient.payments?.amountReceived || 0
+                              )}{" "}
+                              | Pending:{" "}
+                              {formatCurrency(
+                                patient.payments?.pendingAmount || 0
+                              )}
                             </p>
                             <p className="text-xs text-gray-600 truncate">
-                              Medicine: {formatCurrency(patient.payments?.medicineAmount || 0)} | 
-                              Discount: {formatCurrency(patient.payments?.discount || 0)}
+                              Medicine:{" "}
+                              {formatCurrency(
+                                patient.payments?.medicineAmount || 0
+                              )}{" "}
+                              | Discount:{" "}
+                              {formatCurrency(patient.payments?.discount || 0)}
                             </p>
                           </button>
                         ))
@@ -1210,17 +1276,31 @@ function TransactionModal({ transaction, patients, onClose, onSuccess }) {
               max={new Date().toISOString().split("T")[0]}
             />
 
-            {/* Net Amount Display */}
-            {formData.costType === "Revenue" && formData.amount && (
+            {/* Pending Amount Display */}
+            {/* Pending Amount Display */}
+            {formData.costType === "Revenue" && selectedPatient && (
               <div className="flex items-end">
-                <div className="w-full p-3 bg-gradient-to-r from-emerald-50 to-green-50 border-2 border-emerald-200 rounded-xl">
-                  <p className="text-xs font-semibold text-emerald-700 mb-1">Net Amount</p>
-                  <p className="text-xl font-bold text-emerald-700">
-                    {formatCurrency(netAmount)}
+                <div className="w-full p-3 bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl">
+                  <p className="text-xs font-semibold text-blue-700 mb-1">
+                    {formData.amount
+                      ? "Pending Amount (After Transaction)"
+                      : "Current Pending Amount"}
                   </p>
-                  {parseFloat(formData.discount) > 0 && (
-                    <p className="text-xs text-emerald-600 mt-1">
-                      After {formatCurrency(formData.discount)} discount
+                  <p className="text-xl font-bold text-blue-700">
+                    {formatCurrency(pendingAmount)}
+                  </p>
+                  {formData.amount ? (
+                    <p className="text-xs text-blue-600 mt-1">
+                      Existing Pending:{" "}
+                      {formatCurrency(
+                        selectedPatient.payments?.pendingAmount || 0
+                      )}{" "}
+                      - Payment: {formatCurrency(formData.amount)} - Discount:{" "}
+                      {formatCurrency(formData.discount)}
+                    </p>
+                  ) : (
+                    <p className="text-xs text-blue-600 mt-1">
+                      Enter payment amount to see updated balance
                     </p>
                   )}
                 </div>
@@ -1439,8 +1519,8 @@ function DataTable({
                                   {formatCurrency(row.amount)}
                                 </div>
                                 <div className="text-xs text-amber-600 font-medium mt-0.5 flex items-center justify-end gap-1">
-                                  <Tag className="w-3 h-3" />
-                                  -{formatCurrency(row.discount)}
+                                  <Tag className="w-3 h-3" />-
+                                  {formatCurrency(row.discount)}
                                 </div>
                               </>
                             ) : (
