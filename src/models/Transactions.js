@@ -18,20 +18,29 @@ const transactionSchema = new mongoose.Schema({
   },
   procedure: {
     type: String,
-    enum: ["hair transplant", "prp", "beard transplant", "medicine", "gfc" , "Other"],
+    enum: [
+      "Sapphire FUE",
+      "DHI",
+      "Turkish DHI",
+      "Beard Transplant",
+      "PRP",
+      "GFC",
+      "Medicine",
+      "Other",
+    ],
   },
   paymentType: {
     type: String,
     enum: ["Booking", "Pending", "Full-payment", "Other"],
   },
-  branch : {
-    type : String ,
-    enum : ["Delhi" , "Mumbai" , "Hyderabad"],
+  branch: {
+    type: String,
+    enum: ["Delhi", "Mumbai", "Hyderabad"],
   },
   expense: String,
   discount: {
     type: Number,
-    default: 0  
+    default: 0,
   },
   amount: {
     type: Number,
@@ -41,11 +50,9 @@ const transactionSchema = new mongoose.Schema({
     type: Date,
     default: Date.now(),
   },
-  expenseGiver : String,
+  expenseGiver: String,
   remarks: String,
-
 });
 
-
-
-export default mongoose.models.Transactions || mongoose.model('Transactions' , transactionSchema);
+export default mongoose.models.Transactions ||
+  mongoose.model("Transactions", transactionSchema);
