@@ -874,7 +874,7 @@ function TransactionModal({ transaction, patients, onClose, onSuccess }) {
     _id: transaction?._id || "",
     costType: transaction?.costType || "Revenue",
     method: transaction?.method || "cash",
-    procedure: transaction?.procedure || "hair transplant",
+    procedure: transaction?.procedure || "Sapphire FUE",
     paymentType: transaction?.paymentType || "Booking",
     branch: transaction?.branch || "Delhi",
     amount: transaction?.amount || "",
@@ -894,7 +894,7 @@ function TransactionModal({ transaction, patients, onClose, onSuccess }) {
         _id: transaction._id,
         costType: transaction.costType || "Revenue",
         method: transaction.method || "cash",
-        procedure: transaction.procedure || "hair transplant",
+        procedure: transaction.procedure || "Sapphire FUE",
         paymentType: transaction.paymentType || "Booking",
         branch: transaction.branch || "Delhi",
         amount: transaction.amount || "",
@@ -1387,7 +1387,7 @@ function DataTable({
 
   const getProcedureColor = (proc) => {
     const colors = {
-      "hair transplant": "bg-indigo-100 text-indigo-700 border-indigo-200",
+      "Sapphire FUE": "bg-indigo-100 text-indigo-700 border-indigo-200",
       prp: "bg-emerald-100 text-emerald-700 border-emerald-200",
       "beard transplant": "bg-purple-100 text-purple-700 border-purple-200",
       medicine: "bg-amber-100 text-amber-700 border-amber-200",

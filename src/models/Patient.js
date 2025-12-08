@@ -93,10 +93,10 @@ const patientSchema = new mongoose.Schema(
         type: mongoose.Schema.Types.ObjectId,
         ref: "Employee",
       },
-      helper: {
+      helpers: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: "Employee",
-      },
+      }],
     },
     payments: {
       amountReceived: { type: Number, default: 0 },

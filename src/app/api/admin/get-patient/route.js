@@ -42,7 +42,7 @@ const handler = async (req) => {
         model: "Employee",
       })
       .populate({
-        path: "surgery.helper",
+        path: "surgery.helpers",
         select: "name",
         model: "Employee",
       })

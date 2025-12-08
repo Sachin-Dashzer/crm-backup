@@ -18,9 +18,6 @@ import {
   UserPlus,
 } from "lucide-react";
 
-
-
-
 const BenefitsManager = ({ benefits, onChange, onAdd, onRemove }) => {
   const predefinedBenefits = [
     "5 Free PRP Sessions",
@@ -131,8 +128,6 @@ const BenefitsManager = ({ benefits, onChange, onAdd, onRemove }) => {
   );
 };
 
-
-
 const StepHeader = ({ icon: Icon, title, description, color }) => (
   <div className="text-center mb-8">
     <Icon className={`mx-auto h-16 w-16 text-${color}-500 mb-4`} />
@@ -140,8 +135,6 @@ const StepHeader = ({ icon: Icon, title, description, color }) => (
     <p className="text-gray-600">{description}</p>
   </div>
 );
-
-
 
 const DocumentUpload = ({
   title,
@@ -290,7 +283,7 @@ export default function PatientRegistration() {
       implanterRight: "",
       implanterLeft: "",
       graftingPerson: "",
-      helper: "",
+      helpers: [],
     },
     documents: {
       images: [],
@@ -415,13 +408,8 @@ export default function PatientRegistration() {
       }));
 
       toast.success(`Successfully uploaded ${uploadedPaths.length} file(s)`);
-
-      
     } catch (error) {
-
       toast.error("Failed to upload some files. Please try again.");
-
-     
     } finally {
       setUploadingFiles((prev) => ({ ...prev, [section]: false }));
     }
@@ -449,15 +437,11 @@ export default function PatientRegistration() {
         }));
 
         toast.success("File removed successfully");
-
       } else {
-
         toast.error("Failed to delete file");
-
       }
     } catch (error) {
       toast.error("Error removing file");
-      
     }
   };
 
@@ -475,7 +459,7 @@ export default function PatientRegistration() {
         "implanterRight",
         "implanterLeft",
         "graftingPerson",
-        "helper",
+        "helpers",
       ],
     };
 
@@ -543,7 +527,6 @@ export default function PatientRegistration() {
 
       toast.success("Patient registered successfully!");
 
-     
       // Reset form after successful submission
       setTimeout(() => {
         setFormData({
@@ -600,7 +583,7 @@ export default function PatientRegistration() {
             implanterRight: "",
             implanterLeft: "",
             graftingPerson: "",
-            helper: "",
+            helpers: [],
           },
           documents: {
             images: [],
@@ -615,10 +598,7 @@ export default function PatientRegistration() {
         setStep(1);
       }, 2000);
     } catch (error) {
-
       toast.error("Error submitting patient data:");
-
-      
     } finally {
       setIsSubmitting(false);
     }
@@ -654,7 +634,6 @@ export default function PatientRegistration() {
             </div>
           </div>
 
-          
           <div className="px-8 py-6 border-b border-gray-200">
             <div className="flex justify-between items-center">
               <div className="flex space-x-2">
@@ -973,8 +952,6 @@ export default function PatientRegistration() {
                       )
                     }
                   />
-
-                 
                 </div>
               </div>
             )}
@@ -1207,14 +1184,22 @@ export default function PatientRegistration() {
                   />
 
                   <InputField
-                    label="Surgery Helper"
-                    type="select"
-                    value={formData.surgery.helper}
-                    onChange={createChangeHandler("surgery", "helper")}
+                    label="Surgery Helpers (Multiple)"
+                    type="multiselect"
+                    value={formData.surgery.helpers}
                     options={employees.Others.map((emp) => ({
                       value: emp._id,
                       label: emp.name,
                     }))}
+                    onChange={(e) => {
+                      setFormData((prev) => ({
+                        ...prev,
+                        surgery: {
+                          ...prev.surgery,
+                          helpers: e.target.value, // e.target.value is already an array
+                        },
+                      }));
+                    }}
                   />
                 </div>
               </div>

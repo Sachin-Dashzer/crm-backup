@@ -23,13 +23,17 @@ export async function POST(request) {
 
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
+    const fileExtension = file.name.split('.').pop().toLowerCase();
+    const isPDF = fileExtension === 'pdf';
+    
+    const resourceType = isPDF ? 'raw' : 'image';
 
     const uploadResponse = await new Promise((resolve, reject) => {
       cloudinary.uploader.upload_stream(
         {
           folder: `patients/${patientId}/${section}`,
-          resource_type: "auto",
-          public_id: `${Date.now()}_${file.name.replace(/\s+/g, "_")}`,
+          resource_type: resourceType,
+          public_id: `${Date.now()}_${file.name.replace(/\s+/g, "_").replace(/\.[^/.]+$/, "")}`,
         },
         (error, result) => {
           if (error) reject(error);
@@ -38,16 +42,21 @@ export async function POST(request) {
       ).end(buffer);
     });
 
+    // Generate accessible URL without transformations
+    let accessibleUrl = uploadResponse.secure_url;
+
     return NextResponse.json({
       success: true,
       message: "File uploaded successfully",
-      filePath: uploadResponse.secure_url,
+      filePath: accessibleUrl,
       publicId: uploadResponse.public_id,
+      resourceType: uploadResponse.resource_type,
+      format: uploadResponse.format,
     });
   } catch (error) {
     console.error("Error uploading file:", error);
     return NextResponse.json(
-      { success: false, message: "Failed to upload file" },
+      { success: false, message: "Failed to upload file", error: error.message },
       { status: 500 }
     );
   }
@@ -55,7 +64,7 @@ export async function POST(request) {
 
 export async function DELETE(request) {
   try {
-    const { publicId } = await request.json();
+    const { publicId, resourceType } = await request.json();
 
     if (!publicId) {
       return NextResponse.json(
@@ -64,7 +73,9 @@ export async function DELETE(request) {
       );
     }
 
-    const result = await cloudinary.uploader.destroy(publicId);
+    const result = await cloudinary.uploader.destroy(publicId, {
+      resource_type: resourceType || 'raw',
+    });
 
     if (result.result === "ok") {
       return NextResponse.json({
@@ -72,6 +83,17 @@ export async function DELETE(request) {
         message: "File deleted successfully",
       });
     } else {
+      const retryResult = await cloudinary.uploader.destroy(publicId, {
+        resource_type: 'image',
+      });
+      
+      if (retryResult.result === "ok") {
+        return NextResponse.json({
+          success: true,
+          message: "File deleted successfully",
+        });
+      }
+      
       return NextResponse.json(
         { success: false, message: "File not found or already deleted" },
         { status: 404 }
@@ -80,7 +102,7 @@ export async function DELETE(request) {
   } catch (error) {
     console.error("Error deleting file:", error);
     return NextResponse.json(
-      { success: false, message: "Failed to delete file" },
+      { success: false, message: "Failed to delete file", error: error.message },
       { status: 500 }
     );
   }

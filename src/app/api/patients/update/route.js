@@ -4,10 +4,6 @@ import Patient from "@/models/Patient";
 import Employee from "@/models/Employee";
 import mongoose from "mongoose";
 
-
-
-
-
 const handler = async (req) => {
   try {
     const { searchParams } = new URL(req.url);
@@ -46,7 +42,7 @@ const handler = async (req) => {
       }
     }
 
-    // Store original values for employee reference updates
+    // FIXED: Store original values BEFORE using them
     const originalValues = {
       personalReference: patient.personal?.reference?.toString(),
       counsellingCounsellor: patient.counselling?.counsellor?.toString(),
@@ -56,15 +52,19 @@ const handler = async (req) => {
         implanterRight: patient.surgery?.implanterRight?.toString(),
         implanterLeft: patient.surgery?.implanterLeft?.toString(),
         graftingPerson: patient.surgery?.graftingPerson?.toString(),
-        helper: patient.surgery?.helper?.toString(),
-      }
+        helpers: patient.surgery?.helpers?.map(h => h?.toString()) || [],  // FIXED: Array
+      },
     };
 
     // Update patient fields manually
     const updateFields = (target, source) => {
-      Object.keys(source).forEach(key => {
+      Object.keys(source).forEach((key) => {
         if (source[key] !== undefined && source[key] !== null) {
-          if (typeof source[key] === 'object' && !Array.isArray(source[key]) && source[key] !== null) {
+          if (
+            typeof source[key] === "object" &&
+            !Array.isArray(source[key]) &&
+            source[key] !== null
+          ) {
             if (!target[key]) target[key] = {};
             updateFields(target[key], source[key]);
           } else {
@@ -89,10 +89,10 @@ const handler = async (req) => {
       .populate("surgery.implanterRight")
       .populate("surgery.implanterLeft")
       .populate("surgery.graftingPerson")
-      .populate("surgery.helper")
+      .populate("surgery.helpers")  // FIXED: Plural
       .populate("payments.transactions");
 
-    // Handle employee reference updates (your existing code)
+    // Handle employee reference updates
     const employeeUpdatePromises = [];
 
     const addEmployeeUpdate = (employeeId, fieldName, operation) => {
@@ -119,7 +119,11 @@ const handler = async (req) => {
     // Check for reference changes
     if (data.personal?.reference !== originalValues.personalReference) {
       if (originalValues.personalReference) {
-        addEmployeeUpdate(originalValues.personalReference, "reference", "remove");
+        addEmployeeUpdate(
+          originalValues.personalReference,
+          "reference",
+          "remove"
+        );
       }
       if (data.personal?.reference) {
         addEmployeeUpdate(data.personal.reference, "reference", "add");
@@ -129,7 +133,11 @@ const handler = async (req) => {
     // Check counselling counsellor changes
     if (data.counselling?.counsellor !== originalValues.counsellingCounsellor) {
       if (originalValues.counsellingCounsellor) {
-        addEmployeeUpdate(originalValues.counsellingCounsellor, "counsellor", "remove");
+        addEmployeeUpdate(
+          originalValues.counsellingCounsellor,
+          "counsellor",
+          "remove"
+        );
       }
       if (data.counselling?.counsellor) {
         addEmployeeUpdate(data.counselling.counsellor, "counsellor", "add");
@@ -138,13 +146,13 @@ const handler = async (req) => {
 
     // Check surgery team changes
     if (data.surgery) {
+      // FIXED: Removed "helper" from array
       const surgeryFields = [
         "doctor",
         "seniorTech",
         "implanterRight",
         "implanterLeft",
         "graftingPerson",
-        "helper",
       ];
 
       surgeryFields.forEach((field) => {
@@ -160,12 +168,29 @@ const handler = async (req) => {
           }
         }
       });
+
+      // FIXED: Handle helpers array separately AFTER addEmployeeUpdate is defined
+      const oldHelpers = originalValues.surgery.helpers || [];
+      const newHelpers = data.surgery.helpers || [];
+
+      // Remove old helpers not in new list
+      oldHelpers.forEach((oldHelper) => {
+        if (!newHelpers.includes(oldHelper)) {
+          addEmployeeUpdate(oldHelper, "helper", "remove");
+        }
+      });
+
+      // Add new helpers not in old list
+      newHelpers.forEach((newHelper) => {
+        if (newHelper && !oldHelpers.includes(newHelper)) {
+          addEmployeeUpdate(newHelper, "helper", "add");
+        }
+      });
     }
 
     // Execute all employee updates
     if (employeeUpdatePromises.length > 0) {
       await Promise.all(employeeUpdatePromises);
-      
     }
 
     return NextResponse.json(
@@ -184,13 +209,5 @@ const handler = async (req) => {
     );
   }
 };
-
-
-
-
-
-
-
-
 
 export const PUT = withDB(handler);

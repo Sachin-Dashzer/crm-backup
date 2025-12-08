@@ -207,27 +207,24 @@ export async function GET(request) {
       default:
         return new Response(
           JSON.stringify({ success: false, message: "Invalid report type" }),
-          { 
+          {
             status: 400,
-            headers: { 'Content-Type': 'application/json' }
+            headers: { "Content-Type": "application/json" },
           }
         );
     }
 
-    return new Response(
-      JSON.stringify({ success: true, data }),
-      { 
-        status: 200,
-        headers: { 'Content-Type': 'application/json' }
-      }
-    );
+    return new Response(JSON.stringify({ success: true, data }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
   } catch (error) {
     console.error("Report generation error:", error);
     return new Response(
       JSON.stringify({ success: false, message: error.message }),
-      { 
+      {
         status: 500,
-        headers: { 'Content-Type': 'application/json' }
+        headers: { "Content-Type": "application/json" },
       }
     );
   }
@@ -284,7 +281,7 @@ async function generateComprehensivePatientReport(filters) {
     "Blood Group": p.medical?.bloodGroup || "",
     Allergies: p.medical?.allergies || "",
     "Medical History": p.medical?.medicalHistory || "",
-    "Counsellor": p.counselling?.counsellor?.name || "",
+    Counsellor: p.counselling?.counsellor?.name || "",
     "Technique Suggested": p.counselling?.techniqueSuggested || "",
     "Final Package": p.counselling?.finlpackage || "",
     "Grafts Suggested": p.counselling?.graftsSuggested || "",
@@ -302,9 +299,7 @@ async function generateComprehensivePatientReport(filters) {
     "Amount Received": p.payments?.amountReceived || 0,
     "Pending Amount": p.payments?.pendingAmount || 0,
     Status: p.ops?.status || "",
-    "Created At": p.createdAt
-      ? new Date(p.createdAt).toLocaleDateString()
-      : "",
+    "Created At": p.createdAt ? new Date(p.createdAt).toLocaleDateString() : "",
   }));
 }
 
@@ -475,8 +470,10 @@ async function generateAgentReport(filters) {
     const stats = agentStats[id];
     if (stats["Total Referrals"] > 0) {
       stats["Conversion Rate"] =
-        ((stats["Converted to Surgery"] / stats["Total Referrals"]) *
-          100).toFixed(1) + "%";
+        (
+          (stats["Converted to Surgery"] / stats["Total Referrals"]) *
+          100
+        ).toFixed(1) + "%";
     }
   });
 
@@ -488,7 +485,8 @@ async function generateDoctorReport(filters) {
 
   const query = { ...filters.dateFilter };
   if (filters.branch) query["personal.branch"] = filters.branch;
-  if (filters.techniqueFilter) query["surgery.technique"] = filters.techniqueFilter;
+  if (filters.techniqueFilter)
+    query["surgery.technique"] = filters.techniqueFilter;
 
   const patients = await Patient.find(query)
     .populate("surgery.doctor", "name")
@@ -525,7 +523,8 @@ async function generateDoctorReport(filters) {
         else if (technique === "DHI") doctorStats[doctorId]["DHI Count"]++;
         else if (technique === "INDIAN DHI")
           doctorStats[doctorId]["INDIAN DHI Count"]++;
-        else if (technique === "HYBRID") doctorStats[doctorId]["HYBRID Count"]++;
+        else if (technique === "HYBRID")
+          doctorStats[doctorId]["HYBRID Count"]++;
       }
     }
   });
@@ -602,7 +601,7 @@ async function generateTechnicianReport(filters) {
   const patients = await Patient.find(query)
     .populate("surgery.seniorTech", "name")
     .populate("surgery.graftingPerson", "name")
-    .populate("surgery.helper", "name")
+    .populate("surgery.helpers", "name")
     .lean();
 
   const techStats = {};
@@ -623,7 +622,7 @@ async function generateTechnicianReport(filters) {
     if (p.surgery?.surgeryDate) {
       const seniorId = p.surgery?.seniorTech?._id?.toString();
       const graftingId = p.surgery?.graftingPerson?._id?.toString();
-      const helperId = p.surgery?.helper?._id?.toString();
+      const helpers = p.surgery?.helpers || []; // ✅ Get helpers array
 
       if (seniorId && techStats[seniorId]) {
         techStats[seniorId]["Total Procedures"]++;
@@ -633,20 +632,25 @@ async function generateTechnicianReport(filters) {
         techStats[graftingId]["Total Procedures"]++;
         techStats[graftingId]["As Grafting Person"]++;
       }
-      if (helperId && techStats[helperId]) {
-        techStats[helperId]["Total Procedures"]++;
-        techStats[helperId]["As Helper"]++;
-      }
+
+      // ✅ Loop through ALL helpers
+      helpers.forEach((helper) => {
+        const helperId = helper?._id?.toString();
+        if (helperId && techStats[helperId]) {
+          techStats[helperId]["Total Procedures"]++;
+          techStats[helperId]["As Helper"]++;
+        }
+      });
     }
   });
-
   return Object.values(techStats).filter((s) => s["Total Procedures"] > 0);
 }
 
 async function generateTechniqueReport(filters) {
   const query = { ...filters.dateFilter };
   if (filters.branch) query["personal.branch"] = filters.branch;
-  if (filters.techniqueFilter) query["surgery.technique"] = filters.techniqueFilter;
+  if (filters.techniqueFilter)
+    query["surgery.technique"] = filters.techniqueFilter;
 
   const patients = await Patient.find(query).lean();
 
@@ -691,7 +695,10 @@ async function generateTechniqueReport(filters) {
 }
 
 async function generateSurgeryScheduleReport(filters) {
-  const query = { ...filters.dateFilter, "surgery.surgeryDate": { $exists: true } };
+  const query = {
+    ...filters.dateFilter,
+    "surgery.surgeryDate": { $exists: true },
+  };
   if (filters.branch) query["personal.branch"] = filters.branch;
 
   const patients = await Patient.find(query)
@@ -720,9 +727,13 @@ async function generateSurgeryScheduleReport(filters) {
 }
 
 async function generateGraftsAnalysisReport(filters) {
-  const query = { ...filters.dateFilter, "surgery.surgeryDate": { $exists: true } };
+  const query = {
+    ...filters.dateFilter,
+    "surgery.surgeryDate": { $exists: true },
+  };
   if (filters.branch) query["personal.branch"] = filters.branch;
-  if (filters.techniqueFilter) query["surgery.technique"] = filters.techniqueFilter;
+  if (filters.techniqueFilter)
+    query["surgery.technique"] = filters.techniqueFilter;
 
   const patients = await Patient.find(query).lean();
 
@@ -736,11 +747,10 @@ async function generateGraftsAnalysisReport(filters) {
     "Grafts Implanted": p.surgery?.graftsImplanted || 0,
     "Variance (Suggested vs Implanted)":
       (p.surgery?.graftsImplanted || 0) - (p.counselling?.graftsSuggested || 0),
-    "Implantation Rate":
-      p.surgery?.graftsneed
-        ? ((p.surgery.graftsImplanted / p.surgery.graftsneed) * 100).toFixed(1) +
-          "%"
-        : "N/A",
+    "Implantation Rate": p.surgery?.graftsneed
+      ? ((p.surgery.graftsImplanted / p.surgery.graftsneed) * 100).toFixed(1) +
+        "%"
+      : "N/A",
     "Surgery Date": p.surgery?.surgeryDate
       ? new Date(p.surgery.surgeryDate).toLocaleDateString()
       : "",
@@ -807,9 +817,7 @@ async function generateExpensesReport(filters) {
   };
   if (filters.branch) query.branch = filters.branch;
 
-  const transactions = await Transactions.find(query)
-    .sort({ date: -1 })
-    .lean();
+  const transactions = await Transactions.find(query).sort({ date: -1 }).lean();
 
   return transactions.map((t) => ({
     Date: t.date ? new Date(t.date).toLocaleDateString() : "",
@@ -1138,10 +1146,10 @@ async function generateBranchPatientsReport(filters) {
       Branch: branch,
       "Total Patients": totalPatients,
       "New Patients": newPatients,
-      "Consulted": consulted,
+      Consulted: consulted,
       "Surgery Scheduled": scheduled,
       "Post-Op": postOp,
-      "Closed": closed,
+      Closed: closed,
       "Conversion Rate":
         totalPatients > 0
           ? (((postOp + closed) / totalPatients) * 100).toFixed(1) + "%"

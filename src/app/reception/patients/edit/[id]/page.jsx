@@ -20,8 +20,9 @@ import {
   Save,
   ArrowLeft,
   Edit3,
+  Eye,
+  Download,
 } from "lucide-react";
-
 
 const BenefitsManager = ({ benefits, onChange, onAdd, onRemove }) => {
   const predefinedBenefits = [
@@ -135,7 +136,9 @@ const BenefitsManager = ({ benefits, onChange, onAdd, onRemove }) => {
 
 const StepHeader = ({ icon: Icon, title, description, color }) => (
   <div className="text-center mb-8">
-    <Icon className={`mx-auto h-16 w-16 text-${color}-500 mb-4`} />
+    <div className={`mx-auto h-16 w-16 text-${color}-500 mb-4 flex items-center justify-center`}>
+      <Icon size={64} />
+    </div>
     <h3 className="text-2xl font-bold text-gray-900">{title}</h3>
     <p className="text-gray-600">{description}</p>
   </div>
@@ -203,6 +206,9 @@ const TransactionManager = ({ transactions, onChange, onAdd, onRemove }) => (
   </div>
 );
 
+
+
+
 const DocumentUpload = ({
   title,
   icon: Icon,
@@ -213,71 +219,182 @@ const DocumentUpload = ({
   accept,
   uploadId,
   isUploading,
-}) => (
-  <div className="bg-gray-50 p-6 rounded-lg border-2 border-dashed border-gray-300">
-    <div className="text-center">
-      <Icon className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-      <h4 className="text-lg font-semibold text-gray-900 mb-2">{title}</h4>
-      <input
-        type="file"
-        multiple
-        accept={accept}
-        onChange={(e) => onUpload(e.target.files)}
-        className="hidden"
-        id={uploadId}
-        disabled={isUploading}
-      />
-      <label
-        htmlFor={uploadId}
-        className={`inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white ${
-          isUploading
-            ? "bg-gray-400 cursor-not-allowed"
-            : `bg-${color}-600 hover:bg-${color}-700 cursor-pointer`
-        } transition-colors duration-200`}
-      >
-        <Upload className="mr-2" size={20} />
-        {isUploading ? "Uploading..." : "Add More Files"}
-      </label>
-      {files.length > 0 && (
-        <div className="mt-4">
-          <h5 className="text-sm font-medium text-gray-700 mb-2">
-            Current Files ({files.length}):
-          </h5>
-          <div className="space-y-2 max-h-60 overflow-y-auto">
-            {files.map((filePath, index) => (
-              <div
-                key={index}
-                className="flex items-center justify-between bg-white px-4 py-3 rounded-md border"
-              >
-                <div className="flex items-center space-x-3 flex-1 min-w-0">
-                  <Icon
-                    size={16}
-                    className={`text-${color}-500 flex-shrink-0`}
-                  />
-                  <div className="min-w-0 flex-1">
-                    <span className="text-sm font-medium text-gray-700 block truncate">
-                      {filePath.split("/").pop()}
-                    </span>
-                    <p className="text-xs text-gray-500 truncate">
-                      Path: {filePath}
-                    </p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => onRemove(index)}
-                  className="text-red-500 hover:text-red-700 p-1 ml-2 flex-shrink-0"
-                >
-                  <X size={16} />
-                </button>
+}) => {
+  const [viewingFile, setViewingFile] = useState(null);
+
+  const isPDF = (filename) => {
+    return filename.toLowerCase().endsWith('.pdf');
+  };
+
+  const getFileName = (url) => {
+    try {
+      const parts = url.split('/');
+      const fileNameWithParams = parts[parts.length - 1];
+      const fileName = fileNameWithParams.split('?')[0];
+      return decodeURIComponent(fileName);
+    } catch (error) {
+      return url;
+    }
+  };
+
+  const handleViewFile = (fileUrl) => {
+    setViewingFile(fileUrl);
+  };
+
+  const handleDownloadFile = (fileUrl) => {
+    const fileName = getFileName(fileUrl);
+    const link = document.createElement('a');
+    link.href = fileUrl;
+    link.download = fileName;
+    link.target = '_blank';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  return (
+    <>
+      <div className="bg-gray-50 p-6 rounded-lg border-2 border-dashed border-gray-300">
+        <div className="text-center">
+          <div className="mx-auto h-12 w-12 text-gray-400 mb-4 flex items-center justify-center">
+            <Icon size={48} />
+          </div>
+          <h4 className="text-lg font-semibold text-gray-900 mb-2">{title}</h4>
+          <input
+            type="file"
+            multiple
+            accept={accept}
+            onChange={(e) => onUpload(e.target.files)}
+            className="hidden"
+            id={uploadId}
+            disabled={isUploading}
+          />
+          <label
+            htmlFor={uploadId}
+            className={`inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white ${
+              isUploading
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-blue-600 hover:bg-blue-700 cursor-pointer"
+            } transition-colors duration-200`}
+          >
+            <Upload className="mr-2" size={20} />
+            {isUploading ? "Uploading..." : "Add Files"}
+          </label>
+          
+          {files.length > 0 && (
+            <div className="mt-4">
+              <h5 className="text-sm font-medium text-gray-700 mb-2">
+                Uploaded Files ({files.length}):
+              </h5>
+              <div className="space-y-2 max-h-60 overflow-y-auto">
+                {files.map((filePath, index) => {
+                  const fileName = getFileName(filePath);
+                  const isPdf = isPDF(filePath);
+                  
+                  return (
+                    <div
+                      key={index}
+                      className="flex items-center justify-between bg-white px-4 py-3 rounded-md border hover:border-blue-300 transition-colors"
+                    >
+                      <div className="flex items-center space-x-3 flex-1 min-w-0">
+                        <div className={`flex-shrink-0 w-8 h-8 rounded flex items-center justify-center ${
+                          isPdf ? 'bg-red-100' : 'bg-blue-100'
+                        }`}>
+                          {isPdf ? (
+                            <FileText size={16} className="text-red-600" />
+                          ) : (
+                            <Image size={16} className="text-blue-600" />
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <span className="text-sm font-medium text-gray-700 block truncate">
+                            {fileName}
+                          </span>
+                          <p className="text-xs text-gray-500">
+                            {isPdf ? 'PDF Document' : 'Image File'}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2 ml-2 flex-shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => handleViewFile(filePath)}
+                          className="p-2 text-blue-600 hover:bg-blue-100 rounded transition-colors"
+                          title="View file"
+                        >
+                          <Eye size={16} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDownloadFile(filePath)}
+                          className="p-2 text-green-600 hover:bg-green-100 rounded transition-colors"
+                          title="Download file"
+                        >
+                          <Download size={16} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => onRemove(index)}
+                          className="p-2 text-red-600 hover:bg-red-100 rounded transition-colors"
+                          title="Remove file"
+                        >
+                          <X size={16} />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-            ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* File Viewer Modal */}
+      {viewingFile && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4"
+          onClick={() => setViewingFile(null)}
+        >
+          <div
+            className="relative bg-white rounded-lg w-full max-w-6xl h-[90vh] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between p-4 border-b bg-gray-50">
+              <h3 className="font-semibold text-gray-900">
+                {getFileName(viewingFile)}
+              </h3>
+              <button
+                onClick={() => setViewingFile(null)}
+                className="text-gray-600 hover:text-gray-900 text-2xl font-bold px-3 hover:bg-gray-200 rounded"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="flex-1 overflow-hidden bg-gray-100">
+              {isPDF(viewingFile) ? (
+                <iframe
+                  src={viewingFile}
+                  className="w-full h-full border-0"
+                  title="PDF Viewer"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center p-4">
+                  <img
+                    src={viewingFile}
+                    alt="Document"
+                    className="max-w-full max-h-full object-contain"
+                  />
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
-    </div>
-  </div>
-);
+    </>
+  );
+};
+
 
 export default function PatientEditDetails() {
   const [step, setStep] = useState(1);
@@ -351,7 +468,7 @@ export default function PatientEditDetails() {
       implanterRight: "",
       implanterLeft: "",
       graftingPerson: "",
-      helper: "",
+      helpers: [],
     },
     payments: {
       totalAmount: "",
@@ -386,7 +503,7 @@ export default function PatientEditDetails() {
         const result = await response.json();
         if (result.success) {
           setEmployees(result.data);
-          
+
           // Combine Technician, Implanter, and Others for surgery team dropdowns
           const combinedTeam = [
             ...result.data.Technician,
@@ -480,7 +597,7 @@ export default function PatientEditDetails() {
               implanterRight: patientData.surgery?.implanterRight?._id || "",
               implanterLeft: patientData.surgery?.implanterLeft?._id || "",
               graftingPerson: patientData.surgery?.graftingPerson?._id || "",
-              helper: patientData.surgery?.helper?._id || "",
+              helpers: patientData.surgery?.helpers?.map((h) => h._id) || [],
             },
             payments: {
               totalAmount: patientData.payments?.totalAmount || "",
@@ -509,7 +626,7 @@ export default function PatientEditDetails() {
     };
 
     fetchPatientData();
-  }, [id]);
+  }, [id, router]);
 
   const stepConfig = [
     { number: 1, title: "Personal Details", icon: User, color: "blue" },
@@ -550,12 +667,12 @@ export default function PatientEditDetails() {
     }));
   };
 
-  const addArrayItem = (section, field) => {
+  const addArrayItem = (section, field, value = "") => {
     setFormData((prev) => ({
       ...prev,
       [section]: {
         ...prev[section],
-        [field]: [...prev[section][field], ""],
+        [field]: [...prev[section][field], value],
       },
     }));
   };
@@ -578,22 +695,23 @@ export default function PatientEditDetails() {
 
     try {
       const uploadPromises = Array.from(files).map(async (file) => {
-        const formData = new FormData();
-        formData.append("file", file);
-        formData.append("section", section);
-        formData.append("patientId", id);
+        const formDataToSend = new FormData();
+        formDataToSend.append("file", file);
+        formDataToSend.append("section", section);
+        formDataToSend.append("patientId", id);
 
         const response = await fetch("/api/upload", {
           method: "POST",
-          body: formData,
+          body: formDataToSend,
         });
 
         if (!response.ok) {
-          throw new Error(`Failed to upload ${file.name}`);
+          const errorData = await response.json();
+          throw new Error(errorData.message || `Failed to upload ${file.name}`);
         }
 
         const data = await response.json();
-        return data.filePath;
+        return data.filePath; // This will be the accessible URL with fl_attachment:false for PDFs
       });
 
       const uploadedPaths = await Promise.all(uploadPromises);
@@ -610,11 +728,14 @@ export default function PatientEditDetails() {
         type: "success",
         message: `Successfully uploaded ${uploadedPaths.length} file(s)`,
       });
+
+      // Clear success message after 3 seconds
+      setTimeout(() => setUpdateStatus(null), 3000);
     } catch (error) {
       console.error("Error uploading files:", error);
       setUpdateStatus({
         type: "error",
-        message: "Failed to upload some files. Please try again.",
+        message: error.message || "Failed to upload some files. Please try again.",
       });
     } finally {
       setUploadingFiles((prev) => ({ ...prev, [section]: false }));
@@ -624,16 +745,53 @@ export default function PatientEditDetails() {
   const removeFile = async (section, index) => {
     const filePath = formData.documents[section][index];
 
+    if (!confirm('Are you sure you want to remove this file?')) {
+      return;
+    }
+
     try {
+      // Extract public ID from Cloudinary URL
+      const extractPublicId = (url) => {
+        if (!url.includes('cloudinary.com')) return null;
+        
+        const parts = url.split('/upload/');
+        if (parts.length !== 2) return null;
+        
+        const pathPart = parts[1];
+        const segments = pathPart.split('/');
+        
+        let publicIdParts = [];
+        let foundPath = false;
+        
+        for (const segment of segments) {
+          if (!foundPath && /^[a-z]+_/.test(segment)) {
+            continue;
+          }
+          foundPath = true;
+          publicIdParts.push(segment);
+        }
+        
+        const publicId = publicIdParts.join('/');
+        return publicId.replace(/\.[^/.]+$/, '');
+      };
+
+      const publicId = extractPublicId(filePath);
+      const resourceType = filePath.toLowerCase().endsWith('.pdf') ? 'raw' : 'image';
+
       const response = await fetch("/api/upload", {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ filePath }),
+        body: JSON.stringify({ 
+          publicId: publicId,
+          resourceType: resourceType 
+        }),
       });
 
-      if (response.ok) {
+      const result = await response.json();
+
+      if (response.ok && result.success) {
         setFormData((prev) => ({
           ...prev,
           documents: {
@@ -646,14 +804,16 @@ export default function PatientEditDetails() {
           type: "success",
           message: "File removed successfully",
         });
+
+        setTimeout(() => setUpdateStatus(null), 3000);
       } else {
-        throw new Error("Failed to delete file");
+        throw new Error(result.message || "Failed to delete file");
       }
     } catch (error) {
       console.error("Error removing file:", error);
       setUpdateStatus({
         type: "error",
-        message: "Failed to remove file. Please try again.",
+        message: error.message || "Failed to remove file. Please try again.",
       });
     }
   };
@@ -701,7 +861,7 @@ export default function PatientEditDetails() {
         "implanterRight",
         "implanterLeft",
         "graftingPerson",
-        "helper",
+        "helpers",
       ],
     };
 
@@ -773,7 +933,8 @@ export default function PatientEditDetails() {
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorData = await response.json();
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
       }
 
       const result = await response.json();
@@ -785,14 +946,19 @@ export default function PatientEditDetails() {
           type: "success",
           message: "Patient details updated successfully!",
         });
+
+        // Auto-hide success message
+        setTimeout(() => setUpdateStatus(null), 5000);
       } else {
-        toast.error("Update failed!");
+        throw new Error(result.message || "Update failed");
       }
     } catch (error) {
       console.error("Error updating patient data:", error);
+      toast.error("Update failed: " + error.message);
+      
       setUpdateStatus({
         type: "error",
-        message: "Failed to update patient details. Please try again.",
+        message: error.message || "Failed to update patient details. Please try again.",
       });
     } finally {
       setIsUpdating(false);
@@ -887,6 +1053,7 @@ export default function PatientEditDetails() {
           </div>
 
           <div className="px-8 py-8">
+            {/* All your existing step content here - keeping it the same */}
             {step === 1 && (
               <div className="space-y-8">
                 <StepHeader
@@ -1087,48 +1254,235 @@ export default function PatientEditDetails() {
                     placeholder="Number of grafts"
                   />
 
-                  <InputField
-                    label="Hair Loss Type"
-                    type="text"
-                    value={formData.counselling.hairlossType}
-                    onChange={createChangeHandler(
-                      "counselling",
-                      "hairlossType"
-                    )}
-                    placeholder="Type of hair loss"
+                  {/* Hair Loss Type - Radio Buttons */}
+                  <div className="space-y-3 my-3">
+                    <label className="block mb-4 text-md underline font-bold text-gray-700">
+                      Hair Loss Type *
+                    </label>
+                    <div className="space-y-2 flex flex-wrap space-x-7">
+                      {[
+                        {
+                          value: "male_pattern",
+                          label: "Male Pattern Baldness",
+                        },
+                        {
+                          value: "female_pattern",
+                          label: "Female Pattern Baldness",
+                        },
+                        {
+                          value: "receding_hairline",
+                          label: "Receding Hairline",
+                        },
+                        { value: "crown_thinning", label: "Crown Thinning" },
+                        {
+                          value: "diffuse_thinning",
+                          label: "Diffuse Thinning",
+                        },
+                        { value: "frontal_loss", label: "Frontal Hair Loss" },
+                        {
+                          value: "traction_alopecia",
+                          label: "Traction Alopecia",
+                        },
+                        { value: "other", label: "Other" },
+                      ].map((option) => (
+                        <label
+                          key={option.value}
+                          className="flex items-center align-middle space-x-1"
+                        >
+                          <input
+                            type="radio"
+                            name="hairlossType"
+                            value={option.value}
+                            checked={
+                              formData.counselling.hairlossType === option.value
+                            }
+                            onChange={createChangeHandler(
+                              "counselling",
+                              "hairlossType"
+                            )}
+                            className="text-blue-600 focus:ring-blue-500"
+                          />
+                          <span className="text-md text-gray-700">
+                            {option.label}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Area of Concern - Radio Buttons */}
+                  <div className="space-y-3 my-3">
+                    <label className="block mb-4 text-md underline font-bold text-gray-700">
+                      Area of Concern *
+                    </label>
+                    <div className="space-y-2 flex flex-wrap space-x-7">
+                      {[
+                        { value: "frontal", label: "Frontal Area" },
+                        { value: "mid_scalp", label: "Mid Scalp" },
+                        { value: "crown", label: "Crown/Vortex" },
+                        { value: "hairline", label: "Hairline Correction" },
+                        { value: "temples", label: "Temples" },
+                        { value: "beard", label: "Beard/Moustache" },
+                        { value: "multiple_areas", label: "Multiple Areas" },
+                      ].map((option) => (
+                        <label
+                          key={option.value}
+                          className="flex items-center align-baseline space-x-1"
+                        >
+                          <input
+                            type="radio"
+                            name="areaofConcern"
+                            value={option.value}
+                            checked={
+                              formData.counselling.areaofConcern ===
+                              option.value
+                            }
+                            onChange={createChangeHandler(
+                              "counselling",
+                              "areaofConcern"
+                            )}
+                            className="text-blue-600 focus:ring-blue-500"
+                          />
+                          <span className="text-md text-gray-700">
+                            {option.label}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Hair Loss Reason - Radio Buttons */}
+                  <div className="space-y-3">
+                    <label className="block mb-4 text-lg underline font-bold text-gray-700">
+                      Hair Loss Reason *
+                    </label>
+                    <div className="flex flex-wrap space-x-7 space-y-2">
+                      {[
+                        { value: "genetic", label: "Genetic/Hereditary" },
+                        { value: "hormonal", label: "Hormonal Changes" },
+                        { value: "stress", label: "Stress Related" },
+                        {
+                          value: "nutritional",
+                          label: "Nutritional Deficiency",
+                        },
+                        { value: "medical", label: "Medical Condition" },
+                        {
+                          value: "medication",
+                          label: "Medication Side Effects",
+                        },
+                        { value: "lifestyle", label: "Lifestyle Factors" },
+                        { value: "ageing", label: "Ageing Process" },
+                        { value: "unknown", label: "Unknown/Idiopathic" },
+                      ].map((option) => (
+                        <label
+                          key={option.value}
+                          className="flex items-center align-middle space-x-1"
+                        >
+                          <input
+                            type="radio"
+                            name="hairlossreason"
+                            value={option.value}
+                            checked={
+                              formData.counselling.hairlossreason ===
+                              option.value
+                            }
+                            onChange={createChangeHandler(
+                              "counselling",
+                              "hairlossreason"
+                            )}
+                            className="text-blue-600 focus:ring-blue-500"
+                          />
+                          <span className="text-md text-gray-700">
+                            {option.label}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Hair Loss Duration - Radio Buttons */}
+                  <div className="space-y-3">
+                    <label className="block mb-4 text-md underline font-bold text-gray-700">
+                      Hair Loss Duration *
+                    </label>
+                    <div className="space-y-2 flex flex-wrap space-x-5">
+                      {[
+                        {
+                          value: "less_than_1_year",
+                          label: "Less than 1 year",
+                        },
+                        { value: "1_2_years", label: "1-2 years" },
+                        { value: "2_5_years", label: "2-5 years" },
+                        { value: "5_10_years", label: "5-10 years" },
+                        {
+                          value: "more_than_10_years",
+                          label: "More than 10 years",
+                        },
+                        {
+                          value: "progressive",
+                          label: "Progressive (ongoing)",
+                        },
+                        {
+                          value: "recent_accelerated",
+                          label: "Recent accelerated loss",
+                        },
+                      ].map((option) => (
+                        <label
+                          key={option.value}
+                          className="flex items-center space-x-1"
+                        >
+                          <input
+                            type="radio"
+                            name="hairlossduration"
+                            value={option.value}
+                            checked={
+                              formData.counselling.hairlossduration ===
+                              option.value
+                            }
+                            onChange={createChangeHandler(
+                              "counselling",
+                              "hairlossduration"
+                            )}
+                            className="text-blue-600 focus:ring-blue-500"
+                          />
+                          <span className="text-md text-gray-700">
+                            {option.label}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Updated Benefits Manager */}
+                  <BenefitsManager
+                    benefits={formData.counselling.additionalbenefits}
+                    onChange={(value, index) =>
+                      handleArrayChange(
+                        "counselling",
+                        "additionalbenefits",
+                        value,
+                        index
+                      )
+                    }
+                    onAdd={(value) =>
+                      addArrayItem("counselling", "additionalbenefits", value)
+                    }
+                    onRemove={(index) =>
+                      removeArrayItem(
+                        "counselling",
+                        "additionalbenefits",
+                        index
+                      )
+                    }
                   />
 
                   <InputField
-                    label="Area of Concern"
-                    type="text"
-                    value={formData.counselling.areaofConcern}
-                    onChange={createChangeHandler(
-                      "counselling",
-                      "areaofConcern"
-                    )}
-                    placeholder="Area of concern"
-                  />
-
-                  <InputField
-                    label="Hair Loss Reason"
-                    type="text"
-                    value={formData.counselling.hairlossreason}
-                    onChange={createChangeHandler(
-                      "counselling",
-                      "hairlossreason"
-                    )}
-                    placeholder="Reason for hair loss"
-                  />
-
-                  <InputField
-                    label="Hair Loss Duration"
-                    type="text"
-                    value={formData.counselling.hairlossduration}
-                    onChange={createChangeHandler(
-                      "counselling",
-                      "hairlossduration"
-                    )}
-                    placeholder="Duration of hair loss"
+                    label="Notes"
+                    type="textarea"
+                    value={formData.counselling.notes}
+                    onChange={createChangeHandler("counselling", "notes")}
+                    placeholder="Additional counselling notes"
+                    className="md:col-span-2 mt-3"
                   />
 
                   <div className="md:col-span-2">
@@ -1140,40 +1494,10 @@ export default function PatientEditDetails() {
                         "counselling",
                         "readyForSurgery"
                       )}
+                      className="mt-4"
                       placeholder="Patient is ready for surgery"
                     />
                   </div>
-
-                  <InputField
-                    label="Notes"
-                    type="textarea"
-                    value={formData.counselling.notes}
-                    onChange={createChangeHandler("counselling", "notes")}
-                    placeholder="Additional counselling notes"
-                    className="md:col-span-2"
-                  />
-
-                  <BenefitsManager
-                    benefits={formData.counselling.additionalbenefits}
-                    onChange={(value, index) =>
-                      handleArrayChange(
-                        "counselling",
-                        "additionalbenefits",
-                        value,
-                        index
-                      )
-                    }
-                    onAdd={() =>
-                      addArrayItem("counselling", "additionalbenefits")
-                    }
-                    onRemove={(index) =>
-                      removeArrayItem(
-                        "counselling",
-                        "additionalbenefits",
-                        index
-                      )
-                    }
-                  />
                 </div>
               </div>
             )}
@@ -1396,16 +1720,23 @@ export default function PatientEditDetails() {
                       label: emp.name,
                     }))}
                   />
-
                   <InputField
-                    label="Surgery Helper"
-                    type="select"
-                    value={formData.surgery.helper}
-                    onChange={createChangeHandler("surgery", "helper")}
-                    options={surgeryTeamMembers.map((emp) => ({
+                    label="Surgery Helpers (Multiple)"
+                    type="multiselect"
+                    value={formData.surgery.helpers}
+                    options={employees.Others.map((emp) => ({
                       value: emp._id,
                       label: emp.name,
                     }))}
+                    onChange={(e) => {
+                      setFormData((prev) => ({
+                        ...prev,
+                        surgery: {
+                          ...prev.surgery,
+                          helpers: e.target.value, // e.target.value is already an array
+                        },
+                      }));
+                    }}
                   />
                 </div>
               </div>
