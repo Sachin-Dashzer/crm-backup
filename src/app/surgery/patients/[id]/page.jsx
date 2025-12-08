@@ -2,8 +2,15 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import Sidebar from "@/components/SurgerySidebar";
-import { ArrowLeft, Download, Printer } from "lucide-react";
+import ReceptionSidebar from "@/components/SurgerySidebar";
+import {
+  ArrowLeft,
+  Download,
+  Printer,
+  FileText,
+  Image as ImageIcon,
+  Eye,
+} from "lucide-react";
 
 const PatientProfile = () => {
   const params = useParams();
@@ -11,6 +18,7 @@ const PatientProfile = () => {
   const [patientData, setPatientData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -29,7 +37,9 @@ const PatientProfile = () => {
         }
 
         const data = await res.json();
+
         if (data.success && data.patient) {
+          console.log(data.patient);
           setPatientData(data.patient);
         } else {
           router.push("/404");
@@ -131,7 +141,9 @@ const PatientProfile = () => {
       <!DOCTYPE html>
       <html>
         <head>
-          <title>Patient Medical Record - ${data.personal?.name || "Unknown"}</title>
+          <title>Patient Medical Record - ${
+            data.personal?.name || "Unknown"
+          }</title>
           <meta charset="UTF-8">
           <style>
             body { 
@@ -241,9 +253,9 @@ const PatientProfile = () => {
             } &nbsp; | &nbsp; <strong>Date:</strong> ${new Date().toLocaleDateString(
       "en-IN"
     )}</p>
-            <p style="margin: 5px 0;"><strong>Status:</strong> <span style="background: #e9ecef; padding: 4px 12px; border-radius: 15px; font-weight: 600;">${
-              (data.ops?.status || "UNKNOWN").replace("_", " ")
-            }</span></p>
+            <p style="margin: 5px 0;"><strong>Status:</strong> <span style="background: #e9ecef; padding: 4px 12px; border-radius: 15px; font-weight: 600;">${(
+              data.ops?.status || "UNKNOWN"
+            ).replace("_", " ")}</span></p>
           </div>
 
           <!-- Patient Information -->
@@ -310,44 +322,6 @@ const PatientProfile = () => {
             }
           </div>
 
-          <!-- Medical Information -->
-          <div class="section">
-            <h2>MEDICAL INFORMATION</h2>
-            <div class="grid">
-              <div>
-                <h3 style="color: #2c5aa0; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 5px;">Vital Signs</h3>
-                <div class="grid">
-                  <div class="info-item"><span class="info-label">Blood Pressure:</span> <span class="info-value">${
-                    data.medical?.bp || "N/A"
-                  }</span></div>
-                  <div class="info-item"><span class="info-label">Sugar Level:</span> <span class="info-value">${
-                    data.medical?.sugar || "N/A"
-                  }</span></div>
-                  <div class="info-item"><span class="info-label">Pulse Rate:</span> <span class="info-value">${
-                    data.medical?.pulse || "N/A"
-                  }</span></div>
-                  <div class="info-item"><span class="info-label">Weight:</span> <span class="info-value">${
-                    data.medical?.weight || "N/A"
-                  }</span></div>
-                </div>
-              </div>
-              <div>
-                <h3 style="color: #2c5aa0; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 5px;">Medical Background</h3>
-                <div class="info-item"><span class="info-label">Allergies:</span> <span class="info-value">${
-                  data.medical?.allergies || "None"
-                }</span></div>
-                <div class="info-item"><span class="info-label">Medical History:</span> <span class="info-value">${
-                  data.medical?.medicalHistory || "None"
-                }</span></div>
-                <div class="info-item"><span class="info-label">HIV Status:</span> <span class="info-value">${
-                  data.medical?.hiv || "Not tested"
-                }</span></div>
-                <div class="info-item"><span class="info-label">HCV Status:</span> <span class="info-value">${
-                  data.medical?.hcv || "Not tested"
-                }</span></div>
-              </div>
-            </div>
-          </div>
 
           <!-- Counselling Details -->
           <div class="section">
@@ -405,12 +379,53 @@ const PatientProfile = () => {
             }
           </div>
 
+
+          <!-- Medical Information -->
+          <div class="section">
+            <h2>MEDICAL INFORMATION</h2>
+            <div class="grid">
+              <div>
+                <h3 style="color: #2c5aa0; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 5px;">Vital Signs</h3>
+                <div class="grid">
+                  <div class="info-item"><span class="info-label">Blood Pressure:</span> <span class="info-value">${
+                    data.medical?.bp || "N/A"
+                  }</span></div>
+                  <div class="info-item"><span class="info-label">Sugar Level:</span> <span class="info-value">${
+                    data.medical?.sugar || "N/A"
+                  }</span></div>
+                  <div class="info-item"><span class="info-label">Pulse Rate:</span> <span class="info-value">${
+                    data.medical?.pulse || "N/A"
+                  }</span></div>
+                  <div class="info-item"><span class="info-label">Weight:</span> <span class="info-value">${
+                    data.medical?.weight || "N/A"
+                  }</span></div>
+                </div>
+              </div>
+              <div>
+                <h3 style="color: #2c5aa0; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 5px;">Medical Background</h3>
+                <div class="info-item"><span class="info-label">Allergies:</span> <span class="info-value">${
+                  data.medical?.allergies || "None"
+                }</span></div>
+                <div class="info-item"><span class="info-label">Medical History:</span> <span class="info-value">${
+                  data.medical?.medicalHistory || "None"
+                }</span></div>
+                <div class="info-item"><span class="info-label">HIV Status:</span> <span class="info-value">${
+                  data.medical?.hiv || "Not tested"
+                }</span></div>
+                <div class="info-item"><span class="info-label">HCV Status:</span> <span class="info-value">${
+                  data.medical?.hcv || "Not tested"
+                }</span></div>
+              </div>
+            </div>
+          </div>
+
+          
           <!-- Surgery Information -->
-          ${
-            data.surgery?.surgeryDate
-              ? `
           <div class="section">
             <h2>SURGERY INFORMATION</h2>
+            ${
+              data.surgery?.surgeryDate
+                ? `
             <div class="grid">
               <div class="info-item"><span class="info-label">Surgery Date:</span> <span class="info-value">${formatDatePDF(
                 data.surgery.surgeryDate
@@ -449,17 +464,28 @@ const PatientProfile = () => {
               <div class="info-item"><span class="info-label">Implanter (Left):</span> <span class="info-value">${
                 data.surgery.implanterLeft?.name || "N/A"
               }</span></div>
-              <div class="info-item"><span class="info-label">Grafting Person:</span> <span class="info-value">${
-                data.surgery.graftingPerson?.name || "N/A"
-              }</span></div>
-              <div class="info-item"><span class="info-label">Helper:</span> <span class="info-value">${
-                data.surgery.helper?.name || "N/A"
+             
+              <div class="info-item"><span class="info-label">Helpers:</span> <span class="info-value">${
+                data.surgery.helpers && data.surgery.helpers.length > 0
+                  ? data.surgery.helpers.map((h) => h.name || h).join(", ")
+                  : "N/A"
               }</span></div>
             </div>
+            ${
+              data.surgery.surgeryNotes
+                ? `
+            <div style="margin-top: 15px; padding: 15px; background: #f8f9fa; border-radius: 5px;">
+              <strong>Surgery Notes:</strong><br>${data.surgery.surgeryNotes}
+            </div>
+            `
+                : ""
+            }
+            `
+                : `
+            <p style="text-align: center; color: #666; padding: 20px;">No surgery scheduled yet</p>
+            `
+            }
           </div>
-          `
-              : ""
-          }
 
           <!-- Payment Information -->
           <div class="section">
@@ -470,6 +496,9 @@ const PatientProfile = () => {
               )}</span></div>
               <div class="info-item"><span class="info-label">Amount Received:</span> <span class="info-value amount-positive">${formatCurrencyPDF(
                 data.payments?.amountReceived
+              )}</span></div>
+              <div class="info-item"><span class="info-label">Total Discount:</span> <span class="info-value amount-positive">${formatCurrencyPDF(
+                data.payments?.discount
               )}</span></div>
               <div class="info-item"><span class="info-label">Pending Amount:</span> <span class="info-value amount-negative">${formatCurrencyPDF(
                 data.payments?.pendingAmount
@@ -489,6 +518,7 @@ const PatientProfile = () => {
                 <tr>
                   <th>Date</th>
                   <th>Payment Type</th>
+                  <th>Procedure</th>
                   <th>Branch</th>
                   <th>Amount</th>
                 </tr>
@@ -500,6 +530,7 @@ const PatientProfile = () => {
                   <tr>
                     <td>${formatDatePDF(txn.date)}</td>
                     <td>${txn.paymentType || "N/A"}</td>
+                    <td>${txn.procedure || "N/A"}</td>
                     <td>${txn.branch || "N/A"}</td>
                     <td><strong>${formatCurrencyPDF(txn.amount)}</strong></td>
                   </tr>
@@ -511,6 +542,37 @@ const PatientProfile = () => {
             `
                 : ""
             }
+          </div>
+
+          <!-- Documents Section -->
+          <div class="section">
+            <h2>DOCUMENTS UPLOADED</h2>
+            <div class="grid">
+              <div class="info-item">
+                <span class="info-label">Patient Images:</span>
+                <span class="info-value">${
+                  data.documents?.images?.length || 0
+                } file(s)</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Consent Forms:</span>
+                <span class="info-value">${
+                  data.documents?.consentForm?.length || 0
+                } file(s)</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Surgery Forms:</span>
+                <span class="info-value">${
+                  data.documents?.suregeryForm?.length || 0
+                } file(s)</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Consult Forms:</span>
+                <span class="info-value">${
+                  data.documents?.consultForm?.length || 0
+                } file(s)</span>
+              </div>
+            </div>
           </div>
 
           <div class="footer">
@@ -527,7 +589,10 @@ const PatientProfile = () => {
   if (isLoading) {
     return (
       <section className="flex min-h-screen">
-        <Sidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
+        <ReceptionSidebar
+          sidebarOpen={sidebarOpen}
+          setSidebarOpen={setSidebarOpen}
+        />
         <main className="flex-1 flex items-center justify-center bg-gray-50">
           <div className="text-center">
             <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-600 mx-auto mb-4"></div>
@@ -544,7 +609,10 @@ const PatientProfile = () => {
 
   return (
     <section className="flex min-h-screen">
-      <Sidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
+      <ReceptionSidebar
+        sidebarOpen={sidebarOpen}
+        setSidebarOpen={setSidebarOpen}
+      />
 
       <main className="flex-1 px-12 py-4 bg-gray-50">
         <div className="max-w-7xl mx-auto">
@@ -965,130 +1033,151 @@ const PatientProfile = () => {
                 </div>
               </div>
 
-              {/* Surgery Information */}
-              {patientData.surgery?.surgeryDate && (
-                <div className="mb-8">
-                  <h2 className="text-xl font-bold text-gray-900 mb-4 border-b pb-2">
-                    SURGERY INFORMATION
-                  </h2>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
-                    <div>
-                      <label className="block text-sm text-gray-600 mb-1">
-                        Surgery Date
-                      </label>
-                      <p className="font-medium">
-                        {formatDate(patientData.surgery.surgeryDate)}
-                      </p>
+              {/* Surgery Information - ALWAYS SHOW */}
+              <div className="mb-8">
+                <h2 className="text-xl font-bold text-gray-900 mb-4 border-b pb-2">
+                  SURGERY INFORMATION
+                </h2>
+                {patientData.surgery?.surgeryDate ? (
+                  <>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+                      <div>
+                        <label className="block text-sm text-gray-600 mb-1">
+                          Surgery Date
+                        </label>
+                        <p className="font-medium">
+                          {formatDate(patientData.surgery.surgeryDate)}
+                        </p>
+                      </div>
+                      <div>
+                        <label className="block text-sm text-gray-600 mb-1">
+                          Location
+                        </label>
+                        <p className="font-medium">
+                          {patientData.surgery.location || "N/A"}
+                        </p>
+                      </div>
+                      <div>
+                        <label className="block text-sm text-gray-600 mb-1">
+                          OT Number
+                        </label>
+                        <p className="font-medium">
+                          {patientData.surgery.OT || "N/A"}
+                        </p>
+                      </div>
+                      <div>
+                        <label className="block text-sm text-gray-600 mb-1">
+                          Technique
+                        </label>
+                        <p className="font-medium">
+                          {patientData.surgery.technique || "N/A"}
+                        </p>
+                      </div>
+                      <div>
+                        <label className="block text-sm text-gray-600 mb-1">
+                          Grafts Needed
+                        </label>
+                        <p className="font-medium">
+                          {patientData.surgery.graftsneed || "N/A"}
+                        </p>
+                      </div>
+                      <div>
+                        <label className="block text-sm text-gray-600 mb-1">
+                          Grafts Implanted
+                        </label>
+                        <p className="font-medium">
+                          {patientData.surgery.graftsImplanted || "N/A"}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <label className="block text-sm text-gray-600 mb-1">
-                        Location
-                      </label>
-                      <p className="font-medium">
-                        {patientData.surgery.location || "N/A"}
-                      </p>
-                    </div>
-                    <div>
-                      <label className="block text-sm text-gray-600 mb-1">
-                        OT Number
-                      </label>
-                      <p className="font-medium">
-                        {patientData.surgery.OT || "N/A"}
-                      </p>
-                    </div>
-                    <div>
-                      <label className="block text-sm text-gray-600 mb-1">
-                        Technique
-                      </label>
-                      <p className="font-medium">
-                        {patientData.surgery.technique || "N/A"}
-                      </p>
-                    </div>
-                    <div>
-                      <label className="block text-sm text-gray-600 mb-1">
-                        Grafts Needed
-                      </label>
-                      <p className="font-medium">
-                        {patientData.surgery.graftsneed || "N/A"}
-                      </p>
-                    </div>
-                    <div>
-                      <label className="block text-sm text-gray-600 mb-1">
-                        Grafts Implanted
-                      </label>
-                      <p className="font-medium">
-                        {patientData.surgery.graftsImplanted || "N/A"}
-                      </p>
-                    </div>
-                  </div>
 
-                  <div className="mb-4">
-                    <label className="block text-sm text-gray-600 mb-1">
-                      Donor Condition
-                    </label>
-                    <p className="font-medium">
-                      {patientData.surgery.donorCondition || "N/A"}
+                    <div className="mb-4">
+                      <label className="block text-sm text-gray-600 mb-1">
+                        Donor Condition
+                      </label>
+                      <p className="font-medium">
+                        {patientData.surgery.donorCondition || "N/A"}
+                      </p>
+                    </div>
+
+                    {/* Surgical Team */}
+                    <div className="mb-4">
+                      <h3 className="text-lg font-semibold text-gray-800 mb-3">
+                        Surgical Team
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div>
+                          <label className="block text-sm text-gray-600 mb-1">
+                            Doctor
+                          </label>
+                          <p className="font-medium">
+                            {patientData.surgery.doctor?.name || "N/A"}
+                          </p>
+                        </div>
+                        <div>
+                          <label className="block text-sm text-gray-600 mb-1">
+                            Senior Technician
+                          </label>
+                          <p className="font-medium">
+                            {patientData.surgery.seniorTech?.name || "N/A"}
+                          </p>
+                        </div>
+                        <div>
+                          <label className="block text-sm text-gray-600 mb-1">
+                            Implanter (Right)
+                          </label>
+                          <p className="font-medium">
+                            {patientData.surgery.implanterRight?.name || "N/A"}
+                          </p>
+                        </div>
+                        <div>
+                          <label className="block text-sm text-gray-600 mb-1">
+                            Implanter (Left)
+                          </label>
+                          <p className="font-medium">
+                            {patientData.surgery.implanterLeft?.name || "N/A"}
+                          </p>
+                        </div>
+                       
+                        <div>
+                          <label className="block text-sm text-gray-600 mb-1">
+                            Helpers
+                          </label>
+                          <p className="font-medium">
+                            {patientData.surgery.helpers &&
+                            patientData.surgery.helpers.length > 0
+                              ? patientData.surgery.helpers
+                                  .map((h) => h.name || h)
+                                  .join(", ")
+                              : "N/A"}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Surgery Notes */}
+                    {patientData.surgery.surgeryNotes && (
+                      <div className="mt-4">
+                        <label className="block text-sm text-gray-600 mb-1">
+                          Surgery Notes
+                        </label>
+                        <p className="font-medium bg-gray-50 p-3 rounded border">
+                          {patientData.surgery.surgeryNotes}
+                        </p>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+                    <p className="text-gray-500 text-lg">
+                      No surgery scheduled yet
+                    </p>
+                    <p className="text-gray-400 text-sm mt-2">
+                      Surgery details will appear here once scheduled
                     </p>
                   </div>
-
-                  {/* Surgical Team */}
-                  <div className="mb-4">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-3">
-                      Surgical Team
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      <div>
-                        <label className="block text-sm text-gray-600 mb-1">
-                          Doctor
-                        </label>
-                        <p className="font-medium">
-                          {patientData.surgery.doctor?.name || "N/A"}
-                        </p>
-                      </div>
-                      <div>
-                        <label className="block text-sm text-gray-600 mb-1">
-                          Senior Technician
-                        </label>
-                        <p className="font-medium">
-                          {patientData.surgery.seniorTech?.name || "N/A"}
-                        </p>
-                      </div>
-                      <div>
-                        <label className="block text-sm text-gray-600 mb-1">
-                          Implanter (Right)
-                        </label>
-                        <p className="font-medium">
-                          {patientData.surgery.implanterRight?.name || "N/A"}
-                        </p>
-                      </div>
-                      <div>
-                        <label className="block text-sm text-gray-600 mb-1">
-                          Implanter (Left)
-                        </label>
-                        <p className="font-medium">
-                          {patientData.surgery.implanterLeft?.name || "N/A"}
-                        </p>
-                      </div>
-                      <div>
-                        <label className="block text-sm text-gray-600 mb-1">
-                          Grafting Person
-                        </label>
-                        <p className="font-medium">
-                          {patientData.surgery.graftingPerson?.name || "N/A"}
-                        </p>
-                      </div>
-                      <div>
-                        <label className="block text-sm text-gray-600 mb-1">
-                          Helper
-                        </label>
-                        <p className="font-medium">
-                          {patientData.surgery.helper?.name || "N/A"}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
+                )}
+              </div>
 
               {/* Payment Information */}
               <div className="mb-8">
@@ -1112,6 +1201,14 @@ const PatientProfile = () => {
                     </label>
                     <p className="text-lg font-bold text-green-600">
                       {formatCurrency(patientData.payments?.amountReceived)}
+                    </p>
+                  </div>
+                  <div className="bg-green-50 p-4 rounded border text-center">
+                    <label className="block text-sm text-gray-600 mb-1">
+                      Total Discount
+                    </label>
+                    <p className="text-lg font-bold text-green-600">
+                      {formatCurrency(patientData.payments?.discount)}
                     </p>
                   </div>
                   <div className="bg-red-50 p-4 rounded border text-center">
@@ -1150,6 +1247,9 @@ const PatientProfile = () => {
                                 Payment Type
                               </th>
                               <th className="border border-gray-300 px-4 py-2 text-left text-sm font-medium text-gray-700">
+                                Procedure
+                              </th>
+                              <th className="border border-gray-300 px-4 py-2 text-left text-sm font-medium text-gray-700">
                                 Branch
                               </th>
                               <th className="border border-gray-300 px-4 py-2 text-right text-sm font-medium text-gray-700">
@@ -1168,6 +1268,9 @@ const PatientProfile = () => {
                                     {transaction.paymentType || "N/A"}
                                   </td>
                                   <td className="border border-gray-300 px-4 py-2 text-sm">
+                                    {transaction.procedure || "N/A"}
+                                  </td>
+                                  <td className="border border-gray-300 px-4 py-2 text-sm">
                                     {transaction.branch || "N/A"}
                                   </td>
                                   <td className="border border-gray-300 px-4 py-2 text-sm text-right font-medium">
@@ -1183,67 +1286,190 @@ const PatientProfile = () => {
                   )}
               </div>
 
-              {/* Documents Section */}
+              {/* Documents Section - Enhanced */}
               <div className="mb-8">
                 <h2 className="text-xl font-bold text-gray-900 mb-4 border-b pb-2">
-                  DOCUMENTS
+                  DOCUMENTS & ATTACHMENTS
                 </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                  <div className="flex items-center justify-between p-3 border rounded">
-                    <span className="font-medium text-sm">Patient Images</span>
-                    <span
-                      className={`text-xs px-2 py-1 rounded ${
-                        patientData.documents?.images?.length > 0
-                          ? "bg-green-100 text-green-800"
-                          : "bg-gray-100 text-gray-800"
-                      }`}
-                    >
-                      {patientData.documents?.images?.length > 0
-                        ? `${patientData.documents.images.length} files`
-                        : "None"}
-                    </span>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Patient Images */}
+                  <div className="border rounded-lg p-4 bg-gray-50">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <ImageIcon className="text-blue-600" size={20} />
+                        <h3 className="font-semibold text-gray-800">
+                          Patient Images
+                        </h3>
+                      </div>
+                      <span
+                        className={`text-xs px-2 py-1 rounded font-medium ${
+                          patientData.documents?.images?.length > 0
+                            ? "bg-green-100 text-green-800"
+                            : "bg-gray-200 text-gray-600"
+                        }`}
+                      >
+                        {patientData.documents?.images?.length || 0} file(s)
+                      </span>
+                    </div>
+                    {patientData.documents?.images?.length > 0 && (
+                      <div className="space-y-2">
+                        {patientData.documents.images.map((img, idx) => (
+                          <div
+                            key={idx}
+                            className="flex items-center justify-between p-2 bg-white rounded border text-sm"
+                          >
+                            <span className="text-gray-700 truncate">
+                              Image {idx + 1}
+                            </span>
+                            <a
+                              href={img}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                            >
+                              <Eye size={14} />
+                              View
+                            </a>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                  <div className="flex items-center justify-between p-3 border rounded">
-                    <span className="font-medium text-sm">Consent Form</span>
-                    <span
-                      className={`text-xs px-2 py-1 rounded ${
-                        patientData.documents?.consentForm?.length > 0
-                          ? "bg-green-100 text-green-800"
-                          : "bg-gray-100 text-gray-800"
-                      }`}
-                    >
-                      {patientData.documents?.consentForm?.length > 0
-                        ? `${patientData.documents.consentForm.length} files`
-                        : "None"}
-                    </span>
+
+                  {/* Consent Forms */}
+                  <div className="border rounded-lg p-4 bg-gray-50">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <FileText className="text-purple-600" size={20} />
+                        <h3 className="font-semibold text-gray-800">
+                          Consent Forms
+                        </h3>
+                      </div>
+                      <span
+                        className={`text-xs px-2 py-1 rounded font-medium ${
+                          patientData.documents?.consentForm?.length > 0
+                            ? "bg-green-100 text-green-800"
+                            : "bg-gray-200 text-gray-600"
+                        }`}
+                      >
+                        {patientData.documents?.consentForm?.length || 0}{" "}
+                        file(s)
+                      </span>
+                    </div>
+                    {patientData.documents?.consentForm?.length > 0 && (
+                      <div className="space-y-2">
+                        {patientData.documents.consentForm.map((doc, idx) => (
+                          <div
+                            key={idx}
+                            className="flex items-center justify-between p-2 bg-white rounded border text-sm"
+                          >
+                            <span className="text-gray-700 truncate">
+                              Consent {idx + 1}
+                            </span>
+                            <a
+                              href={doc}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                            >
+                              <Eye size={14} />
+                              View
+                            </a>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                  <div className="flex items-center justify-between p-3 border rounded">
-                    <span className="font-medium text-sm">Surgery Form</span>
-                    <span
-                      className={`text-xs px-2 py-1 rounded ${
-                        patientData.documents?.suregeryForm?.length > 0
-                          ? "bg-green-100 text-green-800"
-                          : "bg-gray-100 text-gray-800"
-                      }`}
-                    >
-                      {patientData.documents?.suregeryForm?.length > 0
-                        ? `${patientData.documents.suregeryForm.length} files`
-                        : "None"}
-                    </span>
+
+                  {/* Surgery Forms */}
+                  <div className="border rounded-lg p-4 bg-gray-50">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <FileText className="text-red-600" size={20} />
+                        <h3 className="font-semibold text-gray-800">
+                          Surgery Forms
+                        </h3>
+                      </div>
+                      <span
+                        className={`text-xs px-2 py-1 rounded font-medium ${
+                          patientData.documents?.suregeryForm?.length > 0
+                            ? "bg-green-100 text-green-800"
+                            : "bg-gray-200 text-gray-600"
+                        }`}
+                      >
+                        {patientData.documents?.suregeryForm?.length || 0}{" "}
+                        file(s)
+                      </span>
+                    </div>
+                    {patientData.documents?.suregeryForm?.length > 0 && (
+                      <div className="space-y-2">
+                        {patientData.documents.suregeryForm.map((doc, idx) => (
+                          <div
+                            key={idx}
+                            className="flex items-center justify-between p-2 bg-white rounded border text-sm"
+                          >
+                            <span className="text-gray-700 truncate">
+                              Surgery Form {idx + 1}
+                            </span>
+                            <a
+                              href={doc}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                            >
+                              <Eye size={14} />
+                              View
+                            </a>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                  <div className="flex items-center justify-between p-3 border rounded">
-                    <span className="font-medium text-sm">Consult Form</span>
-                    <span
-                      className={`text-xs px-2 py-1 rounded ${
-                        patientData.documents?.consultForm?.length > 0
-                          ? "bg-green-100 text-green-800"
-                          : "bg-gray-100 text-gray-800"
-                      }`}
-                    >
-                      {patientData.documents?.consultForm?.length > 0
-                        ? `${patientData.documents.consultForm.length} files`
-                        : "None"}
-                    </span>
+
+                  {/* Consult Forms */}
+                  <div className="border rounded-lg p-4 bg-gray-50">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <FileText className="text-green-600" size={20} />
+                        <h3 className="font-semibold text-gray-800">
+                          Consult Forms
+                        </h3>
+                      </div>
+                      <span
+                        className={`text-xs px-2 py-1 rounded font-medium ${
+                          patientData.documents?.consultForm?.length > 0
+                            ? "bg-green-100 text-green-800"
+                            : "bg-gray-200 text-gray-600"
+                        }`}
+                      >
+                        {patientData.documents?.consultForm?.length || 0}{" "}
+                        file(s)
+                      </span>
+                    </div>
+                    {patientData.documents?.consultForm?.length > 0 && (
+                      <div className="space-y-2">
+                        {patientData.documents.consultForm.map((doc, idx) => (
+                          <div
+                            key={idx}
+                            className="flex items-center justify-between p-2 bg-white rounded border text-sm"
+                          >
+                            <span className="text-gray-700 truncate">
+                              Consult {idx + 1}
+                            </span>
+                            <a
+                              href={doc}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                            >
+                              <Eye size={14} />
+                              View
+                            </a>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -1281,6 +1507,28 @@ const PatientProfile = () => {
           </div>
         </div>
       </main>
+
+      {/* Image Modal */}
+      {selectedImage && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4"
+          onClick={() => setSelectedImage(null)}
+        >
+          <div className="relative max-w-4xl max-h-screen">
+            <button
+              onClick={() => setSelectedImage(null)}
+              className="absolute -top-10 right-0 text-white text-xl font-bold hover:text-gray-300"
+            >
+              ✕ Close
+            </button>
+            <img
+              src={selectedImage}
+              alt="Patient document"
+              className="max-w-full max-h-screen object-contain"
+            />
+          </div>
+        </div>
+      )}
     </section>
   );
 };

@@ -1,1217 +1,51 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import Sidebar from "@/components/SurgerySidebar";
+import { useRouter } from "next/navigation";
+import { useToast } from "@/components/Toast";
+import { useParams } from "next/navigation";
+import InputField from "@/components/InputField";
 import {
+  Upload,
+  X,
+  FileText,
+  Image,
+  Calendar,
   User,
   Heart,
   Scissors,
-  DollarSign,
-  FileText,
-  Upload,
-  X,
-  Eye,
-  Download,
-  Image,
+  FileUp,
   Save,
   ArrowLeft,
+  Edit3,
+  Download,
 } from "lucide-react";
 
-export default function PatientEditDetails() {
-  const params = useParams();
-  const router = useRouter();
-  const patientId = params?.id;
-
-  const [currentStep, setCurrentStep] = useState(1);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState({ type: "", text: "" });
-
-  const [formData, setFormData] = useState({
-    personal: {
-      name: "",
-      age: "",
-      gender: "",
-      phone: "",
-      email: "",
-      branch: "",
-      visitDate: "",
-      reference: "",
-      packageQuoted: "",
-      techniqueQuoted: "",
-      remarks: "",
-    },
-    medical: {
-      bloodGroup: "",
-      bp: "",
-      sugar: "",
-      pulse: "",
-      weight: "",
-      allergies: "",
-      medicalHistory: "",
-      hiv: false,
-      hcv: false,
-    },
-    surgery: {
-      surgeryDate: "",
-      location: "",
-      OT: "",
-      technique: "",
-      graftsneed: "",
-      graftsImplanted: "",
-      donorCondition: "",
-      doctor: "",
-      seniorTech: "",
-      implanterRight: "",
-      implanterLeft: "",
-      graftingPerson: [],
-      helpers: [],
-      surgeryNotes: "",
-    },
-    payments: {
-      totalAmount: "",
-      amountReceived: "",
-      discount: "",
-      medicineAmount: "",
-    },
-    documents: {
-      images: [],
-      consentForm: [],
-      suregeryForm: [],
-      consultForm: [],
-    },
-  });
-
-  const [employees, setEmployees] = useState({
-    doctors: [],
-    technicians: [],
-    helpers: [],
-    references: [],
-  });
-
-  const [uploading, setUploading] = useState({
-    images: false,
-    consentForm: false,
-    suregeryForm: false,
-    consultForm: false,
-  });
-
-  // Fetch patient data
-  useEffect(() => {
-    const fetchPatient = async () => {
-      try {
-        const res = await fetch(`/api/admin/patient-data?id=${patientId}`);
-        if (!res.ok) throw new Error("Failed to fetch patient");
-        const data = await res.json();
-
-        setFormData({
-          personal: {
-            name: data.personal?.name || "",
-            age: data.personal?.age || "",
-            gender: data.personal?.gender || "",
-            phone: data.personal?.phone || "",
-            email: data.personal?.email || "",
-            branch: data.personal?.branch || "",
-            visitDate: data.personal?.visitDate?.split("T")[0] || "",
-            reference: data.personal?.reference?._id || "",
-            packageQuoted: data.personal?.packageQuoted || "",
-            techniqueQuoted: data.personal?.techniqueQuoted || "",
-            remarks: data.personal?.remarks || "",
-          },
-          medical: {
-            bloodGroup: data.medical?.bloodGroup || "",
-            bp: data.medical?.bp || "",
-            sugar: data.medical?.sugar || "",
-            pulse: data.medical?.pulse || "",
-            weight: data.medical?.weight || "",
-            allergies: data.medical?.allergies || "",
-            medicalHistory: data.medical?.medicalHistory || "",
-            hiv: data.medical?.hiv || false,
-            hcv: data.medical?.hcv || false,
-          },
-          surgery: {
-            surgeryDate: data.surgery?.surgeryDate?.split("T")[0] || "",
-            location: data.surgery?.location || "",
-            OT: data.surgery?.OT || "",
-            technique: data.surgery?.technique || "",
-            graftsneed: data.surgery?.graftsneed || "",
-            graftsImplanted: data.surgery?.graftsImplanted || "",
-            donorCondition: data.surgery?.donorCondition || "",
-            doctor: data.surgery?.doctor?._id || "",
-            seniorTech: data.surgery?.seniorTech?._id || "",
-            implanterRight: data.surgery?.implanterRight?._id || "",
-            implanterLeft: data.surgery?.implanterLeft?._id || "",
-            graftingPerson:
-              data.surgery?.graftingPerson?.map((p) => p._id) || [],
-            helpers: data.surgery?.helpers?.map((h) => h._id) || [],
-            surgeryNotes: data.surgery?.surgeryNotes || "",
-          },
-          payments: {
-            totalAmount: data.payments?.totalAmount || "",
-            amountReceived: data.payments?.amountReceived || "",
-            discount: data.payments?.discount || "",
-            medicineAmount: data.payments?.medicineAmount || "",
-          },
-          documents: {
-            images: data.documents?.images || [],
-            consentForm: data.documents?.consentForm || [],
-            suregeryForm: data.documents?.suregeryForm || [],
-            consultForm: data.documents?.consultForm || [],
-          },
-        });
-      } catch (error) {
-        console.error("Error fetching patient:", error);
-        showMessage("error", "Failed to load patient data");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    const fetchEmployees = async () => {
-      try {
-        const res = await fetch("/api/admin/employees");
-        if (res.ok) {
-          const data = await res.json();
-          setEmployees({
-            doctors: data.doctors || [],
-            technicians: data.technicians || [],
-            helpers: data.helpers || [],
-            references: data.references || [],
-          });
-        }
-      } catch (error) {
-        console.error("Error fetching employees:", error);
-      }
-    };
-
-    if (patientId) {
-      fetchPatient();
-      fetchEmployees();
-    }
-  }, [patientId]);
-
-  const showMessage = (type, text) => {
-    setMessage({ type, text });
-    setTimeout(() => setMessage({ type: "", text: "" }), 5000);
-  };
-
-  const handleInputChange = (section, field, value) => {
-    setFormData((prev) => ({
-      ...prev,
-      [section]: {
-        ...prev[section],
-        [field]: value,
-      },
-    }));
-  };
-
-  const handleFileUpload = async (files, section) => {
-    if (!files || files.length === 0) return;
-
-    setUploading((prev) => ({ ...prev, [section]: true }));
-
-    try {
-      const uploadedUrls = [];
-
-      for (const file of Array.from(files)) {
-        const formData = new FormData();
-        formData.append("file", file);
-        formData.append("section", section);
-        formData.append("patientId", patientId);
-
-        const res = await fetch("/api/upload", {
-          method: "POST",
-          body: formData,
-        });
-
-        if (!res.ok) {
-          const error = await res.json();
-          throw new Error(error.message || "Upload failed");
-        }
-
-        const data = await res.json();
-        uploadedUrls.push(data.filePath);
-      }
-
-      setFormData((prev) => ({
-        ...prev,
-        documents: {
-          ...prev.documents,
-          [section]: [...prev.documents[section], ...uploadedUrls],
-        },
-      }));
-
-      showMessage("success", "Files uploaded successfully!");
-    } catch (error) {
-      console.error("Upload error:", error);
-      showMessage("error", error.message || "Failed to upload files");
-    } finally {
-      setUploading((prev) => ({ ...prev, [section]: false }));
-    }
-  };
-
-  const handleRemoveFile = async (section, index) => {
-    if (!window.confirm("Are you sure you want to remove this file?")) return;
-
-    try {
-      const fileUrl = formData.documents[section][index];
-      const publicId = extractPublicId(fileUrl);
-      const resourceType = fileUrl.toLowerCase().endsWith(".pdf")
-        ? "raw"
-        : "image";
-
-      const res = await fetch("/api/upload", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ publicId, resourceType }),
-      });
-
-      if (!res.ok) {
-        console.warn("Failed to delete from Cloudinary");
-      }
-
-      setFormData((prev) => ({
-        ...prev,
-        documents: {
-          ...prev.documents,
-          [section]: prev.documents[section].filter((_, i) => i !== index),
-        },
-      }));
-
-      showMessage("success", "File removed successfully!");
-    } catch (error) {
-      console.error("Remove error:", error);
-      showMessage("error", "Failed to remove file");
-    }
-  };
-
-  const extractPublicId = (url) => {
-    if (!url || !url.includes("cloudinary.com")) return "";
-    const parts = url.split("/upload/");
-    if (parts.length !== 2) return "";
-    const pathPart = parts[1];
-    const segments = pathPart.split("/");
-    let publicIdParts = [];
-    let foundPath = false;
-    for (const segment of segments) {
-      if (!foundPath && /^[a-z]+_/.test(segment)) continue;
-      foundPath = true;
-      publicIdParts.push(segment);
-    }
-    const publicId = publicIdParts.join("/");
-    return publicId.replace(/\.[^/.]+$/, "");
-  };
-
-  const handleSave = async () => {
-    setSaving(true);
-    try {
-      const res = await fetch(`/api/admin/patient-data`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: patientId, ...formData }),
-      });
-
-      if (!res.ok) throw new Error("Failed to save patient");
-
-      showMessage("success", "Patient updated successfully!");
-      setTimeout(() => router.push("/reception/patients"), 1500);
-    } catch (error) {
-      console.error("Save error:", error);
-      showMessage("error", "Failed to save patient");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const steps = [
-    { id: 1, name: "Personal", icon: User },
-    { id: 2, name: "Medical", icon: Heart },
-    { id: 3, name: "Surgery", icon: Scissors },
-    { id: 4, name: "Payment", icon: DollarSign },
-    { id: 5, name: "Documents", icon: FileText },
-  ];
-
-  if (loading) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <div className="animate-spin h-12 w-12 border-4 border-indigo-200 border-t-indigo-600 rounded-full" />
-      </div>
-    );
-  }
-
-  return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
-      <div className="max-w-5xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <button
-            onClick={() => router.back()}
-            className="flex items-center text-gray-600 hover:text-gray-900 mb-4"
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back
-          </button>
-          <h1 className="text-3xl font-bold text-gray-900">Edit Patient</h1>
-          <p className="text-gray-600 mt-2">{formData.personal.name}</p>
-        </div>
-
-        {/* Success/Error Message */}
-        {message.text && (
-          <div
-            className={`mb-6 p-4 rounded-lg ${
-              message.type === "success"
-                ? "bg-green-50 text-green-800 border border-green-200"
-                : "bg-red-50 text-red-800 border border-red-200"
-            }`}
-          >
-            {message.text}
-          </div>
-        )}
-
-        {/* Steps */}
-        <div className="mb-8 bg-white rounded-lg shadow-sm p-6">
-          <div className="flex justify-between">
-            {steps.map((step, idx) => (
-              <button
-                key={step.id}
-                onClick={() => setCurrentStep(step.id)}
-                className={`flex flex-col items-center flex-1 ${
-                  idx !== steps.length - 1 ? "border-r" : ""
-                }`}
-              >
-                <div
-                  className={`w-12 h-12 rounded-full flex items-center justify-center mb-2 ${
-                    currentStep === step.id
-                      ? "bg-indigo-600 text-white"
-                      : "bg-gray-200 text-gray-600"
-                  }`}
-                >
-                  <step.icon className="w-6 h-6" />
-                </div>
-                <span
-                  className={`text-sm font-medium ${
-                    currentStep === step.id
-                      ? "text-indigo-600"
-                      : "text-gray-600"
-                  }`}
-                >
-                  {step.name}
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Form Content */}
-        <div className="bg-white rounded-lg shadow-sm p-8">
-          {/* Step 1: Personal */}
-          {currentStep === 1 && (
-            <div className="space-y-6">
-              <h2 className="text-xl font-semibold mb-4">Personal Details</h2>
-
-              <div className="grid grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Name *
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.personal.name}
-                    onChange={(e) =>
-                      handleInputChange("personal", "name", e.target.value)
-                    }
-                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Age
-                  </label>
-                  <input
-                    type="number"
-                    value={formData.personal.age}
-                    onChange={(e) =>
-                      handleInputChange("personal", "age", e.target.value)
-                    }
-                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Gender
-                  </label>
-                  <select
-                    value={formData.personal.gender}
-                    onChange={(e) =>
-                      handleInputChange("personal", "gender", e.target.value)
-                    }
-                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
-                  >
-                    <option value="">Select Gender</option>
-                    <option value="Male">Male</option>
-                    <option value="Female">Female</option>
-                    <option value="Other">Other</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Phone *
-                  </label>
-                  <input
-                    type="tel"
-                    value={formData.personal.phone}
-                    onChange={(e) =>
-                      handleInputChange("personal", "phone", e.target.value)
-                    }
-                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Email
-                  </label>
-                  <input
-                    type="email"
-                    value={formData.personal.email}
-                    onChange={(e) =>
-                      handleInputChange("personal", "email", e.target.value)
-                    }
-                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Branch
-                  </label>
-                  <select
-                    value={formData.personal.branch}
-                    onChange={(e) =>
-                      handleInputChange("personal", "branch", e.target.value)
-                    }
-                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
-                  >
-                    <option value="">Select Branch</option>
-                    <option value="Delhi">Delhi</option>
-                    <option value="Mumbai">Mumbai</option>
-                    <option value="Hyderabad">Hyderabad</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Visit Date
-                  </label>
-                  <input
-                    type="date"
-                    value={formData.personal.visitDate}
-                    onChange={(e) =>
-                      handleInputChange("personal", "visitDate", e.target.value)
-                    }
-                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Reference
-                  </label>
-                  <select
-                    value={formData.personal.reference}
-                    onChange={(e) =>
-                      handleInputChange("personal", "reference", e.target.value)
-                    }
-                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
-                  >
-                    <option value="">Select Reference</option>
-                    {employees.references.map((ref) => (
-                      <option key={ref._id} value={ref._id}>
-                        {ref.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Package Quoted
-                  </label>
-                  <input
-                    type="number"
-                    value={formData.personal.packageQuoted}
-                    onChange={(e) =>
-                      handleInputChange(
-                        "personal",
-                        "packageQuoted",
-                        e.target.value
-                      )
-                    }
-                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Technique Quoted
-                  </label>
-                  <select
-                    value={formData.personal.techniqueQuoted}
-                    onChange={(e) =>
-                      handleInputChange(
-                        "personal",
-                        "techniqueQuoted",
-                        e.target.value
-                      )
-                    }
-                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
-                  >
-                    <option value="">Select Technique</option>
-                    <option value="FUE">FUE</option>
-                    <option value="FUT">FUT</option>
-                    <option value="DHI">DHI</option>
-                    <option value="BIO-FUE">BIO-FUE</option>
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Remarks
-                </label>
-                <textarea
-                  value={formData.personal.remarks}
-                  onChange={(e) =>
-                    handleInputChange("personal", "remarks", e.target.value)
-                  }
-                  rows={3}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
-                />
-              </div>
-            </div>
-          )}
-
-          {/* Step 2: Medical */}
-          {currentStep === 2 && (
-            <div className="space-y-6">
-              <h2 className="text-xl font-semibold mb-4">Medical History</h2>
-
-              <div className="grid grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Blood Group
-                  </label>
-                  <select
-                    value={formData.medical.bloodGroup}
-                    onChange={(e) =>
-                      handleInputChange("medical", "bloodGroup", e.target.value)
-                    }
-                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
-                  >
-                    <option value="">Select Blood Group</option>
-                    <option value="A+">A+</option>
-                    <option value="A-">A-</option>
-                    <option value="B+">B+</option>
-                    <option value="B-">B-</option>
-                    <option value="AB+">AB+</option>
-                    <option value="AB-">AB-</option>
-                    <option value="O+">O+</option>
-                    <option value="O-">O-</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Blood Pressure
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.medical.bp}
-                    onChange={(e) =>
-                      handleInputChange("medical", "bp", e.target.value)
-                    }
-                    placeholder="120/80"
-                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Sugar Level
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.medical.sugar}
-                    onChange={(e) =>
-                      handleInputChange("medical", "sugar", e.target.value)
-                    }
-                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Pulse
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.medical.pulse}
-                    onChange={(e) =>
-                      handleInputChange("medical", "pulse", e.target.value)
-                    }
-                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Weight (kg)
-                  </label>
-                  <input
-                    type="number"
-                    value={formData.medical.weight}
-                    onChange={(e) =>
-                      handleInputChange("medical", "weight", e.target.value)
-                    }
-                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Allergies
-                </label>
-                <textarea
-                  value={formData.medical.allergies}
-                  onChange={(e) =>
-                    handleInputChange("medical", "allergies", e.target.value)
-                  }
-                  rows={2}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Medical History
-                </label>
-                <textarea
-                  value={formData.medical.medicalHistory}
-                  onChange={(e) =>
-                    handleInputChange(
-                      "medical",
-                      "medicalHistory",
-                      e.target.value
-                    )
-                  }
-                  rows={3}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
-                />
-              </div>
-
-              <div className="flex gap-6">
-                <label className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    checked={formData.medical.hiv}
-                    onChange={(e) =>
-                      handleInputChange("medical", "hiv", e.target.checked)
-                    }
-                    className="rounded border-gray-300"
-                  />
-                  <span className="text-sm font-medium text-gray-700">
-                    HIV
-                  </span>
-                </label>
-
-                <label className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    checked={formData.medical.hcv}
-                    onChange={(e) =>
-                      handleInputChange("medical", "hcv", e.target.checked)
-                    }
-                    className="rounded border-gray-300"
-                  />
-                  <span className="text-sm font-medium text-gray-700">
-                    HCV
-                  </span>
-                </label>
-              </div>
-            </div>
-          )}
-
-          {/* Step 3: Surgery */}
-          {currentStep === 3 && (
-            <div className="space-y-6">
-              <h2 className="text-xl font-semibold mb-4">Surgery Details</h2>
-
-              <div className="grid grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Surgery Date
-                  </label>
-                  <input
-                    type="date"
-                    value={formData.surgery.surgeryDate}
-                    onChange={(e) =>
-                      handleInputChange("surgery", "surgeryDate", e.target.value)
-                    }
-                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Location
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.surgery.location}
-                    onChange={(e) =>
-                      handleInputChange("surgery", "location", e.target.value)
-                    }
-                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    OT
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.surgery.OT}
-                    onChange={(e) =>
-                      handleInputChange("surgery", "OT", e.target.value)
-                    }
-                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Technique
-                  </label>
-                  <select
-                    value={formData.surgery.technique}
-                    onChange={(e) =>
-                      handleInputChange("surgery", "technique", e.target.value)
-                    }
-                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
-                  >
-                    <option value="">Select Technique</option>
-                    <option value="FUE">FUE</option>
-                    <option value="FUT">FUT</option>
-                    <option value="DHI">DHI</option>
-                    <option value="BIO-FUE">BIO-FUE</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Grafts Needed
-                  </label>
-                  <input
-                    type="number"
-                    value={formData.surgery.graftsneed}
-                    onChange={(e) =>
-                      handleInputChange("surgery", "graftsneed", e.target.value)
-                    }
-                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Grafts Implanted
-                  </label>
-                  <input
-                    type="number"
-                    value={formData.surgery.graftsImplanted}
-                    onChange={(e) =>
-                      handleInputChange(
-                        "surgery",
-                        "graftsImplanted",
-                        e.target.value
-                      )
-                    }
-                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Donor Condition
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.surgery.donorCondition}
-                    onChange={(e) =>
-                      handleInputChange(
-                        "surgery",
-                        "donorCondition",
-                        e.target.value
-                      )
-                    }
-                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Doctor
-                  </label>
-                  <select
-                    value={formData.surgery.doctor}
-                    onChange={(e) =>
-                      handleInputChange("surgery", "doctor", e.target.value)
-                    }
-                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
-                  >
-                    <option value="">Select Doctor</option>
-                    {employees.doctors.map((doc) => (
-                      <option key={doc._id} value={doc._id}>
-                        {doc.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Senior Technician
-                  </label>
-                  <select
-                    value={formData.surgery.seniorTech}
-                    onChange={(e) =>
-                      handleInputChange("surgery", "seniorTech", e.target.value)
-                    }
-                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
-                  >
-                    <option value="">Select Technician</option>
-                    {employees.technicians.map((tech) => (
-                      <option key={tech._id} value={tech._id}>
-                        {tech.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Implanter (Right)
-                  </label>
-                  <select
-                    value={formData.surgery.implanterRight}
-                    onChange={(e) =>
-                      handleInputChange(
-                        "surgery",
-                        "implanterRight",
-                        e.target.value
-                      )
-                    }
-                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
-                  >
-                    <option value="">Select Implanter</option>
-                    {employees.technicians.map((tech) => (
-                      <option key={tech._id} value={tech._id}>
-                        {tech.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Implanter (Left)
-                  </label>
-                  <select
-                    value={formData.surgery.implanterLeft}
-                    onChange={(e) =>
-                      handleInputChange(
-                        "surgery",
-                        "implanterLeft",
-                        e.target.value
-                      )
-                    }
-                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
-                  >
-                    <option value="">Select Implanter</option>
-                    {employees.technicians.map((tech) => (
-                      <option key={tech._id} value={tech._id}>
-                        {tech.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Grafting Person
-                  </label>
-                  <select
-                    multiple
-                    value={formData.surgery.graftingPerson}
-                    onChange={(e) =>
-                      handleInputChange(
-                        "surgery",
-                        "graftingPerson",
-                        Array.from(
-                          e.target.selectedOptions,
-                          (opt) => opt.value
-                        )
-                      )
-                    }
-                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
-                    size={4}
-                  >
-                    {employees.technicians.map((tech) => (
-                      <option key={tech._id} value={tech._id}>
-                        {tech.name}
-                      </option>
-                    ))}
-                  </select>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Hold Ctrl/Cmd to select multiple
-                  </p>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Helpers
-                  </label>
-                  <select
-                    multiple
-                    value={formData.surgery.helpers}
-                    onChange={(e) =>
-                      handleInputChange(
-                        "surgery",
-                        "helpers",
-                        Array.from(
-                          e.target.selectedOptions,
-                          (opt) => opt.value
-                        )
-                      )
-                    }
-                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
-                    size={4}
-                  >
-                    {employees.helpers.map((helper) => (
-                      <option key={helper._id} value={helper._id}>
-                        {helper.name}
-                      </option>
-                    ))}
-                  </select>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Hold Ctrl/Cmd to select multiple
-                  </p>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Surgery Notes
-                </label>
-                <textarea
-                  value={formData.surgery.surgeryNotes}
-                  onChange={(e) =>
-                    handleInputChange("surgery", "surgeryNotes", e.target.value)
-                  }
-                  rows={3}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
-                />
-              </div>
-            </div>
-          )}
-
-          {/* Step 4: Payment */}
-          {currentStep === 4 && (
-            <div className="space-y-6">
-              <h2 className="text-xl font-semibold mb-4">Payment Details</h2>
-
-              <div className="grid grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Total Amount
-                  </label>
-                  <input
-                    type="number"
-                    value={formData.payments.totalAmount}
-                    onChange={(e) =>
-                      handleInputChange("payments", "totalAmount", e.target.value)
-                    }
-                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Amount Received
-                  </label>
-                  <input
-                    type="number"
-                    value={formData.payments.amountReceived}
-                    onChange={(e) =>
-                      handleInputChange(
-                        "payments",
-                        "amountReceived",
-                        e.target.value
-                      )
-                    }
-                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Discount
-                  </label>
-                  <input
-                    type="number"
-                    value={formData.payments.discount}
-                    onChange={(e) =>
-                      handleInputChange("payments", "discount", e.target.value)
-                    }
-                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Medicine Amount
-                  </label>
-                  <input
-                    type="number"
-                    value={formData.payments.medicineAmount}
-                    onChange={(e) =>
-                      handleInputChange(
-                        "payments",
-                        "medicineAmount",
-                        e.target.value
-                      )
-                    }
-                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
-                  />
-                </div>
-              </div>
-
-              <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium text-gray-700">
-                    Pending Amount:
-                  </span>
-                  <span className="text-xl font-bold text-indigo-600">
-                    ₹
-                    {(
-                      (parseFloat(formData.payments.totalAmount) || 0) -
-                      (parseFloat(formData.payments.amountReceived) || 0)
-                    ).toLocaleString()}
-                  </span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Step 5: Documents */}
-          {currentStep === 5 && (
-            <div className="space-y-6">
-              <h2 className="text-xl font-semibold mb-4">Documents</h2>
-
-              <div className="grid grid-cols-2 gap-6">
-                <DocumentUpload
-                  title="Patient Images"
-                  icon={Image}
-                  files={formData.documents.images}
-                  onUpload={(files) => handleFileUpload(files, "images")}
-                  onRemove={(idx) => handleRemoveFile("images", idx)}
-                  accept="image/*"
-                  uploadId="images-upload"
-                  isUploading={uploading.images}
-                />
-
-                <DocumentUpload
-                  title="Consent Form"
-                  icon={FileText}
-                  files={formData.documents.consentForm}
-                  onUpload={(files) => handleFileUpload(files, "consentForm")}
-                  onRemove={(idx) => handleRemoveFile("consentForm", idx)}
-                  accept=".pdf,image/*"
-                  uploadId="consent-upload"
-                  isUploading={uploading.consentForm}
-                />
-
-                <DocumentUpload
-                  title="Surgery Form"
-                  icon={FileText}
-                  files={formData.documents.suregeryForm}
-                  onUpload={(files) => handleFileUpload(files, "suregeryForm")}
-                  onRemove={(idx) => handleRemoveFile("suregeryForm", idx)}
-                  accept=".pdf,image/*"
-                  uploadId="surgery-upload"
-                  isUploading={uploading.suregeryForm}
-                />
-
-                <DocumentUpload
-                  title="Consultation Form"
-                  icon={FileText}
-                  files={formData.documents.consultForm}
-                  onUpload={(files) => handleFileUpload(files, "consultForm")}
-                  onRemove={(idx) => handleRemoveFile("consultForm", idx)}
-                  accept=".pdf,image/*"
-                  uploadId="consult-upload"
-                  isUploading={uploading.consultForm}
-                />
-              </div>
-            </div>
-          )}
-
-          {/* Navigation Buttons */}
-          <div className="flex justify-between mt-8 pt-6 border-t">
-            <button
-              onClick={() => setCurrentStep((s) => Math.max(1, s - 1))}
-              disabled={currentStep === 1}
-              className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Previous
-            </button>
-
-            <div className="flex gap-3">
-              {currentStep < 5 ? (
-                <button
-                  onClick={() => setCurrentStep((s) => Math.min(5, s + 1))}
-                  className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
-                >
-                  Next
-                </button>
-              ) : (
-                <button
-                  onClick={handleSave}
-                  disabled={saving}
-                  className="flex items-center gap-2 px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
-                >
-                  <Save className="w-4 h-4" />
-                  {saving ? "Saving..." : "Save Changes"}
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
+const StepHeader = ({ icon: Icon, title, description, color }) => (
+  <div className="text-center mb-8">
+    <div
+      className={`mx-auto h-16 w-16 text-${color}-500 mb-4 flex items-center justify-center`}
+    >
+      <Icon size={64} />
     </div>
-  );
-}
+    <h3 className="text-2xl font-bold text-gray-900">{title}</h3>
+    <p className="text-gray-600">{description}</p>
+  </div>
+);
 
-// DocumentUpload Component
+const formatFileSize = (bytes) => {
+  if (bytes === 0) return "0 Bytes";
+  const k = 1024;
+  const sizes = ["Bytes", "KB", "MB", "GB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + " " + sizes[i];
+};
+
 const DocumentUpload = ({
   title,
   icon: Icon,
+  color,
   files,
   onUpload,
   onRemove,
@@ -1219,8 +53,6 @@ const DocumentUpload = ({
   uploadId,
   isUploading,
 }) => {
-  const [viewingFile, setViewingFile] = useState(null);
-
   const isPDF = (filename) => {
     return filename.toLowerCase().endsWith(".pdf");
   };
@@ -1236,10 +68,6 @@ const DocumentUpload = ({
     }
   };
 
-  const handleViewFile = (fileUrl) => {
-    setViewingFile(fileUrl);
-  };
-
   const handleDownloadFile = (fileUrl) => {
     const fileName = getFileName(fileUrl);
     const link = document.createElement("a");
@@ -1252,146 +80,1228 @@ const DocumentUpload = ({
   };
 
   return (
-    <>
-      <div className="bg-gray-50 p-6 rounded-lg border-2 border-dashed border-gray-300">
-        <div className="text-center">
-          <div className="mx-auto h-12 w-12 text-gray-400 mb-4 flex items-center justify-center">
-            <Icon size={48} />
-          </div>
-          <h4 className="text-lg font-semibold text-gray-900 mb-2">{title}</h4>
-          <input
-            type="file"
-            multiple
-            accept={accept}
-            onChange={(e) => onUpload(e.target.files)}
-            className="hidden"
-            id={uploadId}
-            disabled={isUploading}
-          />
-          <label
-            htmlFor={uploadId}
-            className={`inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white ${
-              isUploading
-                ? "bg-gray-400 cursor-not-allowed"
-                : "bg-blue-600 hover:bg-blue-700 cursor-pointer"
-            } transition-colors duration-200`}
-          >
-            <Upload className="mr-2" size={20} />
-            {isUploading ? "Uploading..." : "Add Files"}
-          </label>
+    <div className="bg-gray-50 p-6 rounded-lg border-2 border-dashed border-gray-300">
+      <div className="text-center">
+        <div className="mx-auto h-12 w-12 text-gray-400 mb-4 flex items-center justify-center">
+          <Icon size={48} />
+        </div>
+        <h4 className="text-lg font-semibold text-gray-900 mb-2">{title}</h4>
+        <input
+          type="file"
+          multiple
+          accept={accept}
+          onChange={(e) => onUpload(e.target.files)}
+          className="hidden"
+          id={uploadId}
+          disabled={isUploading}
+        />
 
-          {files.length > 0 && (
-            <div className="mt-4">
-              <h5 className="text-sm font-medium text-gray-700 mb-2">
-                Uploaded Files ({files.length}):
-              </h5>
-              <div className="space-y-2 max-h-60 overflow-y-auto">
-                {files.map((filePath, index) => {
-                  const fileName = getFileName(filePath);
-                  const isPdf = isPDF(filePath);
+        <label
+          htmlFor={uploadId}
+          className={`inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white ${
+            isUploading
+              ? "bg-gray-400 cursor-not-allowed"
+              : "bg-blue-600 hover:bg-blue-700 cursor-pointer"
+          } transition-colors duration-200`}
+        >
+          <Upload className="mr-2" size={20} />
+          {isUploading ? "Uploading..." : "Add Files (Max 10MB)"}
+        </label>
 
-                  return (
-                    <div
-                      key={index}
-                      className="flex items-center justify-between bg-white px-4 py-3 rounded-md border hover:border-blue-300 transition-colors"
-                    >
-                      <div className="flex items-center space-x-3 flex-1 min-w-0">
-                        <div
-                          className={`flex-shrink-0 w-8 h-8 rounded flex items-center justify-center ${
-                            isPdf ? "bg-red-100" : "bg-blue-100"
-                          }`}
-                        >
-                          {isPdf ? (
-                            <FileText size={16} className="text-red-600" />
-                          ) : (
-                            <Image size={16} className="text-blue-600" />
-                          )}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <span className="text-sm font-medium text-gray-700 block truncate">
-                            {fileName}
-                          </span>
-                          <p className="text-xs text-gray-500">
-                            {isPdf ? "PDF Document" : "Image File"}
-                          </p>
-                        </div>
+        {files.length > 0 && (
+          <div className="mt-4">
+            <h5 className="text-sm font-medium text-gray-700 mb-2">
+              Uploaded Files ({files.length}):
+            </h5>
+            <div className="space-y-2 max-h-60 overflow-y-auto">
+              {files.map((filePath, index) => {
+                const fileName = getFileName(filePath);
+                const isPdf = isPDF(filePath);
+
+                return (
+                  <div
+                    key={index}
+                    className="flex items-center justify-between bg-white px-4 py-3 rounded-md border hover:border-blue-300 transition-colors"
+                  >
+                    <div className="flex items-center space-x-3 flex-1 min-w-0">
+                      <div
+                        className={`flex-shrink-0 w-8 h-8 rounded flex items-center justify-center ${
+                          isPdf ? "bg-red-100" : "bg-blue-100"
+                        }`}
+                      >
+                        {isPdf ? (
+                          <FileText size={16} className="text-red-600" />
+                        ) : (
+                          <Image size={16} className="text-blue-600" />
+                        )}
                       </div>
-                      <div className="flex items-center space-x-2 ml-2 flex-shrink-0">
-                        <button
-                          type="button"
-                          onClick={() => handleViewFile(filePath)}
-                          className="p-2 text-blue-600 hover:bg-blue-100 rounded transition-colors"
-                          title="View file"
-                        >
-                          <Eye size={16} />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDownloadFile(filePath)}
-                          className="p-2 text-green-600 hover:bg-green-100 rounded transition-colors"
-                          title="Download file"
-                        >
-                          <Download size={16} />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => onRemove(index)}
-                          className="p-2 text-red-600 hover:bg-red-100 rounded transition-colors"
-                          title="Remove file"
-                        >
-                          <X size={16} />
-                        </button>
+                      <div className="min-w-0 flex-1">
+                        <span className="text-sm font-medium text-gray-700 block truncate">
+                          {fileName}
+                        </span>
+                        <p className="text-xs text-gray-500">
+                          {isPdf ? "PDF Document" : "Image File"}
+                        </p>
                       </div>
                     </div>
-                  );
-                })}
+                    <div className="flex items-center space-x-2 ml-2 flex-shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => handleDownloadFile(filePath)}
+                        className="p-2 text-green-600 hover:bg-green-100 rounded transition-colors"
+                        title="Download file"
+                      >
+                        <Download size={16} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => onRemove(index)}
+                        className="p-2 text-red-600 hover:bg-red-100 rounded transition-colors"
+                        title="Remove file"
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default function PatientEditDetails() {
+  const [step, setStep] = useState(1);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [updateStatus, setUpdateStatus] = useState(null);
+  const [uploadingFiles, setUploadingFiles] = useState({});
+  const [employees, setEmployees] = useState({
+    Doctor: [],
+    Technician: [],
+    Implanter: [],
+    Others: [],
+  });
+  const [surgeryTeamMembers, setSurgeryTeamMembers] = useState([]);
+
+  const [formData, setFormData] = useState({
+    personal: {
+      name: "",
+      phone: "",
+      email: "",
+      age: "",
+      gender: "",
+      branch: "",
+      address: "",
+      profession: "",
+      visitDate: "",
+      packageQuoted: "",
+      techniqueQuoted: "",
+      remarks: "",
+    },
+    medical: {
+      allergies: "",
+      medicalHistory: "",
+      bloodGroup: "",
+      sugar: "",
+      bp: "",
+      pulse: "",
+      weight: "",
+      hiv: "",
+      hcv: "",
+    },
+    surgery: {
+      surgeryDate: "",
+      location: "",
+      OT: "",
+      technique: "",
+      graftsneed: "",
+      graftsImplanted: "",
+      donorCondition: "",
+      doctor: "",
+      seniorTech: "",
+      implanterRight: "",
+      implanterLeft: "",
+      graftingPerson: "",
+      helpers: [],
+    },
+    documents: {
+      images: [],
+      consentForm: [],
+      suregeryForm: [],
+      consultForm: [],
+    },
+    ops: {
+      status: "",
+      patientId: "",
+      lastUpdated: "",
+    },
+  });
+
+  const params = useParams();
+  const id = params.id;
+  const router = useRouter();
+  const toast = useToast();
+
+  useEffect(() => {
+    const fetchEmployees = async () => {
+      try {
+        const response = await fetch("/api/employees/get-id");
+        const result = await response.json();
+        if (result.success) {
+          setEmployees(result.data);
+          const combinedTeam = [
+            ...result.data.Technician,
+            ...result.data.Implanter,
+            ...result.data.Others,
+          ];
+          setSurgeryTeamMembers(combinedTeam);
+        }
+      } catch (error) {
+        console.error("Error fetching employees:", error);
+      }
+    };
+    fetchEmployees();
+  }, []);
+
+  useEffect(() => {
+    if (!id) return;
+
+    const fetchPatientData = async () => {
+      try {
+        const res = await fetch(`/api/admin/patient-data?id=${id}`, {
+          method: "GET",
+        });
+
+        if (!res.ok) {
+          router.push("/404");
+          return;
+        }
+
+        const data = await res.json();
+        if (data.success && data.patient) {
+          const patientData = data.patient;
+          setFormData({
+            personal: {
+              name: patientData.personal?.name || "",
+              phone: patientData.personal?.phone || "",
+              email: patientData.personal?.email || "",
+              age: patientData.personal?.age || "",
+              gender: patientData.personal?.gender || "",
+              branch: patientData.personal?.branch || "",
+              address: patientData.personal?.address || "",
+              profession: patientData.personal?.profession || "",
+              visitDate: patientData.personal?.visitDate
+                ? patientData.personal.visitDate.split("T")[0]
+                : "",
+              packageQuoted: patientData.personal?.packageQuoted || "",
+              techniqueQuoted: patientData.personal?.techniqueQuoted || "",
+              remarks: patientData.personal?.remarks || "",
+            },
+            medical: {
+              allergies: patientData.medical?.allergies || "",
+              medicalHistory: patientData.medical?.medicalHistory || "",
+              bloodGroup: patientData.medical?.bloodGroup || "",
+              sugar: patientData.medical?.sugar || "",
+              bp: patientData.medical?.bp || "",
+              pulse: patientData.medical?.pulse || "",
+              weight: patientData.medical?.weight || "",
+              hiv: patientData.medical?.hiv || "",
+              hcv: patientData.medical?.hcv || "",
+            },
+            surgery: {
+              surgeryDate: patientData.surgery?.surgeryDate
+                ? patientData.surgery.surgeryDate.split("T")[0]
+                : "",
+              location: patientData.surgery?.location || "",
+              OT: patientData.surgery?.OT || "",
+              technique: patientData.surgery?.technique || "",
+              graftsneed: patientData.surgery?.graftsneed || "",
+              graftsImplanted: patientData.surgery?.graftsImplanted || "",
+              donorCondition: patientData.surgery?.donorCondition || "",
+              doctor: patientData.surgery?.doctor?._id || "",
+              seniorTech: patientData.surgery?.seniorTech?._id || "",
+              implanterRight: patientData.surgery?.implanterRight?._id || "",
+              implanterLeft: patientData.surgery?.implanterLeft?._id || "",
+              graftingPerson: patientData.surgery?.graftingPerson?._id || "",
+              helpers: patientData.surgery?.helpers?.map((h) => h._id) || [],
+            },
+            documents: {
+              images: patientData.documents?.images || [],
+              consentForm: patientData.documents?.consentForm || [],
+              suregeryForm: patientData.documents?.suregeryForm || [],
+              consultForm: patientData.documents?.consultForm || [],
+            },
+            ops: {
+              status: patientData.ops?.status || "",
+              patientId: patientData._id || "",
+              lastUpdated: patientData.updatedAt || "",
+            },
+          });
+        }
+      } catch (err) {
+        console.error("Error fetching patient data:", err);
+        router.push("/404");
+      }
+    };
+
+    fetchPatientData();
+  }, [id, router]);
+
+  const stepConfig = [
+    { number: 1, title: "Personal Details", icon: User, color: "blue" },
+    { number: 2, title: "Medical Information", icon: Heart, color: "red" },
+    { number: 3, title: "Surgery Details", icon: Scissors, color: "orange" },
+    { number: 4, title: "Document Upload", icon: FileUp, color: "indigo" },
+  ];
+
+  const handleChange = (section, field, value) => {
+    setFormData((prev) => ({
+      ...prev,
+      [section]: {
+        ...prev[section],
+        [field]: value,
+      },
+    }));
+  };
+
+  const createChangeHandler = (section, field) => {
+    return (e) => {
+      const value =
+        e.target.type === "checkbox" ? e.target.checked : e.target.value;
+      handleChange(section, field, value);
+    };
+  };
+
+  const handleFileUpload = async (section, files) => {
+    if (!files || files.length === 0) return;
+
+    // Validate file sizes
+    const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+    const invalidFiles = Array.from(files).filter(
+      (file) => file.size > MAX_FILE_SIZE
+    );
+
+    if (invalidFiles.length > 0) {
+      setUpdateStatus({
+        type: "error",
+        message: `${invalidFiles.length} file(s) exceed 10MB limit. Please compress or reduce file size.`,
+      });
+      setTimeout(() => setUpdateStatus(null), 5000);
+      return;
+    }
+
+    setUploadingFiles((prev) => ({ ...prev, [section]: true }));
+
+    const uploadedPaths = [];
+    const failedFiles = [];
+
+    try {
+      // Upload files sequentially to avoid overwhelming the server
+      for (const file of Array.from(files)) {
+        try {
+          const formDataToSend = new FormData();
+          formDataToSend.append("file", file);
+          formDataToSend.append("section", section);
+          formDataToSend.append("patientId", id);
+
+          // Set a timeout for the fetch request
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 150000); // 2.5 minutes
+
+          const response = await fetch("/api/upload", {
+            method: "POST",
+            body: formDataToSend,
+            signal: controller.signal,
+          });
+
+          clearTimeout(timeoutId);
+
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(
+              errorData.message || `Failed to upload ${file.name}`
+            );
+          }
+
+          const data = await response.json();
+          uploadedPaths.push(data.filePath);
+
+          // Update UI after each successful upload
+          setFormData((prev) => ({
+            ...prev,
+            documents: {
+              ...prev.documents,
+              [section]: [...prev.documents[section], data.filePath],
+            },
+          }));
+
+          // Show progress
+          setUpdateStatus({
+            type: "success",
+            message: `Uploaded ${uploadedPaths.length} of ${files.length} files...`,
+          });
+        } catch (fileError) {
+          console.error(`Error uploading ${file.name}:`, fileError);
+
+          if (fileError.name === "AbortError") {
+            failedFiles.push({ name: file.name, error: "Upload timeout" });
+          } else {
+            failedFiles.push({ name: file.name, error: fileError.message });
+          }
+        }
+      }
+
+      // Final status message
+      if (failedFiles.length === 0) {
+        setUpdateStatus({
+          type: "success",
+          message: `Successfully uploaded ${uploadedPaths.length} file(s)`,
+        });
+        setTimeout(() => setUpdateStatus(null), 3000);
+      } else {
+        setUpdateStatus({
+          type: "error",
+          message: `Uploaded ${uploadedPaths.length} files. Failed: ${failedFiles
+            .map((f) => f.name)
+            .join(", ")}. ${failedFiles[0]?.error || ""}`,
+        });
+      }
+    } catch (error) {
+      console.error("Error uploading files:", error);
+      setUpdateStatus({
+        type: "error",
+        message: error.message || "Failed to upload files. Please try again.",
+      });
+    } finally {
+      setUploadingFiles((prev) => ({ ...prev, [section]: false }));
+    }
+  };
+
+  const removeFile = async (section, index) => {
+  const filePath = formData.documents[section][index];
+
+  if (!confirm("Are you sure you want to remove this file?")) {
+    return;
+  }
+
+  try {
+    const extractPublicId = (url) => {
+      if (!url.includes("cloudinary.com")) {
+        console.log("Not a Cloudinary URL:", url);
+        return null;
+      }
+
+      try {
+        // Split by /upload/ to get the part after it
+        const parts = url.split("/upload/");
+        if (parts.length !== 2) {
+          console.log("Invalid Cloudinary URL format:", url);
+          return null;
+        }
+
+        // Get everything after /upload/
+        let pathAfterUpload = parts[1];
+
+        // Remove any transformation parameters (they start with letters followed by underscore)
+        // e.g., fl_attachment:false/, q_auto/, w_500/
+        const segments = pathAfterUpload.split("/");
+        const cleanSegments = segments.filter(segment => {
+          // Keep segments that don't match transformation pattern
+          return !(/^[a-z]+_/.test(segment) && segment.includes(':'));
+        });
+
+        // Join the remaining segments
+        const publicIdWithExtension = cleanSegments.join("/");
+
+        // Remove query parameters if any (after ?)
+        const publicIdClean = publicIdWithExtension.split("?")[0];
+
+        // Remove file extension
+        const publicId = publicIdClean.replace(/\.[^/.]+$/, "");
+
+        console.log("Extracted public ID:", publicId);
+        return publicId;
+      } catch (error) {
+        console.error("Error extracting public ID:", error);
+        return null;
+      }
+    };
+
+    const publicId = extractPublicId(filePath);
+    
+    if (!publicId) {
+      // If we can't extract public ID, still remove from state
+      console.warn("Could not extract public ID, removing from state only");
+      setFormData((prev) => ({
+        ...prev,
+        documents: {
+          ...prev.documents,
+          [section]: prev.documents[section].filter((_, i) => i !== index),
+        },
+      }));
+
+      setUpdateStatus({
+        type: "success",
+        message: "File removed from list (Cloudinary deletion skipped)",
+      });
+
+      setTimeout(() => setUpdateStatus(null), 3000);
+      return;
+    }
+
+    const resourceType = filePath.toLowerCase().endsWith(".pdf")
+      ? "raw"
+      : "image";
+
+    console.log("Attempting to delete:", { publicId, resourceType });
+
+    const response = await fetch("/api/upload", {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        publicId: publicId,
+        resourceType: resourceType,
+      }),
+    });
+
+    const result = await response.json();
+
+    // Remove from state regardless of Cloudinary deletion success
+    // This handles cases where file was already deleted from Cloudinary
+    if (response.ok || result.message === "File not found") {
+      setFormData((prev) => ({
+        ...prev,
+        documents: {
+          ...prev.documents,
+          [section]: prev.documents[section].filter((_, i) => i !== index),
+        },
+      }));
+
+      setUpdateStatus({
+        type: "success",
+        message: result.success 
+          ? "File removed successfully" 
+          : "File removed from list (already deleted from storage)",
+      });
+
+      setTimeout(() => setUpdateStatus(null), 3000);
+    } else {
+      throw new Error(result.message || "Failed to delete file");
+    }
+  } catch (error) {
+    console.error("Error removing file:", error);
+    
+    // Ask user if they want to remove from list anyway
+    const forceRemove = confirm(
+      "Failed to delete from cloud storage. Remove from list anyway?"
+    );
+
+    if (forceRemove) {
+      setFormData((prev) => ({
+        ...prev,
+        documents: {
+          ...prev.documents,
+          [section]: prev.documents[section].filter((_, i) => i !== index),
+        },
+      }));
+
+      setUpdateStatus({
+        type: "success",
+        message: "File removed from list",
+      });
+
+      setTimeout(() => setUpdateStatus(null), 3000);
+    } else {
+      setUpdateStatus({
+        type: "error",
+        message: error.message || "Failed to remove file. Please try again.",
+      });
+    }
+  }
+};
+
+  const cleanObjectIdFields = (data) => {
+    const cleaned = JSON.parse(JSON.stringify(data));
+
+    const objectIdFields = {
+      surgery: [
+        "doctor",
+        "seniorTech",
+        "implanterRight",
+        "implanterLeft",
+        "graftingPerson",
+        "helpers",
+      ],
+    };
+
+    Object.keys(objectIdFields).forEach((section) => {
+      if (cleaned[section]) {
+        objectIdFields[section].forEach((field) => {
+          if (
+            cleaned[section][field] === "" ||
+            cleaned[section][field] === undefined
+          ) {
+            cleaned[section][field] = null;
+          }
+        });
+      }
+    });
+
+    const numberFields = {
+      personal: ["age", "packageQuoted"],
+      surgery: ["OT", "graftsneed", "graftsImplanted"],
+    };
+
+    Object.keys(numberFields).forEach((section) => {
+      if (cleaned[section]) {
+        numberFields[section].forEach((field) => {
+          if (
+            cleaned[section][field] === "" ||
+            cleaned[section][field] === undefined
+          ) {
+            cleaned[section][field] = null;
+          }
+        });
+      }
+    });
+
+    return cleaned;
+  };
+
+  const handleUpdate = async () => {
+    setIsUpdating(true);
+    setUpdateStatus(null);
+
+    try {
+      const cleanedData = cleanObjectIdFields(formData);
+
+      const updateData = {
+        ...cleanedData,
+        ops: {
+          ...cleanedData.ops,
+          lastUpdated: new Date().toISOString(),
+        },
+      };
+
+      const response = await fetch(`/api/patients/update?id=${id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(updateData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(
+          errorData.message || `HTTP error! status: ${response.status}`
+        );
+      }
+
+      const result = await response.json();
+
+      if (result.success) {
+        toast.success("Updated successfully!");
+
+        setUpdateStatus({
+          type: "success",
+          message: "Patient details updated successfully!",
+        });
+
+        setTimeout(() => setUpdateStatus(null), 5000);
+      } else {
+        throw new Error(result.message || "Update failed");
+      }
+    } catch (error) {
+      console.error("Error updating patient data:", error);
+      toast.error("Update failed: " + error.message);
+
+      setUpdateStatus({
+        type: "error",
+        message:
+          error.message ||
+          "Failed to update patient details. Please try again.",
+      });
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const nextStep = () => setStep(Math.min(step + 1, 4));
+  const prevStep = () => setStep(Math.max(step - 1, 1));
+
+  return (
+    <section className="flex min-h-screen">
+      <Sidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
+
+      <main className="flex-1 px-12 py-4">
+        <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+          <div className="px-8 py-6 bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <button
+                  className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                  onClick={() => router.back()}
+                >
+                  <ArrowLeft size={24} />
+                </button>
+                <div>
+                  <h1 className="text-2xl font-bold flex items-center space-x-2">
+                    <Edit3 size={28} />
+                    <span>Edit Patient Details</span>
+                  </h1>
+                  <p className="text-blue-100 mt-1">
+                    Patient ID: {formData.ops.patientId} | Status:{" "}
+                    {formData.ops.status}
+                  </p>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="text-sm text-blue-100">Last Updated</p>
+                <p className="font-medium">
+                  {formData.ops.lastUpdated
+                    ? new Date(formData.ops.lastUpdated).toLocaleDateString()
+                    : "Not available"}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {updateStatus && (
+            <div
+              className={`px-8 py-4 ${
+                updateStatus.type === "success"
+                  ? "bg-green-50 text-green-800 border-l-4 border-green-400"
+                  : "bg-red-50 text-red-800 border-l-4 border-red-400"
+              }`}
+            >
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  {updateStatus.type === "success" ? "✓" : "⚠"}
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm font-medium">{updateStatus.message}</p>
+                </div>
               </div>
             </div>
           )}
-        </div>
-      </div>
 
-      {/* File Viewer Modal */}
-      {viewingFile && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4"
-          onClick={() => setViewingFile(null)}
-        >
-          <div
-            className="relative bg-white rounded-lg w-full max-w-6xl h-[90vh] flex flex-col"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between p-4 border-b bg-gray-50">
-              <h3 className="font-semibold text-gray-900">
-                {getFileName(viewingFile)}
-              </h3>
-              <button
-                onClick={() => setViewingFile(null)}
-                className="text-gray-600 hover:text-gray-900 text-2xl font-bold px-3 hover:bg-gray-200 rounded"
-              >
-                ✕
-              </button>
+          <div className="px-8 py-6 border-b border-gray-200">
+            <div className="flex justify-between items-center">
+              <div className="flex space-x-2">
+                {stepConfig.map((stepInfo) => {
+                  const Icon = stepInfo.icon;
+                  return (
+                    <button
+                      key={stepInfo.number}
+                      onClick={() => setStep(stepInfo.number)}
+                      className={`flex items-center justify-center w-12 h-12 rounded-full transition-all duration-300 ${
+                        stepInfo.number === step
+                          ? `bg-${stepInfo.color}-600 text-white shadow-lg scale-110`
+                          : stepInfo.number < step
+                          ? "bg-green-500 text-white shadow-md hover:scale-105"
+                          : "bg-gray-200 text-gray-500 hover:bg-gray-300"
+                      }`}
+                    >
+                      <Icon size={20} />
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="text-sm text-gray-600 font-medium">
+                Step {step} of {stepConfig.length}: {stepConfig[step - 1].title}
+              </div>
             </div>
-            <div className="flex-1 overflow-hidden bg-gray-100">
-              {isPDF(viewingFile) ? (
-                <iframe
-                  src={viewingFile}
-                  className="w-full h-full border-0"
-                  title="PDF Viewer"
+          </div>
+
+          <div className="px-8 py-8">
+            {step === 1 && (
+              <div className="space-y-8">
+                <StepHeader
+                  icon={User}
+                  title="Personal Information"
+                  description="Update basic personal details"
+                  color="blue"
                 />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center p-4">
-                  <img
-                    src={viewingFile}
-                    alt="Document"
-                    className="max-w-full max-h-full object-contain"
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 gap-x-12">
+                  <InputField
+                    label="Full Name"
+                    required
+                    value={formData.personal.name}
+                    onChange={createChangeHandler("personal", "name")}
+                    placeholder="Enter full name"
+                  />
+
+                  <InputField
+                    label="Phone Number"
+                    type="tel"
+                    required
+                    value={formData.personal.phone}
+                    onChange={createChangeHandler("personal", "phone")}
+                    placeholder="Enter phone number"
+                  />
+
+                  <InputField
+                    label="Email Address"
+                    type="email"
+                    value={formData.personal.email}
+                    onChange={createChangeHandler("personal", "email")}
+                    placeholder="Enter email address"
+                  />
+
+                  <InputField
+                    label="Age"
+                    type="number"
+                    value={formData.personal.age}
+                    onChange={createChangeHandler("personal", "age")}
+                    placeholder="Enter age"
+                  />
+
+                  <InputField
+                    label="Gender"
+                    type="select"
+                    value={formData.personal.gender}
+                    onChange={createChangeHandler("personal", "gender")}
+                    options={[
+                      { value: "MALE", label: "Male" },
+                      { value: "FEMALE", label: "Female" },
+                      { value: "OTHERS", label: "Others" },
+                    ]}
+                  />
+
+                  <InputField
+                    label="Branch"
+                    type="select"
+                    value={formData.personal.branch}
+                    onChange={createChangeHandler("personal", "branch")}
+                    options={[
+                      { value: "Delhi", label: "Delhi" },
+                      { value: "Mumbai", label: "Mumbai" },
+                      { value: "Hyderabad", label: "Hyderabad" },
+                    ]}
+                  />
+
+                  <InputField
+                    label="Profession"
+                    type="text"
+                    value={formData.personal.profession}
+                    onChange={createChangeHandler("personal", "profession")}
+                    placeholder="Enter profession"
+                  />
+
+                  <InputField
+                    label="Visit Date"
+                    type="date"
+                    value={formData.personal.visitDate}
+                    onChange={createChangeHandler("personal", "visitDate")}
+                  />
+
+                  <InputField
+                    label="Package Quoted (₹)"
+                    type="number"
+                    value={formData.personal.packageQuoted}
+                    onChange={createChangeHandler("personal", "packageQuoted")}
+                    placeholder="Package amount"
+                  />
+
+                  <InputField
+                    label="Technique Quoted"
+                    type="select"
+                    value={formData.personal.techniqueQuoted}
+                    onChange={createChangeHandler(
+                      "personal",
+                      "techniqueQuoted"
+                    )}
+                    options={[
+                      { value: "FUE", label: "FUE" },
+                      { value: "INDIAN DHI", label: "Indian DHI" },
+                      { value: "TURKISH DHI", label: "Turkish DHI" },
+                      { value: "HYBRID", label: "HYBRID" },
+                      { value: "PRP", label: "PRP" },
+                      { value: "GFC", label: "GFC" },
+                      { value: "Other", label: "Other" },
+                    ]}
+                  />
+
+                  <InputField
+                    label="Address"
+                    type="textarea"
+                    value={formData.personal.address}
+                    onChange={createChangeHandler("personal", "address")}
+                    placeholder="Complete address"
+                    className="md:col-span-2"
+                  />
+
+                  <InputField
+                    label="Remarks"
+                    type="textarea"
+                    value={formData.personal.remarks}
+                    onChange={createChangeHandler("personal", "remarks")}
+                    placeholder="Additional remarks"
+                    className="md:col-span-2"
                   />
                 </div>
+              </div>
+            )}
+
+            {step === 2 && (
+              <div className="space-y-8">
+                <StepHeader
+                  icon={Heart}
+                  title="Medical Information"
+                  description="Health history and vital signs"
+                  color="red"
+                />
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 gap-x-12">
+                  <InputField
+                    label="Allergies"
+                    type="textarea"
+                    value={formData.medical.allergies}
+                    onChange={createChangeHandler("medical", "allergies")}
+                    placeholder="List any known allergies"
+                    className="md:col-span-2"
+                  />
+
+                  <InputField
+                    label="Medical History"
+                    type="select"
+                    value={formData.medical.medicalHistory}
+                    onChange={createChangeHandler("medical", "medicalHistory")}
+                    options={[
+                      { value: "YES", label: "Yes" },
+                      { value: "NO", label: "No" },
+                      { value: "UNKNOWN", label: "Unknown" },
+                    ]}
+                  />
+
+                  <InputField
+                    label="Blood Group"
+                    type="select"
+                    value={formData.medical.bloodGroup}
+                    onChange={createChangeHandler("medical", "bloodGroup")}
+                    options={[
+                      { value: "A+", label: "A+" },
+                      { value: "A-", label: "A-" },
+                      { value: "B+", label: "B+" },
+                      { value: "B-", label: "B-" },
+                      { value: "AB+", label: "AB+" },
+                      { value: "AB-", label: "AB-" },
+                      { value: "O+", label: "O+" },
+                      { value: "O-", label: "O-" },
+                    ]}
+                  />
+
+                  <InputField
+                    label="Sugar Level"
+                    type="text"
+                    value={formData.medical.sugar}
+                    onChange={createChangeHandler("medical", "sugar")}
+                    placeholder="Sugar level"
+                  />
+
+                  <InputField
+                    label="Blood Pressure"
+                    type="text"
+                    value={formData.medical.bp}
+                    onChange={createChangeHandler("medical", "bp")}
+                    placeholder="Blood pressure reading"
+                  />
+
+                  <InputField
+                    label="Pulse Rate"
+                    type="text"
+                    value={formData.medical.pulse}
+                    onChange={createChangeHandler("medical", "pulse")}
+                    placeholder="Pulse rate"
+                  />
+
+                  <InputField
+                    label="Weight"
+                    type="text"
+                    value={formData.medical.weight}
+                    onChange={createChangeHandler("medical", "weight")}
+                    placeholder="Weight"
+                  />
+
+                  <InputField
+                    label="HIV Status"
+                    type="text"
+                    value={formData.medical.hiv}
+                    onChange={createChangeHandler("medical", "hiv")}
+                    placeholder="HIV status"
+                  />
+
+                  <InputField
+                    label="HCV Status"
+                    type="text"
+                    value={formData.medical.hcv}
+                    onChange={createChangeHandler("medical", "hcv")}
+                    placeholder="HCV status"
+                  />
+                </div>
+              </div>
+            )}
+
+            {step === 3 && (
+              <div className="space-y-8">
+                <StepHeader
+                  icon={Scissors}
+                  title="Surgery Details"
+                  description="Update surgical procedure information"
+                  color="orange"
+                />
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 gap-x-12">
+                  <InputField
+                    label="Surgery Date"
+                    type="date"
+                    value={formData.surgery.surgeryDate}
+                    onChange={createChangeHandler("surgery", "surgeryDate")}
+                  />
+
+                  <InputField
+                    label="Surgery Location"
+                    type="text"
+                    value={formData.surgery.location}
+                    onChange={createChangeHandler("surgery", "location")}
+                    placeholder="Surgery location"
+                  />
+
+                  <InputField
+                    label="Operation Theatre (OT) Number"
+                    type="number"
+                    value={formData.surgery.OT}
+                    onChange={createChangeHandler("surgery", "OT")}
+                    placeholder="OT number"
+                  />
+
+                  <InputField
+                    label="Technique Used"
+                    type="text"
+                    value={formData.surgery.technique}
+                    onChange={createChangeHandler("surgery", "technique")}
+                    placeholder="Surgical technique"
+                  />
+
+                  <InputField
+                    label="Grafts Needed"
+                    type="number"
+                    value={formData.surgery.graftsneed}
+                    onChange={createChangeHandler("surgery", "graftsneed")}
+                    placeholder="Number of grafts needed"
+                  />
+
+                  <InputField
+                    label="Grafts Implanted"
+                    type="number"
+                    value={formData.surgery.graftsImplanted}
+                    onChange={createChangeHandler("surgery", "graftsImplanted")}
+                    placeholder="Number of grafts implanted"
+                  />
+
+                  <InputField
+                    label="Donor Area Condition"
+                    type="text"
+                    value={formData.surgery.donorCondition}
+                    onChange={createChangeHandler("surgery", "donorCondition")}
+                    placeholder="Donor area condition"
+                  />
+
+                  <InputField
+                    label="Operating Doctor"
+                    type="select"
+                    value={formData.surgery.doctor}
+                    onChange={createChangeHandler("surgery", "doctor")}
+                    options={employees.Doctor.map((emp) => ({
+                      value: emp._id,
+                      label: emp.name,
+                    }))}
+                  />
+
+                  <InputField
+                    label="Senior Technician"
+                    type="select"
+                    value={formData.surgery.seniorTech}
+                    onChange={createChangeHandler("surgery", "seniorTech")}
+                    options={surgeryTeamMembers.map((emp) => ({
+                      value: emp._id,
+                      label: emp.name,
+                    }))}
+                  />
+
+                  <InputField
+                    label="Right Side Implanter"
+                    type="select"
+                    value={formData.surgery.implanterRight}
+                    onChange={createChangeHandler("surgery", "implanterRight")}
+                    options={surgeryTeamMembers.map((emp) => ({
+                      value: emp._id,
+                      label: emp.name,
+                    }))}
+                  />
+
+                  <InputField
+                    label="Left Side Implanter"
+                    type="select"
+                    value={formData.surgery.implanterLeft}
+                    onChange={createChangeHandler("surgery", "implanterLeft")}
+                    options={surgeryTeamMembers.map((emp) => ({
+                      value: emp._id,
+                      label: emp.name,
+                    }))}
+                  />
+
+                  {/* <InputField
+                    label="Grafting Specialist"
+                    type="select"
+                    value={formData.surgery.graftingPerson}
+                    onChange={createChangeHandler("surgery", "graftingPerson")}
+                    options={surgeryTeamMembers.map((emp) => ({
+                      value: emp._id,
+                      label: emp.name,
+                    }))}
+                  /> */}
+
+                  <InputField
+                    label="Surgery Helpers (Multiple)"
+                    type="multiselect"
+                    value={formData.surgery.helpers}
+                    options={employees.Others.map((emp) => ({
+                      value: emp._id,
+                      label: emp.name,
+                    }))}
+                    onChange={(e) => {
+                      setFormData((prev) => ({
+                        ...prev,
+                        surgery: {
+                          ...prev.surgery,
+                          helpers: e.target.value,
+                        },
+                      }));
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {step === 4 && (
+              <div className="space-y-8">
+                <StepHeader
+                  icon={FileUp}
+                  title="Document Management"
+                  description="Manage patient images and forms"
+                  color="indigo"
+                />
+
+                <div className="space-y-8">
+                  <DocumentUpload
+                    title="Patient Images"
+                    icon={Image}
+                    color="indigo"
+                    files={formData.documents.images}
+                    onUpload={(files) => handleFileUpload("images", files)}
+                    onRemove={(index) => removeFile("images", index)}
+                    accept="image/*"
+                    uploadId="images-upload"
+                    isUploading={uploadingFiles.images}
+                  />
+
+                  <DocumentUpload
+                    title="Consent Forms"
+                    icon={FileText}
+                    color="blue"
+                    files={formData.documents.consentForm}
+                    onUpload={(files) => handleFileUpload("consentForm", files)}
+                    onRemove={(index) => removeFile("consentForm", index)}
+                    accept=".pdf,.doc,.docx"
+                    uploadId="consent-upload"
+                    isUploading={uploadingFiles.consentForm}
+                  />
+
+                  <DocumentUpload
+                    title="Surgery Forms"
+                    icon={FileText}
+                    color="green"
+                    files={formData.documents.suregeryForm}
+                    onUpload={(files) =>
+                      handleFileUpload("suregeryForm", files)
+                    }
+                    onRemove={(index) => removeFile("suregeryForm", index)}
+                    accept=".pdf,.doc,.docx"
+                    uploadId="surgery-upload"
+                    isUploading={uploadingFiles.suregeryForm}
+                  />
+
+                  <DocumentUpload
+                    title="Consultation Forms"
+                    icon={Calendar}
+                    color="purple"
+                    files={formData.documents.consultForm}
+                    onUpload={(files) => handleFileUpload("consultForm", files)}
+                    onRemove={(index) => removeFile("consultForm", index)}
+                    accept=".pdf,.doc,.docx"
+                    uploadId="consult-upload"
+                    isUploading={uploadingFiles.consultForm}
+                  />
+                </div>
+              </div>
+            )}
+
+            <div className="mt-12 flex justify-between items-center pt-6 border-t border-gray-200">
+              {step > 1 ? (
+                <button
+                  type="button"
+                  className="inline-flex items-center px-6 py-3 border border-gray-300 shadow-sm text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-colors duration-200"
+                  onClick={prevStep}
+                >
+                  ← Previous
+                </button>
+              ) : (
+                <div></div>
               )}
+
+              <div className="flex space-x-4">
+                {step < 4 && (
+                  <button
+                    type="button"
+                    className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 transition-colors duration-200"
+                    onClick={nextStep}
+                  >
+                    Next →
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  onClick={handleUpdate}
+                  className="inline-flex items-center px-8 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors duration-200"
+                  disabled={isUpdating}
+                >
+                  {isUpdating ? (
+                    <>
+                      <div className="animate-spin mr-2 h-5 w-5 border-2 border-white border-t-transparent rounded-full"></div>
+                      Updating...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="mr-2" size={20} />
+                      Update Details
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         </div>
-      )}
-    </>
+      </main>
+    </section>
   );
-};
+}
