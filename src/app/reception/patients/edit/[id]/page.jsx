@@ -22,6 +22,8 @@ import {
   Edit3,
   Eye,
   Download,
+  Plus,
+  Droplet,
 } from "lucide-react";
 
 const BenefitsManager = ({ benefits, onChange, onAdd, onRemove }) => {
@@ -56,7 +58,6 @@ const BenefitsManager = ({ benefits, onChange, onAdd, onRemove }) => {
         Additional Benefits *
       </label>
 
-      {/* Predefined Benefits as Radio-style Checkboxes */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
         {predefinedBenefits.map((benefit) => (
           <label
@@ -74,7 +75,6 @@ const BenefitsManager = ({ benefits, onChange, onAdd, onRemove }) => {
         ))}
       </div>
 
-      {/* Custom Benefits Input */}
       <div className="mb-4">
         <label className="block text-sm font-medium text-gray-700 mb-2">
           Add Custom Benefit
@@ -105,7 +105,6 @@ const BenefitsManager = ({ benefits, onChange, onAdd, onRemove }) => {
         </div>
       </div>
 
-      {/* Selected Benefits Display */}
       {benefits.length > 0 && (
         <div className="mt-4">
           <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -134,9 +133,63 @@ const BenefitsManager = ({ benefits, onChange, onAdd, onRemove }) => {
   );
 };
 
+const PRPManager = ({ prpSessions, onChange, onAdd, onRemove }) => {
+  return (
+    <div className="md:col-span-2">
+      <h4 className="text-lg font-semibold text-gray-700 mb-4">PRP Sessions</h4>
+      {prpSessions && prpSessions.length > 0 ? (
+        <div className="space-y-4">
+          {prpSessions.map((session, index) => (
+            <div
+              key={index}
+              className="bg-gray-50 p-6 rounded-lg border relative"
+            >
+              <button
+                type="button"
+                onClick={() => onRemove(index)}
+                className="absolute top-4 right-4 text-red-500 hover:text-red-700 p-1"
+                title="Remove PRP Session"
+              >
+                <X size={20} />
+              </button>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pr-12">
+                <InputField
+                  label="PRP Number"
+                  type="number"
+                  value={session.prpNumber || ""}
+                  onChange={(e) => onChange(index, "prpNumber", e.target.value)}
+                  placeholder="Enter PRP session number"
+                />
+                <InputField
+                  label="Date"
+                  type="date"
+                  value={session.date ? session.date.split("T")[0] : ""}
+                  onChange={(e) => onChange(index, "date", e.target.value)}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="text-gray-500 text-sm mb-4">No PRP sessions added yet</p>
+      )}
+      <button
+        type="button"
+        className="mt-4 px-6 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors duration-200 font-medium flex items-center gap-2"
+        onClick={onAdd}
+      >
+        <Plus size={20} />
+        Add PRP Session
+      </button>
+    </div>
+  );
+};
+
 const StepHeader = ({ icon: Icon, title, description, color }) => (
   <div className="text-center mb-8">
-    <div className={`mx-auto h-16 w-16 text-${color}-500 mb-4 flex items-center justify-center`}>
+    <div
+      className={`mx-auto h-16 w-16 text-${color}-500 mb-4 flex items-center justify-center`}
+    >
       <Icon size={64} />
     </div>
     <h3 className="text-2xl font-bold text-gray-900">{title}</h3>
@@ -206,8 +259,48 @@ const TransactionManager = ({ transactions, onChange, onAdd, onRemove }) => (
   </div>
 );
 
+// Multi-select component for employees
+const MultiSelectEmployee = ({ label, options, selectedIds, onChange }) => {
+  const handleToggle = (employeeId) => {
+    const newSelection = selectedIds.includes(employeeId)
+      ? selectedIds.filter((id) => id !== employeeId)
+      : [...selectedIds, employeeId];
+    onChange(newSelection);
+  };
 
-
+  return (
+    <div className="space-y-2">
+      <label className="block text-sm font-medium text-gray-700">{label}</label>
+      <div className="border border-gray-300 rounded-md p-4 bg-white max-h-48 overflow-y-auto">
+        {options.length === 0 ? (
+          <p className="text-sm text-gray-500">No employees available</p>
+        ) : (
+          <div className="space-y-2">
+            {options.map((employee) => (
+              <label
+                key={employee._id}
+                className="flex items-center space-x-3 cursor-pointer hover:bg-gray-50 p-2 rounded transition-colors"
+              >
+                <input
+                  type="checkbox"
+                  checked={selectedIds.includes(employee._id)}
+                  onChange={() => handleToggle(employee._id)}
+                  className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                />
+                <span className="text-sm text-gray-700">{employee.name}</span>
+              </label>
+            ))}
+          </div>
+        )}
+      </div>
+      {selectedIds.length > 0 && (
+        <p className="text-sm text-gray-600 mt-2">
+          {selectedIds.length} selected
+        </p>
+      )}
+    </div>
+  );
+};
 
 const DocumentUpload = ({
   title,
@@ -223,14 +316,14 @@ const DocumentUpload = ({
   const [viewingFile, setViewingFile] = useState(null);
 
   const isPDF = (filename) => {
-    return filename.toLowerCase().endsWith('.pdf');
+    return filename.toLowerCase().endsWith(".pdf");
   };
 
   const getFileName = (url) => {
     try {
-      const parts = url.split('/');
+      const parts = url.split("/");
       const fileNameWithParams = parts[parts.length - 1];
-      const fileName = fileNameWithParams.split('?')[0];
+      const fileName = fileNameWithParams.split("?")[0];
       return decodeURIComponent(fileName);
     } catch (error) {
       return url;
@@ -243,10 +336,10 @@ const DocumentUpload = ({
 
   const handleDownloadFile = (fileUrl) => {
     const fileName = getFileName(fileUrl);
-    const link = document.createElement('a');
+    const link = document.createElement("a");
     link.href = fileUrl;
     link.download = fileName;
-    link.target = '_blank';
+    link.target = "_blank";
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -280,7 +373,7 @@ const DocumentUpload = ({
             <Upload className="mr-2" size={20} />
             {isUploading ? "Uploading..." : "Add Files"}
           </label>
-          
+
           {files.length > 0 && (
             <div className="mt-4">
               <h5 className="text-sm font-medium text-gray-700 mb-2">
@@ -290,16 +383,18 @@ const DocumentUpload = ({
                 {files.map((filePath, index) => {
                   const fileName = getFileName(filePath);
                   const isPdf = isPDF(filePath);
-                  
+
                   return (
                     <div
                       key={index}
                       className="flex items-center justify-between bg-white px-4 py-3 rounded-md border hover:border-blue-300 transition-colors"
                     >
                       <div className="flex items-center space-x-3 flex-1 min-w-0">
-                        <div className={`flex-shrink-0 w-8 h-8 rounded flex items-center justify-center ${
-                          isPdf ? 'bg-red-100' : 'bg-blue-100'
-                        }`}>
+                        <div
+                          className={`flex-shrink-0 w-8 h-8 rounded flex items-center justify-center ${
+                            isPdf ? "bg-red-100" : "bg-blue-100"
+                          }`}
+                        >
                           {isPdf ? (
                             <FileText size={16} className="text-red-600" />
                           ) : (
@@ -311,7 +406,7 @@ const DocumentUpload = ({
                             {fileName}
                           </span>
                           <p className="text-xs text-gray-500">
-                            {isPdf ? 'PDF Document' : 'Image File'}
+                            {isPdf ? "PDF Document" : "Image File"}
                           </p>
                         </div>
                       </div>
@@ -350,7 +445,6 @@ const DocumentUpload = ({
         </div>
       </div>
 
-      {/* File Viewer Modal */}
       {viewingFile && (
         <div
           className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4"
@@ -395,7 +489,6 @@ const DocumentUpload = ({
   );
 };
 
-
 export default function PatientEditDetails() {
   const [step, setStep] = useState(1);
   const [isUpdating, setIsUpdating] = useState(false);
@@ -410,9 +503,6 @@ export default function PatientEditDetails() {
     Implanter: [],
     Others: [],
   });
-
-  // Combined surgery team members for all surgery-related dropdowns
-  const [surgeryTeamMembers, setSurgeryTeamMembers] = useState([]);
 
   const [formData, setFormData] = useState({
     personal: {
@@ -463,18 +553,24 @@ export default function PatientEditDetails() {
       graftsneed: "",
       graftsImplanted: "",
       donorCondition: "",
-      doctor: "",
-      seniorTech: "",
-      implanterRight: "",
-      implanterLeft: "",
-      graftingPerson: "",
-      helpers: [],
+      doctor: [],
+      seniorTech: [],
+      implanterRight: [],
+      implanterLeft: [],
+      graftingPerson: [],
+      helper: [],
+    },
+    afterSurgery: {
+      headwashDate: "",
+      bandageRemovalDate: "",
+      prp: [],
     },
     payments: {
       totalAmount: "",
       amountReceived: "",
       pendingAmount: "",
       medicineAmount: "",
+      discount: "",
       transactions: [],
     },
     documents: {
@@ -503,14 +599,6 @@ export default function PatientEditDetails() {
         const result = await response.json();
         if (result.success) {
           setEmployees(result.data);
-
-          // Combine Technician, Implanter, and Others for surgery team dropdowns
-          const combinedTeam = [
-            ...result.data.Technician,
-            ...result.data.Implanter,
-            ...result.data.Others,
-          ];
-          setSurgeryTeamMembers(combinedTeam);
         }
       } catch (error) {
         console.error("Error fetching employees:", error);
@@ -536,6 +624,18 @@ export default function PatientEditDetails() {
         const data = await res.json();
         if (data.success && data.patient) {
           const patientData = data.patient;
+
+          // Helper function to extract IDs from populated or non-populated data
+          const extractIds = (data) => {
+            if (!data) return [];
+            if (Array.isArray(data)) {
+              return data
+                .map((item) => (typeof item === "object" ? item._id : item))
+                .filter(Boolean);
+            }
+            return [];
+          };
+
           setFormData({
             personal: {
               name: patientData.personal?.name || "",
@@ -592,18 +692,28 @@ export default function PatientEditDetails() {
               graftsneed: patientData.surgery?.graftsneed || "",
               graftsImplanted: patientData.surgery?.graftsImplanted || "",
               donorCondition: patientData.surgery?.donorCondition || "",
-              doctor: patientData.surgery?.doctor?._id || "",
-              seniorTech: patientData.surgery?.seniorTech?._id || "",
-              implanterRight: patientData.surgery?.implanterRight?._id || "",
-              implanterLeft: patientData.surgery?.implanterLeft?._id || "",
-              graftingPerson: patientData.surgery?.graftingPerson?._id || "",
-              helpers: patientData.surgery?.helpers?.map((h) => h._id) || [],
+              doctor: extractIds(patientData.surgery?.doctor),
+              seniorTech: extractIds(patientData.surgery?.seniorTech),
+              implanterRight: extractIds(patientData.surgery?.implanterRight),
+              implanterLeft: extractIds(patientData.surgery?.implanterLeft),
+              graftingPerson: extractIds(patientData.surgery?.graftingPerson),
+              helper: extractIds(patientData.surgery?.helper),
+            },
+            afterSurgery: {
+              headwashDate: patientData.afterSurgery?.headwashDate
+                ? patientData.afterSurgery.headwashDate.split("T")[0]
+                : "",
+              bandageRemovalDate: patientData.afterSurgery?.bandageRemovalDate
+                ? patientData.afterSurgery.bandageRemovalDate.split("T")[0]
+                : "",
+              prp: patientData.afterSurgery?.prp || [],
             },
             payments: {
               totalAmount: patientData.payments?.totalAmount || "",
               amountReceived: patientData.payments?.amountReceived || "",
               pendingAmount: patientData.payments?.pendingAmount || "",
               medicineAmount: patientData.payments?.medicineAmount || "",
+              discount: patientData.payments?.discount || "",
               transactions: patientData.payments?.transactions || [],
             },
             documents: {
@@ -633,8 +743,9 @@ export default function PatientEditDetails() {
     { number: 2, title: "Counsellor Details", icon: FileText, color: "green" },
     { number: 3, title: "Medical Information", icon: Heart, color: "red" },
     { number: 4, title: "Surgery Details", icon: Scissors, color: "orange" },
-    { number: 5, title: "Payment Details", icon: CreditCard, color: "purple" },
-    { number: 6, title: "Document Upload", icon: FileUp, color: "indigo" },
+    { number: 5, title: "After Surgery Care", icon: Droplet, color: "pink" },
+    { number: 6, title: "Payment Details", icon: CreditCard, color: "purple" },
+    { number: 7, title: "Document Upload", icon: FileUp, color: "indigo" },
   ];
 
   const handleChange = (section, field, value) => {
@@ -688,6 +799,49 @@ export default function PatientEditDetails() {
     }));
   };
 
+  // PRP handlers
+  const handlePRPChange = (index, field, value) => {
+    const newPRP = [...formData.afterSurgery.prp];
+    newPRP[index] = {
+      ...newPRP[index],
+      [field]: value,
+    };
+    setFormData((prev) => ({
+      ...prev,
+      afterSurgery: {
+        ...prev.afterSurgery,
+        prp: newPRP,
+      },
+    }));
+  };
+
+  const addPRPSession = () => {
+    setFormData((prev) => ({
+      ...prev,
+      afterSurgery: {
+        ...prev.afterSurgery,
+        prp: [
+          ...prev.afterSurgery.prp,
+          {
+            prpNumber: "",
+            date: "",
+          },
+        ],
+      },
+    }));
+  };
+
+  const removePRPSession = (index) => {
+    const newPRP = formData.afterSurgery.prp.filter((_, i) => i !== index);
+    setFormData((prev) => ({
+      ...prev,
+      afterSurgery: {
+        ...prev.afterSurgery,
+        prp: newPRP,
+      },
+    }));
+  };
+
   const handleFileUpload = async (section, files) => {
     if (!files || files.length === 0) return;
 
@@ -711,7 +865,7 @@ export default function PatientEditDetails() {
         }
 
         const data = await response.json();
-        return data.filePath; // This will be the accessible URL with fl_attachment:false for PDFs
+        return data.filePath;
       });
 
       const uploadedPaths = await Promise.all(uploadPromises);
@@ -729,13 +883,13 @@ export default function PatientEditDetails() {
         message: `Successfully uploaded ${uploadedPaths.length} file(s)`,
       });
 
-      // Clear success message after 3 seconds
       setTimeout(() => setUpdateStatus(null), 3000);
     } catch (error) {
       console.error("Error uploading files:", error);
       setUpdateStatus({
         type: "error",
-        message: error.message || "Failed to upload some files. Please try again.",
+        message:
+          error.message || "Failed to upload some files. Please try again.",
       });
     } finally {
       setUploadingFiles((prev) => ({ ...prev, [section]: false }));
@@ -745,24 +899,23 @@ export default function PatientEditDetails() {
   const removeFile = async (section, index) => {
     const filePath = formData.documents[section][index];
 
-    if (!confirm('Are you sure you want to remove this file?')) {
+    if (!confirm("Are you sure you want to remove this file?")) {
       return;
     }
 
     try {
-      // Extract public ID from Cloudinary URL
       const extractPublicId = (url) => {
-        if (!url.includes('cloudinary.com')) return null;
-        
-        const parts = url.split('/upload/');
+        if (!url.includes("cloudinary.com")) return null;
+
+        const parts = url.split("/upload/");
         if (parts.length !== 2) return null;
-        
+
         const pathPart = parts[1];
-        const segments = pathPart.split('/');
-        
+        const segments = pathPart.split("/");
+
         let publicIdParts = [];
         let foundPath = false;
-        
+
         for (const segment of segments) {
           if (!foundPath && /^[a-z]+_/.test(segment)) {
             continue;
@@ -770,22 +923,24 @@ export default function PatientEditDetails() {
           foundPath = true;
           publicIdParts.push(segment);
         }
-        
-        const publicId = publicIdParts.join('/');
-        return publicId.replace(/\.[^/.]+$/, '');
+
+        const publicId = publicIdParts.join("/");
+        return publicId.replace(/\.[^/.]+$/, "");
       };
 
       const publicId = extractPublicId(filePath);
-      const resourceType = filePath.toLowerCase().endsWith('.pdf') ? 'raw' : 'image';
+      const resourceType = filePath.toLowerCase().endsWith(".pdf")
+        ? "raw"
+        : "image";
 
       const response = await fetch("/api/upload", {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           publicId: publicId,
-          resourceType: resourceType 
+          resourceType: resourceType,
         }),
       });
 
@@ -849,23 +1004,27 @@ export default function PatientEditDetails() {
 
   // Clean empty ObjectId fields before sending to API
   const cleanObjectIdFields = (data) => {
-    const cleaned = JSON.parse(JSON.stringify(data)); // Deep clone
+    const cleaned = JSON.parse(JSON.stringify(data));
 
-    // List of ObjectId reference fields
+    // Single ObjectId fields
     const objectIdFields = {
       personal: ["reference"],
       counselling: ["counsellor"],
+    };
+
+    // Array ObjectId fields - ALL surgery team fields are now arrays
+    const arrayObjectIdFields = {
       surgery: [
         "doctor",
         "seniorTech",
         "implanterRight",
         "implanterLeft",
         "graftingPerson",
-        "helpers",
+        "helper",
       ],
     };
 
-    // Convert empty strings to null for ObjectId fields
+    // Convert empty strings to null for single ObjectId fields
     Object.keys(objectIdFields).forEach((section) => {
       if (cleaned[section]) {
         objectIdFields[section].forEach((field) => {
@@ -879,7 +1038,28 @@ export default function PatientEditDetails() {
       }
     });
 
-    // Also clean empty number fields
+    // Handle array ObjectId fields
+    Object.keys(arrayObjectIdFields).forEach((section) => {
+      if (cleaned[section]) {
+        arrayObjectIdFields[section].forEach((field) => {
+          if (Array.isArray(cleaned[section][field])) {
+            cleaned[section][field] = cleaned[section][field].filter(
+              (id) => id && id !== ""
+            );
+            if (cleaned[section][field].length === 0) {
+              cleaned[section][field] = [];
+            }
+          } else if (
+            cleaned[section][field] === "" ||
+            cleaned[section][field] === undefined
+          ) {
+            cleaned[section][field] = [];
+          }
+        });
+      }
+    });
+
+    // Clean empty number fields
     const numberFields = {
       personal: ["age", "packageQuoted"],
       counselling: ["finlpackage", "graftsSuggested"],
@@ -889,6 +1069,7 @@ export default function PatientEditDetails() {
         "amountReceived",
         "pendingAmount",
         "medicineAmount",
+        "discount",
       ],
     };
 
@@ -913,7 +1094,6 @@ export default function PatientEditDetails() {
     setUpdateStatus(null);
 
     try {
-      // Clean the form data before sending
       const cleanedData = cleanObjectIdFields(formData);
 
       const updateData = {
@@ -934,7 +1114,9 @@ export default function PatientEditDetails() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+        throw new Error(
+          errorData.message || `HTTP error! status: ${response.status}`
+        );
       }
 
       const result = await response.json();
@@ -947,7 +1129,6 @@ export default function PatientEditDetails() {
           message: "Patient details updated successfully!",
         });
 
-        // Auto-hide success message
         setTimeout(() => setUpdateStatus(null), 5000);
       } else {
         throw new Error(result.message || "Update failed");
@@ -955,17 +1136,19 @@ export default function PatientEditDetails() {
     } catch (error) {
       console.error("Error updating patient data:", error);
       toast.error("Update failed: " + error.message);
-      
+
       setUpdateStatus({
         type: "error",
-        message: error.message || "Failed to update patient details. Please try again.",
+        message:
+          error.message ||
+          "Failed to update patient details. Please try again.",
       });
     } finally {
       setIsUpdating(false);
     }
   };
 
-  const nextStep = () => setStep(Math.min(step + 1, 6));
+  const nextStep = () => setStep(Math.min(step + 1, 7));
   const prevStep = () => setStep(Math.max(step - 1, 1));
 
   return (
@@ -1053,7 +1236,7 @@ export default function PatientEditDetails() {
           </div>
 
           <div className="px-8 py-8">
-            {/* All your existing step content here - keeping it the same */}
+            {/* Step 1: Personal Details - Keep as is from your original code */}
             {step === 1 && (
               <div className="space-y-8">
                 <StepHeader
@@ -1170,6 +1353,7 @@ export default function PatientEditDetails() {
                       { value: "HYBRID", label: "HYBRID" },
                       { value: "PRP", label: "PRP" },
                       { value: "GFC", label: "GFC" },
+                      { value: "Alopecia", label: "Alopecia" },
                       { value: "Other", label: "Other" },
                     ]}
                   />
@@ -1600,7 +1784,7 @@ export default function PatientEditDetails() {
                 </div>
               </div>
             )}
-
+            {/* Step 4: Surgery Details - UPDATED WITH MULTI-SELECT */}
             {step === 4 && (
               <div className="space-y-8">
                 <StepHeader
@@ -1664,85 +1848,127 @@ export default function PatientEditDetails() {
                     value={formData.surgery.donorCondition}
                     onChange={createChangeHandler("surgery", "donorCondition")}
                     placeholder="Donor area condition"
+                    className="md:col-span-2"
+                  />
+
+                  {/* Multi-select for Doctors */}
+                  <div className="md:col-span-2">
+                    <MultiSelectEmployee
+                      label="Operating Doctors (Select Multiple)"
+                      options={employees.Doctor}
+                      selectedIds={formData.surgery.doctor}
+                      onChange={(newSelection) =>
+                        handleChange("surgery", "doctor", newSelection)
+                      }
+                    />
+                  </div>
+
+                  {/* Multi-select for Senior Technicians */}
+                  <div className="md:col-span-2">
+                    <MultiSelectEmployee
+                      label="Senior Technicians (Select Multiple)"
+                      options={employees.Technician}
+                      selectedIds={formData.surgery.seniorTech}
+                      onChange={(newSelection) =>
+                        handleChange("surgery", "seniorTech", newSelection)
+                      }
+                    />
+                  </div>
+
+                  {/* Multi-select for Right Implanters */}
+                  <div className="md:col-span-2">
+                    <MultiSelectEmployee
+                      label="Right Side Implanters (Select Multiple)"
+                      options={employees.Implanter}
+                      selectedIds={formData.surgery.implanterRight}
+                      onChange={(newSelection) =>
+                        handleChange("surgery", "implanterRight", newSelection)
+                      }
+                    />
+                  </div>
+
+                  {/* Multi-select for Left Implanters */}
+                  <div className="md:col-span-2">
+                    <MultiSelectEmployee
+                      label="Left Side Implanters (Select Multiple)"
+                      options={employees.Implanter}
+                      selectedIds={formData.surgery.implanterLeft}
+                      onChange={(newSelection) =>
+                        handleChange("surgery", "implanterLeft", newSelection)
+                      }
+                    />
+                  </div>
+
+                  {/* Multi-select for Grafting Persons */}
+                  <div className="md:col-span-2">
+                    <MultiSelectEmployee
+                      label="Grafting Specialists (Select Multiple)"
+                      options={employees.Others}
+                      selectedIds={formData.surgery.graftingPerson}
+                      onChange={(newSelection) =>
+                        handleChange("surgery", "graftingPerson", newSelection)
+                      }
+                    />
+                  </div>
+
+                  {/* Multi-select for Helpers */}
+                  <div className="md:col-span-2">
+                    <MultiSelectEmployee
+                      label="Surgery Helpers (Select Multiple)"
+                      options={employees.Others}
+                      selectedIds={formData.surgery.helper}
+                      onChange={(newSelection) =>
+                        handleChange("surgery", "helper", newSelection)
+                      }
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Step 5: After Surgery Care - NEW STEP */}
+            {step === 5 && (
+              <div className="space-y-8">
+                <StepHeader
+                  icon={Droplet}
+                  title="After Surgery Care"
+                  description="Post-operative care schedule"
+                  color="pink"
+                />
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 gap-x-12">
+                  <InputField
+                    label="Head Wash Date"
+                    type="date"
+                    value={formData.afterSurgery.headwashDate}
+                    onChange={createChangeHandler(
+                      "afterSurgery",
+                      "headwashDate"
+                    )}
                   />
 
                   <InputField
-                    label="Operating Doctor"
-                    type="select"
-                    value={formData.surgery.doctor}
-                    onChange={createChangeHandler("surgery", "doctor")}
-                    options={employees.Doctor.map((emp) => ({
-                      value: emp._id,
-                      label: emp.name,
-                    }))}
+                    label="Bandage Removal Date"
+                    type="date"
+                    value={formData.afterSurgery.bandageRemovalDate}
+                    onChange={createChangeHandler(
+                      "afterSurgery",
+                      "bandageRemovalDate"
+                    )}
                   />
 
-                  <InputField
-                    label="Senior Technician"
-                    type="select"
-                    value={formData.surgery.seniorTech}
-                    onChange={createChangeHandler("surgery", "seniorTech")}
-                    options={surgeryTeamMembers.map((emp) => ({
-                      value: emp._id,
-                      label: emp.name,
-                    }))}
-                  />
-
-                  <InputField
-                    label="Right Side Implanter"
-                    type="select"
-                    value={formData.surgery.implanterRight}
-                    onChange={createChangeHandler("surgery", "implanterRight")}
-                    options={surgeryTeamMembers.map((emp) => ({
-                      value: emp._id,
-                      label: emp.name,
-                    }))}
-                  />
-
-                  <InputField
-                    label="Left Side Implanter"
-                    type="select"
-                    value={formData.surgery.implanterLeft}
-                    onChange={createChangeHandler("surgery", "implanterLeft")}
-                    options={surgeryTeamMembers.map((emp) => ({
-                      value: emp._id,
-                      label: emp.name,
-                    }))}
-                  />
-
-                  <InputField
-                    label="Grafting Specialist"
-                    type="select"
-                    value={formData.surgery.graftingPerson}
-                    onChange={createChangeHandler("surgery", "graftingPerson")}
-                    options={surgeryTeamMembers.map((emp) => ({
-                      value: emp._id,
-                      label: emp.name,
-                    }))}
-                  />
-                  <InputField
-                    label="Surgery Helpers (Multiple)"
-                    type="multiselect"
-                    value={formData.surgery.helpers}
-                    options={employees.Others.map((emp) => ({
-                      value: emp._id,
-                      label: emp.name,
-                    }))}
-                    onChange={(e) => {
-                      setFormData((prev) => ({
-                        ...prev,
-                        surgery: {
-                          ...prev.surgery,
-                          helpers: e.target.value, // e.target.value is already an array
-                        },
-                      }));
-                    }}
+                  <PRPManager
+                    prpSessions={formData.afterSurgery.prp}
+                    onChange={handlePRPChange}
+                    onAdd={addPRPSession}
+                    onRemove={removePRPSession}
                   />
                 </div>
               </div>
             )}
 
-            {step === 5 && (
+            {/* Step 6: Payment Details - Keep your existing code */}
+            {step === 6 && (
               <div className="space-y-8">
                 <StepHeader
                   icon={CreditCard}
@@ -1784,6 +2010,14 @@ export default function PatientEditDetails() {
                     placeholder="Medicine cost"
                   />
 
+                  <InputField
+                    label="Discount (₹)"
+                    type="number"
+                    value={formData.payments.discount}
+                    onChange={createChangeHandler("payments", "discount")}
+                    placeholder="Discount amount"
+                  />
+
                   <TransactionManager
                     transactions={formData.payments.transactions}
                     onChange={handleTransactionChange}
@@ -1794,7 +2028,8 @@ export default function PatientEditDetails() {
               </div>
             )}
 
-            {step === 6 && (
+            {/* Step 7: Document Upload - Keep your existing code */}
+            {step === 7 && (
               <div className="space-y-8">
                 <StepHeader
                   icon={FileUp}
@@ -1871,7 +2106,7 @@ export default function PatientEditDetails() {
               )}
 
               <div className="flex space-x-4">
-                {step < 6 && (
+                {step < 7 && (
                   <button
                     type="button"
                     className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 transition-colors duration-200"

@@ -8,8 +8,6 @@ const VALID_BRANCHES = ["All", "Delhi", "Mumbai", "Hyderabad"];
 // Improved date helpers that work consistently across timezones
 const getISTStartOfDay = (date = null) => {
   const d = date ? new Date(date) : new Date();
-  
-  // Create date in IST timezone (UTC+5:30)
   const istDate = new Date(d.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
   const year = istDate.getFullYear();
   const month = istDate.getMonth();

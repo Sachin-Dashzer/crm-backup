@@ -42,29 +42,37 @@ const handler = async (req) => {
       }
     }
 
-    // FIXED: Store original values BEFORE using them
+    // Helper function to convert array data to string array of IDs
+    const extractIds = (data) => {
+      if (!data) return [];
+      if (Array.isArray(data)) {
+        return data.map(item => 
+          typeof item === 'object' && item?._id ? item._id.toString() : 
+          typeof item === 'string' ? item : null
+        ).filter(Boolean);
+      }
+      return [];
+    };
+
+    // Store original values for employee reference updates
     const originalValues = {
       personalReference: patient.personal?.reference?.toString(),
       counsellingCounsellor: patient.counselling?.counsellor?.toString(),
       surgery: {
-        doctor: patient.surgery?.doctor?.toString(),
-        seniorTech: patient.surgery?.seniorTech?.toString(),
-        implanterRight: patient.surgery?.implanterRight?.toString(),
-        implanterLeft: patient.surgery?.implanterLeft?.toString(),
-        graftingPerson: patient.surgery?.graftingPerson?.toString(),
-        helpers: patient.surgery?.helpers?.map(h => h?.toString()) || [],  // FIXED: Array
-      },
+        doctor: extractIds(patient.surgery?.doctor),
+        seniorTech: extractIds(patient.surgery?.seniorTech),
+        implanterRight: extractIds(patient.surgery?.implanterRight),
+        implanterLeft: extractIds(patient.surgery?.implanterLeft),
+        graftingPerson: extractIds(patient.surgery?.graftingPerson),
+        helper: extractIds(patient.surgery?.helper),
+      }
     };
 
     // Update patient fields manually
     const updateFields = (target, source) => {
-      Object.keys(source).forEach((key) => {
+      Object.keys(source).forEach(key => {
         if (source[key] !== undefined && source[key] !== null) {
-          if (
-            typeof source[key] === "object" &&
-            !Array.isArray(source[key]) &&
-            source[key] !== null
-          ) {
+          if (typeof source[key] === 'object' && !Array.isArray(source[key]) && source[key] !== null) {
             if (!target[key]) target[key] = {};
             updateFields(target[key], source[key]);
           } else {
@@ -89,7 +97,7 @@ const handler = async (req) => {
       .populate("surgery.implanterRight")
       .populate("surgery.implanterLeft")
       .populate("surgery.graftingPerson")
-      .populate("surgery.helpers")  // FIXED: Plural
+      .populate("surgery.helper")
       .populate("payments.transactions");
 
     // Handle employee reference updates
@@ -116,14 +124,24 @@ const handler = async (req) => {
       }
     };
 
+    // Helper function to handle array field changes
+    const handleArrayFieldChanges = (oldArray, newArray, fieldName) => {
+      const oldIds = oldArray || [];
+      const newIds = newArray || [];
+
+      // Find removed IDs
+      const removedIds = oldIds.filter(id => !newIds.includes(id));
+      removedIds.forEach(id => addEmployeeUpdate(id, fieldName, "remove"));
+
+      // Find added IDs
+      const addedIds = newIds.filter(id => !oldIds.includes(id));
+      addedIds.forEach(id => addEmployeeUpdate(id, fieldName, "add"));
+    };
+
     // Check for reference changes
     if (data.personal?.reference !== originalValues.personalReference) {
       if (originalValues.personalReference) {
-        addEmployeeUpdate(
-          originalValues.personalReference,
-          "reference",
-          "remove"
-        );
+        addEmployeeUpdate(originalValues.personalReference, "reference", "remove");
       }
       if (data.personal?.reference) {
         addEmployeeUpdate(data.personal.reference, "reference", "add");
@@ -133,57 +151,25 @@ const handler = async (req) => {
     // Check counselling counsellor changes
     if (data.counselling?.counsellor !== originalValues.counsellingCounsellor) {
       if (originalValues.counsellingCounsellor) {
-        addEmployeeUpdate(
-          originalValues.counsellingCounsellor,
-          "counsellor",
-          "remove"
-        );
+        addEmployeeUpdate(originalValues.counsellingCounsellor, "counsellor", "remove");
       }
       if (data.counselling?.counsellor) {
         addEmployeeUpdate(data.counselling.counsellor, "counsellor", "add");
       }
     }
 
-    // Check surgery team changes
+    // Check surgery team changes - ALL fields are now arrays
     if (data.surgery) {
-      // FIXED: Removed "helper" from array
-      const surgeryFields = [
-        "doctor",
-        "seniorTech",
-        "implanterRight",
-        "implanterLeft",
-        "graftingPerson",
-      ];
+      const arrayFields = ['doctor', 'seniorTech', 'implanterRight', 'implanterLeft', 'graftingPerson', 'helper'];
 
-      surgeryFields.forEach((field) => {
-        const newValue = data.surgery[field];
-        const oldValue = originalValues.surgery[field];
-
-        if (newValue !== oldValue) {
-          if (oldValue) {
-            addEmployeeUpdate(oldValue, field, "remove");
-          }
-          if (newValue) {
-            addEmployeeUpdate(newValue, field, "add");
-          }
-        }
-      });
-
-      // FIXED: Handle helpers array separately AFTER addEmployeeUpdate is defined
-      const oldHelpers = originalValues.surgery.helpers || [];
-      const newHelpers = data.surgery.helpers || [];
-
-      // Remove old helpers not in new list
-      oldHelpers.forEach((oldHelper) => {
-        if (!newHelpers.includes(oldHelper)) {
-          addEmployeeUpdate(oldHelper, "helper", "remove");
-        }
-      });
-
-      // Add new helpers not in old list
-      newHelpers.forEach((newHelper) => {
-        if (newHelper && !oldHelpers.includes(newHelper)) {
-          addEmployeeUpdate(newHelper, "helper", "add");
+      arrayFields.forEach(field => {
+        if (data.surgery[field] !== undefined) {
+          const newIds = extractIds(data.surgery[field]);
+          handleArrayFieldChanges(
+            originalValues.surgery[field],
+            newIds,
+            field
+          );
         }
       });
     }

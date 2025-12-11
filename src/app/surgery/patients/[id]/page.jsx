@@ -10,6 +10,8 @@ import {
   FileText,
   Image as ImageIcon,
   Eye,
+  Droplet,
+  Clock,
 } from "lucide-react";
 
 const PatientProfile = () => {
@@ -39,7 +41,8 @@ const PatientProfile = () => {
         const data = await res.json();
 
         if (data.success && data.patient) {
-          console.log(data.patient);
+          console.log("Patient data received:", data.patient);
+          console.log("Surgery data:", data.patient.surgery);
           setPatientData(data.patient);
         } else {
           router.push("/404");
@@ -55,18 +58,59 @@ const PatientProfile = () => {
     fetchPatientData();
   }, [id, router]);
 
+  // Helper function to format employee names from array
+  const formatEmployeeNames = (employees) => {
+    if (!employees) return "N/A";
+    
+    // If it's an array
+    if (Array.isArray(employees)) {
+      if (employees.length === 0) return "N/A";
+      
+      // Map employees - handle both populated objects and IDs
+      const names = employees.map((emp) => {
+        if (typeof emp === "object" && emp !== null) {
+          return emp.name || "Unknown";
+        }
+        return "Unknown";
+      });
+      
+      return names.filter(name => name !== "Unknown").join(", ") || "N/A";
+    }
+    
+    // If it's a single object
+    if (typeof employees === "object" && employees !== null && employees.name) {
+      return employees.name;
+    }
+    
+    return "N/A";
+  };
+
   // Helper functions for formatting
   const formatDate = (date) => {
     if (!date) return "Not scheduled";
-    return new Date(date).toLocaleDateString("en-IN", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    });
+    
+    try {
+      // Handle both Date objects and ISO strings
+      const dateObj = date instanceof Date ? date : new Date(date);
+      
+      // Check if date is valid
+      if (isNaN(dateObj.getTime())) {
+        return "Invalid date";
+      }
+      
+      return dateObj.toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      });
+    } catch (error) {
+      console.error("Date formatting error:", error);
+      return "Invalid date";
+    }
   };
 
   const formatCurrency = (amount) => {
-    if (!amount) return "₹0";
+    if (amount === undefined || amount === null) return "₹0";
     return new Intl.NumberFormat("en-IN", {
       style: "currency",
       currency: "INR",
@@ -76,7 +120,6 @@ const PatientProfile = () => {
 
   const downloadPDF = () => {
     try {
-      // Create a hidden iframe for printing
       const iframe = document.createElement("iframe");
       iframe.style.position = "absolute";
       iframe.style.width = "0";
@@ -90,21 +133,18 @@ const PatientProfile = () => {
       iframeDoc.write(createPDFContent(patientData));
       iframeDoc.close();
 
-      // Wait for content to load then print
       iframe.onload = () => {
         setTimeout(() => {
           try {
             iframe.contentWindow.focus();
             iframe.contentWindow.print();
 
-            // Remove iframe after printing
             setTimeout(() => {
               document.body.removeChild(iframe);
             }, 1000);
           } catch (e) {
             console.error("Print error:", e);
             document.body.removeChild(iframe);
-            // Fallback to window.print()
             window.print();
           }
         }, 500);
@@ -121,15 +161,21 @@ const PatientProfile = () => {
   const createPDFContent = (data) => {
     const formatDatePDF = (date) => {
       if (!date) return "Not scheduled";
-      return new Date(date).toLocaleDateString("en-IN", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      });
+      try {
+        const dateObj = date instanceof Date ? date : new Date(date);
+        if (isNaN(dateObj.getTime())) return "Invalid date";
+        return dateObj.toLocaleDateString("en-IN", {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+        });
+      } catch (error) {
+        return "Invalid date";
+      }
     };
 
     const formatCurrencyPDF = (amount) => {
-      if (!amount) return "₹0";
+      if (amount === undefined || amount === null) return "₹0";
       return new Intl.NumberFormat("en-IN", {
         style: "currency",
         currency: "INR",
@@ -137,13 +183,152 @@ const PatientProfile = () => {
       }).format(amount);
     };
 
+    const formatEmployeeNamesPDF = (employees) => {
+      if (!employees) return "N/A";
+      
+      if (Array.isArray(employees)) {
+        if (employees.length === 0) return "N/A";
+        const names = employees
+          .map((emp) => (typeof emp === "object" && emp !== null ? emp.name : "Unknown"))
+          .filter(name => name !== "Unknown");
+        return names.length > 0 ? names.join(", ") : "N/A";
+      }
+      
+      if (typeof employees === "object" && employees !== null && employees.name) {
+        return employees.name;
+      }
+      
+      return "N/A";
+    };
+
+    // Generate medicines HTML
+    let medicinesHTML = "";
+    if (data.counselling?.medicines && data.counselling.medicines.length > 0) {
+      const medicinesList = data.counselling.medicines
+        .map(med => `<span style="background: #e3f2fd; padding: 4px 8px; margin: 2px; border-radius: 3px; display: inline-block; font-size: 12px;">${med}</span>`)
+        .join(" ");
+      medicinesHTML = `<div style="margin-top: 15px;"><strong>Prescribed Medicines:</strong><br>${medicinesList}</div>`;
+    }
+
+    // Generate benefits HTML
+    let benefitsHTML = "";
+    if (data.counselling?.additionalbenefits && data.counselling.additionalbenefits.length > 0) {
+      const benefitsList = data.counselling.additionalbenefits
+        .map(benefit => `<span style="background: #d4edda; padding: 4px 8px; margin: 2px; border-radius: 3px; display: inline-block; font-size: 12px;">${benefit}</span>`)
+        .join(" ");
+      benefitsHTML = `<div style="margin-top: 15px;"><strong>Additional Benefits:</strong><br>${benefitsList}</div>`;
+    }
+
+    // Generate notes HTML
+    let notesHTML = "";
+    if (data.counselling?.notes) {
+      notesHTML = `<div style="margin-top: 15px; padding: 15px; background: #f8f9fa; border-radius: 5px;"><strong>Notes:</strong><br>${data.counselling.notes}</div>`;
+    }
+
+    // Generate reference HTML
+    let referenceHTML = "";
+    if (data.personal?.reference) {
+      referenceHTML = `<div style="margin-top: 15px; padding: 15px; background: #f8f9fa; border-radius: 5px;"><strong>Reference:</strong> ${data.personal.reference.name || "N/A"}</div>`;
+    }
+
+    // Generate surgery HTML - FIXED CONDITION
+    let surgeryHTML = "";
+    if (data.surgery) {
+      const hasSurgeryData = data.surgery.surgeryDate || 
+                             data.surgery.location || 
+                             data.surgery.OT || 
+                             data.surgery.doctor?.length > 0;
+      
+      if (hasSurgeryData) {
+        surgeryHTML = `
+          <div class="grid">
+            <div class="info-item"><span class="info-label">Surgery Date:</span> <span class="info-value">${formatDatePDF(data.surgery.surgeryDate)}</span></div>
+            <div class="info-item"><span class="info-label">Location:</span> <span class="info-value">${data.surgery.location || "N/A"}</span></div>
+            <div class="info-item"><span class="info-label">OT Number:</span> <span class="info-value">${data.surgery.OT || "N/A"}</span></div>
+            <div class="info-item"><span class="info-label">Technique:</span> <span class="info-value">${data.surgery.technique || "N/A"}</span></div>
+            <div class="info-item"><span class="info-label">Grafts Needed:</span> <span class="info-value">${data.surgery.graftsneed || "N/A"}</span></div>
+            <div class="info-item"><span class="info-label">Grafts Implanted:</span> <span class="info-value">${data.surgery.graftsImplanted || "N/A"}</span></div>
+          </div>
+          <div class="info-item"><span class="info-label">Donor Condition:</span> <span class="info-value">${data.surgery.donorCondition || "N/A"}</span></div>
+          
+          <h3 style="color: #2c5aa0; margin: 20px 0 10px 0;">Surgical Team</h3>
+          <div class="grid">
+            <div class="info-item"><span class="info-label">Doctor(s):</span> <span class="info-value">${formatEmployeeNamesPDF(data.surgery.doctor)}</span></div>
+            <div class="info-item"><span class="info-label">Senior Tech(s):</span> <span class="info-value">${formatEmployeeNamesPDF(data.surgery.seniorTech)}</span></div>
+            <div class="info-item"><span class="info-label">Implanter Right(s):</span> <span class="info-value">${formatEmployeeNamesPDF(data.surgery.implanterRight)}</span></div>
+            <div class="info-item"><span class="info-label">Implanter Left(s):</span> <span class="info-value">${formatEmployeeNamesPDF(data.surgery.implanterLeft)}</span></div>
+            <div class="info-item"><span class="info-label">Grafting Person(s):</span> <span class="info-value">${formatEmployeeNamesPDF(data.surgery.graftingPerson)}</span></div>
+            <div class="info-item"><span class="info-label">Helper(s):</span> <span class="info-value">${formatEmployeeNamesPDF(data.surgery.helper)}</span></div>
+          </div>
+        `;
+      } else {
+        surgeryHTML = '<p style="text-align: center; color: #666; padding: 20px;">No surgery details available</p>';
+      }
+    } else {
+      surgeryHTML = '<p style="text-align: center; color: #666; padding: 20px;">No surgery details available</p>';
+    }
+
+    // Generate PRP sessions HTML
+    let prpHTML = "";
+    if (data.afterSurgery?.prp && data.afterSurgery.prp.length > 0) {
+      const prpRows = data.afterSurgery.prp
+        .map((session, index) => `
+          <tr>
+            <td>PRP Session ${session.prpNumber || index + 1}</td>
+            <td>${formatDatePDF(session.date)}</td>
+          </tr>
+        `)
+        .join("");
+      prpHTML = `
+        <h3 style="color: #2c5aa0; margin: 20px 0 10px 0;">PRP Sessions</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Session Number</th>
+              <th>Date</th>
+            </tr>
+          </thead>
+          <tbody>${prpRows}</tbody>
+        </table>
+      `;
+    } else {
+      prpHTML = '<p style="color: #666; margin-top: 10px;">No PRP sessions scheduled</p>';
+    }
+
+    // Generate transactions HTML
+    let transactionsHTML = "";
+    if (data.payments?.transactions && data.payments.transactions.length > 0) {
+      const transactionRows = data.payments.transactions
+        .map(txn => `
+          <tr>
+            <td>${formatDatePDF(txn.date)}</td>
+            <td>${txn.paymentType || "N/A"}</td>
+            <td>${txn.branch || "N/A"}</td>
+            <td><strong>${formatCurrencyPDF(txn.amount)}</strong></td>
+          </tr>
+        `)
+        .join("");
+      transactionsHTML = `
+        <h3 style="color: #2c5aa0; margin: 20px 0 10px 0;">Transaction History</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Payment Type</th>
+              <th>Branch</th>
+              <th>Amount</th>
+            </tr>
+          </thead>
+          <tbody>${transactionRows}</tbody>
+        </table>
+      `;
+    }
+
     return `
       <!DOCTYPE html>
       <html>
         <head>
-          <title>Patient Medical Record - ${
-            data.personal?.name || "Unknown"
-          }</title>
+          <title>Patient Medical Record - ${data.personal?.name || "Unknown"}</title>
           <meta charset="UTF-8">
           <style>
             body { 
@@ -248,14 +433,8 @@ const PatientProfile = () => {
         <body>
           <div class="header">
             <h1>MEDICAL RECORD</h1>
-            <p style="margin: 5px 0;"><strong>Patient ID:</strong> ${
-              data._id || "N/A"
-            } &nbsp; | &nbsp; <strong>Date:</strong> ${new Date().toLocaleDateString(
-      "en-IN"
-    )}</p>
-            <p style="margin: 5px 0;"><strong>Status:</strong> <span style="background: #e9ecef; padding: 4px 12px; border-radius: 15px; font-weight: 600;">${(
-              data.ops?.status || "UNKNOWN"
-            ).replace("_", " ")}</span></p>
+            <p style="margin: 5px 0;"><strong>Patient ID:</strong> ${data._id || "N/A"} &nbsp; | &nbsp; <strong>Date:</strong> ${new Date().toLocaleDateString("en-IN")}</p>
+            <p style="margin: 5px 0;"><strong>Status:</strong> <span style="background: #e9ecef; padding: 4px 12px; border-radius: 15px; font-weight: 600;">${(data.ops?.status || "UNKNOWN").replace("_", " ")}</span></p>
           </div>
 
           <!-- Patient Information -->
@@ -268,15 +447,11 @@ const PatientProfile = () => {
               </div>
               <div class="info-item">
                 <span class="info-label">Age & Gender:</span>
-                <span class="info-value">${
-                  data.personal?.age || "N/A"
-                } years, ${data.personal?.gender || "N/A"}</span>
+                <span class="info-value">${data.personal?.age || "N/A"} years, ${data.personal?.gender || "N/A"}</span>
               </div>
               <div class="info-item">
                 <span class="info-label">Blood Group:</span>
-                <span class="info-value">${
-                  data.medical?.bloodGroup || "N/A"
-                }</span>
+                <span class="info-value">${data.medical?.bloodGroup || "N/A"}</span>
               </div>
               <div class="info-item">
                 <span class="info-label">Phone:</span>
@@ -288,97 +463,41 @@ const PatientProfile = () => {
               </div>
               <div class="info-item">
                 <span class="info-label">Profession:</span>
-                <span class="info-value">${
-                  data.personal?.profession || "N/A"
-                }</span>
+                <span class="info-value">${data.personal?.profession || "N/A"}</span>
               </div>
               <div class="info-item">
                 <span class="info-label">Branch:</span>
-                <span class="info-value">${
-                  data.personal?.branch || "N/A"
-                }</span>
+                <span class="info-value">${data.personal?.branch || "N/A"}</span>
               </div>
               <div class="info-item">
                 <span class="info-label">Visit Date:</span>
-                <span class="info-value">${formatDatePDF(
-                  data.personal?.visitDate
-                )}</span>
+                <span class="info-value">${formatDatePDF(data.personal?.visitDate)}</span>
               </div>
             </div>
             <div class="info-item">
               <span class="info-label">Address:</span>
               <span class="info-value">${data.personal?.address || "N/A"}</span>
             </div>
-            ${
-              data.personal?.reference
-                ? `
-            <div style="margin-top: 15px; padding: 15px; background: #f8f9fa; border-radius: 5px;">
-              <strong>Reference:</strong> ${
-                data.personal.reference.name || "N/A"
-              }
-            </div>
-            `
-                : ""
-            }
+            ${referenceHTML}
           </div>
-
 
           <!-- Counselling Details -->
           <div class="section">
             <h2>COUNSELLING DETAILS</h2>
             <div class="grid">
-              <div class="info-item"><span class="info-label">Counsellor:</span> <span class="info-value">${
-                data.counselling?.counsellor?.name || "N/A"
-              }</span></div>
-              <div class="info-item"><span class="info-label">Technique Suggested:</span> <span class="info-value">${
-                data.counselling?.techniqueSuggested || "N/A"
-              }</span></div>
-              <div class="info-item"><span class="info-label">Grafts Suggested:</span> <span class="info-value">${
-                data.counselling?.graftsSuggested || "N/A"
-              }</span></div>
-              <div class="info-item"><span class="info-label">Final Package:</span> <span class="info-value amount-neutral">${formatCurrencyPDF(
-                data.counselling?.finlpackage
-              )}</span></div>
-              <div class="info-item"><span class="info-label">Ready for Surgery:</span> <span class="info-value">${
-                data.counselling?.readyForSurgery ? "✅ Yes" : "❌ No"
-              }</span></div>
-              <div class="info-item"><span class="info-label">Hair Loss Type:</span> <span class="info-value">${
-                data.counselling?.hairlossType || "N/A"
-              }</span></div>
-              <div class="info-item"><span class="info-label">Area of Concern:</span> <span class="info-value">${
-                data.counselling?.areaofConcern || "N/A"
-              }</span></div>
-              <div class="info-item"><span class="info-label">Hair Loss Duration:</span> <span class="info-value">${
-                data.counselling?.hairlossduration || "N/A"
-              }</span></div>
+              <div class="info-item"><span class="info-label">Counsellor:</span> <span class="info-value">${data.counselling?.counsellor?.name || "N/A"}</span></div>
+              <div class="info-item"><span class="info-label">Technique Suggested:</span> <span class="info-value">${data.counselling?.techniqueSuggested || "N/A"}</span></div>
+              <div class="info-item"><span class="info-label">Grafts Suggested:</span> <span class="info-value">${data.counselling?.graftsSuggested || "N/A"}</span></div>
+              <div class="info-item"><span class="info-label">Final Package:</span> <span class="info-value amount-neutral">${formatCurrencyPDF(data.counselling?.finlpackage)}</span></div>
+              <div class="info-item"><span class="info-label">Ready for Surgery:</span> <span class="info-value">${data.counselling?.readyForSurgery ? "✅ Yes" : "❌ No"}</span></div>
+              <div class="info-item"><span class="info-label">Hair Loss Type:</span> <span class="info-value">${data.counselling?.hairlossType || "N/A"}</span></div>
+              <div class="info-item"><span class="info-label">Area of Concern:</span> <span class="info-value">${data.counselling?.areaofConcern || "N/A"}</span></div>
+              <div class="info-item"><span class="info-label">Hair Loss Duration:</span> <span class="info-value">${data.counselling?.hairlossduration || "N/A"}</span></div>
             </div>
-            ${
-              data.counselling?.medicines &&
-              data.counselling.medicines.length > 0
-                ? `
-            <div style="margin-top: 15px;">
-              <strong>Prescribed Medicines:</strong><br>
-              ${data.counselling.medicines
-                .map(
-                  (med) =>
-                    `<span style="background: #e3f2fd; padding: 4px 8px; margin: 2px; border-radius: 3px; display: inline-block; font-size: 12px;">${med}</span>`
-                )
-                .join(" ")}
-            </div>
-            `
-                : ""
-            }
-            ${
-              data.counselling?.notes
-                ? `
-            <div style="margin-top: 15px; padding: 15px; background: #f8f9fa; border-radius: 5px;">
-              <strong>Notes:</strong><br>${data.counselling.notes}
-            </div>
-            `
-                : ""
-            }
+            ${medicinesHTML}
+            ${benefitsHTML}
+            ${notesHTML}
           </div>
-
 
           <!-- Medical Information -->
           <div class="section">
@@ -387,161 +506,49 @@ const PatientProfile = () => {
               <div>
                 <h3 style="color: #2c5aa0; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 5px;">Vital Signs</h3>
                 <div class="grid">
-                  <div class="info-item"><span class="info-label">Blood Pressure:</span> <span class="info-value">${
-                    data.medical?.bp || "N/A"
-                  }</span></div>
-                  <div class="info-item"><span class="info-label">Sugar Level:</span> <span class="info-value">${
-                    data.medical?.sugar || "N/A"
-                  }</span></div>
-                  <div class="info-item"><span class="info-label">Pulse Rate:</span> <span class="info-value">${
-                    data.medical?.pulse || "N/A"
-                  }</span></div>
-                  <div class="info-item"><span class="info-label">Weight:</span> <span class="info-value">${
-                    data.medical?.weight || "N/A"
-                  }</span></div>
+                  <div class="info-item"><span class="info-label">Blood Pressure:</span> <span class="info-value">${data.medical?.bp || "N/A"}</span></div>
+                  <div class="info-item"><span class="info-label">Sugar Level:</span> <span class="info-value">${data.medical?.sugar || "N/A"}</span></div>
+                  <div class="info-item"><span class="info-label">Pulse Rate:</span> <span class="info-value">${data.medical?.pulse || "N/A"}</span></div>
+                  <div class="info-item"><span class="info-label">Weight:</span> <span class="info-value">${data.medical?.weight || "N/A"}</span></div>
                 </div>
               </div>
               <div>
                 <h3 style="color: #2c5aa0; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 5px;">Medical Background</h3>
-                <div class="info-item"><span class="info-label">Allergies:</span> <span class="info-value">${
-                  data.medical?.allergies || "None"
-                }</span></div>
-                <div class="info-item"><span class="info-label">Medical History:</span> <span class="info-value">${
-                  data.medical?.medicalHistory || "None"
-                }</span></div>
-                <div class="info-item"><span class="info-label">HIV Status:</span> <span class="info-value">${
-                  data.medical?.hiv || "Not tested"
-                }</span></div>
-                <div class="info-item"><span class="info-label">HCV Status:</span> <span class="info-value">${
-                  data.medical?.hcv || "Not tested"
-                }</span></div>
+                <div class="info-item"><span class="info-label">Allergies:</span> <span class="info-value">${data.medical?.allergies || "None"}</span></div>
+                <div class="info-item"><span class="info-label">Medical History:</span> <span class="info-value">${data.medical?.medicalHistory || "None"}</span></div>
+                <div class="info-item"><span class="info-label">HIV Status:</span> <span class="info-value">${data.medical?.hiv || "Not tested"}</span></div>
+                <div class="info-item"><span class="info-label">HCV Status:</span> <span class="info-value">${data.medical?.hcv || "Not tested"}</span></div>
               </div>
             </div>
           </div>
 
-          
           <!-- Surgery Information -->
           <div class="section">
             <h2>SURGERY INFORMATION</h2>
-            ${
-              data.surgery?.surgeryDate
-                ? `
+            ${surgeryHTML}
+          </div>
+
+          <!-- After Surgery Care -->
+          <div class="section">
+            <h2>AFTER SURGERY CARE</h2>
             <div class="grid">
-              <div class="info-item"><span class="info-label">Surgery Date:</span> <span class="info-value">${formatDatePDF(
-                data.surgery.surgeryDate
-              )}</span></div>
-              <div class="info-item"><span class="info-label">Location:</span> <span class="info-value">${
-                data.surgery.location || "N/A"
-              }</span></div>
-              <div class="info-item"><span class="info-label">OT Number:</span> <span class="info-value">${
-                data.surgery.OT || "N/A"
-              }</span></div>
-              <div class="info-item"><span class="info-label">Technique:</span> <span class="info-value">${
-                data.surgery.technique || "N/A"
-              }</span></div>
-              <div class="info-item"><span class="info-label">Grafts Needed:</span> <span class="info-value">${
-                data.surgery.graftsneed || "N/A"
-              }</span></div>
-              <div class="info-item"><span class="info-label">Grafts Implanted:</span> <span class="info-value">${
-                data.surgery.graftsImplanted || "N/A"
-              }</span></div>
+              <div class="info-item"><span class="info-label">Head Wash Date:</span> <span class="info-value">${formatDatePDF(data.afterSurgery?.headwashDate)}</span></div>
+              <div class="info-item"><span class="info-label">Bandage Removal Date:</span> <span class="info-value">${formatDatePDF(data.afterSurgery?.bandageRemovalDate)}</span></div>
             </div>
-            <div class="info-item"><span class="info-label">Donor Condition:</span> <span class="info-value">${
-              data.surgery.donorCondition || "N/A"
-            }</span></div>
-            
-            <h3 style="color: #2c5aa0; margin: 20px 0 10px 0;">Surgical Team</h3>
-            <div class="grid">
-              <div class="info-item"><span class="info-label">Doctor:</span> <span class="info-value">${
-                data.surgery.doctor?.name || "N/A"
-              }</span></div>
-              <div class="info-item"><span class="info-label">Senior Tech:</span> <span class="info-value">${
-                data.surgery.seniorTech?.name || "N/A"
-              }</span></div>
-              <div class="info-item"><span class="info-label">Implanter (Right):</span> <span class="info-value">${
-                data.surgery.implanterRight?.name || "N/A"
-              }</span></div>
-              <div class="info-item"><span class="info-label">Implanter (Left):</span> <span class="info-value">${
-                data.surgery.implanterLeft?.name || "N/A"
-              }</span></div>
-             
-              <div class="info-item"><span class="info-label">Helpers:</span> <span class="info-value">${
-                data.surgery.helpers && data.surgery.helpers.length > 0
-                  ? data.surgery.helpers.map((h) => h.name || h).join(", ")
-                  : "N/A"
-              }</span></div>
-            </div>
-            ${
-              data.surgery.surgeryNotes
-                ? `
-            <div style="margin-top: 15px; padding: 15px; background: #f8f9fa; border-radius: 5px;">
-              <strong>Surgery Notes:</strong><br>${data.surgery.surgeryNotes}
-            </div>
-            `
-                : ""
-            }
-            `
-                : `
-            <p style="text-align: center; color: #666; padding: 20px;">No surgery scheduled yet</p>
-            `
-            }
+            ${prpHTML}
           </div>
 
           <!-- Payment Information -->
           <div class="section">
             <h2>PAYMENT INFORMATION</h2>
             <div class="grid">
-              <div class="info-item"><span class="info-label">Total Amount:</span> <span class="info-value amount-neutral">${formatCurrencyPDF(
-                data.payments?.totalAmount
-              )}</span></div>
-              <div class="info-item"><span class="info-label">Amount Received:</span> <span class="info-value amount-positive">${formatCurrencyPDF(
-                data.payments?.amountReceived
-              )}</span></div>
-              <div class="info-item"><span class="info-label">Total Discount:</span> <span class="info-value amount-positive">${formatCurrencyPDF(
-                data.payments?.discount
-              )}</span></div>
-              <div class="info-item"><span class="info-label">Pending Amount:</span> <span class="info-value amount-negative">${formatCurrencyPDF(
-                data.payments?.pendingAmount
-              )}</span></div>
-              <div class="info-item"><span class="info-label">Medicine Amount:</span> <span class="info-value amount-neutral">${formatCurrencyPDF(
-                data.payments?.medicineAmount
-              )}</span></div>
+              <div class="info-item"><span class="info-label">Total Amount:</span> <span class="info-value amount-neutral">${formatCurrencyPDF(data.payments?.totalAmount)}</span></div>
+              <div class="info-item"><span class="info-label">Amount Received:</span> <span class="info-value amount-positive">${formatCurrencyPDF(data.payments?.amountReceived)}</span></div>
+              <div class="info-item"><span class="info-label">Total Discount:</span> <span class="info-value amount-positive">${formatCurrencyPDF(data.payments?.discount)}</span></div>
+              <div class="info-item"><span class="info-label">Pending Amount:</span> <span class="info-value amount-negative">${formatCurrencyPDF(data.payments?.pendingAmount)}</span></div>
+              <div class="info-item"><span class="info-label">Medicine Amount:</span> <span class="info-value amount-neutral">${formatCurrencyPDF(data.payments?.medicineAmount)}</span></div>
             </div>
-            
-            ${
-              data.payments?.transactions &&
-              data.payments.transactions.length > 0
-                ? `
-            <h3 style="color: #2c5aa0; margin: 20px 0 10px 0;">Transaction History</h3>
-            <table>
-              <thead>
-                <tr>
-                  <th>Date</th>
-                  <th>Payment Type</th>
-                  <th>Procedure</th>
-                  <th>Branch</th>
-                  <th>Amount</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${data.payments.transactions
-                  .map(
-                    (txn) => `
-                  <tr>
-                    <td>${formatDatePDF(txn.date)}</td>
-                    <td>${txn.paymentType || "N/A"}</td>
-                    <td>${txn.procedure || "N/A"}</td>
-                    <td>${txn.branch || "N/A"}</td>
-                    <td><strong>${formatCurrencyPDF(txn.amount)}</strong></td>
-                  </tr>
-                `
-                  )
-                  .join("")}
-              </tbody>
-            </table>
-            `
-                : ""
-            }
+            ${transactionsHTML}
           </div>
 
           <!-- Documents Section -->
@@ -550,36 +557,26 @@ const PatientProfile = () => {
             <div class="grid">
               <div class="info-item">
                 <span class="info-label">Patient Images:</span>
-                <span class="info-value">${
-                  data.documents?.images?.length || 0
-                } file(s)</span>
+                <span class="info-value">${data.documents?.images?.length || 0} file(s)</span>
               </div>
               <div class="info-item">
                 <span class="info-label">Consent Forms:</span>
-                <span class="info-value">${
-                  data.documents?.consentForm?.length || 0
-                } file(s)</span>
+                <span class="info-value">${data.documents?.consentForm?.length || 0} file(s)</span>
               </div>
               <div class="info-item">
                 <span class="info-label">Surgery Forms:</span>
-                <span class="info-value">${
-                  data.documents?.suregeryForm?.length || 0
-                } file(s)</span>
+                <span class="info-value">${data.documents?.suregeryForm?.length || 0} file(s)</span>
               </div>
               <div class="info-item">
                 <span class="info-label">Consult Forms:</span>
-                <span class="info-value">${
-                  data.documents?.consultForm?.length || 0
-                } file(s)</span>
+                <span class="info-value">${data.documents?.consultForm?.length || 0} file(s)</span>
               </div>
             </div>
           </div>
 
           <div class="footer">
             <p><strong>This is an electronically generated medical record. No signature required.</strong></p>
-            <p>Generated on ${new Date().toLocaleDateString(
-              "en-IN"
-            )} at ${new Date().toLocaleTimeString("en-IN")}</p>
+            <p>Generated on ${new Date().toLocaleDateString("en-IN")} at ${new Date().toLocaleTimeString("en-IN")}</p>
           </div>
         </body>
       </html>
@@ -1033,148 +1030,251 @@ const PatientProfile = () => {
                 </div>
               </div>
 
-              {/* Surgery Information - ALWAYS SHOW */}
+              {/* Surgery Information - FIXED CONDITION */}
               <div className="mb-8">
                 <h2 className="text-xl font-bold text-gray-900 mb-4 border-b pb-2">
                   SURGERY INFORMATION
                 </h2>
-                {patientData.surgery?.surgeryDate ? (
-                  <>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
-                      <div>
-                        <label className="block text-sm text-gray-600 mb-1">
-                          Surgery Date
-                        </label>
-                        <p className="font-medium">
-                          {formatDate(patientData.surgery.surgeryDate)}
-                        </p>
-                      </div>
-                      <div>
-                        <label className="block text-sm text-gray-600 mb-1">
-                          Location
-                        </label>
-                        <p className="font-medium">
-                          {patientData.surgery.location || "N/A"}
-                        </p>
-                      </div>
-                      <div>
-                        <label className="block text-sm text-gray-600 mb-1">
-                          OT Number
-                        </label>
-                        <p className="font-medium">
-                          {patientData.surgery.OT || "N/A"}
-                        </p>
-                      </div>
-                      <div>
-                        <label className="block text-sm text-gray-600 mb-1">
-                          Technique
-                        </label>
-                        <p className="font-medium">
-                          {patientData.surgery.technique || "N/A"}
-                        </p>
-                      </div>
-                      <div>
-                        <label className="block text-sm text-gray-600 mb-1">
-                          Grafts Needed
-                        </label>
-                        <p className="font-medium">
-                          {patientData.surgery.graftsneed || "N/A"}
-                        </p>
-                      </div>
-                      <div>
-                        <label className="block text-sm text-gray-600 mb-1">
-                          Grafts Implanted
-                        </label>
-                        <p className="font-medium">
-                          {patientData.surgery.graftsImplanted || "N/A"}
-                        </p>
-                      </div>
-                    </div>
+                
+                {/* Check if surgery object exists and has any data */}
+                {patientData.surgery ? (
+                  (() => {
+                    const hasSurgeryData = 
+                      patientData.surgery.surgeryDate || 
+                      patientData.surgery.location || 
+                      patientData.surgery.OT || 
+                      (patientData.surgery.doctor && patientData.surgery.doctor.length > 0);
+                    
+                    return hasSurgeryData ? (
+                      <>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+                          {patientData.surgery.surgeryDate && (
+                            <div>
+                              <label className="block text-sm text-gray-600 mb-1">
+                                Surgery Date
+                              </label>
+                              <p className="font-medium">
+                                {formatDate(patientData.surgery.surgeryDate)}
+                              </p>
+                            </div>
+                          )}
+                          {patientData.surgery.location && (
+                            <div>
+                              <label className="block text-sm text-gray-600 mb-1">
+                                Location
+                              </label>
+                              <p className="font-medium">
+                                {patientData.surgery.location || "N/A"}
+                              </p>
+                            </div>
+                          )}
+                          {patientData.surgery.OT && (
+                            <div>
+                              <label className="block text-sm text-gray-600 mb-1">
+                                OT Number
+                              </label>
+                              <p className="font-medium">
+                                {patientData.surgery.OT || "N/A"}
+                              </p>
+                            </div>
+                          )}
+                          {patientData.surgery.technique && (
+                            <div>
+                              <label className="block text-sm text-gray-600 mb-1">
+                                Technique
+                              </label>
+                              <p className="font-medium">
+                                {patientData.surgery.technique || "N/A"}
+                              </p>
+                            </div>
+                          )}
+                          {(patientData.surgery.graftsneed || patientData.surgery.graftsneed === 0) && (
+                            <div>
+                              <label className="block text-sm text-gray-600 mb-1">
+                                Grafts Needed
+                              </label>
+                              <p className="font-medium">
+                                {patientData.surgery.graftsneed || "N/A"}
+                              </p>
+                            </div>
+                          )}
+                          {(patientData.surgery.graftsImplanted || patientData.surgery.graftsImplanted === 0) && (
+                            <div>
+                              <label className="block text-sm text-gray-600 mb-1">
+                                Grafts Implanted
+                              </label>
+                              <p className="font-medium">
+                                {patientData.surgery.graftsImplanted || "N/A"}
+                              </p>
+                            </div>
+                          )}
+                        </div>
 
-                    <div className="mb-4">
-                      <label className="block text-sm text-gray-600 mb-1">
-                        Donor Condition
-                      </label>
-                      <p className="font-medium">
-                        {patientData.surgery.donorCondition || "N/A"}
-                      </p>
-                    </div>
+                        {patientData.surgery.donorCondition && (
+                          <div className="mb-4">
+                            <label className="block text-sm text-gray-600 mb-1">
+                              Donor Condition
+                            </label>
+                            <p className="font-medium">
+                              {patientData.surgery.donorCondition || "N/A"}
+                            </p>
+                          </div>
+                        )}
 
-                    {/* Surgical Team */}
-                    <div className="mb-4">
-                      <h3 className="text-lg font-semibold text-gray-800 mb-3">
-                        Surgical Team
-                      </h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        <div>
-                          <label className="block text-sm text-gray-600 mb-1">
-                            Doctor
-                          </label>
-                          <p className="font-medium">
-                            {patientData.surgery.doctor?.name || "N/A"}
-                          </p>
+                        {/* Surgical Team */}
+                        <div className="mb-4">
+                          <h3 className="text-lg font-semibold text-gray-800 mb-3">
+                            Surgical Team
+                          </h3>
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {patientData.surgery.doctor && patientData.surgery.doctor.length > 0 && (
+                              <div>
+                                <label className="block text-sm text-gray-600 mb-1">
+                                  Doctor(s)
+                                </label>
+                                <p className="font-medium">
+                                  {formatEmployeeNames(patientData.surgery.doctor)}
+                                </p>
+                              </div>
+                            )}
+                            {patientData.surgery.seniorTech && patientData.surgery.seniorTech.length > 0 && (
+                              <div>
+                                <label className="block text-sm text-gray-600 mb-1">
+                                  Senior Technician(s)
+                                </label>
+                                <p className="font-medium">
+                                  {formatEmployeeNames(patientData.surgery.seniorTech)}
+                                </p>
+                              </div>
+                            )}
+                            {patientData.surgery.implanterRight && patientData.surgery.implanterRight.length > 0 && (
+                              <div>
+                                <label className="block text-sm text-gray-600 mb-1">
+                                  Implanter Right(s)
+                                </label>
+                                <p className="font-medium">
+                                  {formatEmployeeNames(patientData.surgery.implanterRight)}
+                                </p>
+                              </div>
+                            )}
+                            {patientData.surgery.implanterLeft && patientData.surgery.implanterLeft.length > 0 && (
+                              <div>
+                                <label className="block text-sm text-gray-600 mb-1">
+                                  Implanter Left(s)
+                                </label>
+                                <p className="font-medium">
+                                  {formatEmployeeNames(patientData.surgery.implanterLeft)}
+                                </p>
+                              </div>
+                            )}
+                            {patientData.surgery.graftingPerson && patientData.surgery.graftingPerson.length > 0 && (
+                              <div>
+                                <label className="block text-sm text-gray-600 mb-1">
+                                  Grafting Person(s)
+                                </label>
+                                <p className="font-medium">
+                                  {formatEmployeeNames(patientData.surgery.graftingPerson)}
+                                </p>
+                              </div>
+                            )}
+                            {patientData.surgery.helper && patientData.surgery.helper.length > 0 && (
+                              <div>
+                                <label className="block text-sm text-gray-600 mb-1">
+                                  Helper(s)
+                                </label>
+                                <p className="font-medium">
+                                  {formatEmployeeNames(patientData.surgery.helper)}
+                                </p>
+                              </div>
+                            )}
+                          </div>
                         </div>
-                        <div>
-                          <label className="block text-sm text-gray-600 mb-1">
-                            Senior Technician
-                          </label>
-                          <p className="font-medium">
-                            {patientData.surgery.seniorTech?.name || "N/A"}
-                          </p>
-                        </div>
-                        <div>
-                          <label className="block text-sm text-gray-600 mb-1">
-                            Implanter (Right)
-                          </label>
-                          <p className="font-medium">
-                            {patientData.surgery.implanterRight?.name || "N/A"}
-                          </p>
-                        </div>
-                        <div>
-                          <label className="block text-sm text-gray-600 mb-1">
-                            Implanter (Left)
-                          </label>
-                          <p className="font-medium">
-                            {patientData.surgery.implanterLeft?.name || "N/A"}
-                          </p>
-                        </div>
-                       
-                        <div>
-                          <label className="block text-sm text-gray-600 mb-1">
-                            Helpers
-                          </label>
-                          <p className="font-medium">
-                            {patientData.surgery.helpers &&
-                            patientData.surgery.helpers.length > 0
-                              ? patientData.surgery.helpers
-                                  .map((h) => h.name || h)
-                                  .join(", ")
-                              : "N/A"}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Surgery Notes */}
-                    {patientData.surgery.surgeryNotes && (
-                      <div className="mt-4">
-                        <label className="block text-sm text-gray-600 mb-1">
-                          Surgery Notes
-                        </label>
-                        <p className="font-medium bg-gray-50 p-3 rounded border">
-                          {patientData.surgery.surgeryNotes}
+                      </>
+                    ) : (
+                      <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+                        <p className="text-gray-500 text-lg">
+                          Surgery details not yet entered
+                        </p>
+                        <p className="text-gray-400 text-sm mt-2">
+                          Surgery details will appear here once entered
                         </p>
                       </div>
-                    )}
-                  </>
+                    );
+                  })()
                 ) : (
                   <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
                     <p className="text-gray-500 text-lg">
-                      No surgery scheduled yet
+                      No surgery details available
                     </p>
                     <p className="text-gray-400 text-sm mt-2">
-                      Surgery details will appear here once scheduled
+                      Surgery details will appear here once entered
                     </p>
+                  </div>
+                )}
+              </div>
+
+              {/* After Surgery Care */}
+              <div className="mb-8">
+                <h2 className="text-xl font-bold text-gray-900 mb-4 border-b pb-2">
+                  AFTER SURGERY CARE
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+                  <div>
+                    <label className="block text-sm text-gray-600 mb-1">
+                      Head Wash Date
+                    </label>
+                    <p className="font-medium">
+                      {formatDate(patientData.afterSurgery?.headwashDate)}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-600 mb-1">
+                      Bandage Removal Date
+                    </label>
+                    <p className="font-medium">
+                      {formatDate(patientData.afterSurgery?.bandageRemovalDate)}
+                    </p>
+                  </div>
+                </div>
+
+                {patientData.afterSurgery?.prp && patientData.afterSurgery.prp.length > 0 ? (
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                      <Droplet className="text-blue-600" size={20} />
+                      PRP Sessions
+                    </h3>
+                    <div className="overflow-x-auto">
+                      <table className="w-full border-collapse border border-gray-300">
+                        <thead>
+                          <tr className="bg-gray-100">
+                            <th className="border border-gray-300 px-4 py-2 text-left text-sm font-medium text-gray-700">
+                              Session Number
+                            </th>
+                            <th className="border border-gray-300 px-4 py-2 text-left text-sm font-medium text-gray-700">
+                              Date
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {patientData.afterSurgery.prp.map((session, index) => (
+                            <tr key={index} className="hover:bg-gray-50">
+                              <td className="border border-gray-300 px-4 py-2 text-sm">
+                                PRP Session {session.prpNumber || index + 1}
+                              </td>
+                              <td className="border border-gray-300 px-4 py-2 text-sm flex items-center gap-1">
+                                <Clock size={14} className="text-gray-500" />
+                                {formatDate(session.date)}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-8 bg-gray-50 rounded-lg border border-gray-200">
+                    <Droplet className="mx-auto text-gray-400 mb-2" size={32} />
+                    <p className="text-gray-500">No PRP sessions scheduled</p>
                   </div>
                 )}
               </div>
@@ -1186,7 +1286,7 @@ const PatientProfile = () => {
                 </h2>
 
                 {/* Payment Summary */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
                   <div className="bg-gray-50 p-4 rounded border text-center">
                     <label className="block text-sm text-gray-600 mb-1">
                       Total Amount
@@ -1247,9 +1347,6 @@ const PatientProfile = () => {
                                 Payment Type
                               </th>
                               <th className="border border-gray-300 px-4 py-2 text-left text-sm font-medium text-gray-700">
-                                Procedure
-                              </th>
-                              <th className="border border-gray-300 px-4 py-2 text-left text-sm font-medium text-gray-700">
                                 Branch
                               </th>
                               <th className="border border-gray-300 px-4 py-2 text-right text-sm font-medium text-gray-700">
@@ -1268,9 +1365,6 @@ const PatientProfile = () => {
                                     {transaction.paymentType || "N/A"}
                                   </td>
                                   <td className="border border-gray-300 px-4 py-2 text-sm">
-                                    {transaction.procedure || "N/A"}
-                                  </td>
-                                  <td className="border border-gray-300 px-4 py-2 text-sm">
                                     {transaction.branch || "N/A"}
                                   </td>
                                   <td className="border border-gray-300 px-4 py-2 text-sm text-right font-medium">
@@ -1286,7 +1380,7 @@ const PatientProfile = () => {
                   )}
               </div>
 
-              {/* Documents Section - Enhanced */}
+              {/* Documents Section */}
               <div className="mb-8">
                 <h2 className="text-xl font-bold text-gray-900 mb-4 border-b pb-2">
                   DOCUMENTS & ATTACHMENTS

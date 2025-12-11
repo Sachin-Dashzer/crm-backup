@@ -73,29 +73,37 @@ const patientSchema = new mongoose.Schema(
       graftsneed: Number,
       graftsImplanted: Number,
       donorCondition: String,
-      doctor: {
+      doctor: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: "Employee",
-      },
-      seniorTech: {
+      }],
+      seniorTech: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: "Employee",
-      },
-      implanterRight: {
+      }],
+      implanterRight: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: "Employee",
-      },
-      implanterLeft: {
+      }],
+      implanterLeft: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: "Employee",
-      },
-      graftingPerson: {
+      }],
+      graftingPerson: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: "Employee",
-      },
-      helpers: [{
+      }],
+      helper: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: "Employee",
+      }],
+    },
+    afterSurgery: {
+      headwashDate: Date,
+      bandageRemovalDate: Date,
+      prp: [{
+        prpNumber: Number,
+        date: Date,
       }],
     },
     payments: {
@@ -149,7 +157,10 @@ patientSchema.pre("save", function (next) {
     patient.payments.totalAmount = patient.counselling.finlpackage;
   }
 
-  if (patient.surgery?.doctor) {
+  // Check if doctor array has any entries
+  const hasDoctor = patient.surgery?.doctor && patient.surgery.doctor.length > 0;
+
+  if (hasDoctor) {
     patient.ops.status = "CLOSED";
   } else if (
     patient.counselling?.counsellor &&
@@ -168,5 +179,6 @@ patientSchema.pre("save", function (next) {
 
   next();
 });
+
 export default mongoose.models.Patient ||
   mongoose.model("Patient", patientSchema);

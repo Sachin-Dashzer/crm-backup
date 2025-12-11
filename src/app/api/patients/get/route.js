@@ -46,9 +46,7 @@ const handler = async (req) => {
         select: "name",
         model: "Employee",
       })
-      .sort({ createdAt: -1 }); // Optional: sort by latest patients first
-
-    // const patientsId = patients.map(patient => patient._id);
+      .sort({ createdAt: -1 });
 
     return NextResponse.json(
       {
@@ -64,6 +62,7 @@ const handler = async (req) => {
       {
         success: false,
         error: "Failed to fetch patients",
+        details: error.message,
       },
       { status: 500 }
     );

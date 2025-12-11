@@ -5,6 +5,7 @@ import { useToast } from "@/components/Toast";
 import InputField from "@/components/InputField";
 import ReceptionSidebar from "@/components/ReceptionSidebar";
 import {
+  Eye, Download, Plus,
   Upload,
   X,
   FileText,
@@ -16,8 +17,14 @@ import {
   FileUp,
   CheckCircle,
   UserPlus,
+  Droplet,
+  Save,
+  ArrowLeft,
+  Edit3,
 } from "lucide-react";
 
+
+// Reuse the BenefitsManager component from edit page
 const BenefitsManager = ({ benefits, onChange, onAdd, onRemove }) => {
   const predefinedBenefits = [
     "5 Free PRP Sessions",
@@ -50,7 +57,6 @@ const BenefitsManager = ({ benefits, onChange, onAdd, onRemove }) => {
         Additional Benefits *
       </label>
 
-      {/* Predefined Benefits as Radio-style Checkboxes */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
         {predefinedBenefits.map((benefit) => (
           <label
@@ -68,7 +74,6 @@ const BenefitsManager = ({ benefits, onChange, onAdd, onRemove }) => {
         ))}
       </div>
 
-      {/* Custom Benefits Input */}
       <div className="mb-4">
         <label className="block text-sm font-medium text-gray-700 mb-2">
           Add Custom Benefit
@@ -99,7 +104,6 @@ const BenefitsManager = ({ benefits, onChange, onAdd, onRemove }) => {
         </div>
       </div>
 
-      {/* Selected Benefits Display */}
       {benefits.length > 0 && (
         <div className="mt-4">
           <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -128,14 +132,72 @@ const BenefitsManager = ({ benefits, onChange, onAdd, onRemove }) => {
   );
 };
 
+// Reuse the PRPManager component from edit page
+const PRPManager = ({ prpSessions, onChange, onAdd, onRemove }) => {
+  return (
+    <div className="md:col-span-2">
+      <h4 className="text-lg font-semibold text-gray-700 mb-4">PRP Sessions</h4>
+      {prpSessions && prpSessions.length > 0 ? (
+        <div className="space-y-4">
+          {prpSessions.map((session, index) => (
+            <div
+              key={index}
+              className="bg-gray-50 p-6 rounded-lg border relative"
+            >
+              <button
+                type="button"
+                onClick={() => onRemove(index)}
+                className="absolute top-4 right-4 text-red-500 hover:text-red-700 p-1"
+                title="Remove PRP Session"
+              >
+                <X size={20} />
+              </button>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pr-12">
+                <InputField
+                  label="PRP Number"
+                  type="number"
+                  value={session.prpNumber || ""}
+                  onChange={(e) => onChange(index, "prpNumber", e.target.value)}
+                  placeholder="Enter PRP session number"
+                />
+                <InputField
+                  label="Date"
+                  type="date"
+                  value={session.date ? session.date.split("T")[0] : ""}
+                  onChange={(e) => onChange(index, "date", e.target.value)}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="text-gray-500 text-sm mb-4">No PRP sessions added yet</p>
+      )}
+      <button
+        type="button"
+        className="mt-4 px-6 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors duration-200 font-medium flex items-center gap-2"
+        onClick={onAdd}
+      >
+        <Plus size={20} />
+        Add PRP Session
+      </button>
+    </div>
+  );
+};
+
 const StepHeader = ({ icon: Icon, title, description, color }) => (
   <div className="text-center mb-8">
-    <Icon className={`mx-auto h-16 w-16 text-${color}-500 mb-4`} />
+    <div
+      className={`mx-auto h-16 w-16 text-${color}-500 mb-4 flex items-center justify-center`}
+    >
+      <Icon size={64} />
+    </div>
     <h3 className="text-2xl font-bold text-gray-900">{title}</h3>
     <p className="text-gray-600">{description}</p>
   </div>
 );
 
+// DocumentUpload component with view/download functionality
 const DocumentUpload = ({
   title,
   icon: Icon,
@@ -146,71 +208,225 @@ const DocumentUpload = ({
   accept,
   uploadId,
   isUploading,
-}) => (
-  <div className="bg-gray-50 p-6 rounded-lg border-2 border-dashed border-gray-300">
-    <div className="text-center">
-      <Icon className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-      <h4 className="text-lg font-semibold text-gray-900 mb-2">{title}</h4>
-      <input
-        type="file"
-        multiple
-        accept={accept}
-        onChange={(e) => onUpload(e.target.files)}
-        className="hidden"
-        id={uploadId}
-        disabled={isUploading}
-      />
-      <label
-        htmlFor={uploadId}
-        className={`inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white ${
-          isUploading
-            ? "bg-gray-400 cursor-not-allowed"
-            : `bg-${color}-600 hover:bg-${color}-700 cursor-pointer`
-        } transition-colors duration-200`}
-      >
-        <Upload className="mr-2" size={20} />
-        {isUploading ? "Uploading..." : "Choose Files"}
-      </label>
-      {files.length > 0 && (
-        <div className="mt-4">
-          <h5 className="text-sm font-medium text-gray-700 mb-2">
-            Uploaded Files ({files.length}):
-          </h5>
-          <div className="space-y-2 max-h-60 overflow-y-auto">
-            {files.map((filePath, index) => (
-              <div
-                key={index}
-                className="flex items-center justify-between bg-white px-4 py-3 rounded-md border"
-              >
-                <div className="flex items-center space-x-3 flex-1 min-w-0">
-                  <Icon
-                    size={16}
-                    className={`text-${color}-500 flex-shrink-0`}
-                  />
-                  <div className="min-w-0 flex-1">
-                    <span className="text-sm font-medium text-gray-700 block truncate">
-                      {filePath.split("/").pop()}
-                    </span>
-                    <p className="text-xs text-gray-500 truncate">
-                      Path: {filePath}
-                    </p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => onRemove(index)}
-                  className="text-red-500 hover:text-red-700 p-1 ml-2 flex-shrink-0"
-                >
-                  <X size={16} />
-                </button>
+}) => {
+  const [viewingFile, setViewingFile] = useState(null);
+
+  const isPDF = (filename) => {
+    return filename.toLowerCase().endsWith(".pdf");
+  };
+
+  const getFileName = (url) => {
+    try {
+      const parts = url.split("/");
+      const fileNameWithParams = parts[parts.length - 1];
+      const fileName = fileNameWithParams.split("?")[0];
+      return decodeURIComponent(fileName);
+    } catch (error) {
+      return url;
+    }
+  };
+
+  const handleViewFile = (fileUrl) => {
+    setViewingFile(fileUrl);
+  };
+
+  const handleDownloadFile = (fileUrl) => {
+    const fileName = getFileName(fileUrl);
+    const link = document.createElement("a");
+    link.href = fileUrl;
+    link.download = fileName;
+    link.target = "_blank";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  return (
+    <>
+      <div className="bg-gray-50 p-6 rounded-lg border-2 border-dashed border-gray-300">
+        <div className="text-center">
+          <div className="mx-auto h-12 w-12 text-gray-400 mb-4 flex items-center justify-center">
+            <Icon size={48} />
+          </div>
+          <h4 className="text-lg font-semibold text-gray-900 mb-2">{title}</h4>
+          <input
+            type="file"
+            multiple
+            accept={accept}
+            onChange={(e) => onUpload(e.target.files)}
+            className="hidden"
+            id={uploadId}
+            disabled={isUploading}
+          />
+          <label
+            htmlFor={uploadId}
+            className={`inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white ${
+              isUploading
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-blue-600 hover:bg-blue-700 cursor-pointer"
+            } transition-colors duration-200`}
+          >
+            <Upload className="mr-2" size={20} />
+            {isUploading ? "Uploading..." : "Add Files"}
+          </label>
+
+          {files.length > 0 && (
+            <div className="mt-4">
+              <h5 className="text-sm font-medium text-gray-700 mb-2">
+                Uploaded Files ({files.length}):
+              </h5>
+              <div className="space-y-2 max-h-60 overflow-y-auto">
+                {files.map((filePath, index) => {
+                  const fileName = getFileName(filePath);
+                  const isPdf = isPDF(filePath);
+
+                  return (
+                    <div
+                      key={index}
+                      className="flex items-center justify-between bg-white px-4 py-3 rounded-md border hover:border-blue-300 transition-colors"
+                    >
+                      <div className="flex items-center space-x-3 flex-1 min-w-0">
+                        <div
+                          className={`flex-shrink-0 w-8 h-8 rounded flex items-center justify-center ${
+                            isPdf ? "bg-red-100" : "bg-blue-100"
+                          }`}
+                        >
+                          {isPdf ? (
+                            <FileText size={16} className="text-red-600" />
+                          ) : (
+                            <Image size={16} className="text-blue-600" />
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <span className="text-sm font-medium text-gray-700 block truncate">
+                            {fileName}
+                          </span>
+                          <p className="text-xs text-gray-500">
+                            {isPdf ? "PDF Document" : "Image File"}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2 ml-2 flex-shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => handleViewFile(filePath)}
+                          className="p-2 text-blue-600 hover:bg-blue-100 rounded transition-colors"
+                          title="View file"
+                        >
+                          <Eye size={16} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDownloadFile(filePath)}
+                          className="p-2 text-green-600 hover:bg-green-100 rounded transition-colors"
+                          title="Download file"
+                        >
+                          <Download size={16} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => onRemove(index)}
+                          className="p-2 text-red-600 hover:bg-red-100 rounded transition-colors"
+                          title="Remove file"
+                        >
+                          <X size={16} />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-            ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {viewingFile && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4"
+          onClick={() => setViewingFile(null)}
+        >
+          <div
+            className="relative bg-white rounded-lg w-full max-w-6xl h-[90vh] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between p-4 border-b bg-gray-50">
+              <h3 className="font-semibold text-gray-900">
+                {getFileName(viewingFile)}
+              </h3>
+              <button
+                onClick={() => setViewingFile(null)}
+                className="text-gray-600 hover:text-gray-900 text-2xl font-bold px-3 hover:bg-gray-200 rounded"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="flex-1 overflow-hidden bg-gray-100">
+              {isPDF(viewingFile) ? (
+                <iframe
+                  src={viewingFile}
+                  className="w-full h-full border-0"
+                  title="PDF Viewer"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center p-4">
+                  <img
+                    src={viewingFile}
+                    alt="Document"
+                    className="max-w-full max-h-full object-contain"
+                  />
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
+    </>
+  );
+};
+
+// Multi-select component for employees
+const MultiSelectEmployee = ({ label, options, selectedIds, onChange }) => {
+  const handleToggle = (employeeId) => {
+    const newSelection = selectedIds.includes(employeeId)
+      ? selectedIds.filter((id) => id !== employeeId)
+      : [...selectedIds, employeeId];
+    onChange(newSelection);
+  };
+
+  return (
+    <div className="space-y-2">
+      <label className="block text-sm font-medium text-gray-700">{label}</label>
+      <div className="border border-gray-300 rounded-md p-4 bg-white max-h-48 overflow-y-auto">
+        {options.length === 0 ? (
+          <p className="text-sm text-gray-500">No employees available</p>
+        ) : (
+          <div className="space-y-2">
+            {options.map((employee) => (
+              <label
+                key={employee._id}
+                className="flex items-center space-x-3 cursor-pointer hover:bg-gray-50 p-2 rounded transition-colors"
+              >
+                <input
+                  type="checkbox"
+                  checked={selectedIds.includes(employee._id)}
+                  onChange={() => handleToggle(employee._id)}
+                  className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                />
+                <span className="text-sm text-gray-700">{employee.name}</span>
+              </label>
+            ))}
+          </div>
+        )}
+      </div>
+      {selectedIds.length > 0 && (
+        <p className="text-sm text-gray-600 mt-2">
+          {selectedIds.length} selected
+        </p>
+      )}
     </div>
-  </div>
-);
+  );
+};
 
 export default function PatientRegistration() {
   const [step, setStep] = useState(1);
@@ -278,12 +494,17 @@ export default function PatientRegistration() {
       graftsneed: "",
       graftsImplanted: "",
       donorCondition: "",
-      doctor: "",
-      seniorTech: "",
-      implanterRight: "",
-      implanterLeft: "",
-      graftingPerson: "",
-      helpers: [],
+      doctor: [],
+      seniorTech: [],
+      implanterRight: [],
+      implanterLeft: [],
+      graftingPerson: [],
+      helper: [],
+    },
+    afterSurgery: {
+      headwashDate: "",
+      bandageRemovalDate: "",
+      prp: [],
     },
     documents: {
       images: [],
@@ -301,7 +522,8 @@ export default function PatientRegistration() {
     { number: 2, title: "Counsellor Details", icon: FileText, color: "green" },
     { number: 3, title: "Medical Information", icon: Heart, color: "red" },
     { number: 4, title: "Surgery Details", icon: Scissors, color: "orange" },
-    { number: 5, title: "Document Upload", icon: FileUp, color: "indigo" },
+    { number: 5, title: "After Surgery Care", icon: Droplet, color: "pink" },
+    { number: 6, title: "Document Upload", icon: FileUp, color: "indigo" },
   ];
 
   // Fetch employees on component mount
@@ -350,12 +572,12 @@ export default function PatientRegistration() {
     }));
   };
 
-  const addArrayItem = (section, field) => {
+  const addArrayItem = (section, field, value = "") => {
     setFormData((prev) => ({
       ...prev,
       [section]: {
         ...prev[section],
-        [field]: [...prev[section][field], ""],
+        [field]: [...prev[section][field], value],
       },
     }));
   };
@@ -371,6 +593,49 @@ export default function PatientRegistration() {
     }));
   };
 
+  // PRP handlers from edit page
+  const handlePRPChange = (index, field, value) => {
+    const newPRP = [...formData.afterSurgery.prp];
+    newPRP[index] = {
+      ...newPRP[index],
+      [field]: value,
+    };
+    setFormData((prev) => ({
+      ...prev,
+      afterSurgery: {
+        ...prev.afterSurgery,
+        prp: newPRP,
+      },
+    }));
+  };
+
+  const addPRPSession = () => {
+    setFormData((prev) => ({
+      ...prev,
+      afterSurgery: {
+        ...prev.afterSurgery,
+        prp: [
+          ...prev.afterSurgery.prp,
+          {
+            prpNumber: "",
+            date: "",
+          },
+        ],
+      },
+    }));
+  };
+
+  const removePRPSession = (index) => {
+    const newPRP = formData.afterSurgery.prp.filter((_, i) => i !== index);
+    setFormData((prev) => ({
+      ...prev,
+      afterSurgery: {
+        ...prev.afterSurgery,
+        prp: newPRP,
+      },
+    }));
+  };
+
   const handleFileUpload = async (section, files) => {
     if (!files || files.length === 0) return;
 
@@ -381,7 +646,6 @@ export default function PatientRegistration() {
         const formDataUpload = new FormData();
         formDataUpload.append("file", file);
         formDataUpload.append("section", section);
-        // For new patients, we'll use a temporary ID that will be replaced on server
         formDataUpload.append("patientId", "temp");
 
         const response = await fetch("/api/upload", {
@@ -418,6 +682,10 @@ export default function PatientRegistration() {
   const removeFile = async (section, index) => {
     const filePath = formData.documents[section][index];
 
+    if (!confirm("Are you sure you want to remove this file?")) {
+      return;
+    }
+
     try {
       const response = await fetch("/api/upload", {
         method: "DELETE",
@@ -447,23 +715,27 @@ export default function PatientRegistration() {
 
   // Clean empty ObjectId fields before sending to API
   const cleanObjectIdFields = (data) => {
-    const cleaned = JSON.parse(JSON.stringify(data)); // Deep clone
+    const cleaned = JSON.parse(JSON.stringify(data));
 
-    // List of ObjectId reference fields
+    // Single ObjectId fields
     const objectIdFields = {
       personal: ["reference"],
       counselling: ["counsellor"],
+    };
+
+    // Array ObjectId fields - ALL surgery team fields are now arrays
+    const arrayObjectIdFields = {
       surgery: [
         "doctor",
         "seniorTech",
         "implanterRight",
         "implanterLeft",
         "graftingPerson",
-        "helpers",
+        "helper",
       ],
     };
 
-    // Convert empty strings to null for ObjectId fields
+    // Convert empty strings to null for single ObjectId fields
     Object.keys(objectIdFields).forEach((section) => {
       if (cleaned[section]) {
         objectIdFields[section].forEach((field) => {
@@ -477,7 +749,28 @@ export default function PatientRegistration() {
       }
     });
 
-    // Also clean empty number fields
+    // Handle array ObjectId fields
+    Object.keys(arrayObjectIdFields).forEach((section) => {
+      if (cleaned[section]) {
+        arrayObjectIdFields[section].forEach((field) => {
+          if (Array.isArray(cleaned[section][field])) {
+            cleaned[section][field] = cleaned[section][field].filter(
+              (id) => id && id !== ""
+            );
+            if (cleaned[section][field].length === 0) {
+              cleaned[section][field] = [];
+            }
+          } else if (
+            cleaned[section][field] === "" ||
+            cleaned[section][field] === undefined
+          ) {
+            cleaned[section][field] = [];
+          }
+        });
+      }
+    });
+
+    // Clean empty number fields
     const numberFields = {
       personal: ["age", "packageQuoted"],
       counselling: ["finlpackage", "graftsSuggested"],
@@ -505,7 +798,6 @@ export default function PatientRegistration() {
     setIsSubmitting(true);
 
     try {
-      // Clean the form data before sending
       const cleanedData = cleanObjectIdFields(formData);
 
       const response = await fetch("/api/patients/create", {
@@ -578,12 +870,17 @@ export default function PatientRegistration() {
             graftsneed: "",
             graftsImplanted: "",
             donorCondition: "",
-            doctor: "",
-            seniorTech: "",
-            implanterRight: "",
-            implanterLeft: "",
-            graftingPerson: "",
-            helpers: [],
+            doctor: [],
+            seniorTech: [],
+            implanterRight: [],
+            implanterLeft: [],
+            graftingPerson: [],
+            helper: [],
+          },
+          afterSurgery: {
+            headwashDate: "",
+            bandageRemovalDate: "",
+            prp: [],
           },
           documents: {
             images: [],
@@ -604,7 +901,7 @@ export default function PatientRegistration() {
     }
   };
 
-  const nextStep = () => setStep(Math.min(step + 1, 5));
+  const nextStep = () => setStep(Math.min(step + 1, 6));
   const prevStep = () => setStep(Math.max(step - 1, 1));
 
   return (
@@ -836,12 +1133,11 @@ export default function PatientRegistration() {
                     )}
                     options={[
                       { value: "FUE", label: "FUE" },
-                      { value: "INDIAN DHI", label: "Indian DHI" },
+                      { value: "INDIAN DHI", label: "INDIAN DHI" },
                       { value: "TURKISH DHI", label: "Turkish DHI" },
                       { value: "HYBRID", label: "HYBRID" },
                       { value: "PRP", label: "PRP" },
                       { value: "GFC", label: "GFC" },
-                      { value: "Alopecia", label: "Alopecia" },
                       { value: "Other", label: "Other" },
                     ]}
                   />
@@ -865,48 +1161,235 @@ export default function PatientRegistration() {
                     placeholder="Number of grafts"
                   />
 
-                  <InputField
-                    label="Hair Loss Type"
-                    type="text"
-                    value={formData.counselling.hairlossType}
-                    onChange={createChangeHandler(
-                      "counselling",
-                      "hairlossType"
-                    )}
-                    placeholder="Type of hair loss"
+                  {/* Hair Loss Type - Radio Buttons */}
+                  <div className="space-y-3 my-3">
+                    <label className="block mb-4 text-md underline font-bold text-gray-700">
+                      Hair Loss Type *
+                    </label>
+                    <div className="space-y-2 flex flex-wrap space-x-7">
+                      {[
+                        {
+                          value: "male_pattern",
+                          label: "Male Pattern Baldness",
+                        },
+                        {
+                          value: "female_pattern",
+                          label: "Female Pattern Baldness",
+                        },
+                        {
+                          value: "receding_hairline",
+                          label: "Receding Hairline",
+                        },
+                        { value: "crown_thinning", label: "Crown Thinning" },
+                        {
+                          value: "diffuse_thinning",
+                          label: "Diffuse Thinning",
+                        },
+                        { value: "frontal_loss", label: "Frontal Hair Loss" },
+                        {
+                          value: "traction_alopecia",
+                          label: "Traction Alopecia",
+                        },
+                        { value: "other", label: "Other" },
+                      ].map((option) => (
+                        <label
+                          key={option.value}
+                          className="flex items-center align-middle space-x-1"
+                        >
+                          <input
+                            type="radio"
+                            name="hairlossType"
+                            value={option.value}
+                            checked={
+                              formData.counselling.hairlossType === option.value
+                            }
+                            onChange={createChangeHandler(
+                              "counselling",
+                              "hairlossType"
+                            )}
+                            className="text-blue-600 focus:ring-blue-500"
+                          />
+                          <span className="text-md text-gray-700">
+                            {option.label}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Area of Concern - Radio Buttons */}
+                  <div className="space-y-3 my-3">
+                    <label className="block mb-4 text-md underline font-bold text-gray-700">
+                      Area of Concern *
+                    </label>
+                    <div className="space-y-2 flex flex-wrap space-x-7">
+                      {[
+                        { value: "frontal", label: "Frontal Area" },
+                        { value: "mid_scalp", label: "Mid Scalp" },
+                        { value: "crown", label: "Crown/Vortex" },
+                        { value: "hairline", label: "Hairline Correction" },
+                        { value: "temples", label: "Temples" },
+                        { value: "beard", label: "Beard/Moustache" },
+                        { value: "multiple_areas", label: "Multiple Areas" },
+                      ].map((option) => (
+                        <label
+                          key={option.value}
+                          className="flex items-center align-baseline space-x-1"
+                        >
+                          <input
+                            type="radio"
+                            name="areaofConcern"
+                            value={option.value}
+                            checked={
+                              formData.counselling.areaofConcern ===
+                              option.value
+                            }
+                            onChange={createChangeHandler(
+                              "counselling",
+                              "areaofConcern"
+                            )}
+                            className="text-blue-600 focus:ring-blue-500"
+                          />
+                          <span className="text-md text-gray-700">
+                            {option.label}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Hair Loss Reason - Radio Buttons */}
+                  <div className="space-y-3">
+                    <label className="block mb-4 text-lg underline font-bold text-gray-700">
+                      Hair Loss Reason *
+                    </label>
+                    <div className="flex flex-wrap space-x-7 space-y-2">
+                      {[
+                        { value: "genetic", label: "Genetic/Hereditary" },
+                        { value: "hormonal", label: "Hormonal Changes" },
+                        { value: "stress", label: "Stress Related" },
+                        {
+                          value: "nutritional",
+                          label: "Nutritional Deficiency",
+                        },
+                        { value: "medical", label: "Medical Condition" },
+                        {
+                          value: "medication",
+                          label: "Medication Side Effects",
+                        },
+                        { value: "lifestyle", label: "Lifestyle Factors" },
+                        { value: "ageing", label: "Ageing Process" },
+                        { value: "unknown", label: "Unknown/Idiopathic" },
+                      ].map((option) => (
+                        <label
+                          key={option.value}
+                          className="flex items-center align-middle space-x-1"
+                        >
+                          <input
+                            type="radio"
+                            name="hairlossreason"
+                            value={option.value}
+                            checked={
+                              formData.counselling.hairlossreason ===
+                              option.value
+                            }
+                            onChange={createChangeHandler(
+                              "counselling",
+                              "hairlossreason"
+                            )}
+                            className="text-blue-600 focus:ring-blue-500"
+                          />
+                          <span className="text-md text-gray-700">
+                            {option.label}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Hair Loss Duration - Radio Buttons */}
+                  <div className="space-y-3">
+                    <label className="block mb-4 text-md underline font-bold text-gray-700">
+                      Hair Loss Duration *
+                    </label>
+                    <div className="space-y-2 flex flex-wrap space-x-5">
+                      {[
+                        {
+                          value: "less_than_1_year",
+                          label: "Less than 1 year",
+                        },
+                        { value: "1_2_years", label: "1-2 years" },
+                        { value: "2_5_years", label: "2-5 years" },
+                        { value: "5_10_years", label: "5-10 years" },
+                        {
+                          value: "more_than_10_years",
+                          label: "More than 10 years",
+                        },
+                        {
+                          value: "progressive",
+                          label: "Progressive (ongoing)",
+                        },
+                        {
+                          value: "recent_accelerated",
+                          label: "Recent accelerated loss",
+                        },
+                      ].map((option) => (
+                        <label
+                          key={option.value}
+                          className="flex items-center space-x-1"
+                        >
+                          <input
+                            type="radio"
+                            name="hairlossduration"
+                            value={option.value}
+                            checked={
+                              formData.counselling.hairlossduration ===
+                              option.value
+                            }
+                            onChange={createChangeHandler(
+                              "counselling",
+                              "hairlossduration"
+                            )}
+                            className="text-blue-600 focus:ring-blue-500"
+                          />
+                          <span className="text-md text-gray-700">
+                            {option.label}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Updated Benefits Manager */}
+                  <BenefitsManager
+                    benefits={formData.counselling.additionalbenefits}
+                    onChange={(value, index) =>
+                      handleArrayChange(
+                        "counselling",
+                        "additionalbenefits",
+                        value,
+                        index
+                      )
+                    }
+                    onAdd={(value) =>
+                      addArrayItem("counselling", "additionalbenefits", value)
+                    }
+                    onRemove={(index) =>
+                      removeArrayItem(
+                        "counselling",
+                        "additionalbenefits",
+                        index
+                      )
+                    }
                   />
 
                   <InputField
-                    label="Area of Concern"
-                    type="text"
-                    value={formData.counselling.areaofConcern}
-                    onChange={createChangeHandler(
-                      "counselling",
-                      "areaofConcern"
-                    )}
-                    placeholder="Area of concern"
-                  />
-
-                  <InputField
-                    label="Hair Loss Reason"
-                    type="text"
-                    value={formData.counselling.hairlossreason}
-                    onChange={createChangeHandler(
-                      "counselling",
-                      "hairlossreason"
-                    )}
-                    placeholder="Reason for hair loss"
-                  />
-
-                  <InputField
-                    label="Hair Loss Duration"
-                    type="text"
-                    value={formData.counselling.hairlossduration}
-                    onChange={createChangeHandler(
-                      "counselling",
-                      "hairlossduration"
-                    )}
-                    placeholder="Duration of hair loss"
+                    label="Notes"
+                    type="textarea"
+                    value={formData.counselling.notes}
+                    onChange={createChangeHandler("counselling", "notes")}
+                    placeholder="Additional counselling notes"
+                    className="md:col-span-2 mt-3"
                   />
 
                   <div className="md:col-span-2">
@@ -918,40 +1401,10 @@ export default function PatientRegistration() {
                         "counselling",
                         "readyForSurgery"
                       )}
+                      className="mt-4"
                       placeholder="Patient is ready for surgery"
                     />
                   </div>
-
-                  <InputField
-                    label="Notes"
-                    type="textarea"
-                    value={formData.counselling.notes}
-                    onChange={createChangeHandler("counselling", "notes")}
-                    placeholder="Additional counselling notes"
-                    className="md:col-span-2"
-                  />
-
-                  <BenefitsManager
-                    benefits={formData.counselling.additionalbenefits}
-                    onChange={(value, index) =>
-                      handleArrayChange(
-                        "counselling",
-                        "additionalbenefits",
-                        value,
-                        index
-                      )
-                    }
-                    onAdd={() =>
-                      addArrayItem("counselling", "additionalbenefits")
-                    }
-                    onRemove={(index) =>
-                      removeArrayItem(
-                        "counselling",
-                        "additionalbenefits",
-                        index
-                      )
-                    }
-                  />
                 </div>
               </div>
             )}
@@ -987,7 +1440,7 @@ export default function PatientRegistration() {
                     ]}
                   />
 
-                  {/* <InputField
+                  <InputField
                     label="Blood Group"
                     type="select"
                     value={formData.medical.bloodGroup}
@@ -1002,7 +1455,7 @@ export default function PatientRegistration() {
                       { value: "O+", label: "O+" },
                       { value: "O-", label: "O-" },
                     ]}
-                  /> */}
+                  />
 
                   <InputField
                     label="Sugar Level"
@@ -1126,86 +1579,122 @@ export default function PatientRegistration() {
                     value={formData.surgery.donorCondition}
                     onChange={createChangeHandler("surgery", "donorCondition")}
                     placeholder="Donor area condition"
+                    className="md:col-span-2"
                   />
 
-                  <InputField
-                    label="Operating Doctor"
-                    type="select"
-                    value={formData.surgery.doctor}
-                    onChange={createChangeHandler("surgery", "doctor")}
-                    options={employees.Doctor.map((emp) => ({
-                      value: emp._id,
-                      label: emp.name,
-                    }))}
-                  />
+                  {/* Multi-select for Doctors */}
+                  <div className="md:col-span-2">
+                    <MultiSelectEmployee
+                      label="Operating Doctors (Select Multiple)"
+                      options={employees.Doctor}
+                      selectedIds={formData.surgery.doctor}
+                      onChange={(newSelection) =>
+                        handleChange("surgery", "doctor", newSelection)
+                      }
+                    />
+                  </div>
 
-                  <InputField
-                    label="Senior Technician"
-                    type="select"
-                    value={formData.surgery.seniorTech}
-                    onChange={createChangeHandler("surgery", "seniorTech")}
-                    options={employees.Technician.map((emp) => ({
-                      value: emp._id,
-                      label: emp.name,
-                    }))}
-                  />
+                  {/* Multi-select for Senior Technicians */}
+                  <div className="md:col-span-2">
+                    <MultiSelectEmployee
+                      label="Senior Technicians (Select Multiple)"
+                      options={employees.Technician}
+                      selectedIds={formData.surgery.seniorTech}
+                      onChange={(newSelection) =>
+                        handleChange("surgery", "seniorTech", newSelection)
+                      }
+                    />
+                  </div>
 
-                  <InputField
-                    label="Right Side Implanter"
-                    type="select"
-                    value={formData.surgery.implanterRight}
-                    onChange={createChangeHandler("surgery", "implanterRight")}
-                    options={employees.Implanter.map((emp) => ({
-                      value: emp._id,
-                      label: emp.name,
-                    }))}
-                  />
+                  {/* Multi-select for Right Side Implanters */}
+                  <div className="md:col-span-2">
+                    <MultiSelectEmployee
+                      label="Right Side Implanters (Select Multiple)"
+                      options={employees.Implanter}
+                      selectedIds={formData.surgery.implanterRight}
+                      onChange={(newSelection) =>
+                        handleChange("surgery", "implanterRight", newSelection)
+                      }
+                    />
+                  </div>
 
-                  <InputField
-                    label="Left Side Implanter"
-                    type="select"
-                    value={formData.surgery.implanterLeft}
-                    onChange={createChangeHandler("surgery", "implanterLeft")}
-                    options={employees.Implanter.map((emp) => ({
-                      value: emp._id,
-                      label: emp.name,
-                    }))}
-                  />
+                  {/* Multi-select for Left Side Implanters */}
+                  <div className="md:col-span-2">
+                    <MultiSelectEmployee
+                      label="Left Side Implanters (Select Multiple)"
+                      options={employees.Implanter}
+                      selectedIds={formData.surgery.implanterLeft}
+                      onChange={(newSelection) =>
+                        handleChange("surgery", "implanterLeft", newSelection)
+                      }
+                    />
+                  </div>
 
-                  <InputField
-                    label="Grafting Specialist"
-                    type="select"
-                    value={formData.surgery.graftingPerson}
-                    onChange={createChangeHandler("surgery", "graftingPerson")}
-                    options={employees.Others.map((emp) => ({
-                      value: emp._id,
-                      label: emp.name,
-                    }))}
-                  />
+                  {/* Multi-select for Grafting Persons */}
+                  <div className="md:col-span-2">
+                    <MultiSelectEmployee
+                      label="Grafting Specialists (Select Multiple)"
+                      options={employees.Others}
+                      selectedIds={formData.surgery.graftingPerson}
+                      onChange={(newSelection) =>
+                        handleChange("surgery", "graftingPerson", newSelection)
+                      }
+                    />
+                  </div>
 
-                  <InputField
-                    label="Surgery Helpers (Multiple)"
-                    type="multiselect"
-                    value={formData.surgery.helpers}
-                    options={employees.Others.map((emp) => ({
-                      value: emp._id,
-                      label: emp.name,
-                    }))}
-                    onChange={(e) => {
-                      setFormData((prev) => ({
-                        ...prev,
-                        surgery: {
-                          ...prev.surgery,
-                          helpers: e.target.value, // e.target.value is already an array
-                        },
-                      }));
-                    }}
-                  />
+                  {/* Multi-select for Helpers */}
+                  <div className="md:col-span-2">
+                    <MultiSelectEmployee
+                      label="Surgery Helpers (Select Multiple)"
+                      options={employees.Others}
+                      selectedIds={formData.surgery.helper}
+                      onChange={(newSelection) =>
+                        handleChange("surgery", "helper", newSelection)
+                      }
+                    />
+                  </div>
                 </div>
               </div>
             )}
 
             {step === 5 && (
+              <div className="space-y-8">
+                <StepHeader
+                  icon={Droplet}
+                  title="After Surgery Care"
+                  description="Post-operative care schedule"
+                  color="pink"
+                />
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 gap-x-12">
+                  <InputField
+                    label="Head Wash Date"
+                    type="date"
+                    value={formData.afterSurgery.headwashDate}
+                    onChange={createChangeHandler("afterSurgery", "headwashDate")}
+                  />
+
+                  <InputField
+                    label="Bandage Removal Date"
+                    type="date"
+                    value={formData.afterSurgery.bandageRemovalDate}
+                    onChange={createChangeHandler(
+                      "afterSurgery",
+                      "bandageRemovalDate"
+                    )}
+                  />
+
+                  <PRPManager
+                    prpSessions={formData.afterSurgery.prp}
+                    onChange={handlePRPChange}
+                    onAdd={addPRPSession}
+                    onRemove={removePRPSession}
+                  />
+                </div>
+              </div>
+            )}
+
+            {step === 6 && (
               <div className="space-y-8">
                 <StepHeader
                   icon={FileUp}
@@ -1282,7 +1771,7 @@ export default function PatientRegistration() {
               )}
 
               <div className="flex space-x-4">
-                {step < 5 && (
+                {step < 6 && (
                   <button
                     type="button"
                     className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 transition-colors duration-200"
@@ -1292,7 +1781,7 @@ export default function PatientRegistration() {
                   </button>
                 )}
 
-                {step === 5 && (
+                {step === 6 && (
                   <button
                     type="button"
                     onClick={handleSubmit}
@@ -1320,3 +1809,4 @@ export default function PatientRegistration() {
     </section>
   );
 }
+

@@ -14,13 +14,176 @@ import {
   Calendar,
   User,
   Heart,
+  CreditCard,
   Scissors,
   FileUp,
   Save,
   ArrowLeft,
   Edit3,
+  Eye,
   Download,
+  Plus,
+  Droplet,
 } from "lucide-react";
+
+const BenefitsManager = ({ benefits, onChange, onAdd, onRemove }) => {
+  const predefinedBenefits = [
+    "5 Free PRP Sessions",
+    "Deep Headwash",
+    "5 Days Medicines Included",
+    "Bandage Removal",
+    "GFC",
+  ];
+
+  const handleBenefitToggle = (benefit) => {
+    const currentBenefits = [...benefits];
+    const benefitIndex = currentBenefits.indexOf(benefit);
+
+    if (benefitIndex > -1) {
+      onRemove(benefitIndex);
+    } else {
+      onAdd(benefit);
+    }
+  };
+
+  const handleCustomBenefitAdd = (customBenefit) => {
+    if (customBenefit.trim() && !benefits.includes(customBenefit.trim())) {
+      onAdd(customBenefit.trim());
+    }
+  };
+
+  return (
+    <div className="md:col-span-2">
+      <label className="block text-md underline font-semibold text-gray-700 mb-4">
+        Additional Benefits *
+      </label>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
+        {predefinedBenefits.map((benefit) => (
+          <label
+            key={benefit}
+            className="flex items-center space-x-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors duration-200"
+          >
+            <input
+              type="checkbox"
+              checked={benefits.includes(benefit)}
+              onChange={() => handleBenefitToggle(benefit)}
+              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+            />
+            <span className="text-sm font-medium text-gray-700">{benefit}</span>
+          </label>
+        ))}
+      </div>
+
+      <div className="mb-4">
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Add Custom Benefit
+        </label>
+        <div className="flex space-x-3">
+          <input
+            type="text"
+            className="flex-1 px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 shadow-sm"
+            placeholder="Enter custom benefit"
+            onKeyPress={(e) => {
+              if (e.key === "Enter") {
+                handleCustomBenefitAdd(e.target.value);
+                e.target.value = "";
+              }
+            }}
+          />
+          <button
+            type="button"
+            className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors duration-200 font-medium"
+            onClick={(e) => {
+              const input = e.target.previousElementSibling;
+              handleCustomBenefitAdd(input.value);
+              input.value = "";
+            }}
+          >
+            Add
+          </button>
+        </div>
+      </div>
+
+      {benefits.length > 0 && (
+        <div className="mt-4">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Selected Benefits ({benefits.length})
+          </label>
+          <div className="flex flex-wrap gap-2">
+            {benefits.map((benefit, index) => (
+              <div
+                key={index}
+                className="flex items-center space-x-2 bg-blue-100 text-blue-800 px-3 py-2 rounded-lg"
+              >
+                <span className="text-sm font-medium">{benefit}</span>
+                <button
+                  type="button"
+                  className="text-blue-600 hover:text-blue-800 transition-colors duration-200"
+                  onClick={() => onRemove(index)}
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const PRPManager = ({ prpSessions, onChange, onAdd, onRemove }) => {
+  return (
+    <div className="md:col-span-2">
+      <h4 className="text-lg font-semibold text-gray-700 mb-4">PRP Sessions</h4>
+      {prpSessions && prpSessions.length > 0 ? (
+        <div className="space-y-4">
+          {prpSessions.map((session, index) => (
+            <div
+              key={index}
+              className="bg-gray-50 p-6 rounded-lg border relative"
+            >
+              <button
+                type="button"
+                onClick={() => onRemove(index)}
+                className="absolute top-4 right-4 text-red-500 hover:text-red-700 p-1"
+                title="Remove PRP Session"
+              >
+                <X size={20} />
+              </button>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pr-12">
+                <InputField
+                  label="PRP Number"
+                  type="number"
+                  value={session.prpNumber || ""}
+                  onChange={(e) => onChange(index, "prpNumber", e.target.value)}
+                  placeholder="Enter PRP session number"
+                />
+                <InputField
+                  label="Date"
+                  type="date"
+                  value={session.date ? session.date.split("T")[0] : ""}
+                  onChange={(e) => onChange(index, "date", e.target.value)}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="text-gray-500 text-sm mb-4">No PRP sessions added yet</p>
+      )}
+      <button
+        type="button"
+        className="mt-4 px-6 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors duration-200 font-medium flex items-center gap-2"
+        onClick={onAdd}
+      >
+        <Plus size={20} />
+        Add PRP Session
+      </button>
+    </div>
+  );
+};
 
 const StepHeader = ({ icon: Icon, title, description, color }) => (
   <div className="text-center mb-8">
@@ -34,12 +197,109 @@ const StepHeader = ({ icon: Icon, title, description, color }) => (
   </div>
 );
 
-const formatFileSize = (bytes) => {
-  if (bytes === 0) return "0 Bytes";
-  const k = 1024;
-  const sizes = ["Bytes", "KB", "MB", "GB"];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + " " + sizes[i];
+const TransactionManager = ({ transactions, onChange, onAdd, onRemove }) => (
+  <div className="md:col-span-2">
+    <h4 className="text-lg font-semibold text-gray-700 mb-4">Transactions</h4>
+    {transactions.map((transaction, index) => (
+      <div key={index} className="bg-gray-50 p-6 rounded-lg mb-4 border">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <InputField
+            label="Date"
+            type="date"
+            value={transaction.date ? transaction.date.split("T")[0] : ""}
+            onChange={(e) => onChange(index, "date", e.target.value)}
+          />
+          <InputField
+            label="Payment Type"
+            type="select"
+            value={transaction.paymentType || ""}
+            onChange={(e) => onChange(index, "paymentType", e.target.value)}
+            options={[
+              { value: "Full-payment", label: "Full Payment" },
+              { value: "Advance", label: "Advance" },
+              { value: "Installment", label: "Installment" },
+              { value: "EMI", label: "EMI" },
+            ]}
+          />
+          <InputField
+            label="Branch"
+            type="select"
+            value={transaction.branch || ""}
+            onChange={(e) => onChange(index, "branch", e.target.value)}
+            options={[
+              { value: "Delhi", label: "Delhi" },
+              { value: "Mumbai", label: "Mumbai" },
+              { value: "Hyderabad", label: "Hyderabad" },
+            ]}
+          />
+          <InputField
+            label="Amount"
+            type="number"
+            value={transaction.amount || ""}
+            onChange={(e) => onChange(index, "amount", e.target.value)}
+            placeholder="Transaction amount"
+          />
+        </div>
+        <button
+          type="button"
+          className="mt-3 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors duration-200"
+          onClick={() => onRemove(index)}
+        >
+          Remove Transaction
+        </button>
+      </div>
+    ))}
+    <button
+      type="button"
+      className="px-6 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors duration-200 font-medium"
+      onClick={onAdd}
+    >
+      + Add Transaction
+    </button>
+  </div>
+);
+
+// Multi-select component for employees
+const MultiSelectEmployee = ({ label, options, selectedIds, onChange }) => {
+  const handleToggle = (employeeId) => {
+    const newSelection = selectedIds.includes(employeeId)
+      ? selectedIds.filter((id) => id !== employeeId)
+      : [...selectedIds, employeeId];
+    onChange(newSelection);
+  };
+
+  return (
+    <div className="space-y-2">
+      <label className="block text-sm font-medium text-gray-700">{label}</label>
+      <div className="border border-gray-300 rounded-md p-4 bg-white max-h-48 overflow-y-auto">
+        {options.length === 0 ? (
+          <p className="text-sm text-gray-500">No employees available</p>
+        ) : (
+          <div className="space-y-2">
+            {options.map((employee) => (
+              <label
+                key={employee._id}
+                className="flex items-center space-x-3 cursor-pointer hover:bg-gray-50 p-2 rounded transition-colors"
+              >
+                <input
+                  type="checkbox"
+                  checked={selectedIds.includes(employee._id)}
+                  onChange={() => handleToggle(employee._id)}
+                  className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                />
+                <span className="text-sm text-gray-700">{employee.name}</span>
+              </label>
+            ))}
+          </div>
+        )}
+      </div>
+      {selectedIds.length > 0 && (
+        <p className="text-sm text-gray-600 mt-2">
+          {selectedIds.length} selected
+        </p>
+      )}
+    </div>
+  );
 };
 
 const DocumentUpload = ({
@@ -53,6 +313,8 @@ const DocumentUpload = ({
   uploadId,
   isUploading,
 }) => {
+  const [viewingFile, setViewingFile] = useState(null);
+
   const isPDF = (filename) => {
     return filename.toLowerCase().endsWith(".pdf");
   };
@@ -68,6 +330,10 @@ const DocumentUpload = ({
     }
   };
 
+  const handleViewFile = (fileUrl) => {
+    setViewingFile(fileUrl);
+  };
+
   const handleDownloadFile = (fileUrl) => {
     const fileName = getFileName(fileUrl);
     const link = document.createElement("a");
@@ -80,96 +346,146 @@ const DocumentUpload = ({
   };
 
   return (
-    <div className="bg-gray-50 p-6 rounded-lg border-2 border-dashed border-gray-300">
-      <div className="text-center">
-        <div className="mx-auto h-12 w-12 text-gray-400 mb-4 flex items-center justify-center">
-          <Icon size={48} />
+    <>
+      <div className="bg-gray-50 p-6 rounded-lg border-2 border-dashed border-gray-300">
+        <div className="text-center">
+          <div className="mx-auto h-12 w-12 text-gray-400 mb-4 flex items-center justify-center">
+            <Icon size={48} />
+          </div>
+          <h4 className="text-lg font-semibold text-gray-900 mb-2">{title}</h4>
+          <input
+            type="file"
+            multiple
+            accept={accept}
+            onChange={(e) => onUpload(e.target.files)}
+            className="hidden"
+            id={uploadId}
+            disabled={isUploading}
+          />
+          <label
+            htmlFor={uploadId}
+            className={`inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white ${
+              isUploading
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-blue-600 hover:bg-blue-700 cursor-pointer"
+            } transition-colors duration-200`}
+          >
+            <Upload className="mr-2" size={20} />
+            {isUploading ? "Uploading..." : "Add Files"}
+          </label>
+
+          {files.length > 0 && (
+            <div className="mt-4">
+              <h5 className="text-sm font-medium text-gray-700 mb-2">
+                Uploaded Files ({files.length}):
+              </h5>
+              <div className="space-y-2 max-h-60 overflow-y-auto">
+                {files.map((filePath, index) => {
+                  const fileName = getFileName(filePath);
+                  const isPdf = isPDF(filePath);
+
+                  return (
+                    <div
+                      key={index}
+                      className="flex items-center justify-between bg-white px-4 py-3 rounded-md border hover:border-blue-300 transition-colors"
+                    >
+                      <div className="flex items-center space-x-3 flex-1 min-w-0">
+                        <div
+                          className={`flex-shrink-0 w-8 h-8 rounded flex items-center justify-center ${
+                            isPdf ? "bg-red-100" : "bg-blue-100"
+                          }`}
+                        >
+                          {isPdf ? (
+                            <FileText size={16} className="text-red-600" />
+                          ) : (
+                            <Image size={16} className="text-blue-600" />
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <span className="text-sm font-medium text-gray-700 block truncate">
+                            {fileName}
+                          </span>
+                          <p className="text-xs text-gray-500">
+                            {isPdf ? "PDF Document" : "Image File"}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2 ml-2 flex-shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => handleViewFile(filePath)}
+                          className="p-2 text-blue-600 hover:bg-blue-100 rounded transition-colors"
+                          title="View file"
+                        >
+                          <Eye size={16} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDownloadFile(filePath)}
+                          className="p-2 text-green-600 hover:bg-green-100 rounded transition-colors"
+                          title="Download file"
+                        >
+                          <Download size={16} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => onRemove(index)}
+                          className="p-2 text-red-600 hover:bg-red-100 rounded transition-colors"
+                          title="Remove file"
+                        >
+                          <X size={16} />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
-        <h4 className="text-lg font-semibold text-gray-900 mb-2">{title}</h4>
-        <input
-          type="file"
-          multiple
-          accept={accept}
-          onChange={(e) => onUpload(e.target.files)}
-          className="hidden"
-          id={uploadId}
-          disabled={isUploading}
-        />
+      </div>
 
-        <label
-          htmlFor={uploadId}
-          className={`inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white ${
-            isUploading
-              ? "bg-gray-400 cursor-not-allowed"
-              : "bg-blue-600 hover:bg-blue-700 cursor-pointer"
-          } transition-colors duration-200`}
+      {viewingFile && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4"
+          onClick={() => setViewingFile(null)}
         >
-          <Upload className="mr-2" size={20} />
-          {isUploading ? "Uploading..." : "Add Files (Max 10MB)"}
-        </label>
-
-        {files.length > 0 && (
-          <div className="mt-4">
-            <h5 className="text-sm font-medium text-gray-700 mb-2">
-              Uploaded Files ({files.length}):
-            </h5>
-            <div className="space-y-2 max-h-60 overflow-y-auto">
-              {files.map((filePath, index) => {
-                const fileName = getFileName(filePath);
-                const isPdf = isPDF(filePath);
-
-                return (
-                  <div
-                    key={index}
-                    className="flex items-center justify-between bg-white px-4 py-3 rounded-md border hover:border-blue-300 transition-colors"
-                  >
-                    <div className="flex items-center space-x-3 flex-1 min-w-0">
-                      <div
-                        className={`flex-shrink-0 w-8 h-8 rounded flex items-center justify-center ${
-                          isPdf ? "bg-red-100" : "bg-blue-100"
-                        }`}
-                      >
-                        {isPdf ? (
-                          <FileText size={16} className="text-red-600" />
-                        ) : (
-                          <Image size={16} className="text-blue-600" />
-                        )}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <span className="text-sm font-medium text-gray-700 block truncate">
-                          {fileName}
-                        </span>
-                        <p className="text-xs text-gray-500">
-                          {isPdf ? "PDF Document" : "Image File"}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-2 ml-2 flex-shrink-0">
-                      <button
-                        type="button"
-                        onClick={() => handleDownloadFile(filePath)}
-                        className="p-2 text-green-600 hover:bg-green-100 rounded transition-colors"
-                        title="Download file"
-                      >
-                        <Download size={16} />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => onRemove(index)}
-                        className="p-2 text-red-600 hover:bg-red-100 rounded transition-colors"
-                        title="Remove file"
-                      >
-                        <X size={16} />
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
+          <div
+            className="relative bg-white rounded-lg w-full max-w-6xl h-[90vh] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between p-4 border-b bg-gray-50">
+              <h3 className="font-semibold text-gray-900">
+                {getFileName(viewingFile)}
+              </h3>
+              <button
+                onClick={() => setViewingFile(null)}
+                className="text-gray-600 hover:text-gray-900 text-2xl font-bold px-3 hover:bg-gray-200 rounded"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="flex-1 overflow-hidden bg-gray-100">
+              {isPDF(viewingFile) ? (
+                <iframe
+                  src={viewingFile}
+                  className="w-full h-full border-0"
+                  title="PDF Viewer"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center p-4">
+                  <img
+                    src={viewingFile}
+                    alt="Document"
+                    className="max-w-full max-h-full object-contain"
+                  />
+                </div>
+              )}
             </div>
           </div>
-        )}
-      </div>
-    </div>
+        </div>
+      )}
+    </>
   );
 };
 
@@ -180,12 +496,13 @@ export default function PatientEditDetails() {
   const [updateStatus, setUpdateStatus] = useState(null);
   const [uploadingFiles, setUploadingFiles] = useState({});
   const [employees, setEmployees] = useState({
+    Agent: [],
+    Counsellor: [],
     Doctor: [],
     Technician: [],
     Implanter: [],
     Others: [],
   });
-  const [surgeryTeamMembers, setSurgeryTeamMembers] = useState([]);
 
   const [formData, setFormData] = useState({
     personal: {
@@ -198,6 +515,7 @@ export default function PatientEditDetails() {
       address: "",
       profession: "",
       visitDate: "",
+      reference: "",
       packageQuoted: "",
       techniqueQuoted: "",
       remarks: "",
@@ -213,6 +531,20 @@ export default function PatientEditDetails() {
       hiv: "",
       hcv: "",
     },
+    counselling: {
+      counsellor: "",
+      techniqueSuggested: "",
+      finlpackage: "",
+      graftsSuggested: "",
+      readyForSurgery: false,
+      notes: "",
+      additionalbenefits: [],
+      medicines: [],
+      hairlossType: "",
+      areaofConcern: "",
+      hairlossreason: "",
+      hairlossduration: "",
+    },
     surgery: {
       surgeryDate: "",
       location: "",
@@ -221,12 +553,25 @@ export default function PatientEditDetails() {
       graftsneed: "",
       graftsImplanted: "",
       donorCondition: "",
-      doctor: "",
-      seniorTech: "",
-      implanterRight: "",
-      implanterLeft: "",
-      graftingPerson: "",
-      helpers: [],
+      doctor: [],
+      seniorTech: [],
+      implanterRight: [],
+      implanterLeft: [],
+      graftingPerson: [],
+      helper: [],
+    },
+    afterSurgery: {
+      headwashDate: "",
+      bandageRemovalDate: "",
+      prp: [],
+    },
+    payments: {
+      totalAmount: "",
+      amountReceived: "",
+      pendingAmount: "",
+      medicineAmount: "",
+      discount: "",
+      transactions: [],
     },
     documents: {
       images: [],
@@ -246,6 +591,7 @@ export default function PatientEditDetails() {
   const router = useRouter();
   const toast = useToast();
 
+  // Fetch employees on component mount
   useEffect(() => {
     const fetchEmployees = async () => {
       try {
@@ -253,12 +599,6 @@ export default function PatientEditDetails() {
         const result = await response.json();
         if (result.success) {
           setEmployees(result.data);
-          const combinedTeam = [
-            ...result.data.Technician,
-            ...result.data.Implanter,
-            ...result.data.Others,
-          ];
-          setSurgeryTeamMembers(combinedTeam);
         }
       } catch (error) {
         console.error("Error fetching employees:", error);
@@ -284,6 +624,18 @@ export default function PatientEditDetails() {
         const data = await res.json();
         if (data.success && data.patient) {
           const patientData = data.patient;
+
+          // Helper function to extract IDs from populated or non-populated data
+          const extractIds = (data) => {
+            if (!data) return [];
+            if (Array.isArray(data)) {
+              return data
+                .map((item) => (typeof item === "object" ? item._id : item))
+                .filter(Boolean);
+            }
+            return [];
+          };
+
           setFormData({
             personal: {
               name: patientData.personal?.name || "",
@@ -297,6 +649,7 @@ export default function PatientEditDetails() {
               visitDate: patientData.personal?.visitDate
                 ? patientData.personal.visitDate.split("T")[0]
                 : "",
+              reference: patientData.personal?.reference?._id || "",
               packageQuoted: patientData.personal?.packageQuoted || "",
               techniqueQuoted: patientData.personal?.techniqueQuoted || "",
               remarks: patientData.personal?.remarks || "",
@@ -312,6 +665,23 @@ export default function PatientEditDetails() {
               hiv: patientData.medical?.hiv || "",
               hcv: patientData.medical?.hcv || "",
             },
+            counselling: {
+              counsellor: patientData.counselling?.counsellor?._id || "",
+              techniqueSuggested:
+                patientData.counselling?.techniqueSuggested || "",
+              finlpackage: patientData.counselling?.finlpackage || "",
+              graftsSuggested: patientData.counselling?.graftsSuggested || "",
+              readyForSurgery:
+                patientData.counselling?.readyForSurgery || false,
+              notes: patientData.counselling?.notes || "",
+              additionalbenefits:
+                patientData.counselling?.additionalbenefits || [],
+              medicines: patientData.counselling?.medicines || [],
+              hairlossType: patientData.counselling?.hairlossType || "",
+              areaofConcern: patientData.counselling?.areaofConcern || "",
+              hairlossreason: patientData.counselling?.hairlossreason || "",
+              hairlossduration: patientData.counselling?.hairlossduration || "",
+            },
             surgery: {
               surgeryDate: patientData.surgery?.surgeryDate
                 ? patientData.surgery.surgeryDate.split("T")[0]
@@ -322,12 +692,29 @@ export default function PatientEditDetails() {
               graftsneed: patientData.surgery?.graftsneed || "",
               graftsImplanted: patientData.surgery?.graftsImplanted || "",
               donorCondition: patientData.surgery?.donorCondition || "",
-              doctor: patientData.surgery?.doctor?._id || "",
-              seniorTech: patientData.surgery?.seniorTech?._id || "",
-              implanterRight: patientData.surgery?.implanterRight?._id || "",
-              implanterLeft: patientData.surgery?.implanterLeft?._id || "",
-              graftingPerson: patientData.surgery?.graftingPerson?._id || "",
-              helpers: patientData.surgery?.helpers?.map((h) => h._id) || [],
+              doctor: extractIds(patientData.surgery?.doctor),
+              seniorTech: extractIds(patientData.surgery?.seniorTech),
+              implanterRight: extractIds(patientData.surgery?.implanterRight),
+              implanterLeft: extractIds(patientData.surgery?.implanterLeft),
+              graftingPerson: extractIds(patientData.surgery?.graftingPerson),
+              helper: extractIds(patientData.surgery?.helper),
+            },
+            afterSurgery: {
+              headwashDate: patientData.afterSurgery?.headwashDate
+                ? patientData.afterSurgery.headwashDate.split("T")[0]
+                : "",
+              bandageRemovalDate: patientData.afterSurgery?.bandageRemovalDate
+                ? patientData.afterSurgery.bandageRemovalDate.split("T")[0]
+                : "",
+              prp: patientData.afterSurgery?.prp || [],
+            },
+            payments: {
+              totalAmount: patientData.payments?.totalAmount || "",
+              amountReceived: patientData.payments?.amountReceived || "",
+              pendingAmount: patientData.payments?.pendingAmount || "",
+              medicineAmount: patientData.payments?.medicineAmount || "",
+              discount: patientData.payments?.discount || "",
+              transactions: patientData.payments?.transactions || [],
             },
             documents: {
               images: patientData.documents?.images || [],
@@ -353,9 +740,12 @@ export default function PatientEditDetails() {
 
   const stepConfig = [
     { number: 1, title: "Personal Details", icon: User, color: "blue" },
-    { number: 2, title: "Medical Information", icon: Heart, color: "red" },
-    { number: 3, title: "Surgery Details", icon: Scissors, color: "orange" },
-    { number: 4, title: "Document Upload", icon: FileUp, color: "indigo" },
+    { number: 2, title: "Counsellor Details", icon: FileText, color: "green" },
+    { number: 3, title: "Medical Information", icon: Heart, color: "red" },
+    { number: 4, title: "Surgery Details", icon: Scissors, color: "orange" },
+    { number: 5, title: "After Surgery Care", icon: Droplet, color: "pink" },
+    { number: 6, title: "Payment Details", icon: CreditCard, color: "purple" },
+    { number: 7, title: "Document Upload", icon: FileUp, color: "indigo" },
   ];
 
   const handleChange = (section, field, value) => {
@@ -376,105 +766,130 @@ export default function PatientEditDetails() {
     };
   };
 
+  const handleArrayChange = (section, field, value, index) => {
+    const newArray = [...formData[section][field]];
+    newArray[index] = value;
+    setFormData((prev) => ({
+      ...prev,
+      [section]: {
+        ...prev[section],
+        [field]: newArray,
+      },
+    }));
+  };
+
+  const addArrayItem = (section, field, value = "") => {
+    setFormData((prev) => ({
+      ...prev,
+      [section]: {
+        ...prev[section],
+        [field]: [...prev[section][field], value],
+      },
+    }));
+  };
+
+  const removeArrayItem = (section, field, index) => {
+    const newArray = formData[section][field].filter((_, i) => i !== index);
+    setFormData((prev) => ({
+      ...prev,
+      [section]: {
+        ...prev[section],
+        [field]: newArray,
+      },
+    }));
+  };
+
+  // PRP handlers
+  const handlePRPChange = (index, field, value) => {
+    const newPRP = [...formData.afterSurgery.prp];
+    newPRP[index] = {
+      ...newPRP[index],
+      [field]: value,
+    };
+    setFormData((prev) => ({
+      ...prev,
+      afterSurgery: {
+        ...prev.afterSurgery,
+        prp: newPRP,
+      },
+    }));
+  };
+
+  const addPRPSession = () => {
+    setFormData((prev) => ({
+      ...prev,
+      afterSurgery: {
+        ...prev.afterSurgery,
+        prp: [
+          ...prev.afterSurgery.prp,
+          {
+            prpNumber: "",
+            date: "",
+          },
+        ],
+      },
+    }));
+  };
+
+  const removePRPSession = (index) => {
+    const newPRP = formData.afterSurgery.prp.filter((_, i) => i !== index);
+    setFormData((prev) => ({
+      ...prev,
+      afterSurgery: {
+        ...prev.afterSurgery,
+        prp: newPRP,
+      },
+    }));
+  };
+
   const handleFileUpload = async (section, files) => {
     if (!files || files.length === 0) return;
 
-    // Validate file sizes
-    const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
-    const invalidFiles = Array.from(files).filter(
-      (file) => file.size > MAX_FILE_SIZE
-    );
-
-    if (invalidFiles.length > 0) {
-      setUpdateStatus({
-        type: "error",
-        message: `${invalidFiles.length} file(s) exceed 10MB limit. Please compress or reduce file size.`,
-      });
-      setTimeout(() => setUpdateStatus(null), 5000);
-      return;
-    }
-
     setUploadingFiles((prev) => ({ ...prev, [section]: true }));
 
-    const uploadedPaths = [];
-    const failedFiles = [];
-
     try {
-      // Upload files sequentially to avoid overwhelming the server
-      for (const file of Array.from(files)) {
-        try {
-          const formDataToSend = new FormData();
-          formDataToSend.append("file", file);
-          formDataToSend.append("section", section);
-          formDataToSend.append("patientId", id);
+      const uploadPromises = Array.from(files).map(async (file) => {
+        const formDataToSend = new FormData();
+        formDataToSend.append("file", file);
+        formDataToSend.append("section", section);
+        formDataToSend.append("patientId", id);
 
-          // Set a timeout for the fetch request
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 150000); // 2.5 minutes
+        const response = await fetch("/api/upload", {
+          method: "POST",
+          body: formDataToSend,
+        });
 
-          const response = await fetch("/api/upload", {
-            method: "POST",
-            body: formDataToSend,
-            signal: controller.signal,
-          });
-
-          clearTimeout(timeoutId);
-
-          if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(
-              errorData.message || `Failed to upload ${file.name}`
-            );
-          }
-
-          const data = await response.json();
-          uploadedPaths.push(data.filePath);
-
-          // Update UI after each successful upload
-          setFormData((prev) => ({
-            ...prev,
-            documents: {
-              ...prev.documents,
-              [section]: [...prev.documents[section], data.filePath],
-            },
-          }));
-
-          // Show progress
-          setUpdateStatus({
-            type: "success",
-            message: `Uploaded ${uploadedPaths.length} of ${files.length} files...`,
-          });
-        } catch (fileError) {
-          console.error(`Error uploading ${file.name}:`, fileError);
-
-          if (fileError.name === "AbortError") {
-            failedFiles.push({ name: file.name, error: "Upload timeout" });
-          } else {
-            failedFiles.push({ name: file.name, error: fileError.message });
-          }
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || `Failed to upload ${file.name}`);
         }
-      }
 
-      // Final status message
-      if (failedFiles.length === 0) {
-        setUpdateStatus({
-          type: "success",
-          message: `Successfully uploaded ${uploadedPaths.length} file(s)`,
-        });
-        setTimeout(() => setUpdateStatus(null), 3000);
-      } else {
-        setUpdateStatus({
-          type: "error",
-          message: `Uploaded ${uploadedPaths.length} files. Failed: ${failedFiles
-            .map((f) => f.name)
-            .join(", ")}. ${failedFiles[0]?.error || ""}`,
-        });
-      }
+        const data = await response.json();
+        return data.filePath;
+      });
+
+      const uploadedPaths = await Promise.all(uploadPromises);
+
+      setFormData((prev) => ({
+        ...prev,
+        documents: {
+          ...prev.documents,
+          [section]: [...prev.documents[section], ...uploadedPaths],
+        },
+      }));
+
+      setUpdateStatus({
+        type: "success",
+        message: `Successfully uploaded ${uploadedPaths.length} file(s)`,
+      });
+
+      setTimeout(() => setUpdateStatus(null), 3000);
     } catch (error) {
       console.error("Error uploading files:", error);
       setUpdateStatus({
         type: "error",
-        message: error.message || "Failed to upload files. Please try again.",
+        message:
+          error.message || "Failed to upload some files. Please try again.",
       });
     } finally {
       setUploadingFiles((prev) => ({ ...prev, [section]: false }));
@@ -482,164 +897,134 @@ export default function PatientEditDetails() {
   };
 
   const removeFile = async (section, index) => {
-  const filePath = formData.documents[section][index];
+    const filePath = formData.documents[section][index];
 
-  if (!confirm("Are you sure you want to remove this file?")) {
-    return;
-  }
-
-  try {
-    const extractPublicId = (url) => {
-      if (!url.includes("cloudinary.com")) {
-        console.log("Not a Cloudinary URL:", url);
-        return null;
-      }
-
-      try {
-        // Split by /upload/ to get the part after it
-        const parts = url.split("/upload/");
-        if (parts.length !== 2) {
-          console.log("Invalid Cloudinary URL format:", url);
-          return null;
-        }
-
-        // Get everything after /upload/
-        let pathAfterUpload = parts[1];
-
-        // Remove any transformation parameters (they start with letters followed by underscore)
-        // e.g., fl_attachment:false/, q_auto/, w_500/
-        const segments = pathAfterUpload.split("/");
-        const cleanSegments = segments.filter(segment => {
-          // Keep segments that don't match transformation pattern
-          return !(/^[a-z]+_/.test(segment) && segment.includes(':'));
-        });
-
-        // Join the remaining segments
-        const publicIdWithExtension = cleanSegments.join("/");
-
-        // Remove query parameters if any (after ?)
-        const publicIdClean = publicIdWithExtension.split("?")[0];
-
-        // Remove file extension
-        const publicId = publicIdClean.replace(/\.[^/.]+$/, "");
-
-        console.log("Extracted public ID:", publicId);
-        return publicId;
-      } catch (error) {
-        console.error("Error extracting public ID:", error);
-        return null;
-      }
-    };
-
-    const publicId = extractPublicId(filePath);
-    
-    if (!publicId) {
-      // If we can't extract public ID, still remove from state
-      console.warn("Could not extract public ID, removing from state only");
-      setFormData((prev) => ({
-        ...prev,
-        documents: {
-          ...prev.documents,
-          [section]: prev.documents[section].filter((_, i) => i !== index),
-        },
-      }));
-
-      setUpdateStatus({
-        type: "success",
-        message: "File removed from list (Cloudinary deletion skipped)",
-      });
-
-      setTimeout(() => setUpdateStatus(null), 3000);
+    if (!confirm("Are you sure you want to remove this file?")) {
       return;
     }
 
-    const resourceType = filePath.toLowerCase().endsWith(".pdf")
-      ? "raw"
-      : "image";
+    try {
+      const extractPublicId = (url) => {
+        if (!url.includes("cloudinary.com")) return null;
 
-    console.log("Attempting to delete:", { publicId, resourceType });
+        const parts = url.split("/upload/");
+        if (parts.length !== 2) return null;
 
-    const response = await fetch("/api/upload", {
-      method: "DELETE",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        publicId: publicId,
-        resourceType: resourceType,
-      }),
-    });
+        const pathPart = parts[1];
+        const segments = pathPart.split("/");
 
-    const result = await response.json();
+        let publicIdParts = [];
+        let foundPath = false;
 
-    // Remove from state regardless of Cloudinary deletion success
-    // This handles cases where file was already deleted from Cloudinary
-    if (response.ok || result.message === "File not found") {
-      setFormData((prev) => ({
-        ...prev,
-        documents: {
-          ...prev.documents,
-          [section]: prev.documents[section].filter((_, i) => i !== index),
+        for (const segment of segments) {
+          if (!foundPath && /^[a-z]+_/.test(segment)) {
+            continue;
+          }
+          foundPath = true;
+          publicIdParts.push(segment);
+        }
+
+        const publicId = publicIdParts.join("/");
+        return publicId.replace(/\.[^/.]+$/, "");
+      };
+
+      const publicId = extractPublicId(filePath);
+      const resourceType = filePath.toLowerCase().endsWith(".pdf")
+        ? "raw"
+        : "image";
+
+      const response = await fetch("/api/upload", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
         },
-      }));
-
-      setUpdateStatus({
-        type: "success",
-        message: result.success 
-          ? "File removed successfully" 
-          : "File removed from list (already deleted from storage)",
+        body: JSON.stringify({
+          publicId: publicId,
+          resourceType: resourceType,
+        }),
       });
 
-      setTimeout(() => setUpdateStatus(null), 3000);
-    } else {
-      throw new Error(result.message || "Failed to delete file");
-    }
-  } catch (error) {
-    console.error("Error removing file:", error);
-    
-    // Ask user if they want to remove from list anyway
-    const forceRemove = confirm(
-      "Failed to delete from cloud storage. Remove from list anyway?"
-    );
+      const result = await response.json();
 
-    if (forceRemove) {
-      setFormData((prev) => ({
-        ...prev,
-        documents: {
-          ...prev.documents,
-          [section]: prev.documents[section].filter((_, i) => i !== index),
-        },
-      }));
+      if (response.ok && result.success) {
+        setFormData((prev) => ({
+          ...prev,
+          documents: {
+            ...prev.documents,
+            [section]: prev.documents[section].filter((_, i) => i !== index),
+          },
+        }));
 
-      setUpdateStatus({
-        type: "success",
-        message: "File removed from list",
-      });
+        setUpdateStatus({
+          type: "success",
+          message: "File removed successfully",
+        });
 
-      setTimeout(() => setUpdateStatus(null), 3000);
-    } else {
+        setTimeout(() => setUpdateStatus(null), 3000);
+      } else {
+        throw new Error(result.message || "Failed to delete file");
+      }
+    } catch (error) {
+      console.error("Error removing file:", error);
       setUpdateStatus({
         type: "error",
         message: error.message || "Failed to remove file. Please try again.",
       });
     }
-  }
-};
+  };
 
+  const handleTransactionChange = (index, field, value) => {
+    const newTransactions = [...formData.payments.transactions];
+    newTransactions[index] = {
+      ...newTransactions[index],
+      [field]: value,
+      _id: newTransactions[index]._id || undefined,
+    };
+    handleChange("payments", "transactions", newTransactions);
+  };
+
+  const addTransaction = () => {
+    handleChange("payments", "transactions", [
+      ...formData.payments.transactions,
+      {
+        date: "",
+        paymentType: "",
+        branch: "",
+        amount: "",
+      },
+    ]);
+  };
+
+  const removeTransaction = (index) => {
+    const newTransactions = formData.payments.transactions.filter(
+      (_, i) => i !== index
+    );
+    handleChange("payments", "transactions", newTransactions);
+  };
+
+  // Clean empty ObjectId fields before sending to API
   const cleanObjectIdFields = (data) => {
     const cleaned = JSON.parse(JSON.stringify(data));
 
+    // Single ObjectId fields
     const objectIdFields = {
+      personal: ["reference"],
+      counselling: ["counsellor"],
+    };
+
+    // Array ObjectId fields - ALL surgery team fields are now arrays
+    const arrayObjectIdFields = {
       surgery: [
         "doctor",
         "seniorTech",
         "implanterRight",
         "implanterLeft",
         "graftingPerson",
-        "helpers",
+        "helper",
       ],
     };
 
+    // Convert empty strings to null for single ObjectId fields
     Object.keys(objectIdFields).forEach((section) => {
       if (cleaned[section]) {
         objectIdFields[section].forEach((field) => {
@@ -653,9 +1038,39 @@ export default function PatientEditDetails() {
       }
     });
 
+    // Handle array ObjectId fields
+    Object.keys(arrayObjectIdFields).forEach((section) => {
+      if (cleaned[section]) {
+        arrayObjectIdFields[section].forEach((field) => {
+          if (Array.isArray(cleaned[section][field])) {
+            cleaned[section][field] = cleaned[section][field].filter(
+              (id) => id && id !== ""
+            );
+            if (cleaned[section][field].length === 0) {
+              cleaned[section][field] = [];
+            }
+          } else if (
+            cleaned[section][field] === "" ||
+            cleaned[section][field] === undefined
+          ) {
+            cleaned[section][field] = [];
+          }
+        });
+      }
+    });
+
+    // Clean empty number fields
     const numberFields = {
       personal: ["age", "packageQuoted"],
+      counselling: ["finlpackage", "graftsSuggested"],
       surgery: ["OT", "graftsneed", "graftsImplanted"],
+      payments: [
+        "totalAmount",
+        "amountReceived",
+        "pendingAmount",
+        "medicineAmount",
+        "discount",
+      ],
     };
 
     Object.keys(numberFields).forEach((section) => {
@@ -733,7 +1148,7 @@ export default function PatientEditDetails() {
     }
   };
 
-  const nextStep = () => setStep(Math.min(step + 1, 4));
+  const nextStep = () => setStep(Math.min(step + 1, 7));
   const prevStep = () => setStep(Math.max(step - 1, 1));
 
   return (
@@ -821,6 +1236,7 @@ export default function PatientEditDetails() {
           </div>
 
           <div className="px-8 py-8">
+            {/* Step 1: Personal Details - Keep as is from your original code */}
             {step === 1 && (
               <div className="space-y-8">
                 <StepHeader
@@ -904,6 +1320,17 @@ export default function PatientEditDetails() {
                   />
 
                   <InputField
+                    label="Reference Source (Agent)"
+                    type="select"
+                    value={formData.personal.reference}
+                    onChange={createChangeHandler("personal", "reference")}
+                    options={employees.Agent.map((emp) => ({
+                      value: emp._id,
+                      label: emp.name,
+                    }))}
+                  />
+
+                  <InputField
                     label="Package Quoted (₹)"
                     type="number"
                     value={formData.personal.packageQuoted}
@@ -926,6 +1353,7 @@ export default function PatientEditDetails() {
                       { value: "HYBRID", label: "HYBRID" },
                       { value: "PRP", label: "PRP" },
                       { value: "GFC", label: "GFC" },
+                      { value: "Alopecia", label: "Alopecia" },
                       { value: "Other", label: "Other" },
                     ]}
                   />
@@ -952,6 +1380,313 @@ export default function PatientEditDetails() {
             )}
 
             {step === 2 && (
+              <div className="space-y-8">
+                <StepHeader
+                  icon={FileText}
+                  title="Counselling Details"
+                  description="Update consultation information"
+                  color="green"
+                />
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 gap-x-12">
+                  <InputField
+                    label="Counsellor"
+                    type="select"
+                    value={formData.counselling.counsellor}
+                    onChange={createChangeHandler("counselling", "counsellor")}
+                    options={employees.Counsellor.map((emp) => ({
+                      value: emp._id,
+                      label: emp.name,
+                    }))}
+                  />
+
+                  <InputField
+                    label="Technique Suggested"
+                    type="select"
+                    value={formData.counselling.techniqueSuggested}
+                    onChange={createChangeHandler(
+                      "counselling",
+                      "techniqueSuggested"
+                    )}
+                    options={[
+                      { value: "FUE", label: "FUE" },
+                      { value: "INDIAN DHI", label: "INDIAN DHI" },
+                      { value: "TURKISH DHI", label: "Turkish DHI" },
+                      { value: "HYBRID", label: "HYBRID" },
+                      { value: "PRP", label: "PRP" },
+                      { value: "GFC", label: "GFC" },
+                      { value: "Other", label: "Other" },
+                    ]}
+                  />
+
+                  <InputField
+                    label="Final Package Amount (₹)"
+                    type="number"
+                    value={formData.counselling.finlpackage}
+                    onChange={createChangeHandler("counselling", "finlpackage")}
+                    placeholder="Final package amount"
+                  />
+
+                  <InputField
+                    label="Grafts Suggested"
+                    type="number"
+                    value={formData.counselling.graftsSuggested}
+                    onChange={createChangeHandler(
+                      "counselling",
+                      "graftsSuggested"
+                    )}
+                    placeholder="Number of grafts"
+                  />
+
+                  {/* Hair Loss Type - Radio Buttons */}
+                  <div className="space-y-3 my-3">
+                    <label className="block mb-4 text-md underline font-bold text-gray-700">
+                      Hair Loss Type *
+                    </label>
+                    <div className="space-y-2 flex flex-wrap space-x-7">
+                      {[
+                        {
+                          value: "male_pattern",
+                          label: "Male Pattern Baldness",
+                        },
+                        {
+                          value: "female_pattern",
+                          label: "Female Pattern Baldness",
+                        },
+                        {
+                          value: "receding_hairline",
+                          label: "Receding Hairline",
+                        },
+                        { value: "crown_thinning", label: "Crown Thinning" },
+                        {
+                          value: "diffuse_thinning",
+                          label: "Diffuse Thinning",
+                        },
+                        { value: "frontal_loss", label: "Frontal Hair Loss" },
+                        {
+                          value: "traction_alopecia",
+                          label: "Traction Alopecia",
+                        },
+                        { value: "other", label: "Other" },
+                      ].map((option) => (
+                        <label
+                          key={option.value}
+                          className="flex items-center align-middle space-x-1"
+                        >
+                          <input
+                            type="radio"
+                            name="hairlossType"
+                            value={option.value}
+                            checked={
+                              formData.counselling.hairlossType === option.value
+                            }
+                            onChange={createChangeHandler(
+                              "counselling",
+                              "hairlossType"
+                            )}
+                            className="text-blue-600 focus:ring-blue-500"
+                          />
+                          <span className="text-md text-gray-700">
+                            {option.label}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Area of Concern - Radio Buttons */}
+                  <div className="space-y-3 my-3">
+                    <label className="block mb-4 text-md underline font-bold text-gray-700">
+                      Area of Concern *
+                    </label>
+                    <div className="space-y-2 flex flex-wrap space-x-7">
+                      {[
+                        { value: "frontal", label: "Frontal Area" },
+                        { value: "mid_scalp", label: "Mid Scalp" },
+                        { value: "crown", label: "Crown/Vortex" },
+                        { value: "hairline", label: "Hairline Correction" },
+                        { value: "temples", label: "Temples" },
+                        { value: "beard", label: "Beard/Moustache" },
+                        { value: "multiple_areas", label: "Multiple Areas" },
+                      ].map((option) => (
+                        <label
+                          key={option.value}
+                          className="flex items-center align-baseline space-x-1"
+                        >
+                          <input
+                            type="radio"
+                            name="areaofConcern"
+                            value={option.value}
+                            checked={
+                              formData.counselling.areaofConcern ===
+                              option.value
+                            }
+                            onChange={createChangeHandler(
+                              "counselling",
+                              "areaofConcern"
+                            )}
+                            className="text-blue-600 focus:ring-blue-500"
+                          />
+                          <span className="text-md text-gray-700">
+                            {option.label}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Hair Loss Reason - Radio Buttons */}
+                  <div className="space-y-3">
+                    <label className="block mb-4 text-lg underline font-bold text-gray-700">
+                      Hair Loss Reason *
+                    </label>
+                    <div className="flex flex-wrap space-x-7 space-y-2">
+                      {[
+                        { value: "genetic", label: "Genetic/Hereditary" },
+                        { value: "hormonal", label: "Hormonal Changes" },
+                        { value: "stress", label: "Stress Related" },
+                        {
+                          value: "nutritional",
+                          label: "Nutritional Deficiency",
+                        },
+                        { value: "medical", label: "Medical Condition" },
+                        {
+                          value: "medication",
+                          label: "Medication Side Effects",
+                        },
+                        { value: "lifestyle", label: "Lifestyle Factors" },
+                        { value: "ageing", label: "Ageing Process" },
+                        { value: "unknown", label: "Unknown/Idiopathic" },
+                      ].map((option) => (
+                        <label
+                          key={option.value}
+                          className="flex items-center align-middle space-x-1"
+                        >
+                          <input
+                            type="radio"
+                            name="hairlossreason"
+                            value={option.value}
+                            checked={
+                              formData.counselling.hairlossreason ===
+                              option.value
+                            }
+                            onChange={createChangeHandler(
+                              "counselling",
+                              "hairlossreason"
+                            )}
+                            className="text-blue-600 focus:ring-blue-500"
+                          />
+                          <span className="text-md text-gray-700">
+                            {option.label}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Hair Loss Duration - Radio Buttons */}
+                  <div className="space-y-3">
+                    <label className="block mb-4 text-md underline font-bold text-gray-700">
+                      Hair Loss Duration *
+                    </label>
+                    <div className="space-y-2 flex flex-wrap space-x-5">
+                      {[
+                        {
+                          value: "less_than_1_year",
+                          label: "Less than 1 year",
+                        },
+                        { value: "1_2_years", label: "1-2 years" },
+                        { value: "2_5_years", label: "2-5 years" },
+                        { value: "5_10_years", label: "5-10 years" },
+                        {
+                          value: "more_than_10_years",
+                          label: "More than 10 years",
+                        },
+                        {
+                          value: "progressive",
+                          label: "Progressive (ongoing)",
+                        },
+                        {
+                          value: "recent_accelerated",
+                          label: "Recent accelerated loss",
+                        },
+                      ].map((option) => (
+                        <label
+                          key={option.value}
+                          className="flex items-center space-x-1"
+                        >
+                          <input
+                            type="radio"
+                            name="hairlossduration"
+                            value={option.value}
+                            checked={
+                              formData.counselling.hairlossduration ===
+                              option.value
+                            }
+                            onChange={createChangeHandler(
+                              "counselling",
+                              "hairlossduration"
+                            )}
+                            className="text-blue-600 focus:ring-blue-500"
+                          />
+                          <span className="text-md text-gray-700">
+                            {option.label}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Updated Benefits Manager */}
+                  <BenefitsManager
+                    benefits={formData.counselling.additionalbenefits}
+                    onChange={(value, index) =>
+                      handleArrayChange(
+                        "counselling",
+                        "additionalbenefits",
+                        value,
+                        index
+                      )
+                    }
+                    onAdd={(value) =>
+                      addArrayItem("counselling", "additionalbenefits", value)
+                    }
+                    onRemove={(index) =>
+                      removeArrayItem(
+                        "counselling",
+                        "additionalbenefits",
+                        index
+                      )
+                    }
+                  />
+
+                  <InputField
+                    label="Notes"
+                    type="textarea"
+                    value={formData.counselling.notes}
+                    onChange={createChangeHandler("counselling", "notes")}
+                    placeholder="Additional counselling notes"
+                    className="md:col-span-2 mt-3"
+                  />
+
+                  <div className="md:col-span-2">
+                    <InputField
+                      label="Ready for Surgery"
+                      type="checkbox"
+                      value={formData.counselling.readyForSurgery}
+                      onChange={createChangeHandler(
+                        "counselling",
+                        "readyForSurgery"
+                      )}
+                      className="mt-4"
+                      placeholder="Patient is ready for surgery"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {step === 3 && (
               <div className="space-y-8">
                 <StepHeader
                   icon={Heart}
@@ -1049,8 +1784,8 @@ export default function PatientEditDetails() {
                 </div>
               </div>
             )}
-
-            {step === 3 && (
+            {/* Step 4: Surgery Details - UPDATED WITH MULTI-SELECT */}
+            {step === 4 && (
               <div className="space-y-8">
                 <StepHeader
                   icon={Scissors}
@@ -1113,86 +1848,188 @@ export default function PatientEditDetails() {
                     value={formData.surgery.donorCondition}
                     onChange={createChangeHandler("surgery", "donorCondition")}
                     placeholder="Donor area condition"
+                    className="md:col-span-2"
+                  />
+
+                  {/* Multi-select for Doctors */}
+                  <div className="md:col-span-2">
+                    <MultiSelectEmployee
+                      label="Operating Doctors (Select Multiple)"
+                      options={employees.Doctor}
+                      selectedIds={formData.surgery.doctor}
+                      onChange={(newSelection) =>
+                        handleChange("surgery", "doctor", newSelection)
+                      }
+                    />
+                  </div>
+
+                  {/* Multi-select for Senior Technicians */}
+                  <div className="md:col-span-2">
+                    <MultiSelectEmployee
+                      label="Senior Technicians (Select Multiple)"
+                      options={employees.Technician}
+                      selectedIds={formData.surgery.seniorTech}
+                      onChange={(newSelection) =>
+                        handleChange("surgery", "seniorTech", newSelection)
+                      }
+                    />
+                  </div>
+
+                  {/* Multi-select for Right Implanters */}
+                  <div className="md:col-span-2">
+                    <MultiSelectEmployee
+                      label="Right Side Implanters (Select Multiple)"
+                      options={employees.Implanter}
+                      selectedIds={formData.surgery.implanterRight}
+                      onChange={(newSelection) =>
+                        handleChange("surgery", "implanterRight", newSelection)
+                      }
+                    />
+                  </div>
+
+                  {/* Multi-select for Left Implanters */}
+                  <div className="md:col-span-2">
+                    <MultiSelectEmployee
+                      label="Left Side Implanters (Select Multiple)"
+                      options={employees.Implanter}
+                      selectedIds={formData.surgery.implanterLeft}
+                      onChange={(newSelection) =>
+                        handleChange("surgery", "implanterLeft", newSelection)
+                      }
+                    />
+                  </div>
+
+                  {/* Multi-select for Grafting Persons */}
+                  <div className="md:col-span-2">
+                    <MultiSelectEmployee
+                      label="Grafting Specialists (Select Multiple)"
+                      options={employees.Others}
+                      selectedIds={formData.surgery.graftingPerson}
+                      onChange={(newSelection) =>
+                        handleChange("surgery", "graftingPerson", newSelection)
+                      }
+                    />
+                  </div>
+
+                  {/* Multi-select for Helpers */}
+                  <div className="md:col-span-2">
+                    <MultiSelectEmployee
+                      label="Surgery Helpers (Select Multiple)"
+                      options={employees.Others}
+                      selectedIds={formData.surgery.helper}
+                      onChange={(newSelection) =>
+                        handleChange("surgery", "helper", newSelection)
+                      }
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Step 5: After Surgery Care - NEW STEP */}
+            {step === 5 && (
+              <div className="space-y-8">
+                <StepHeader
+                  icon={Droplet}
+                  title="After Surgery Care"
+                  description="Post-operative care schedule"
+                  color="pink"
+                />
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 gap-x-12">
+                  <InputField
+                    label="Head Wash Date"
+                    type="date"
+                    value={formData.afterSurgery.headwashDate}
+                    onChange={createChangeHandler(
+                      "afterSurgery",
+                      "headwashDate"
+                    )}
                   />
 
                   <InputField
-                    label="Operating Doctor"
-                    type="select"
-                    value={formData.surgery.doctor}
-                    onChange={createChangeHandler("surgery", "doctor")}
-                    options={employees.Doctor.map((emp) => ({
-                      value: emp._id,
-                      label: emp.name,
-                    }))}
+                    label="Bandage Removal Date"
+                    type="date"
+                    value={formData.afterSurgery.bandageRemovalDate}
+                    onChange={createChangeHandler(
+                      "afterSurgery",
+                      "bandageRemovalDate"
+                    )}
                   />
 
-                  <InputField
-                    label="Senior Technician"
-                    type="select"
-                    value={formData.surgery.seniorTech}
-                    onChange={createChangeHandler("surgery", "seniorTech")}
-                    options={surgeryTeamMembers.map((emp) => ({
-                      value: emp._id,
-                      label: emp.name,
-                    }))}
-                  />
-
-                  <InputField
-                    label="Right Side Implanter"
-                    type="select"
-                    value={formData.surgery.implanterRight}
-                    onChange={createChangeHandler("surgery", "implanterRight")}
-                    options={surgeryTeamMembers.map((emp) => ({
-                      value: emp._id,
-                      label: emp.name,
-                    }))}
-                  />
-
-                  <InputField
-                    label="Left Side Implanter"
-                    type="select"
-                    value={formData.surgery.implanterLeft}
-                    onChange={createChangeHandler("surgery", "implanterLeft")}
-                    options={surgeryTeamMembers.map((emp) => ({
-                      value: emp._id,
-                      label: emp.name,
-                    }))}
-                  />
-
-                  {/* <InputField
-                    label="Grafting Specialist"
-                    type="select"
-                    value={formData.surgery.graftingPerson}
-                    onChange={createChangeHandler("surgery", "graftingPerson")}
-                    options={surgeryTeamMembers.map((emp) => ({
-                      value: emp._id,
-                      label: emp.name,
-                    }))}
-                  /> */}
-
-                  <InputField
-                    label="Surgery Helpers (Multiple)"
-                    type="multiselect"
-                    value={formData.surgery.helpers}
-                    options={employees.Others.map((emp) => ({
-                      value: emp._id,
-                      label: emp.name,
-                    }))}
-                    onChange={(e) => {
-                      setFormData((prev) => ({
-                        ...prev,
-                        surgery: {
-                          ...prev.surgery,
-                          helpers: e.target.value,
-                        },
-                      }));
-                    }}
+                  <PRPManager
+                    prpSessions={formData.afterSurgery.prp}
+                    onChange={handlePRPChange}
+                    onAdd={addPRPSession}
+                    onRemove={removePRPSession}
                   />
                 </div>
               </div>
             )}
 
-            {step === 4 && (
+            {/* Step 6: Payment Details - Keep your existing code */}
+            {step === 6 && (
+              <div className="space-y-8">
+                <StepHeader
+                  icon={CreditCard}
+                  title="Payment Details"
+                  description="Update financial information and transactions"
+                  color="purple"
+                />
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 gap-x-12">
+                  <InputField
+                    label="Total Amount (₹)"
+                    type="number"
+                    value={formData.payments.totalAmount}
+                    onChange={createChangeHandler("payments", "totalAmount")}
+                    placeholder="Total amount quoted"
+                  />
+
+                  <InputField
+                    label="Amount Received (₹)"
+                    type="number"
+                    value={formData.payments.amountReceived}
+                    onChange={createChangeHandler("payments", "amountReceived")}
+                    placeholder="Amount received"
+                  />
+
+                  <InputField
+                    label="Pending Amount (₹)"
+                    type="number"
+                    value={formData.payments.pendingAmount}
+                    onChange={createChangeHandler("payments", "pendingAmount")}
+                    placeholder="Pending amount"
+                  />
+
+                  <InputField
+                    label="Medicine Amount (₹)"
+                    type="number"
+                    value={formData.payments.medicineAmount}
+                    onChange={createChangeHandler("payments", "medicineAmount")}
+                    placeholder="Medicine cost"
+                  />
+
+                  <InputField
+                    label="Discount (₹)"
+                    type="number"
+                    value={formData.payments.discount}
+                    onChange={createChangeHandler("payments", "discount")}
+                    placeholder="Discount amount"
+                  />
+
+                  <TransactionManager
+                    transactions={formData.payments.transactions}
+                    onChange={handleTransactionChange}
+                    onAdd={addTransaction}
+                    onRemove={removeTransaction}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Step 7: Document Upload - Keep your existing code */}
+            {step === 7 && (
               <div className="space-y-8">
                 <StepHeader
                   icon={FileUp}
@@ -1269,7 +2106,7 @@ export default function PatientEditDetails() {
               )}
 
               <div className="flex space-x-4">
-                {step < 4 && (
+                {step < 7 && (
                   <button
                     type="button"
                     className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 transition-colors duration-200"
