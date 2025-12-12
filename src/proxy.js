@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-export function middleware(req) {
+export function proxy(req) {
   // Get initial values from cookies
   let isLoggedIn = req.cookies.get("isLoggedIn")?.value === "true";
   let userRole = req.cookies.get("userRole")?.value;

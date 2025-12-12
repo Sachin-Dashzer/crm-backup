@@ -16,7 +16,7 @@
     "html2pdf.js": "^0.12.1",
     "lucide-react": "^0.546.0",
     "mongoose": "^8.19.1",
-    "next": "15.5.5",
+    "next": "^16.0.10",
     "next-auth": "^4.24.11",
     "next-cloudinary": "^6.17.5",
     "react": "19.1.0",

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   BarChart,
   Bar,
@@ -43,11 +43,7 @@ export default function PerformancePage() {
     branch: "",
   });
 
-  useEffect(() => {
-    fetchChartData();
-  }, [filters]);
-
-  const fetchChartData = async () => {
+  const fetchChartData = useCallback(async () => {
     try {
       setLoading(true);
       const queryParams = new URLSearchParams();
@@ -66,7 +62,11 @@ export default function PerformancePage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filters]);
+
+  useEffect(() => {
+    fetchChartData();
+  }, [fetchChartData]);
 
   const handleFilterChange = (key, value) => {
     setFilters((prev) => ({ ...prev, [key]: value }));

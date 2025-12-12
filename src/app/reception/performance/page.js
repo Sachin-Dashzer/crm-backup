@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { TrendingUp, TrendingDown } from "lucide-react";
 import ReceptionSidebar from "@/components/ReceptionSidebar";
 import Topbar from "../../../components/Topbar";
@@ -45,12 +45,8 @@ export default function PerformancePage() {
     loadCharts();
   }, []);
 
-  // Fetch data
-  useEffect(() => {
-    fetchPerformanceData();
-  }, [branch, dateRange, customDates, selectedProcedure]);
-
-  const fetchPerformanceData = async () => {
+  // Fetch data - wrapped in useCallback to prevent infinite loops
+  const fetchPerformanceData = useCallback(async () => {
     setLoading(true);
     try {
       const response = await fetch("/api/admin/performance", {
@@ -70,7 +66,11 @@ export default function PerformancePage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [branch, dateRange, customDates, selectedProcedure]);
+
+  useEffect(() => {
+    fetchPerformanceData();
+  }, [fetchPerformanceData]);
 
   const { Line, Bar } = chartComponents;
 

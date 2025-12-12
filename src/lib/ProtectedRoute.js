@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter, usePathname } from "next/navigation";
 
 export default function ProtectedRoute({ children, allowedRoles = [] }) {
@@ -9,11 +9,7 @@ export default function ProtectedRoute({ children, allowedRoles = [] }) {
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    checkAuth();
-  }, [pathname]);
-
-  const checkAuth = async () => {
+  const checkAuth = useCallback(async () => {
     try {
       // Get user role from cookie
       const userRole = document.cookie
@@ -51,7 +47,11 @@ export default function ProtectedRoute({ children, allowedRoles = [] }) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [router, allowedRoles]);
+
+  useEffect(() => {
+    checkAuth();
+  }, [pathname, checkAuth]);
 
   if (isLoading) {
     return (
