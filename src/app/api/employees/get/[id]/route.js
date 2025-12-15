@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 import Employee from "@/models/Employee";
 import dbConnect from "@/lib/db";
+
 export async function GET(request, { params }) {
   try {
     await dbConnect();
     
-    const { id } = params;
+    const { id } = await params; // ✅ Add await here
     
     if (!id) {
       return NextResponse.json(

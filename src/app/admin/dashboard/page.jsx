@@ -100,7 +100,7 @@ export default function AdminDashboard() {
 
 
     const filterParams = new URLSearchParams({
-      dateFrom: plusDaysUTC(from, 1),
+      dateFrom: from,
       dateTo: to,
       branch: branchParam,
     });
