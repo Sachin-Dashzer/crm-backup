@@ -30,7 +30,7 @@ const NavItem = ({ item, href, isActive, onClick, icon: Icon }) => (
       }`}
     >
       <Icon className="w-5 h-5" />
-      <span className="flex-grow">{item}</span>
+      <span className="grow">{item}</span>
       {isActive && <div className="w-1 h-6 bg-indigo-600 rounded-full"></div>}
     </button>
   </Link>
@@ -53,7 +53,7 @@ export default function ReceptionSidebar() {
   const navItems = [
     { name: "Dashboard", path: "/reception/dashboard", icon: LayoutDashboard },
     { name: "Patients", path: "/reception/patients", icon: Users },
-    { name: "Book Consult", path: "/reception/book-consult", icon: Users },
+    { name: "Consult Form", path: "/reception/book-consult", icon: Users },
     { name: "Add Patient", path: "/reception/add-patient", icon: UserPlus },
     { name: "Not Visited", path: "/reception/not-visited", icon: UserX },
     { name: "Transactions", path: "/reception/transactions", icon: DollarSign },
@@ -98,7 +98,7 @@ export default function ReceptionSidebar() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <Link href="/reception/dashboard" className="flex items-center gap-2">
-            <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center">
+            <div className="w-10 h-10 bg-linear-to-r from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center">
               <Building2 className="w-6 h-6 text-white" />
             </div>
             <div>
@@ -130,9 +130,9 @@ export default function ReceptionSidebar() {
 
         {/* User Info & Logout */}
         <div className="space-y-3 border-t pt-4">
-          <div className="p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg">
+          <div className="p-3 bg-linear-to-r from-blue-50 to-indigo-50 rounded-lg">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-full bg-linear-to-r from-blue-600 to-indigo-600 flex items-center justify-center">
                 <Users className="w-5 h-5 text-white" />
               </div>
               <div>

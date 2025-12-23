@@ -156,6 +156,10 @@ patientSchema.pre("save", function (next) {
     patient.payments = patient.payments || {};
     patient.payments.totalAmount = patient.counselling.finlpackage;
   }
+  if (patient.counselling?.finlpackage) {
+    patient.payments = patient.payments || {};
+    patient.payments.pendingAmount = patient.counselling.finlpackage - patient.payments.amountReceived -  patient.payments.discount;
+  }
 
   // Check if doctor array has any entries
   const hasDoctor = patient.surgery?.doctor && patient.surgery.doctor.length > 0;

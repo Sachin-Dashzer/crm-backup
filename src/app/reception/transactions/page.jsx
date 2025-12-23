@@ -91,7 +91,7 @@ function StatCard({
 }) {
   return (
     <div
-      className={`bg-gradient-to-br ${gradient} p-4 sm:p-6 rounded-2xl shadow-lg text-white relative overflow-hidden transform hover:scale-105 transition-transform duration-300`}
+      className={`bg-linear-to-br ${gradient} p-4 sm:p-6 rounded-2xl shadow-lg text-white relative overflow-hidden transform hover:scale-105 transition-transform duration-300`}
     >
       <div className="absolute top-0 right-0 w-24 h-24 sm:w-32 sm:h-32 bg-white/10 rounded-full -mr-12 -mt-12 sm:-mr-16 sm:-mt-16" />
       <div className="relative">
@@ -104,7 +104,7 @@ function StatCard({
               {value}
             </h3>
           </div>
-          <div className={`${iconBg} p-2 sm:p-3 rounded-xl flex-shrink-0 ml-2`}>
+          <div className={`${iconBg} p-2 sm:p-3 rounded-xl shrink-0 ml-2`}>
             <Icon className={`w-4 h-4 sm:w-6 sm:h-6 ${iconColor}`} />
           </div>
         </div>
@@ -542,7 +542,7 @@ export default function AmountDashboard() {
 
   if (loading)
     return (
-      <div className="flex h-screen items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+      <div className="flex h-screen items-center justify-center bg-linear-to-br from-blue-50 via-indigo-50 to-purple-50">
         <div className="text-center">
           <Loader2 className="animate-spin h-16 w-16 text-indigo-500 mx-auto mb-4" />
           <p className="text-gray-600 font-medium">Loading financial data...</p>
@@ -552,7 +552,7 @@ export default function AmountDashboard() {
 
   if (error)
     return (
-      <div className="flex h-screen items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+      <div className="flex h-screen items-center justify-center bg-linear-to-br from-blue-50 via-indigo-50 to-purple-50">
         <div className="text-center bg-white p-8 rounded-3xl shadow-xl border border-red-100">
           <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
             <AlertCircle className="w-8 h-8 text-red-500" />
@@ -572,7 +572,7 @@ export default function AmountDashboard() {
     );
 
   return (
-    <div className="flex min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+    <div className="flex min-h-screen bg-linear-to-br from-blue-50 via-indigo-50 to-purple-50">
       {/* Mobile Sidebar Overlay */}
       {sidebarOpen && (
         <div
@@ -616,7 +616,7 @@ export default function AmountDashboard() {
               <button
                 onClick={handleRefresh}
                 disabled={refreshing}
-                className="p-2 sm:p-3 bg-white border-2 border-gray-200 rounded-xl hover:bg-gray-50 transition-all shadow-sm disabled:opacity-50 flex-shrink-0"
+                className="p-2 sm:p-3 bg-white border-2 border-gray-200 rounded-xl hover:bg-gray-50 transition-all shadow-sm disabled:opacity-50 shrink-0"
                 title="Refresh data"
               >
                 <RefreshCw
@@ -627,7 +627,7 @@ export default function AmountDashboard() {
               </button>
               <button
                 onClick={openCreateModal}
-                className="bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white px-3 sm:px-5 py-2 sm:py-3 rounded-xl flex items-center gap-1 sm:gap-2 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 text-sm sm:text-base flex-shrink-0"
+                className="bg-linear-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white px-3 sm:px-5 py-2 sm:py-3 rounded-xl flex items-center gap-1 sm:gap-2 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 text-sm sm:text-base shrink-0"
               >
                 <Plus size={18} strokeWidth={2.5} />
                 <span className="font-semibold hidden xs:inline">
@@ -693,9 +693,9 @@ export default function AmountDashboard() {
               {/* Tabs */}
               <div className="flex gap-1 sm:gap-2 w-full lg:w-auto overflow-x-auto pb-2 lg:pb-0">
                 <button
-                  className={`px-4 sm:px-6 py-2 sm:py-2.5 rounded-xl font-semibold transition-all whitespace-nowrap flex-shrink-0 ${
+                  className={`px-4 sm:px-6 py-2 sm:py-2.5 rounded-xl font-semibold transition-all whitespace-nowrap shrink-0 ${
                     activeTab === "revenue"
-                      ? "bg-gradient-to-r from-emerald-500 to-green-600 text-white shadow-md"
+                      ? "bg-linear-to-r from-emerald-500 to-green-600 text-white shadow-md"
                       : "bg-gray-50 text-gray-600 hover:bg-gray-100"
                   }`}
                   onClick={() => setActiveTab("revenue")}
@@ -703,9 +703,9 @@ export default function AmountDashboard() {
                   Revenue ({totalTransactions})
                 </button>
                 <button
-                  className={`px-4 sm:px-6 py-2 sm:py-2.5 rounded-xl font-semibold transition-all whitespace-nowrap flex-shrink-0 ${
+                  className={`px-4 sm:px-6 py-2 sm:py-2.5 rounded-xl font-semibold transition-all whitespace-nowrap shrink-0 ${
                     activeTab === "expenses"
-                      ? "bg-gradient-to-r from-rose-500 to-red-600 text-white shadow-md"
+                      ? "bg-linear-to-r from-rose-500 to-red-600 text-white shadow-md"
                       : "bg-gray-50 text-gray-600 hover:bg-gray-100"
                   }`}
                   onClick={() => setActiveTab("expenses")}
@@ -728,7 +728,7 @@ export default function AmountDashboard() {
                 </div>
                 <button
                   onClick={() => setShowFilters(!showFilters)}
-                  className={`p-2 sm:p-2.5 rounded-xl transition-all flex-shrink-0 ${
+                  className={`p-2 sm:p-2.5 rounded-xl transition-all shrink-0 ${
                     showFilters
                       ? "bg-indigo-50 text-indigo-600 ring-2 ring-indigo-200"
                       : "bg-gray-50 hover:bg-gray-100 text-gray-600"
@@ -740,7 +740,7 @@ export default function AmountDashboard() {
                 {hasActiveFilters && (
                   <button
                     onClick={clearFilters}
-                    className="px-3 sm:px-4 py-2 sm:py-2.5 text-sm bg-gray-50 hover:bg-gray-100 text-gray-700 rounded-xl transition-all font-medium flex items-center gap-1 sm:gap-2 whitespace-nowrap flex-shrink-0"
+                    className="px-3 sm:px-4 py-2 sm:py-2.5 text-sm bg-gray-50 hover:bg-gray-100 text-gray-700 rounded-xl transition-all font-medium flex items-center gap-1 sm:gap-2 whitespace-nowrap shrink-0"
                   >
                     <X className="w-4 h-4" />
                     <span className="hidden xs:inline">Clear</span>
@@ -751,7 +751,7 @@ export default function AmountDashboard() {
 
             {/* Filters Panel */}
             {showFilters && (
-              <div className="px-4 sm:px-6 pb-4 sm:pb-5 border-t border-gray-100 pt-4 sm:pt-5 bg-gradient-to-b from-gray-50 to-white">
+              <div className="px-4 sm:px-6 pb-4 sm:pb-5 border-t border-gray-100 pt-4 sm:pt-5 bg-linear-to-b from-gray-50 to-white">
                 <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-4">
                   <Select
                     label="Branch"
@@ -1016,7 +1016,7 @@ function TransactionModal({ transaction, patients, onClose, onSuccess }) {
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4 overflow-y-auto">
       <div className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl max-w-3xl w-full my-4 max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="sticky top-0 bg-gradient-to-r from-indigo-500 to-purple-600 px-4 sm:px-8 py-4 sm:py-5 flex justify-between items-center rounded-t-2xl sm:rounded-t-3xl z-10">
+        <div className="sticky top-0 bg-linear-to-r from-indigo-500 to-purple-600 px-4 sm:px-8 py-4 sm:py-5 flex justify-between items-center rounded-t-2xl sm:rounded-t-3xl z-10">
           <h2 className="text-xl sm:text-2xl font-bold text-white">
             {isEdit ? "Edit Transaction" : "Add New Transaction"}
           </h2>
@@ -1032,7 +1032,7 @@ function TransactionModal({ transaction, patients, onClose, onSuccess }) {
         <form onSubmit={handleSubmit} className="p-4 sm:p-6 lg:p-8">
           {error && (
             <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm flex items-start gap-2 sm:gap-3">
-              <AlertCircle size={18} className="flex-shrink-0 mt-0.5" />
+              <AlertCircle size={18} className="shrink-0 mt-0.5" />
               <span>{error}</span>
             </div>
           )}
@@ -1124,7 +1124,7 @@ function TransactionModal({ transaction, patients, onClose, onSuccess }) {
                         </p>
                       </div>
                       <CheckCircle2
-                        className="text-emerald-600 flex-shrink-0 ml-2"
+                        className="text-emerald-600 shrink-0 ml-2"
                         size={20}
                       />
                     </div>
@@ -1282,7 +1282,7 @@ function TransactionModal({ transaction, patients, onClose, onSuccess }) {
             {/* Pending Amount Display */}
             {formData.costType === "Revenue" && selectedPatient && (
               <div className="flex items-end">
-                <div className="w-full p-3 bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl">
+                <div className="w-full p-3 bg-linear-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl">
                   <p className="text-xs font-semibold text-blue-700 mb-1">
                     {formData.amount
                       ? "Pending Amount (After Transaction)"
@@ -1331,7 +1331,7 @@ function TransactionModal({ transaction, patients, onClose, onSuccess }) {
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 px-4 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl hover:from-indigo-600 hover:to-purple-700 transition-all font-semibold disabled:opacity-50 disabled:cursor-not-allowed shadow-lg flex items-center justify-center gap-2 text-sm sm:text-base"
+              className="flex-1 px-4 sm:px-6 py-2.5 sm:py-3 bg-linear-to-r from-indigo-500 to-purple-600 text-white rounded-xl hover:from-indigo-600 hover:to-purple-700 transition-all font-semibold disabled:opacity-50 disabled:cursor-not-allowed shadow-lg flex items-center justify-center gap-2 text-sm sm:text-base"
             >
               {loading ? (
                 <>
@@ -1371,7 +1371,6 @@ function DataTable({
           { key: "amount", label: "Amount", sortable: true },
           { key: "date", label: "Date", sortable: true },
           { key: "branch", label: "Branch", sortable: true },
-          { key: "remarks", label: "Remarks", sortable: false },
           { key: "actions", label: "Actions", sortable: false },
         ]
       : [
@@ -1427,8 +1426,8 @@ function DataTable({
   return (
     <div>
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[800px]">
-          <thead className="bg-gradient-to-r from-gray-50 to-gray-100 border-b-2 border-gray-200">
+        <table className="w-full min-w-200">
+          <thead className="bg-linear-to-r from-gray-50 to-gray-100 border-b-2 border-gray-200">
             <tr>
               {columns.map((col) => (
                 <th
@@ -1484,7 +1483,7 @@ function DataTable({
                       <>
                         <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4">
                           <div className="flex items-center gap-2 min-w-0">
-                            <div className="w-6 h-6 sm:w-8 sm:h-8 bg-indigo-100 rounded-full flex items-center justify-center flex-shrink-0">
+                            <div className="w-6 h-6 sm:w-8 sm:h-8 bg-indigo-100 rounded-full flex items-center justify-center shrink-0">
                               <User className="w-3 h-3 sm:w-4 sm:h-4 text-indigo-600" />
                             </div>
                             <span className="font-medium text-gray-900 text-sm truncate">
@@ -1526,7 +1525,7 @@ function DataTable({
                                 </div>
                               </>
                             ) : (
-                              <div className="font-bold text-emerald-600 text-sm sm:text-base">
+                              <div className="font-bold text-emerald-600 text-sm text-center sm:text-base">
                                 {formatCurrency(netAmount)}
                               </div>
                             )}
@@ -1540,9 +1539,9 @@ function DataTable({
                             {row.branch}
                           </span>
                         </td>
-                        <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 text-gray-600 text-sm max-w-[120px] lg:max-w-xs truncate">
+                        {/* <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 text-gray-600 text-sm max-w-30 lg:max-w-xs truncate">
                           {row.remarks || "-"}
-                        </td>
+                        </td> */}
                         <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4">
                           <div className="flex items-center gap-1 sm:gap-2">
                             <button
@@ -1592,7 +1591,7 @@ function DataTable({
                             {row.branch}
                           </span>
                         </td>
-                        <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 text-gray-600 text-sm max-w-[120px] lg:max-w-xs truncate">
+                        <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 text-gray-600 text-sm max-w-30 lg:max-w-xs truncate">
                           {row.remarks || "-"}
                         </td>
                         <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4">
@@ -1624,7 +1623,7 @@ function DataTable({
       </div>
 
       {/* Pagination */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4 px-4 sm:px-6 py-4 sm:py-5 border-t border-gray-200 bg-gradient-to-b from-white to-gray-50">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4 px-4 sm:px-6 py-4 sm:py-5 border-t border-gray-200 bg-linear-to-b from-white to-gray-50">
         <p className="text-xs sm:text-sm text-gray-600 font-medium">
           Showing{" "}
           <span className="font-bold text-gray-900">
@@ -1753,7 +1752,7 @@ function Select({ label, value, onChange, options, required, icon: Icon }) {
             </option>
           ))}
         </select>
-        <ChevronLeft className="absolute right-2 sm:right-3 top-1/2 transform -translate-y-1/2 rotate-[-90deg] text-gray-400 w-4 h-4 sm:w-5 sm:h-5 pointer-events-none" />
+        <ChevronLeft className="absolute right-2 sm:right-3 top-1/2 transform -translate-y-1/2 rotate-90 text-gray-400 w-4 h-4 sm:w-5 sm:h-5 pointer-events-none" />
       </div>
     </label>
   );

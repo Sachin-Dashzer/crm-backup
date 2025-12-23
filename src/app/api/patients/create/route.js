@@ -7,13 +7,13 @@ const handler = async (req) => {
   const { personal, medical, counselling, surgery, afterSurgery, payments, documents, ops } = await req.json();
 
   if (!personal || !personal.phone || !personal.name) {
-    return NextResponse.json({ error: "Please fill all the required fields" }, { status: 400 });
+    return NextResponse.json({ error: "Please fill all the required fields" }, { status: 403 });
   }
 
   const existingPatient = await Patient.findOne({ 'personal.phone': personal.phone });
 
   if (existingPatient) {
-    return NextResponse.json({ error: "Patient already exists" }, { status: 400 });
+    return NextResponse.json({ error: "Patient already exists" }, { status: 405 });
   }
 
   try {

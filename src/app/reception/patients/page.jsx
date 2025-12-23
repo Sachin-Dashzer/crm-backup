@@ -16,8 +16,9 @@ import {
 /* -------------------- Constants -------------------- */
 const STATUS_OPTIONS = [
   "NEW",
-  "NOT-VISITED",
+  "NOT_VISITED",
   "CONSULTED",
+  "NOT_CONVERTED",
   "SURGERY_BOOKED",
   "CLOSED",
 ];

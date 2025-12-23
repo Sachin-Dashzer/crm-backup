@@ -45,9 +45,9 @@ export default function ViewBills() {
       gstin: "07LYSP2547H2ZI",
     },
     Mumbai: {
-      name: "RYAN CLINIC",
+      name: "LA DOLCE HAIRTRANSPLANT CLINIC",
       address:
-        "Office No.1 & 2, 1st floor, Owala Naka, OM SAI PLAZA, w)-400615",
+        "Bunglow No 168,S.V.P Nagar,Four Bunglow, Mhada, Andheri West, Mumbai 400053",
       city: "Kasarvadavali, Thane West, Thane, Mumbai, Maharashtra 400615",
       phone: "8828202830",
       website: "https://clinicryan.com/",
@@ -249,7 +249,7 @@ export default function ViewBills() {
     .slice(0, 6);
 
   return (
-    <div className="flex min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+    <div className="flex min-h-screen bg-linear-to-br from-gray-50 to-gray-100">
       <ReceptionSidebar />
 
       <main className="flex-1 p-8">
@@ -268,7 +268,7 @@ export default function ViewBills() {
         </div>
 
         {initialLoading ? (
-          <div className="flex items-center justify-center min-h-[500px]">
+          <div className="flex items-center justify-center min-h-125">
             <div className="text-center">
               <div className="animate-spin rounded-full h-16 w-16 border-4 border-blue-600 border-t-transparent mx-auto mb-4"></div>
               <p className="text-gray-600 font-medium text-lg">Loading patients...</p>
@@ -373,7 +373,7 @@ export default function ViewBills() {
                       <div
                         key={patient._id}
                         onClick={() => handleSelectPatient(patient)}
-                        className="p-5 bg-gradient-to-br from-white to-gray-50 border-2 border-gray-200 rounded-xl hover:border-blue-400 hover:shadow-lg cursor-pointer transition-all"
+                        className="p-5 bg-linear-to-br from-white to-gray-50 border-2 border-gray-200 rounded-xl hover:border-blue-400 hover:shadow-lg cursor-pointer transition-all"
                       >
                         <div className="flex items-start justify-between mb-3">
                           <div className="flex items-center gap-3">
@@ -425,7 +425,7 @@ export default function ViewBills() {
               )}
 
               {!searchQuery && !selectedPatient && recentPatients.length === 0 && patients.length > 0 && (
-                <div className="mt-6 p-8 text-center bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl border-2 border-green-200">
+                <div className="mt-6 p-8 text-center bg-linear-to-br from-green-50 to-emerald-50 rounded-xl border-2 border-green-200">
                   <div className="p-4 bg-green-100 rounded-full w-20 h-20 mx-auto mb-4 flex items-center justify-center">
                     <Receipt className="w-10 h-10 text-green-600" />
                   </div>
@@ -443,7 +443,7 @@ export default function ViewBills() {
 
               {/* Selected Patient Info Card */}
               {selectedPatient && (
-                <div className="mt-6 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl">
+                <div className="mt-6 p-6 bg-linear-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl">
                   <div className="flex justify-between items-start">
                     <div className="flex items-start gap-4">
                       <div className="p-3 bg-blue-600 rounded-xl">
@@ -510,7 +510,7 @@ export default function ViewBills() {
             {/* Transactions Table */}
             {selectedPatient && (
               <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-                <div className="p-6 bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
+                <div className="p-6 bg-linear-to-r from-gray-50 to-gray-100 border-b border-gray-200">
                   <div className="flex justify-between items-center">
                     <div className="flex items-center gap-3">
                       <FileText className="w-6 h-6 text-gray-700" />
@@ -526,7 +526,7 @@ export default function ViewBills() {
                     {patientTransactions.length > 0 && (
                       <button
                         onClick={() => setShowPrintPreview(true)}
-                        className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg hover:shadow-xl flex items-center gap-2 font-medium"
+                        className="px-6 py-3 bg-linear-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg hover:shadow-xl flex items-center gap-2 font-medium"
                       >
                         <Printer className="w-5 h-5" />
                         View Printable Bill
@@ -619,7 +619,7 @@ export default function ViewBills() {
                             </tr>
                           ))}
                         </tbody>
-                        <tfoot className="bg-gradient-to-r from-gray-50 to-gray-100 border-t-2 border-gray-200">
+                        <tfoot className="bg-linear-to-r from-gray-50 to-gray-100 border-t-2 border-gray-200">
                           {totalDiscount > 0 && (
                             <tr>
                               <td
@@ -702,14 +702,14 @@ export default function ViewBills() {
                   </button>
                   <button
                     onClick={printBill}
-                    className="px-5 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg hover:shadow-xl flex items-center gap-2 font-medium"
+                    className="px-5 py-3 bg-linear-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg hover:shadow-xl flex items-center gap-2 font-medium"
                   >
                     <Printer className="w-5 h-5" />
                     Print Bill
                   </button>
                   <button
                     onClick={generatePDF}
-                    className="px-5 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-xl hover:from-green-700 hover:to-green-800 transition-all shadow-lg hover:shadow-xl flex items-center gap-2 font-medium"
+                    className="px-5 py-3 bg-linear-to-r from-green-600 to-green-700 text-white rounded-xl hover:from-green-700 hover:to-green-800 transition-all shadow-lg hover:shadow-xl flex items-center gap-2 font-medium"
                   >
                     <Download className="w-5 h-5" />
                     Download PDF

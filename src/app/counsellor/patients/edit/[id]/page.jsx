@@ -431,7 +431,7 @@ export default function PatientEditDetails() {
     <section className="flex min-h-screen px-24">
       <main className="flex-1 px-12 py-4">
         <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-          <div className="px-8 py-6 bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
+          <div className="px-8 py-6 bg-linear-to-r from-blue-600 to-indigo-600 text-white">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
                 <button
@@ -471,7 +471,7 @@ export default function PatientEditDetails() {
               }`}
             >
               <div className="flex">
-                <div className="flex-shrink-0">
+                <div className="shrink-0">
                   {updateStatus.type === "success" ? "✓" : "⚠"}
                 </div>
                 <div className="ml-3">
