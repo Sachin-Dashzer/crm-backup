@@ -4,11 +4,29 @@ import { useEffect, useMemo, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
-import { Filter, X, ChevronRight, ChevronLeft, Search, Calendar } from "lucide-react";
+import {
+  Filter,
+  X,
+  ChevronRight,
+  ChevronLeft,
+  Eye,
+  Plus,
+  User,
+  Scissors,
+  SquarePen,
+  Search,
+  Calendar,
+  Download, // Added Download icon
+} from "lucide-react";
 
 /* -------------------- Constants -------------------- */
 const STATUS_OPTIONS = [
-  "NEW", "NOT-VISITED", "CONSULTED", "SURGERY_BOOKED", "CLOSED",
+  "NEW",
+  "NOT_VISITED",
+  "CONSULTED",
+  "NOT_CONVERTED",
+  "SURGERY_BOOKED",
+  "CLOSED",
 ];
 const STATUS_COLORS = {
   NEW: "bg-blue-100 text-blue-800",
@@ -17,6 +35,7 @@ const STATUS_COLORS = {
   SURGERY_BOOKED: "bg-green-100 text-green-800",
   CLOSED: "bg-gray-100 text-gray-800",
 };
+
 const LOCATION_OPTIONS = ["Delhi", "Mumbai", "Hyderabad"];
 
 /* -------------------- Helpers -------------------- */
@@ -46,7 +65,7 @@ const getInitialFiltersFromURL = (sp) => ({
   readyForSurgery: sp.get("readyForSurgery") === "true",
 });
 
-// Content component that uses useSearchParams
+// Create a wrapper component that uses useSearchParams
 function PatientDashboardContent() {
   const searchParams = useSearchParams();
 
@@ -85,23 +104,28 @@ function PatientDashboardContent() {
   /* ------------ Dynamic options ------------ */
   const counsellorOptions = useMemo(
     () =>
-      [...new Set(patients.map((p) => p?.counselling?.counsellor?.name))].filter(
+      [
+        ...new Set(patients.map((p) => p?.counselling?.counsellor?.name)),
+      ].filter(Boolean),
+    [patients]
+  );
+
+  const doctorOptions = useMemo(
+    () =>
+      [...new Set(patients.map((p) => p?.surgery?.doctor?.name))].filter(
         Boolean
       ),
     [patients]
   );
-  
-  const doctorOptions = useMemo(
-    () => [...new Set(patients.map((p) => p?.surgery?.doctor?.name))].filter(Boolean),
-    [patients]
-  );
-  
+
   const seniorTechOptions = useMemo(
     () =>
-      [...new Set(patients.map((p) => p?.surgery?.seniorTech?.name))].filter(Boolean),
+      [...new Set(patients.map((p) => p?.surgery?.seniorTech?.name))].filter(
+        Boolean
+      ),
     [patients]
   );
-  
+
   const implanterOptions = useMemo(
     () =>
       [
@@ -112,7 +136,7 @@ function PatientDashboardContent() {
       ].filter(Boolean),
     [patients]
   );
-  
+
   const techniqueOptions = useMemo(
     () =>
       [
@@ -127,7 +151,9 @@ function PatientDashboardContent() {
 
   const agentOptions = useMemo(
     () =>
-      [...new Set(patients.map((p) => p?.personal?.reference?.name))].filter(Boolean),
+      [...new Set(patients.map((p) => p?.personal?.reference?.name))].filter(
+        Boolean
+      ),
     [patients]
   );
 
@@ -147,18 +173,18 @@ function PatientDashboardContent() {
           includesCI(p?.personal?.email, q)
       );
     }
-    
+
     if (filters.status)
       list = list.filter((p) => p?.ops?.status === filters.status);
-    
+
     if (filters.location)
       list = list.filter((p) => p?.personal?.branch === filters.location);
-    
+
     if (filters.counsellor)
       list = list.filter(
         (p) => p?.counselling?.counsellor?.name === filters.counsellor
       );
-    
+
     if (filters.visited) {
       list = list.filter((p) => Boolean(p?.counselling?.counsellor));
     }
@@ -166,16 +192,18 @@ function PatientDashboardContent() {
     if (filters.readyForSurgery) {
       list = list.filter((p) => p?.counselling?.readyForSurgery === true);
     }
-    
+
     if (filters.agent)
       list = list.filter((p) => p?.personal?.reference?.name === filters.agent);
-    
+
     if (filters.doctor)
       list = list.filter((p) => p?.surgery?.doctor?.name === filters.doctor);
-    
+
     if (filters.seniorTech)
-      list = list.filter((p) => p?.surgery?.seniorTech?.name === filters.seniorTech);
-    
+      list = list.filter(
+        (p) => p?.surgery?.seniorTech?.name === filters.seniorTech
+      );
+
     if (filters.implanter) {
       list = list.filter(
         (p) =>
@@ -183,7 +211,7 @@ function PatientDashboardContent() {
           p?.surgery?.implanterLeft?.name === filters.implanter
       );
     }
-    
+
     if (filters.technique) {
       list = list.filter(
         (p) =>
@@ -192,7 +220,7 @@ function PatientDashboardContent() {
           p?.personal?.techniqueQuoted === filters.technique
       );
     }
-    
+
     if (filters.surgeryDate) {
       const sd = new Date(filters.surgeryDate);
       const start = new Date(sd);
@@ -206,12 +234,12 @@ function PatientDashboardContent() {
         return d && d >= start && d <= end;
       });
     }
-    
+
     if (filters.dateFrom) {
       const from = new Date(filters.dateFrom);
       list = list.filter((p) => new Date(p?.personal?.visitDate) >= from);
     }
-    
+
     if (filters.dateTo) {
       const to = new Date(filters.dateTo);
       to.setHours(23, 59, 59, 999);
@@ -234,6 +262,56 @@ function PatientDashboardContent() {
 
     return list;
   }, [patients, filters, sort]);
+
+  /* ------------ CSV Export ------------ */
+  const exportToCSV = () => {
+    // 1. Define CSV headers
+    const headers = [
+      "Name",
+      "Phone",
+      "Email",
+      "Branch",
+      "Visit Date",
+      "Status",
+      "Package Quoted",
+      "Amount Received",
+      "Counsellor",
+      "Technique Suggested",
+      "Ready for Surgery",
+      "Surgery Date",
+      "Doctor",
+      "Reference",
+    ];
+
+    // 2. Map filtered data to CSV rows
+    const csvData = filtered.map((p) => [
+      p.personal?.name || "",
+      p.personal?.phone || "",
+      p.personal?.email || "",
+      p.personal?.branch || "",
+      formatDate(p.personal?.visitDate),
+      p.ops?.status || "",
+      p.personal?.packageQuoted || 0,
+      p.payments?.amountReceived || 0,
+      p.counselling?.counsellor?.name || "",
+      p.counselling?.techniqueSuggested || p.surgery?.technique || "",
+      p.counselling?.readyForSurgery ? "Yes" : "No",
+      formatDate(p.surgery?.surgeryDate),
+      p.surgery?.doctor?.name || "",
+      p.personal?.reference?.name || "",
+    ]);
+
+    // 3. Convert to CSV format
+    const csv = [headers, ...csvData].map((row) => row.join(",")).join("\n");
+
+    // 4. Create and trigger download
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `patients-${new Date().toISOString().split("T")[0]}.csv`;
+    a.click();
+  };
 
   /* ------------ Pagination ------------ */
   const total = filtered.length;
@@ -290,7 +368,10 @@ function PatientDashboardContent() {
       chips.push({ k: "readyForSurgery", label: "Ready for Surgery" });
 
     if (filters.dateFrom)
-      chips.push({ k: "dateFrom", label: `From: ${formatDate(filters.dateFrom)}` });
+      chips.push({
+        k: "dateFrom",
+        label: `From: ${formatDate(filters.dateFrom)}`,
+      });
     if (filters.dateTo)
       chips.push({ k: "dateTo", label: `To: ${formatDate(filters.dateTo)}` });
     return chips;
@@ -313,17 +394,31 @@ function PatientDashboardContent() {
     );
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex min-h-screen ">
       <Sidebar />
-      <main className="flex-1 flex flex-col">
+      <main className="flex-1 flex flex-col px-5">
         {/* Header */}
-        <header className="bg-white shadow-sm sticky top-0 z-10">
-          <div className="px-6 py-4 flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-semibold text-gray-900">Patients</h1>
-              <p className="text-sm text-gray-500">
-                Manage and track patient records
-              </p>
+        <header className="bg-white">
+          <div className="p-7 pb-0">
+            <h1 className="text-2xl font-semibold text-gray-900">
+              All Patients Data
+            </h1>
+            <p className="text-md my-1 text-gray-500">
+              Manage and track patient records
+            </p>
+          </div>
+          <div className="px-6 py-4 pt-4 flex items-center justify-between">
+            <div className="relative w-xl">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <input
+                type="text"
+                placeholder="Search patients by name, phone, or email…"
+                className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-gray-300 shadow-sm focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 transition-colors"
+                value={filters.search}
+                onChange={(e) =>
+                  setFilters({ ...filters, search: e.target.value })
+                }
+              />
             </div>
             <div className="flex items-center gap-3">
               <button
@@ -338,6 +433,16 @@ function PatientDashboardContent() {
                   </span>
                 )}
               </button>
+
+              {/* Export CSV Button */}
+              <button
+                onClick={exportToCSV}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700 transition-colors"
+              >
+                <Download className="w-4 h-4" />
+                Export CSV
+              </button>
+
               <Link
                 href="add-patient"
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
@@ -375,20 +480,6 @@ function PatientDashboardContent() {
           )}
         </header>
 
-        {/* Search bar */}
-        <div className="px-6 pt-6">
-          <div className="relative max-w-md">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-            <input
-              type="text"
-              placeholder="Search patients by name, phone, or email…"
-              className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-gray-300 shadow-sm focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 transition-colors"
-              value={filters.search}
-              onChange={(e) => setFilters({ ...filters, search: e.target.value })}
-            />
-          </div>
-        </div>
-
         {/* Table */}
         <section className="p-6">
           <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200">
@@ -419,14 +510,21 @@ function PatientDashboardContent() {
                       >
                         <div className="flex flex-col items-center justify-center">
                           <Search className="w-12 h-12 text-gray-300 mb-4" />
-                          <p className="text-lg font-medium text-gray-900 mb-2">No patients found</p>
-                          <p className="text-gray-500">Try adjusting your search or filters</p>
+                          <p className="text-lg font-medium text-gray-900 mb-2">
+                            No patients found
+                          </p>
+                          <p className="text-gray-500">
+                            Try adjusting your search or filters
+                          </p>
                         </div>
                       </td>
                     </tr>
                   ) : (
                     rows.map((p) => (
-                      <tr key={p._id} className="hover:bg-gray-50 transition-colors">
+                      <tr
+                        key={p._id}
+                        className="hover:bg-gray-50 transition-colors"
+                      >
                         <td className="px-6 py-4 font-medium text-gray-900">
                           {p.personal?.name}
                         </td>
@@ -475,7 +573,7 @@ function PatientDashboardContent() {
                               className="p-2 rounded-lg hover:bg-blue-50 text-blue-600 transition-colors"
                               title="Edit patient"
                             >
-                              <Edit className="w-4 h-4" />
+                              <SquarePen className="w-4 h-4" />
                             </Link>
                           </div>
                         </td>
@@ -489,7 +587,8 @@ function PatientDashboardContent() {
             {/* Footer / Pagination */}
             <div className="flex flex-col md:flex-row items-center justify-between gap-3 px-6 py-4 border-t bg-gray-50">
               <p className="text-sm text-gray-600">
-                Showing <b>{startIdx + 1}</b>–<b>{endIdx}</b> of <b>{total}</b> patients
+                Showing <b>{startIdx + 1}</b>–<b>{endIdx}</b> of <b>{total}</b>{" "}
+                patients
               </p>
               <div className="flex items-center gap-3">
                 <select
@@ -538,7 +637,9 @@ function PatientDashboardContent() {
               {/* Header */}
               <div className="px-6 py-4 border-b bg-white flex items-center justify-between">
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900">Filters</h3>
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    Filters
+                  </h3>
                   <p className="text-sm text-gray-500 mt-1">
                     Refine your patient search
                   </p>
@@ -555,14 +656,22 @@ function PatientDashboardContent() {
               <div className="flex-1 overflow-y-auto">
                 <div className="p-6 space-y-6">
                   {/* Basic Filters */}
-                  <Section title="Basic Filters" icon={<Filter className="w-4 h-4" />}>
+                  <Section
+                    title="Basic Filters"
+                    icon={<Filter className="w-4 h-4" />}
+                  >
                     <Field label="Status">
                       <Select
                         value={filters.status}
-                        onChange={(v) => setFilters((f) => ({ ...f, status: v }))}
+                        onChange={(v) =>
+                          setFilters((f) => ({ ...f, status: v }))
+                        }
                         options={[
                           { label: "All Status", value: "" },
-                          ...STATUS_OPTIONS.map((s) => ({ label: s.replace("_", " "), value: s })),
+                          ...STATUS_OPTIONS.map((s) => ({
+                            label: s.replace("_", " "),
+                            value: s,
+                          })),
                         ]}
                       />
                     </Field>
@@ -581,7 +690,7 @@ function PatientDashboardContent() {
                         ]}
                       />
                     </Field>
-                    
+
                     <div className="grid grid-cols-2 gap-4">
                       <Field label="Date From">
                         <div className="relative">
@@ -613,7 +722,10 @@ function PatientDashboardContent() {
                   </Section>
 
                   {/* Staff & Team */}
-                  <Section title="Staff & Team" icon={<Users className="w-4 h-4" />}>
+                  <Section
+                    title="Staff & Team"
+                    icon={<User className="w-4 h-4" />}
+                  >
                     <Field label="Counsellor">
                       <Select
                         value={filters.counsellor}
@@ -654,7 +766,10 @@ function PatientDashboardContent() {
                           }
                           options={[
                             { label: "All Doctors", value: "" },
-                            ...doctorOptions.map((t) => ({ label: t, value: t })),
+                            ...doctorOptions.map((t) => ({
+                              label: t,
+                              value: t,
+                            })),
                           ]}
                         />
                       </Field>
@@ -693,7 +808,10 @@ function PatientDashboardContent() {
                   </Section>
 
                   {/* Surgery Details */}
-                  <Section title="Surgery Details" icon={<Scissors className="w-4 h-4" />}>
+                  <Section
+                    title="Surgery Details"
+                    icon={<Scissors className="w-4 h-4" />}
+                  >
                     <Field label="Technique">
                       <Select
                         value={filters.technique}
@@ -731,11 +849,16 @@ function PatientDashboardContent() {
                             type="checkbox"
                             checked={filters.visited}
                             onChange={(e) =>
-                              setFilters((f) => ({ ...f, visited: e.target.checked }))
+                              setFilters((f) => ({
+                                ...f,
+                                visited: e.target.checked,
+                              }))
                             }
                             className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                           />
-                          <span className="text-sm font-medium text-gray-700">Visited Patients</span>
+                          <span className="text-sm font-medium text-gray-700">
+                            Visited Patients
+                          </span>
                         </label>
                       </Field>
                       <Field label="">
@@ -744,11 +867,16 @@ function PatientDashboardContent() {
                             type="checkbox"
                             checked={filters.readyForSurgery}
                             onChange={(e) =>
-                              setFilters((f) => ({ ...f, readyForSurgery: e.target.checked }))
+                              setFilters((f) => ({
+                                ...f,
+                                readyForSurgery: e.target.checked,
+                              }))
                             }
                             className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                           />
-                          <span className="text-sm font-medium text-gray-700">Ready for Surgery</span>
+                          <span className="text-sm font-medium text-gray-700">
+                            Ready for Surgery
+                          </span>
                         </label>
                       </Field>
                     </div>
@@ -784,14 +912,16 @@ function PatientDashboardContent() {
 =================================================== */
 export default function PatientDashboard() {
   return (
-    <Suspense fallback={
-      <div className="flex min-h-screen bg-gray-50">
-        <Sidebar />
-        <main className="flex-1 flex items-center justify-center">
-          <div className="animate-spin h-10 w-10 border-4 border-indigo-200 border-t-indigo-600 rounded-full" />
-        </main>
-      </div>
-    }>
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen bg-gray-50">
+          <Sidebar />
+          <main className="flex-1 flex items-center justify-center">
+            <div className="animate-spin h-10 w-10 border-4 border-indigo-200 border-t-indigo-600 rounded-full" />
+          </main>
+        </div>
+      }
+    >
       <PatientDashboardContent />
     </Suspense>
   );
@@ -835,13 +965,23 @@ function Section({ title, icon, children }) {
 function Field({ label, children }) {
   return (
     <label className="block">
-      {label && <span className="block text-sm font-medium text-gray-700 mb-2">{label}</span>}
+      {label && (
+        <span className="block text-sm font-medium text-gray-700 mb-2">
+          {label}
+        </span>
+      )}
       {children}
     </label>
   );
 }
 
-function Input({ type = "text", value, onChange, placeholder, className = "" }) {
+function Input({
+  type = "text",
+  value,
+  onChange,
+  placeholder,
+  className = "",
+}) {
   return (
     <input
       type={type}
@@ -869,34 +1009,5 @@ function Select({ value, onChange, options }) {
   );
 }
 
-// Add missing icon components
-const Plus = ({ className }) => (
-  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-  </svg>
-);
 
-const Eye = ({ className }) => (
-  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.522 5 12 5s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7s-8.268-2.943-9.542-7z" />
-  </svg>
-);
 
-const Edit = ({ className }) => (
-  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536M9 13l6.536-6.536a2 2 0 112.828 2.828L11.828 15.828H9v-2.828z" />
-  </svg>
-);
-
-const Users = ({ className }) => (
-  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
-  </svg>
-);
-
-const Scissors = ({ className }) => (
-  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.121 14.121L19 19m-7-7l7-7m-7 7l-2.879 2.879M12 12L9.121 9.121m0 5.758a3 3 0 10-4.243 4.243 3 3 0 004.243-4.243zm0-5.758a3 3 0 10-4.243-4.243 3 3 0 004.243 4.243z" />
-  </svg>
-);

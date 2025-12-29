@@ -11,162 +11,13 @@ import {
   CheckCircle,
   TrendingUp,
   Phone,
-  Filter,
-  Building,
   ArrowUpRight,
   ArrowDownRight,
 } from "lucide-react";
 import ReceptionSidebar from "@/components/ReceptionSidebar";
+import Topbar from "@/components/Topbar";
 import { useToast } from "@/components/Toast";
 
-// Topbar Component with Filters
-const Topbar = ({
-  setSidebarOpen,
-  timeRange,
-  setTimeRange,
-  branch,
-  setBranch,
-  customDates,
-  setCustomDates,
-}) => {
-  const [showDatePicker, setShowDatePicker] = useState(false);
-
-  const handleCustomDateChange = (field, value) => {
-    setCustomDates((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
-  };
-
-  const applyCustomDate = () => {
-    if (customDates.from) {
-      setTimeRange("Custom");
-      setShowDatePicker(false);
-    }
-  };
-
-  return (
-    <div className="">
-      <div className="px-4 lg:p-8 lg:pb-4">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => setSidebarOpen(true)}
-              className="lg:hidden p-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors"
-            >
-              <Filter className="h-5 w-5 text-gray-600" />
-            </button>
-            <div className="ml-3">
-              <div>
-                <h2 className="text-3xl font-semibold text-gray-900">
-                  Reception Overview
-                </h2>
-                <p className="text-lg mt-1 text-gray-600">
-                  Patient management and appointments
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex flex-col sm:flex-row gap-8">
-            <div className="flex items-center gap-2">
-              <label className="text-md font-bold text-gray-700 whitespace-nowrap">
-                Branch:
-              </label>
-              <select
-                value={branch}
-                onChange={(e) => setBranch(e.target.value)}
-                className="px-3 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-md"
-              >
-                <option value="All">All Branches</option>
-                <option value="Delhi">Delhi</option>
-                <option value="Mumbai">Mumbai</option>
-                <option value="Hyderabad">Hyderabad</option>
-              </select>
-            </div>
-
-            <div className="flex items-center gap-2 relative">
-              <label className="text-md font-bold text-gray-700 whitespace-nowrap">
-                Date Range:
-              </label>
-              <select
-                value={timeRange}
-                onChange={(e) => {
-                  setTimeRange(e.target.value);
-                  if (e.target.value !== "Custom") {
-                    setShowDatePicker(false);
-                  }
-                }}
-                className="px-3 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-md"
-              >
-                <option value="Today">Today</option>
-                <option value="Yesterday">Yesterday</option>
-                <option value="Last 7 Days">Last 7 Days</option>
-                <option value="Custom">Custom Range</option>
-              </select>
-
-              {timeRange === "Custom" && (
-                <button
-                  onClick={() => setShowDatePicker(!showDatePicker)}
-                  className="p-2 bg-indigo-100 text-indigo-700 rounded-lg hover:bg-indigo-200 transition-colors"
-                >
-                  <Calendar className="h-4 w-4" />
-                </button>
-              )}
-
-              {showDatePicker && (
-                <div className="absolute top-full right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg p-4 z-10 min-w-[300px]">
-                  <div className="space-y-3">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        From Date
-                      </label>
-                      <input
-                        type="date"
-                        value={customDates.from}
-                        onChange={(e) =>
-                          handleCustomDateChange("from", e.target.value)
-                        }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        To Date
-                      </label>
-                      <input
-                        type="date"
-                        value={customDates.to}
-                        onChange={(e) =>
-                          handleCustomDateChange("to", e.target.value)
-                        }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
-                      />
-                    </div>
-                    <div className="flex gap-2 pt-2">
-                      <button
-                        onClick={applyCustomDate}
-                        className="flex-1 px-3 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium"
-                      >
-                        Apply
-                      </button>
-                      <button
-                        onClick={() => setShowDatePicker(false)}
-                        className="flex-1 px-3 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors text-sm font-medium"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
 
 export default function ReceptionDashboard() {
   const router = useRouter();
@@ -328,7 +179,7 @@ export default function ReceptionDashboard() {
       }`}
     >
       <div className="flex items-center justify-between mb-4">
-        <div className={`p-3 rounded-lg bg-gradient-to-br ${color}`}>
+        <div className={`p-3 rounded-lg bg-linear-to-br ${color}`}>
           <Icon className="h-6 w-6 text-white" />
         </div>
         {trend !== undefined && trend !== null && (
@@ -348,7 +199,7 @@ export default function ReceptionDashboard() {
   const QuickAction = ({ title, icon: Icon, color, onClick }) => (
     <button
       onClick={onClick}
-      className={`flex items-center gap-3 p-4 rounded-lg bg-gradient-to-r ${color} text-white hover:shadow-lg transition-all`}
+      className={`flex items-center gap-3 p-4 rounded-lg bg-linear-to-r ${color} text-white hover:shadow-lg transition-all`}
     >
       <Icon className="w-5 h-5" />
       <span className="font-medium">{title}</span>
@@ -372,7 +223,7 @@ export default function ReceptionDashboard() {
         router.push(`/reception/patients?${params.toString()}`);
         break;
       case "pending":
-        params.set("pending", "true");
+        params.set("status", "NOT_VISITED");
         router.push(`/reception/patients?${params.toString()}`);
         break;
       case "revenue":
@@ -385,7 +236,7 @@ export default function ReceptionDashboard() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+      <div className="flex min-h-screen bg-linear-to-br from-gray-50 to-gray-100">
         <ReceptionSidebar
           sidebarOpen={sidebarOpen}
           setSidebarOpen={setSidebarOpen}
@@ -403,14 +254,15 @@ export default function ReceptionDashboard() {
   }
 
   return (
-    <div className="flex min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+    <div className="flex min-h-screen bg-gray-50">
       <ReceptionSidebar
         sidebarOpen={sidebarOpen}
         setSidebarOpen={setSidebarOpen}
       />
 
-      <main className="flex-1 overflow-auto">
+      <main className="flex-1 p-4 lg:p-8">
         <Topbar
+        title="Reception Dashboard"
           setSidebarOpen={setSidebarOpen}
           timeRange={timeRange}
           setTimeRange={setTimeRange}
@@ -420,7 +272,6 @@ export default function ReceptionDashboard() {
           setCustomDates={setCustomDates}
         />
 
-        <div className="p-4 lg:p-8">
          
           {/* Metrics Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -557,7 +408,7 @@ export default function ReceptionDashboard() {
                         router.push(`/reception/patients/${appointment._id}`)
                       }
                     >
-                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center">
+                      <div className="w-12 h-12 rounded-full bg-linear-to-br from-indigo-500 to-purple-500 flex items-center justify-center">
                         <Calendar className="w-6 h-6 text-white" />
                       </div>
                       <div className="flex-1">
@@ -583,7 +434,6 @@ export default function ReceptionDashboard() {
               </div>
             </div>
           </div>
-        </div>
       </main>
     </div>
   );

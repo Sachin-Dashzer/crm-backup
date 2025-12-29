@@ -49,7 +49,9 @@ export default function AdminDashboard() {
     } else if (dateRange === "Custom" && customDates.from) {
       fromDate = new Date(customDates.from);
       fromDate.setHours(0, 0, 0, 0);
-      toDate = customDates.to ? new Date(customDates.to) : new Date(customDates.from);
+      toDate = customDates.to
+        ? new Date(customDates.to)
+        : new Date(customDates.from);
       toDate.setHours(23, 59, 59, 999);
     }
 
@@ -59,7 +61,6 @@ export default function AdminDashboard() {
       to: toDate.toISOString(),
     };
   };
-
 
   // --- Fetch dashboard data ---
   const fetchData = async () => {
@@ -93,11 +94,9 @@ export default function AdminDashboard() {
 
   const handleMetricClick = (metricTitle) => {
     if (!dashboardData) return;
-
     const from = dashboardData?.dateRange?.from;
     const to = dashboardData?.dateRange?.to;
     const branchParam = dashboardData?.branch ?? "All";
-
 
     const filterParams = new URLSearchParams({
       dateFrom: from,
@@ -105,30 +104,36 @@ export default function AdminDashboard() {
       branch: branchParam,
     });
 
-
     switch (metricTitle) {
       case "Appointments":
-        filterParams.set("appointment", "true");
+        filterParams.set("status", "");
+        router.push(`/admin/patients?${filterParams.toString()}`);
         break;
+
       case "Patients Visited":
         filterParams.set("visited", "true");
+        router.push(`/admin/patients?${filterParams.toString()}`);
         break;
+
       case "Ready for Surgery":
-        filterParams.set("readyforSurgery", "true");
+        filterParams.set("status", "CONSULTED");
+        router.push(`/admin/patients?${filterParams.toString()}`);
         break;
-      case "Surgery Patients":
-        filterParams.delete("branch");
-        filterParams.set("surgerydate", to);
-        break;
+
       case "Amount Received":
-        filterParams.set("amountReceived", "true");
+        router.push(`/admin/amounts`);
+
+        filterParams.set("status", "CONSULTED");
         break;
+
+      case "Surgery Performed":
+        filterParams.set("status", "CLOSED");
+        router.push(`/admin/patients?${filterParams.toString()}`);
+        break;
+
       default:
         break;
     }
-
-
-    router.push(`/admin/patients?${filterParams.toString()}`);
   };
 
   // Format currency for Amount Received
@@ -145,35 +150,47 @@ export default function AdminDashboard() {
     {
       title: "Appointments",
       value: dashboardData?.appointment?.count || 0,
-      trend: `${dashboardData?.appointment?.growth > 0 ? "↑" : "↓"} ${dashboardData?.appointment?.growth || 0}% from yesterday`,
+      trend: `${dashboardData?.appointment?.growth > 0 ? "↑" : "↓"} ${
+        dashboardData?.appointment?.growth || 0
+      }% from yesterday`,
       icon: Calendar,
       color: "from-indigo-500 to-indigo-600",
     },
     {
       title: "Patients Visited",
       value: dashboardData?.visitPatient?.count || 0,
-      trend: `${dashboardData?.visitPatient?.growth > 0 ? "↑" : "↓"} ${dashboardData?.visitPatient?.growth || 0}% from yesterday`,
+      trend: `${dashboardData?.visitPatient?.growth > 0 ? "↑" : "↓"} ${
+        dashboardData?.visitPatient?.growth || 0
+      }% from yesterday`,
       icon: Activity,
       color: "from-green-500 to-green-600",
     },
     {
-      title: "Surgery Ready",
+      title: "Ready for Surgery",
       value: dashboardData?.readyforSurgery?.count || 0,
-      trend: `${dashboardData?.readyforSurgery?.growth > 0 ? "↑" : "↓"} ${dashboardData?.readyforSurgery?.growth || 0}% from yesterday`,
+      trend: `${dashboardData?.readyforSurgery?.growth > 0 ? "↑" : "↓"} ${
+        dashboardData?.readyforSurgery?.growth || 0
+      }% from yesterday`,
       icon: CheckCircle,
       color: "from-amber-500 to-amber-600",
     },
     {
-      title: "Total Surgeries",
+      title: "Surgery Performed",
       value: dashboardData?.surgeryPatient?.count || 0,
-      trend: `${dashboardData?.surgeryPatient?.growth > 0 ? "↑" : "↓"} ${dashboardData?.surgeryPatient?.growth || 0}% from yesterday`,
+      trend: `${dashboardData?.surgeryPatient?.growth > 0 ? "↑" : "↓"} ${
+        dashboardData?.surgeryPatient?.growth || 0
+      }% from yesterday`,
       icon: Stethoscope,
       color: "from-rose-500 to-rose-600",
     },
     {
       title: "Amount Received",
       value: formatCurrency(dashboardData?.amountReceived?.total || 0),
-      trend: `${dashboardData?.amountReceived?.growth > 0 ? "↑" : "↓"} ${formatCurrency(dashboardData?.amountReceived?.growth || 0)}% from yesterday`,
+      trend: `${
+        dashboardData?.amountReceived?.growth > 0 ? "↑" : "↓"
+      } ${formatCurrency(
+        dashboardData?.amountReceived?.growth || 0
+      )}% from yesterday`,
       icon: Wallet,
       color: "from-purple-500 to-purple-600",
       isCurrency: true,
@@ -191,6 +208,7 @@ export default function AdminDashboard() {
 
       <main className="flex-1 p-4 lg:p-8">
         <Topbar
+          title={"Admin Dashboard"}
           setSidebarOpen={setSidebarOpen}
           timeRange={dateRange}
           setTimeRange={setDateRange}

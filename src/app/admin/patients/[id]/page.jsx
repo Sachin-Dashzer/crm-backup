@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import ReceptionSidebar from "@/components/Sidebar";
+import Sidebar from "@/components/Sidebar";
 import {
   ArrowLeft,
   Download,
@@ -586,7 +586,7 @@ const PatientProfile = () => {
   if (isLoading) {
     return (
       <section className="flex min-h-screen">
-        <ReceptionSidebar
+        <Sidebar
           sidebarOpen={sidebarOpen}
           setSidebarOpen={setSidebarOpen}
         />
@@ -606,7 +606,7 @@ const PatientProfile = () => {
 
   return (
     <section className="flex min-h-screen">
-      <ReceptionSidebar
+      <Sidebar
         sidebarOpen={sidebarOpen}
         setSidebarOpen={setSidebarOpen}
       />

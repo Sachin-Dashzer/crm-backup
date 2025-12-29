@@ -2,21 +2,14 @@
 
 import { useState, useEffect } from "react";
 import {
-  Building2,
   LayoutDashboard,
   Users,
   UserCog,
   DollarSign,
-  FileText,
   BarChart3,
   TrendingUp,
-  UserPlus,
-  Settings,
   Shield,
-  Database,
   Activity,
-  Award,
-  Clock,
   LogOut,
   X,
   Menu,
@@ -32,7 +25,7 @@ const NavItem = ({ item, href, isActive, onClick, icon: Icon, badge }) => (
       onClick={onClick}
       className={`w-full text-left px-4 py-3 rounded-lg transition-all duration-300 flex items-center gap-3 group ${
         isActive
-          ? "bg-gradient-to-r from-indigo-100 to-purple-100 text-indigo-700 font-semibold shadow-sm"
+          ? "bg-linear-to-r from-indigo-100 to-purple-100 text-indigo-700 font-semibold shadow-sm"
           : "text-gray-600 hover:bg-gray-50 font-medium hover:text-indigo-600"
       }`}
     >
@@ -41,14 +34,14 @@ const NavItem = ({ item, href, isActive, onClick, icon: Icon, badge }) => (
           isActive ? "text-indigo-600" : "group-hover:text-indigo-500"
         }`}
       />
-      <span className="flex-grow">{item}</span>
+      <span className="grow">{item}</span>
       {badge && (
         <span className="px-2 py-0.5 text-xs bg-red-500 text-white rounded-full">
           {badge}
         </span>
       )}
       {isActive && (
-        <div className="w-1 h-6 bg-gradient-to-b from-indigo-600 to-purple-600 rounded-full"></div>
+        <div className="w-1 h-6 bg-linear-to-b from-indigo-600 to-purple-600 rounded-full"></div>
       )}
     </button>
   </Link>
@@ -90,8 +83,7 @@ export default function AdminSidebar() {
         const ptdata = await res.json();
         setdata(ptdata);
       } catch (e) {
-        
-        console.log(e)
+        console.log(e);
       }
     };
     fetchData();
@@ -133,18 +125,18 @@ export default function AdminSidebar() {
 
       {/* Sidebar */}
       <aside
-        className={`fixed left-0 top-0 lg:sticky w-80 bg-gradient-to-b from-white to-gray-50 border-r border-gray-200 shadow-xl p-6 space-y-6 z-50 h-screen transition-transform duration-300 flex flex-col ${
+        className={`fixed left-0 top-0 lg:sticky w-80 bg-linear-to-b from-white to-gray-50 border-r border-gray-200 shadow-xl p-6 space-y-6 z-50 h-screen transition-transform duration-300 flex flex-col ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         }`}
       >
         {/* Header */}
         <div className="flex items-center justify-between">
           <Link href="/admin/dashboard" className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 rounded-xl flex items-center justify-center shadow-lg">
+            <div className="w-12 h-12 bg-linear-to-br from-indigo-600 via-purple-600 to-pink-600 rounded-xl flex items-center justify-center shadow-lg">
               <Shield className="w-7 h-7 text-white" />
             </div>
             <div>
-              <h1 className="font-bold text-xl bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+              <h1 className="font-bold text-xl bg-linear-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
                 Ryan Clinic
               </h1>
               <p className="text-xs text-gray-500 font-medium">
@@ -161,20 +153,26 @@ export default function AdminSidebar() {
         </div>
         {/* Quick Stats Dashboard */}
         <div className="grid grid-cols-2 gap-3">
-          <div className="p-3 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border border-blue-100">
+          <div className="p-3 bg-linear-to-br from-blue-50 to-indigo-50 rounded-lg border border-blue-100">
             <div className="flex items-center gap-2 mb-1">
               <Activity className="w-4 h-4 text-blue-600" />
               <span className="text-xs text-gray-600">Active</span>
             </div>
-            <p className="text-lg font-bold text-gray-900"> {data ? data.activePatients : 0}</p>
+            <p className="text-lg font-bold text-gray-900">
+              {" "}
+              {data ? data.activePatients : 0}
+            </p>
             <p className="text-xs text-gray-500">Patients</p>
           </div>
-          <div className="p-3 bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg border border-green-100">
+          <div className="p-3 bg-linear-to-br from-green-50 to-emerald-50 rounded-lg border border-green-100">
             <div className="flex items-center gap-2 mb-1">
               <DollarSign className="w-4 h-4 text-green-600" />
               <span className="text-xs text-gray-600">Revenue</span>
             </div>
-            <p className="text-lg font-bold text-gray-900">  ₹{data ? data.finalvalue : 0}</p>
+            <p className="text-lg font-bold text-gray-900">
+              {" "}
+              ₹{data ? data.finalvalue : 0}
+            </p>
             <p className="text-xs text-gray-500">This Month</p>
           </div>
         </div>
@@ -217,7 +215,6 @@ export default function AdminSidebar() {
               isActive={pathname === "/admin/employees"}
               onClick={() => setSidebarOpen(false)}
             />
-            
           </NavSection>
 
           {/* Financial Section */}
@@ -227,6 +224,13 @@ export default function AdminSidebar() {
               href="/admin/amounts"
               icon={DollarSign}
               isActive={pathname === "/admin/amounts"}
+              onClick={() => setSidebarOpen(false)}
+            />
+            <NavItem
+              item="View Bills"
+              href="/admin/view-bill"
+              icon={DollarSign}
+              isActive={pathname === "/admin/view-bill"}
               onClick={() => setSidebarOpen(false)}
             />
           </NavSection>
@@ -269,9 +273,9 @@ export default function AdminSidebar() {
         </nav>
         {/* User Info & Logout */}
         <div className="space-y-3 border-t pt-4">
-          <div className="p-3 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg">
+          <div className="p-3 bg-linear-to-r from-green-50 to-emerald-50 rounded-lg">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 flex items-center justify-center shadow-md">
+              <div className="w-12 h-12 rounded-full bg-linear-to-br from-indigo-600 via-purple-600 to-pink-600 flex items-center justify-center shadow-md">
                 <Shield className="w-6 h-6 text-white" />
               </div>
 

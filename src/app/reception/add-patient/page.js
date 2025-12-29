@@ -17,7 +17,6 @@ import {
   FileUp,
   CheckCircle,
   UserPlus,
-  Droplet,
   Save,
   ArrowLeft,
   Edit3,
@@ -287,7 +286,7 @@ const DocumentUpload = ({
                     >
                       <div className="flex items-center space-x-3 flex-1 min-w-0">
                         <div
-                          className={`flex-shrink-0 w-8 h-8 rounded flex items-center justify-center ${
+                          className={`shrink-0 w-8 h-8 rounded flex items-center justify-center ${
                             isPdf ? "bg-red-100" : "bg-blue-100"
                           }`}
                         >
@@ -306,7 +305,7 @@ const DocumentUpload = ({
                           </p>
                         </div>
                       </div>
-                      <div className="flex items-center space-x-2 ml-2 flex-shrink-0">
+                      <div className="flex items-center space-x-2 ml-2 shrink-0">
                         <button
                           type="button"
                           onClick={() => handleViewFile(filePath)}
@@ -520,10 +519,9 @@ export default function PatientRegistration() {
   const stepConfig = [
     { number: 1, title: "Personal Details", icon: User, color: "blue" },
     { number: 2, title: "Counsellor Details", icon: FileText, color: "green" },
-    { number: 3, title: "Medical Information", icon: Heart, color: "red" },
-    { number: 4, title: "Surgery Details", icon: Scissors, color: "orange" },
-    { number: 5, title: "After Surgery Care", icon: Droplet, color: "pink" },
-    { number: 6, title: "Document Upload", icon: FileUp, color: "indigo" },
+    { number: 3, title: "Medical Information", icon: Heart, color: "indigo" },
+    { number: 4, title: "Surgery Details", icon: Scissors, color: "green" },
+    { number: 5, title: "Document Upload", icon: FileUp, color: "indigo" },
   ];
 
   // Fetch employees on component mount
@@ -913,7 +911,7 @@ export default function PatientRegistration() {
 
       <main className="flex-1 px-12 py-4">
         <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-          <div className="px-8 py-6 bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
+          <div className="px-8 py-6 bg-linear-to-r from-blue-600 to-indigo-600 text-white">
             <div className="flex items-center justify-between">
               <div>
                 <h1 className="text-2xl font-bold flex items-center space-x-2">
@@ -944,7 +942,7 @@ export default function PatientRegistration() {
                         stepInfo.number === step
                           ? `bg-${stepInfo.color}-600 text-white shadow-lg scale-110`
                           : stepInfo.number < step
-                          ? "bg-green-500 text-white shadow-md hover:scale-105"
+                          ? "bg-red-950 text-white shadow-md hover:scale-105"
                           : "bg-gray-200 text-gray-500 hover:bg-gray-300"
                       }`}
                     >
@@ -1660,43 +1658,6 @@ export default function PatientRegistration() {
             {step === 5 && (
               <div className="space-y-8">
                 <StepHeader
-                  icon={Droplet}
-                  title="After Surgery Care"
-                  description="Post-operative care schedule"
-                  color="pink"
-                />
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 gap-x-12">
-                  <InputField
-                    label="Head Wash Date"
-                    type="date"
-                    value={formData.afterSurgery.headwashDate}
-                    onChange={createChangeHandler("afterSurgery", "headwashDate")}
-                  />
-
-                  <InputField
-                    label="Bandage Removal Date"
-                    type="date"
-                    value={formData.afterSurgery.bandageRemovalDate}
-                    onChange={createChangeHandler(
-                      "afterSurgery",
-                      "bandageRemovalDate"
-                    )}
-                  />
-
-                  <PRPManager
-                    prpSessions={formData.afterSurgery.prp}
-                    onChange={handlePRPChange}
-                    onAdd={addPRPSession}
-                    onRemove={removePRPSession}
-                  />
-                </div>
-              </div>
-            )}
-
-            {step === 6 && (
-              <div className="space-y-8">
-                <StepHeader
                   icon={FileUp}
                   title="Document Upload"
                   description="Upload patient images and forms"
@@ -1771,7 +1732,7 @@ export default function PatientRegistration() {
               )}
 
               <div className="flex space-x-4">
-                {step < 6 && (
+                {step < 5 && (
                   <button
                     type="button"
                     className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 transition-colors duration-200"
@@ -1781,7 +1742,7 @@ export default function PatientRegistration() {
                   </button>
                 )}
 
-                {step === 6 && (
+                {step === 5 && (
                   <button
                     type="button"
                     onClick={handleSubmit}

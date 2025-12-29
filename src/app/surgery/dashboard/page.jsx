@@ -162,6 +162,7 @@ export default function SurgeryDashboard() {
       <Sidebar role="surgery" />
       <main className="flex-1 p-4 lg:p-8">
         <Topbar 
+          title="Surgery Dashboard"
           role="surgery"
           timeRange={dateRange}
           setTimeRange={setDateRange}

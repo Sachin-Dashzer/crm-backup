@@ -1,9 +1,10 @@
 "use client";
 
-import { Menu, Bell, Search } from "lucide-react";
+import { Menu, Calendar, Check, X, Building } from "lucide-react";
 import { useState } from "react";
 
 export default function Topbar({
+  title,
   setSidebarOpen,
   timeRange,
   setTimeRange,
@@ -11,89 +12,161 @@ export default function Topbar({
   setBranch,
   customDates,
   setCustomDates,
-  role
 }) {
-  const [showNotifications, setShowNotifications] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const branches = ["All", "Delhi", "Mumbai", "Hyderabad"];
+  const timeRanges = ["Today", "Yesterday", "Last 7 Days", "Custom"];
 
-  const branches = ['All', 'Mumbai', 'Delhi', 'Hyderabad'];
-  const timeRanges = ['Today', 'Yesterday', 'Last 7 Days', 'Custom'];
+  const handleCustomDateChange = (field, value) => {
+    setCustomDates((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
+
+  const applyCustomDate = () => {
+    if (customDates?.from && customDates?.to) {
+      console.log("Applying custom dates:", customDates);
+      setShowDatePicker(false);
+    }
+  };
+
+  const handleCancelCustomDates = () => {
+    setTimeRange("Today");
+    setCustomDates({ from: "", to: "" });
+    setShowDatePicker(false);
+  };
 
   return (
-    <div className="mb-6 lg:mb-8">
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <button
-            onClick={() => setSidebarOpen(true)}
-            className="lg:hidden p-2 hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            <Menu className="w-6 h-6" />
-          </button>
-          <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">Dashboard</h1>
-        </div>
-
-        <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
-         
-          <select
-              value={branch}
-              onChange={(e) => setBranch(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white text-sm"
-            >
-              {branches.map((b) => (
-                <option key={b} value={b}>{b}</option>
-              ))}
-            </select>
-
-          {/* Time Range Filter */}
-          <select
-            value={timeRange}
-            onChange={(e) => setTimeRange(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white text-sm"
-          >
-            {timeRanges.map((range) => (
-              <option key={range} value={range}>{range}</option>
-            ))}
-          </select>
-
-          {/* Notifications */}
-          <div className="relative">
+    <section>
+      <div className="pr-2 lg:pr-4 pb-8">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          {/* Left side - Title Section */}
+          <div className="flex items-center gap-4">
             <button
-              onClick={() => setShowNotifications(!showNotifications)}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors relative"
+              onClick={() => setSidebarOpen(true)}
+              className="lg:hidden p-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors"
             >
-              <Bell className="w-5 h-5 text-gray-600" />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+              <Menu className="h-5 w-5 text-gray-600" />
             </button>
-            {showNotifications && (
-              <div className="absolute right-0 mt-2 w-64 sm:w-80 bg-white rounded-lg shadow-lg border z-50">
-                <div className="p-4 border-b">
-                  <h3 className="font-semibold">Notifications</h3>
-                </div>
-                <div className="p-4 text-sm text-gray-600">
-                  No new notifications
-                </div>
+            <div className="flex items-center gap-3 pl-2">
+              <div>
+                <h2 className="text-2xl font-semibold text-gray-900">
+                  {title}
+                </h2>
+                <p className="text-sm text-gray-600">
+                  Real-time performance metrics
+                </p>
               </div>
-            )}
+            </div>
+          </div>
+
+          {/* Right side - Filters */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            {/* Branch Filter */}
+            <div className="flex items-center gap-2">
+              <select
+                value={branch}
+                onChange={(e) => setBranch(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
+              >
+                {branches.map((b) => (
+                  <option key={b} value={b}>
+                    {b === "All" ? "All Branches" : b}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Date Range Filter */}
+            <div className="flex items-center gap-2 relative">
+              <select
+                value={timeRange}
+                onChange={(e) => {
+                  setTimeRange(e.target.value);
+                  if (e.target.value !== "Custom") {
+                    setShowDatePicker(false);
+                  }
+                }}
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
+              >
+                {timeRanges.map((range) => (
+                  <option key={range} value={range}>
+                    {range === "Custom" ? "Custom Range" : range}
+                  </option>
+                ))}
+              </select>
+
+              {/* Calendar Button - Shows when Custom is selected */}
+              {timeRange === "Custom" && (
+                <button
+                  onClick={() => setShowDatePicker(!showDatePicker)}
+                  className="p-2 bg-indigo-100 text-indigo-700 rounded-lg hover:bg-indigo-200 transition-colors"
+                >
+                  <Calendar className="h-4 w-4" />
+                </button>
+              )}
+
+              {/* Custom Date Picker Modal */}
+              {showDatePicker && timeRange === "Custom" && (
+                <div className="absolute top-full right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg p-4 z-50 min-w-75">
+                  <div className="space-y-3">
+                    {/* From Date */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        From Date
+                      </label>
+                      <input
+                        type="date"
+                        value={customDates?.from || ""}
+                        onChange={(e) =>
+                          handleCustomDateChange("from", e.target.value)
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
+                      />
+                    </div>
+
+                    {/* To Date */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        To Date
+                      </label>
+                      <input
+                        type="date"
+                        value={customDates?.to || ""}
+                        onChange={(e) =>
+                          handleCustomDateChange("to", e.target.value)
+                        }
+                        min={customDates?.from}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
+                      />
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex gap-2 pt-2">
+                      <button
+                        onClick={applyCustomDate}
+                        disabled={!customDates?.from || !customDates?.to}
+                        className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <Check className="h-4 w-4" />
+                        Apply
+                      </button>
+                      <button
+                        onClick={handleCancelCustomDates}
+                        className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors text-sm font-medium"
+                      >
+                        <X className="h-4 w-4" />
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
-
-      {/* Custom Date Range */}
-      {timeRange === 'Custom' && setCustomDates && (
-        <div className="mt-4 flex flex-col sm:flex-row gap-3">
-          <input
-            type="date"
-            value={customDates?.from || ''}
-            onChange={(e) => setCustomDates({ ...customDates, from: e.target.value })}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-          />
-          <input
-            type="date"
-            value={customDates?.to || ''}
-            onChange={(e) => setCustomDates({ ...customDates, to: e.target.value })}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-          />
-        </div>
-      )}
-    </div>
+    </section>
   );
 }
