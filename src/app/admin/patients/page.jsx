@@ -447,7 +447,7 @@ function PatientDashboardContent() {
                 <Filter className="w-4 h-4" />
                 <span>Filters</span>
                 {activeFilterChips.length > 0 && (
-                  <span className="flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-indigo-600 text-white text-xs">
+                  <span className="flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-indigo-600 text-white text-xs">
                     {activeFilterChips.length}
                   </span>
                 )}
@@ -636,7 +636,7 @@ function PatientDashboardContent() {
                     Items per page:
                   </label>
                   <select
-                    className="text-sm border-gray-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500"
+                    className="text-sm border-2 border-gray-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500"
                     value={perPage}
                     onChange={(e) => setPerPage(Number(e.target.value))}
                   >
