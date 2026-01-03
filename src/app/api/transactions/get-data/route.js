@@ -8,7 +8,7 @@ const handler = async(req) =>{
 
     const transactions = await Transactions.find({}).populate({
         path: 'patient',
-        select: 'personal.name surgery.technique payments.totalAmount payments.amountReceived payments.pendingAmount payments.medicineAmount createdAt',
+        select: 'personal.name personal.phone surgery.technique payments.totalAmount payments.amountReceived payments.pendingAmount payments.medicineAmount createdAt',
         options: { sort: { createdAt: -1 } }
       })
       .sort({ name: 1 });

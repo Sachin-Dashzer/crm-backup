@@ -14,7 +14,11 @@ import {
   PieChart,
   BarChart2,
   Star,
-  X
+  X,
+  ChevronDown,
+  ChevronUp,
+  RefreshCw,
+  AlertCircle
 } from "lucide-react";
 
 export default function ReportsPage() {
@@ -22,12 +26,12 @@ export default function ReportsPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [loadingId, setLoadingId] = useState(null);
-  const [showFilters, setShowFilters] = useState(false);
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [favorites, setFavorites] = useState([]);
   
   const [filters, setFilters] = useState({
-    period: "all",
     category: "all",
+    period: "all",
     startDate: "",
     endDate: "",
     branch: "",
@@ -47,7 +51,7 @@ export default function ReportsPage() {
     paymentTypes: ["Booking", "Pending", "Full-payment", "Other"],
   });
 
-  // Color configuration for Tailwind - must be complete class names
+  // Color configuration for Tailwind
   const colorConfig = {
     blue: {
       bg: "bg-blue-100",
@@ -387,23 +391,36 @@ export default function ReportsPage() {
     setLoadingId(reportId);
     
     try {
-      const params = new URLSearchParams({
-        type: reportType,
-        period: filters.period,
-        ...(filters.startDate && { startDate: filters.startDate }),
-        ...(filters.endDate && { endDate: filters.endDate }),
-        ...(filters.branch && { branch: filters.branch }),
-        ...(filters.staffFilter && { staffFilter: filters.staffFilter }),
-        ...(filters.techniqueFilter && { techniqueFilter: filters.techniqueFilter }),
-        ...(filters.statusFilter && { statusFilter: filters.statusFilter }),
-        ...(filters.procedureFilter && { procedureFilter: filters.procedureFilter }),
-        ...(filters.paymentTypeFilter && { paymentTypeFilter: filters.paymentTypeFilter }),
-      });
+      // Build query parameters with proper date handling
+      const params = new URLSearchParams();
+      params.append('type', reportType);
+      
+      // Handle period-based dates
+      if (filters.period !== 'all') {
+        params.append('period', filters.period);
+      }
+      
+      // Handle custom date range
+      if (filters.period === 'custom') {
+        if (filters.startDate) params.append('startDate', filters.startDate);
+        if (filters.endDate) params.append('endDate', filters.endDate);
+      }
+      
+      // Add other filters only if they have values
+      if (filters.branch) params.append('branch', filters.branch);
+      if (filters.staffFilter) params.append('staffFilter', filters.staffFilter);
+      if (filters.techniqueFilter) params.append('techniqueFilter', filters.techniqueFilter);
+      if (filters.statusFilter) params.append('statusFilter', filters.statusFilter);
+      if (filters.procedureFilter) params.append('procedureFilter', filters.procedureFilter);
+      if (filters.paymentTypeFilter) params.append('paymentTypeFilter', filters.paymentTypeFilter);
 
-      const response = await fetch(`/api/admin/reports?${params}`);
+      console.log('Requesting report with params:', params.toString());
+
+      const response = await fetch(`/api/admin/reports?${params.toString()}`);
       
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorData = await response.json();
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
       }
       
       const result = await response.json();
@@ -413,14 +430,16 @@ export default function ReportsPage() {
       }
 
       if (!result.data || result.data.length === 0) {
-        alert("No data found for the selected filters");
+        alert("⚠️ No data found for the selected filters. Try adjusting your filter criteria.");
         return;
       }
 
+      // Import XLSX dynamically
       const { utils, writeFile } = await import("xlsx");
       const wb = utils.book_new();
       const ws = utils.json_to_sheet(result.data);
       
+      // Set column widths
       const maxWidth = 50;
       const colWidths = Object.keys(result.data[0] || {}).map(key => ({
         wch: Math.min(Math.max(key.length, 10), maxWidth)
@@ -433,10 +452,11 @@ export default function ReportsPage() {
       writeFile(wb, fileName);
 
       // Success notification
-      alert(`✓ Report downloaded successfully: ${fileName}`);
+      const successMsg = `✓ Report downloaded successfully!\n\nFile: ${fileName}\nRecords: ${result.data.length}`;
+      alert(successMsg);
     } catch (error) {
       console.error("Download error:", error);
-      alert(`✗ Error downloading report: ${error.message}`);
+      alert(`✗ Error downloading report:\n\n${error.message}\n\nPlease try again or contact support if the issue persists.`);
     } finally {
       setLoadingId(null);
     }
@@ -444,8 +464,8 @@ export default function ReportsPage() {
 
   const clearFilters = () => {
     setFilters({
-      period: "all",
       category: "all",
+      period: "all",
       startDate: "",
       endDate: "",
       branch: "",
@@ -456,10 +476,34 @@ export default function ReportsPage() {
       paymentTypeFilter: "",
     });
     setSearchTerm("");
+    setShowAdvancedFilters(false);
   };
 
+  const clearAdvancedFilters = () => {
+    setFilters(prev => ({
+      ...prev,
+      branch: "",
+      staffFilter: "",
+      techniqueFilter: "",
+      statusFilter: "",
+      procedureFilter: "",
+      paymentTypeFilter: "",
+    }));
+  };
+
+  // Count active filters (excluding category and search)
+  const activeBasicFilters = [filters.period !== 'all', filters.startDate, filters.endDate].filter(Boolean).length;
+  const activeAdvancedFilters = [
+    filters.branch, 
+    filters.staffFilter, 
+    filters.techniqueFilter, 
+    filters.statusFilter, 
+    filters.procedureFilter, 
+    filters.paymentTypeFilter
+  ].filter(Boolean).length;
+  const totalActiveFilters = activeBasicFilters + activeAdvancedFilters;
+
   const showDateRange = filters.period === "custom";
-  const activeFilterCount = Object.values(filters).filter(v => v && v !== "all").length;
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -474,313 +518,440 @@ export default function ReportsPage() {
         <div className="p-4 sm:p-6 lg:p-8">
           <div className="max-w-7xl mx-auto">
             {/* Header */}
-            <div className="mb-6 sm:mb-8">
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
+            <div className="mb-6">
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">
                 Reports Dashboard
               </h1>
-              <p className="text-sm sm:text-base text-gray-600">
-                Generate and download comprehensive reports for your clinic
+              <p className="text-gray-600">
+                Generate and download comprehensive reports with advanced filtering
               </p>
             </div>
 
-            {/* Filter Bar */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 mb-6">
-              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-4">
-                <h2 className="text-lg sm:text-xl font-semibold text-gray-900">All Reports</h2>
-                <div className="flex items-center gap-3">
-                  <span className="text-xs sm:text-sm text-gray-500">
-                    {sortedReports.length} report{sortedReports.length !== 1 ? "s" : ""} found
-                  </span>
-                  <button
-                    onClick={() => setShowFilters(!showFilters)}
-                    className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg border transition-colors text-sm ${
-                      showFilters 
-                        ? "bg-indigo-50 border-indigo-300 text-indigo-700" 
-                        : "border-gray-300 text-gray-700 hover:bg-gray-50"
-                    }`}
-                  >
-                    <Filter className="w-4 h-4" />
-                    <span className="hidden sm:inline">Filters</span>
-                    {activeFilterCount > 0 && (
-                      <span className="flex items-center justify-center w-5 h-5 rounded-full bg-indigo-600 text-white text-xs">
-                        {activeFilterCount}
+            {/* Main Filter Panel */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-6">
+              {/* Filter Header */}
+              <div className="px-6 py-4 border-b border-gray-200">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Filter className="w-5 h-5 text-gray-600" />
+                    <h2 className="text-lg font-semibold text-gray-900">Filters</h2>
+                    {totalActiveFilters > 0 && (
+                      <span className="flex items-center justify-center px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-700 text-xs font-semibold">
+                        {totalActiveFilters} active
                       </span>
                     )}
-                  </button>
+                  </div>
+                  {totalActiveFilters > 0 && (
+                    <button
+                      onClick={clearFilters}
+                      className="flex items-center gap-2 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                    >
+                      <RefreshCw className="w-4 h-4" />
+                      Reset All
+                    </button>
+                  )}
                 </div>
               </div>
 
               {/* Basic Filters */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-                {/* Search */}
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 sm:w-5 sm:h-5" />
-                  <input
-                    type="text"
-                    placeholder="Search reports..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-9 sm:pl-10 pr-4 py-2 sm:py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                  />
+              <div className="p-6 space-y-4">
+                {/* Search and Category Row */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Search */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Search Reports
+                    </label>
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                      <input
+                        type="text"
+                        placeholder="Search by name, description, or category..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                      />
+                      {searchTerm && (
+                        <button
+                          onClick={() => setSearchTerm("")}
+                          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Category Filter */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Report Category
+                    </label>
+                    <select
+                      value={filters.category}
+                      onChange={(e) =>
+                        setFilters((prev) => ({
+                          ...prev,
+                          category: e.target.value,
+                        }))
+                      }
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    >
+                      {categories.map((category) => (
+                        <option key={category} value={category}>
+                          {category === "all" ? "All Categories" : category}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
 
-                {/* Category Filter */}
-                <select
-                  value={filters.category}
-                  onChange={(e) =>
-                    setFilters((prev) => ({
-                      ...prev,
-                      category: e.target.value,
-                    }))
-                  }
-                  className="px-3 sm:px-4 py-2 sm:py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                >
-                  {categories.map((category) => (
-                    <option key={category} value={category}>
-                      {category === "all" ? "All Categories" : category}
-                    </option>
-                  ))}
-                </select>
+                {/* Time Period Row */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Time Period
+                  </label>
+                  <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+                    {[
+                      { value: 'all', label: 'All Time' },
+                      { value: 'daily', label: 'Today' },
+                      { value: 'weekly', label: 'This Week' },
+                      { value: 'monthly', label: 'This Month' },
+                      { value: 'custom', label: 'Custom Range' },
+                    ].map((period) => (
+                      <button
+                        key={period.value}
+                        onClick={() =>
+                          setFilters((prev) => ({ ...prev, period: period.value }))
+                        }
+                        className={`px-4 py-2.5 rounded-lg font-medium transition-all ${
+                          filters.period === period.value
+                            ? "bg-indigo-600 text-white shadow-sm"
+                            : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                        }`}
+                      >
+                        {period.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
 
-                {/* Time Period */}
-                <select
-                  value={filters.period}
-                  onChange={(e) =>
-                    setFilters((prev) => ({ ...prev, period: e.target.value }))
-                  }
-                  className="px-3 sm:px-4 py-2 sm:py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                >
-                  <option value="all">All Time</option>
-                  <option value="daily">Today</option>
-                  <option value="weekly">This Week</option>
-                  <option value="monthly">This Month</option>
-                  <option value="custom">Custom Range</option>
-                </select>
-
-                {/* Clear Filters */}
-                <button
-                  onClick={clearFilters}
-                  className="px-3 sm:px-4 py-2 sm:py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors font-medium text-sm"
-                >
-                  Clear Filters
-                </button>
+                {/* Custom Date Range */}
+                {showDateRange && (
+                  <div className="p-4 bg-indigo-50 border border-indigo-200 rounded-lg">
+                    <div className="flex items-start gap-2 mb-3">
+                      <Calendar className="w-5 h-5 text-indigo-600 mt-0.5" />
+                      <div>
+                        <h3 className="text-sm font-semibold text-indigo-900">Custom Date Range</h3>
+                        <p className="text-xs text-indigo-700 mt-0.5">Select start and end dates for your report</p>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Start Date
+                        </label>
+                        <input
+                          type="date"
+                          value={filters.startDate}
+                          onChange={(e) =>
+                            setFilters((prev) => ({
+                              ...prev,
+                              startDate: e.target.value,
+                            }))
+                          }
+                          max={filters.endDate || undefined}
+                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          End Date
+                        </label>
+                        <input
+                          type="date"
+                          value={filters.endDate}
+                          onChange={(e) =>
+                            setFilters((prev) => ({
+                              ...prev,
+                              endDate: e.target.value,
+                            }))
+                          }
+                          min={filters.startDate || undefined}
+                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                        />
+                      </div>
+                    </div>
+                    {filters.startDate && filters.endDate && (
+                      <div className="mt-3 flex items-center gap-2 text-sm text-indigo-700">
+                        <AlertCircle className="w-4 h-4" />
+                        <span>
+                          Range: {new Date(filters.startDate).toLocaleDateString()} - {new Date(filters.endDate).toLocaleDateString()}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
-              {/* Date Range */}
-              {showDateRange && (
-                <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                  <div>
-                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
-                      Start Date
-                    </label>
-                    <input
-                      type="date"
-                      value={filters.startDate}
-                      onChange={(e) =>
-                        setFilters((prev) => ({
-                          ...prev,
-                          startDate: e.target.value,
-                        }))
-                      }
-                      className="w-full px-3 sm:px-4 py-2 sm:py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                    />
+              {/* Advanced Filters Section */}
+              <div className="border-t border-gray-200">
+                <button
+                  onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+                  className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm font-semibold text-gray-900">Advanced Filters</span>
+                    {activeAdvancedFilters > 0 && (
+                      <span className="flex items-center justify-center px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-700 text-xs font-semibold">
+                        {activeAdvancedFilters} active
+                      </span>
+                    )}
                   </div>
-                  <div>
-                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
-                      End Date
-                    </label>
-                    <input
-                      type="date"
-                      value={filters.endDate}
-                      onChange={(e) =>
-                        setFilters((prev) => ({
-                          ...prev,
-                          endDate: e.target.value,
-                        }))
-                      }
-                      className="w-full px-3 sm:px-4 py-2 sm:py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                    />
+                  {showAdvancedFilters ? (
+                    <ChevronUp className="w-5 h-5 text-gray-500" />
+                  ) : (
+                    <ChevronDown className="w-5 h-5 text-gray-500" />
+                  )}
+                </button>
+
+                {showAdvancedFilters && (
+                  <div className="px-6 pb-6 pt-2 bg-gray-50 border-t border-gray-200">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {/* Branch Filter */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Branch Location
+                        </label>
+                        <select
+                          value={filters.branch}
+                          onChange={(e) =>
+                            setFilters((prev) => ({
+                              ...prev,
+                              branch: e.target.value,
+                            }))
+                          }
+                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                        >
+                          <option value="">All Branches</option>
+                          {filterOptions.branches.map((branch) => (
+                            <option key={branch} value={branch}>
+                              {branch}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Staff Filter */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Staff Member
+                        </label>
+                        <select
+                          value={filters.staffFilter}
+                          onChange={(e) =>
+                            setFilters((prev) => ({
+                              ...prev,
+                              staffFilter: e.target.value,
+                            }))
+                          }
+                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                        >
+                          <option value="">All Staff</option>
+                          {filterOptions.staff.map((staff) => (
+                            <option key={staff} value={staff}>
+                              {staff}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Technique Filter */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Surgical Technique
+                        </label>
+                        <select
+                          value={filters.techniqueFilter}
+                          onChange={(e) =>
+                            setFilters((prev) => ({
+                              ...prev,
+                              techniqueFilter: e.target.value,
+                            }))
+                          }
+                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                        >
+                          <option value="">All Techniques</option>
+                          {filterOptions.techniques.map((technique) => (
+                            <option key={technique} value={technique}>
+                              {technique}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Status Filter */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Patient Status
+                        </label>
+                        <select
+                          value={filters.statusFilter}
+                          onChange={(e) =>
+                            setFilters((prev) => ({
+                              ...prev,
+                              statusFilter: e.target.value,
+                            }))
+                          }
+                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                        >
+                          <option value="">All Status</option>
+                          {filterOptions.status.map((status) => (
+                            <option key={status} value={status}>
+                              {status}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Procedure Filter */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Procedure Type
+                        </label>
+                        <select
+                          value={filters.procedureFilter}
+                          onChange={(e) =>
+                            setFilters((prev) => ({
+                              ...prev,
+                              procedureFilter: e.target.value,
+                            }))
+                          }
+                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                        >
+                          <option value="">All Procedures</option>
+                          {filterOptions.procedures.map((procedure) => (
+                            <option key={procedure} value={procedure}>
+                              {procedure}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Payment Type Filter */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Payment Type
+                        </label>
+                        <select
+                          value={filters.paymentTypeFilter}
+                          onChange={(e) =>
+                            setFilters((prev) => ({
+                              ...prev,
+                              paymentTypeFilter: e.target.value,
+                            }))
+                          }
+                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                        >
+                          <option value="">All Payment Types</option>
+                          {filterOptions.paymentTypes.map((type) => (
+                            <option key={type} value={type}>
+                              {type}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Clear Advanced Filters */}
+                    {activeAdvancedFilters > 0 && (
+                      <div className="mt-4 flex justify-end">
+                        <button
+                          onClick={clearAdvancedFilters}
+                          className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                        >
+                          <X className="w-4 h-4" />
+                          Clear Advanced Filters
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Active Filters Summary */}
+            {totalActiveFilters > 0 && (
+              <div className="mb-6 p-4 bg-indigo-50 border border-indigo-200 rounded-lg">
+                <div className="flex items-start gap-3">
+                  <Filter className="w-5 h-5 text-indigo-600 mt-0.5 shrink-0" />
+                  <div className="flex-1">
+                    <h3 className="text-sm font-semibold text-indigo-900 mb-2">Active Filters ({totalActiveFilters})</h3>
+                    <div className="flex flex-wrap gap-2">
+                      {filters.period !== 'all' && (
+                        <span className="inline-flex items-center gap-1 px-3 py-1 bg-white border border-indigo-200 rounded-full text-xs font-medium text-indigo-700">
+                          Period: {filters.period === 'daily' ? 'Today' : filters.period === 'weekly' ? 'This Week' : filters.period === 'monthly' ? 'This Month' : 'Custom'}
+                        </span>
+                      )}
+                      {filters.branch && (
+                        <span className="inline-flex items-center gap-1 px-3 py-1 bg-white border border-indigo-200 rounded-full text-xs font-medium text-indigo-700">
+                          Branch: {filters.branch}
+                        </span>
+                      )}
+                      {filters.staffFilter && (
+                        <span className="inline-flex items-center gap-1 px-3 py-1 bg-white border border-indigo-200 rounded-full text-xs font-medium text-indigo-700">
+                          Staff: {filters.staffFilter}
+                        </span>
+                      )}
+                      {filters.techniqueFilter && (
+                        <span className="inline-flex items-center gap-1 px-3 py-1 bg-white border border-indigo-200 rounded-full text-xs font-medium text-indigo-700">
+                          Technique: {filters.techniqueFilter}
+                        </span>
+                      )}
+                      {filters.statusFilter && (
+                        <span className="inline-flex items-center gap-1 px-3 py-1 bg-white border border-indigo-200 rounded-full text-xs font-medium text-indigo-700">
+                          Status: {filters.statusFilter}
+                        </span>
+                      )}
+                      {filters.procedureFilter && (
+                        <span className="inline-flex items-center gap-1 px-3 py-1 bg-white border border-indigo-200 rounded-full text-xs font-medium text-indigo-700">
+                          Procedure: {filters.procedureFilter}
+                        </span>
+                      )}
+                      {filters.paymentTypeFilter && (
+                        <span className="inline-flex items-center gap-1 px-3 py-1 bg-white border border-indigo-200 rounded-full text-xs font-medium text-indigo-700">
+                          Payment: {filters.paymentTypeFilter}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
-              )}
+              </div>
+            )}
 
-              {/* Advanced Filters */}
-              {showFilters && (
-                <div className="mt-4 pt-4 border-t border-gray-200">
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-sm font-semibold text-gray-900">
-                      Advanced Filters
-                    </h3>
-                    <button
-                      onClick={() => setShowFilters(false)}
-                      className="p-1 hover:bg-gray-100 rounded-lg transition-colors sm:hidden"
-                    >
-                      <X className="w-4 h-4 text-gray-500" />
-                    </button>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-                    {/* Branch Filter */}
-                    <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-2">
-                        Branch
-                      </label>
-                      <select
-                        value={filters.branch}
-                        onChange={(e) =>
-                          setFilters((prev) => ({
-                            ...prev,
-                            branch: e.target.value,
-                          }))
-                        }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
-                      >
-                        <option value="">All Branches</option>
-                        {filterOptions.branches.map((branch) => (
-                          <option key={branch} value={branch}>
-                            {branch}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    {/* Staff Filter */}
-                    <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-2">
-                        Staff Member
-                      </label>
-                      <select
-                        value={filters.staffFilter}
-                        onChange={(e) =>
-                          setFilters((prev) => ({
-                            ...prev,
-                            staffFilter: e.target.value,
-                          }))
-                        }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
-                      >
-                        <option value="">All Staff</option>
-                        {filterOptions.staff.map((staff) => (
-                          <option key={staff} value={staff}>
-                            {staff}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    {/* Technique Filter */}
-                    <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-2">
-                        Surgical Technique
-                      </label>
-                      <select
-                        value={filters.techniqueFilter}
-                        onChange={(e) =>
-                          setFilters((prev) => ({
-                            ...prev,
-                            techniqueFilter: e.target.value,
-                          }))
-                        }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
-                      >
-                        <option value="">All Techniques</option>
-                        {filterOptions.techniques.map((technique) => (
-                          <option key={technique} value={technique}>
-                            {technique}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    {/* Status Filter */}
-                    <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-2">
-                        Patient Status
-                      </label>
-                      <select
-                        value={filters.statusFilter}
-                        onChange={(e) =>
-                          setFilters((prev) => ({
-                            ...prev,
-                            statusFilter: e.target.value,
-                          }))
-                        }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
-                      >
-                        <option value="">All Status</option>
-                        {filterOptions.status.map((status) => (
-                          <option key={status} value={status}>
-                            {status}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    {/* Procedure Filter */}
-                    <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-2">
-                        Procedure Type
-                      </label>
-                      <select
-                        value={filters.procedureFilter}
-                        onChange={(e) =>
-                          setFilters((prev) => ({
-                            ...prev,
-                            procedureFilter: e.target.value,
-                          }))
-                        }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
-                      >
-                        <option value="">All Procedures</option>
-                        {filterOptions.procedures.map((procedure) => (
-                          <option key={procedure} value={procedure}>
-                            {procedure}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    {/* Payment Type Filter */}
-                    <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-2">
-                        Payment Type
-                      </label>
-                      <select
-                        value={filters.paymentTypeFilter}
-                        onChange={(e) =>
-                          setFilters((prev) => ({
-                            ...prev,
-                            paymentTypeFilter: e.target.value,
-                          }))
-                        }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
-                      >
-                        <option value="">All Payment Types</option>
-                        {filterOptions.paymentTypes.map((type) => (
-                          <option key={type} value={type}>
-                            {type}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
+            {/* Results Header */}
+            <div className="mb-4 flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900">
+                  {favorites.length > 0 && sortedReports.some(r => favorites.includes(r.id)) ? "All Reports" : "Available Reports"}
+                </h2>
+                <p className="text-sm text-gray-600 mt-1">
+                  {sortedReports.length} report{sortedReports.length !== 1 ? "s" : ""} found
+                  {searchTerm && ` for "${searchTerm}"`}
+                </p>
+              </div>
+              {favorites.length > 0 && (
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+                  <span>{favorites.length} favorite{favorites.length !== 1 ? 's' : ''}</span>
                 </div>
               )}
             </div>
 
-            {/* Favorites Section */}
-            {favorites.length > 0 && (
-              <div className="mb-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                  <Star className="w-5 h-5 text-yellow-500 fill-yellow-500" />
-                  Favorite Reports
-                </h3>
-              </div>
-            )}
-
             {/* Reports Grid */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
               {sortedReports.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                   {sortedReports.map((report) => {
                     const Icon = report.icon;
                     const isFavorite = favorites.includes(report.id);
@@ -789,35 +960,42 @@ export default function ReportsPage() {
                     return (
                       <div
                         key={report.id}
-                        className="relative bg-white border-2 border-gray-200 rounded-xl p-4 sm:p-6 hover:border-indigo-400 hover:shadow-lg transition-all duration-200"
+                        className="relative bg-white border-2 border-gray-200 rounded-xl p-6 hover:border-indigo-400 hover:shadow-lg transition-all duration-200 group"
                       >
+                        {/* Favorite Badge */}
+                        {isFavorite && (
+                          <div className="absolute top-0 right-0 bg-yellow-500 text-white px-2 py-1 rounded-bl-lg rounded-tr-xl text-xs font-semibold">
+                            Favorite
+                          </div>
+                        )}
+
                         {/* Favorite Button */}
                         <button
                           onClick={() => toggleFavorite(report.id)}
-                          className="absolute top-3 right-3 sm:top-4 sm:right-4 p-1.5 sm:p-2 rounded-full hover:bg-gray-100 transition-colors"
+                          className={`absolute ${isFavorite ? 'top-8 right-3' : 'top-3 right-3'} p-2 rounded-full hover:bg-gray-100 transition-colors`}
                           aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
                         >
                           <Star 
-                            className={`w-4 h-4 sm:w-5 sm:h-5 ${isFavorite ? 'fill-yellow-500 text-yellow-500' : 'text-gray-400'}`}
+                            className={`w-5 h-5 ${isFavorite ? 'fill-yellow-500 text-yellow-500' : 'text-gray-400 group-hover:text-yellow-500'}`}
                           />
                         </button>
 
                         {/* Report Icon */}
-                        <div className={`inline-flex p-2.5 sm:p-3 rounded-xl ${colors.bg} mb-3 sm:mb-4`}>
-                          <Icon className={`w-5 h-5 sm:w-6 sm:h-6 ${colors.text}`} />
+                        <div className={`inline-flex p-3 rounded-xl ${colors.bg} mb-4`}>
+                          <Icon className={`w-6 h-6 ${colors.text}`} />
                         </div>
 
                         {/* Report Info */}
-                        <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-2 pr-8 line-clamp-2">
+                        <h3 className="text-lg font-bold text-gray-900 mb-2 pr-8 line-clamp-2">
                           {report.name}
                         </h3>
-                        <p className="text-xs sm:text-sm text-gray-600 mb-3 sm:mb-4 line-clamp-2">
+                        <p className="text-sm text-gray-600 mb-4 line-clamp-2 min-h-10">
                           {report.description}
                         </p>
 
                         {/* Category Badge */}
                         <span
-                          className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium mb-3 sm:mb-4 ${
+                          className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold mb-4 ${
                             report.category === "Patient Reports"
                               ? "bg-blue-100 text-blue-800"
                               : report.category === "Staff Reports"
@@ -836,12 +1014,12 @@ export default function ReportsPage() {
                         <button
                           onClick={() => downloadExcel(report.type, report.id, report.name)}
                           disabled={loadingId === report.id}
-                          className="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg font-medium transition-colors text-sm"
+                          className="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white px-4 py-3 rounded-lg font-semibold transition-colors shadow-sm hover:shadow-md"
                         >
                           {loadingId === report.id ? (
                             <>
                               <svg
-                                className="animate-spin h-4 w-4 sm:h-5 sm:w-5 text-white"
+                                className="animate-spin h-5 w-5 text-white"
                                 xmlns="http://www.w3.org/2000/svg"
                                 fill="none"
                                 viewBox="0 0 24 24"
@@ -860,14 +1038,12 @@ export default function ReportsPage() {
                                   d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                                 ></path>
                               </svg>
-                              <span className="hidden sm:inline">Downloading...</span>
-                              <span className="sm:hidden">Loading...</span>
+                              <span>Downloading...</span>
                             </>
                           ) : (
                             <>
-                              <Download className="w-4 h-4 sm:w-5 sm:h-5" />
-                              <span className="hidden sm:inline">Download Excel</span>
-                              <span className="sm:hidden">Download</span>
+                              <Download className="w-5 h-5" />
+                              <span>Download Excel</span>
                             </>
                           )}
                         </button>
@@ -876,18 +1052,22 @@ export default function ReportsPage() {
                   })}
                 </div>
               ) : (
-                <div className="text-center py-12 sm:py-16">
-                  <FileText className="w-10 h-10 sm:w-12 sm:h-12 text-gray-400 mx-auto mb-3 sm:mb-4" />
-                  <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">
+                <div className="text-center py-16">
+                  <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">
                     No reports found
                   </h3>
-                  <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6">
-                    Try adjusting your search or filters
+                  <p className="text-gray-600 mb-6">
+                    {searchTerm 
+                      ? `No reports match "${searchTerm}"`
+                      : "Try adjusting your filters to see more reports"
+                    }
                   </p>
                   <button
                     onClick={clearFilters}
-                    className="inline-flex items-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium text-sm"
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-semibold shadow-sm"
                   >
+                    <RefreshCw className="w-5 h-5" />
                     Clear All Filters
                   </button>
                 </div>

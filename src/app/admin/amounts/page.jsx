@@ -26,6 +26,10 @@ import {
   Menu,
   Tag,
   ArrowUpDown,
+  Download,
+  FileSpreadsheet,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 
 // ========== UTILITY FUNCTIONS ==========
@@ -65,7 +69,8 @@ const formatCurrency = (amount) => {
 };
 
 const BRANCHES = ["Delhi", "Mumbai", "Hyderabad"];
-const PAYMENT_METHODS = ["upi", "cash", "card", "banking", "Loan", "other"];const PROCEDURES = [
+const PAYMENT_METHODS = ["upi", "cash", "card", "banking", "Loan", "other"];
+const PROCEDURES = [
   "Sapphire FUE",
   "DHI",
   "Turkish DHI",
@@ -91,7 +96,7 @@ function StatCard({
 }) {
   return (
     <div
-      className={`bg-gradient-to-br ${gradient} p-4 sm:p-6 rounded-2xl shadow-lg text-white relative overflow-hidden transform hover:scale-105 transition-transform duration-300`}
+      className={`bg-linear-to-br ${gradient} p-4 sm:p-6 rounded-2xl shadow-lg text-white relative overflow-hidden transform hover:scale-105 transition-transform duration-300`}
     >
       <div className="absolute top-0 right-0 w-24 h-24 sm:w-32 sm:h-32 bg-white/10 rounded-full -mr-12 -mt-12 sm:-mr-16 sm:-mt-16" />
       <div className="relative">
@@ -104,7 +109,7 @@ function StatCard({
               {value}
             </h3>
           </div>
-          <div className={`${iconBg} p-2 sm:p-3 rounded-xl flex-shrink-0 ml-2`}>
+          <div className={`${iconBg} p-2 sm:p-3 rounded-xl shrink-0 ml-2`}>
             <Icon className={`w-4 h-4 sm:w-6 sm:h-6 ${iconColor}`} />
           </div>
         </div>
@@ -224,13 +229,16 @@ export default function AmountDashboard() {
   const [revenue, setRevenue] = useState([]);
   const [expenses, setExpenses] = useState([]);
   const [patients, setPatients] = useState([]);
+  
+  // Set default filters to today's date
   const [filters, setFilters] = useState({
     branch: "",
-    dateFrom: getTodayDate(),
-    dateTo: getTodayDate(),
+    dateFrom: getTodayDate(), // Default to today
+    dateTo: getTodayDate(),   // Default to today
     paymentMethod: "",
     procedure: "",
   });
+  
   const [activeTab, setActiveTab] = useState("revenue");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -238,6 +246,7 @@ export default function AmountDashboard() {
   const [tableSearch, setTableSearch] = useState("");
   const [refreshing, setRefreshing] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [downloading, setDownloading] = useState(false);
 
   // Modal states
   const [showModal, setShowModal] = useState(false);
@@ -256,6 +265,10 @@ export default function AmountDashboard() {
     direction: "desc",
   });
 
+  // Store all data separately for searching
+  const [allRevenue, setAllRevenue] = useState([]);
+  const [allExpenses, setAllExpenses] = useState([]);
+
   useEffect(() => {
     fetchData();
     fetchPatients();
@@ -271,6 +284,8 @@ export default function AmountDashboard() {
       if (data.success && data.data) {
         setRevenue(data.data.Revenue || []);
         setExpenses(data.data.Expenses || []);
+        setAllRevenue(data.data.Revenue || []); // Store all revenue for searching
+        setAllExpenses(data.data.Expenses || []); // Store all expenses for searching
       } else {
         throw new Error("Invalid data format");
       }
@@ -326,7 +341,7 @@ export default function AmountDashboard() {
     });
   };
 
-  // Filtering with timezone support
+  // Filtering with timezone support (for display)
   const filteredRevenue = useMemo(() => {
     let list = [...revenue];
     if (filters.branch)
@@ -361,7 +376,7 @@ export default function AmountDashboard() {
     return list;
   }, [expenses, filters]);
 
-  // Calculate totals with discount
+  // Calculate totals with discount (for display - today's data by default)
   const totalIncome = useMemo(() => {
     return filteredRevenue.reduce((sum, t) => sum + calculateNetAmount(t), 0);
   }, [filteredRevenue]);
@@ -385,22 +400,31 @@ export default function AmountDashboard() {
   const totalTransactions = filteredRevenue.length;
   const totalExpenseItems = filteredExpenses.length;
 
+  // For searching - use all data when there's a search term
   const searchedRows = useMemo(() => {
-    const rows = activeTab === "revenue" ? filteredRevenue : filteredExpenses;
-    if (!tableSearch) return rows;
+    // If there's a search term, search across all data (not just today's)
+    // Otherwise, use the filtered data (which defaults to today)
+    const rowsToSearch = tableSearch 
+      ? (activeTab === "revenue" ? allRevenue : allExpenses)
+      : (activeTab === "revenue" ? filteredRevenue : filteredExpenses);
+    
+    if (!tableSearch) return rowsToSearch;
 
-    return rows.filter((row) => {
+    return rowsToSearch.filter((row) => {
       const searchLower = tableSearch.toLowerCase();
       if (activeTab === "revenue") {
         const patientName = row.patient?.personal?.name || "Walk-in Customer";
+        const patientPhone = row.patient?.personal?.phone || "";
         return (
           patientName.toLowerCase().includes(searchLower) ||
+          patientPhone.includes(searchLower) ||
           row.procedure?.toLowerCase().includes(searchLower) ||
           row.method?.toLowerCase().includes(searchLower) ||
           row.branch?.toLowerCase().includes(searchLower) ||
           row.remarks?.toLowerCase().includes(searchLower) ||
           row.amount.toString().includes(searchLower) ||
-          (row.discount && row.discount.toString().includes(searchLower))
+          (row.discount && row.discount.toString().includes(searchLower)) ||
+          row.patient?.payments?.totalAmount?.toString().includes(searchLower)
         );
       } else {
         return (
@@ -412,7 +436,7 @@ export default function AmountDashboard() {
         );
       }
     });
-  }, [activeTab, filteredRevenue, filteredExpenses, tableSearch]);
+  }, [activeTab, filteredRevenue, filteredExpenses, allRevenue, allExpenses, tableSearch]);
 
   // Sorting
   const sortedRows = useMemo(() => {
@@ -467,12 +491,17 @@ export default function AmountDashboard() {
     if (!patient) return "Walk-in Customer";
     return patient.personal?.name || "N/A";
   };
-
+  
+  const getPatientNumber = (patient) => {
+    if (!patient) return "";
+    return patient.personal?.phone || "";
+  };
+  
   const clearFilters = () => {
     setFilters({
       branch: "",
-      dateFrom: getTodayDate(),
-      dateTo: getTodayDate(),
+      dateFrom: getTodayDate(), // Reset to today after clear
+      dateTo: getTodayDate(),   // Reset to today after clear
       paymentMethod: "",
       procedure: "",
     });
@@ -540,9 +569,132 @@ export default function AmountDashboard() {
     }
   };
 
+  // Excel Download Function
+  const downloadExcel = async () => {
+    try {
+      setDownloading(true);
+
+      // Import xlsx dynamically
+      const { utils, writeFile } = await import("xlsx");
+
+      // Prepare data based on active tab
+      const dataToExport = sortedRows.map((row) => {
+        if (activeTab === "revenue") {
+          const netAmount = calculateNetAmount(row);
+          const hasDiscount = parseFloat(row.discount || 0) > 0;
+          const patientData = row.patient;
+
+          return {
+            Date: formatDateForDisplay(row.date),
+            "Patient Name": patientData?.personal?.name || "Walk-in Customer",
+            Phone: patientData?.personal?.phone || "N/A",
+            Branch: row.branch || "",
+            Procedure: row.procedure || "",
+            "Payment Type": row.paymentType || "",
+            "Payment Method": row.method?.toUpperCase() || "",
+            "Original Amount": parseFloat(row.amount) || 0,
+            Discount: hasDiscount ? parseFloat(row.discount) || 0 : 0,
+            "Net Amount": netAmount,
+            "Pending Amount": patientData?.payments?.pendingAmount || 0,
+            "Total Package": patientData?.payments?.totalAmount || 0,
+            "Amount Received": patientData?.payments?.amountReceived || 0,
+            Remarks: row.remarks || "",
+          };
+        } else {
+          return {
+            Date: formatDateForDisplay(row.date),
+            Branch: row.branch || "",
+            "Expense Type": row.expense || "",
+            "Payment Method": row.method?.toUpperCase() || "",
+            Amount: parseFloat(row.amount) || 0,
+            "Given To": row.expenseGiver || "",
+            Remarks: row.remarks || "",
+          };
+        }
+      });
+
+      // Create workbook
+      const wb = utils.book_new();
+      const ws = utils.json_to_sheet(dataToExport);
+
+      // Set column widths
+      const maxWidth = 30;
+      const colWidths = Object.keys(dataToExport[0] || {}).map((key) => ({
+        wch: Math.min(Math.max(key.length, 10), maxWidth),
+      }));
+      ws["!cols"] = colWidths;
+
+      // Add worksheet to workbook
+      utils.book_append_sheet(
+        wb,
+        ws,
+        activeTab === "revenue" ? "Revenue" : "Expenses"
+      );
+
+      // Generate filename
+      const filterInfo = [];
+      if (filters.branch) filterInfo.push(filters.branch);
+      if (filters.dateFrom || filters.dateTo) {
+        const dateRange = `${filters.dateFrom || "Start"}_to_${
+          filters.dateTo || "End"
+        }`;
+        filterInfo.push(dateRange);
+      }
+
+      const filterSuffix =
+        filterInfo.length > 0 ? `_${filterInfo.join("_")}` : "";
+      const fileName = `${activeTab}_transactions${filterSuffix}_${
+        new Date().toISOString().split("T")[0]
+      }.xlsx`;
+
+      // Download file
+      writeFile(wb, fileName);
+
+      toast.success(`✓ Downloaded ${sortedRows.length} ${activeTab} records!`);
+    } catch (error) {
+      console.error("Download error:", error);
+      toast.error("Failed to download Excel file");
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  // Quick filter presets
+  const applyQuickFilter = (preset) => {
+    const today = getTodayDate();
+    const date = new Date();
+
+    switch (preset) {
+      case "today":
+        setFilters({ ...filters, dateFrom: today, dateTo: today });
+        break;
+      case "yesterday":
+        const yesterday = new Date(date.setDate(date.getDate() - 1))
+          .toISOString()
+          .split("T")[0];
+        setFilters({ ...filters, dateFrom: yesterday, dateTo: yesterday });
+        break;
+      case "week":
+        const weekAgo = new Date(date.setDate(date.getDate() - 7))
+          .toISOString()
+          .split("T")[0];
+        setFilters({ ...filters, dateFrom: weekAgo, dateTo: getTodayDate() });
+        break;
+      case "month":
+        const monthAgo = new Date(date.setMonth(date.getMonth() - 1))
+          .toISOString()
+          .split("T")[0];
+        setFilters({ ...filters, dateFrom: monthAgo, dateTo: getTodayDate() });
+        break;
+      case "all":
+        setFilters({ ...filters, dateFrom: "", dateTo: "" });
+        break;
+    }
+  };
+
   if (loading)
     return (
-      <div className="flex h-screen items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+      <div className="flex h-screen items-center justify-center bg-linear-to-br from-blue-50 via-indigo-50 to-purple-50">
         <div className="text-center">
           <Loader2 className="animate-spin h-16 w-16 text-indigo-500 mx-auto mb-4" />
           <p className="text-gray-600 font-medium">Loading financial data...</p>
@@ -552,7 +704,7 @@ export default function AmountDashboard() {
 
   if (error)
     return (
-      <div className="flex h-screen items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+      <div className="flex h-screen items-center justify-center bg-linear-to-br from-blue-50 via-indigo-50 to-purple-50">
         <div className="text-center bg-white p-8 rounded-3xl shadow-xl border border-red-100">
           <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
             <AlertCircle className="w-8 h-8 text-red-500" />
@@ -572,7 +724,7 @@ export default function AmountDashboard() {
     );
 
   return (
-    <div className="flex min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+    <div className="flex min-h-screen bg-linear-to-br from-blue-50 via-indigo-50 to-purple-50">
       {/* Mobile Sidebar Overlay */}
       {sidebarOpen && (
         <div
@@ -614,9 +766,31 @@ export default function AmountDashboard() {
             </div>
             <div className="flex gap-2 sm:gap-3">
               <button
+                onClick={downloadExcel}
+                disabled={downloading || sortedRows.length === 0}
+                className="bg-linear-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white px-3 sm:px-5 py-2 sm:py-3 rounded-xl flex items-center gap-1 sm:gap-2 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 text-sm sm:text-base shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {downloading ? (
+                  <>
+                    <Loader2 size={18} className="animate-spin" />
+                    <span className="font-semibold hidden xs:inline">
+                      Downloading...
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <Download size={18} strokeWidth={2.5} />
+                    <span className="font-semibold hidden xs:inline">
+                      Export Excel
+                    </span>
+                    <span className="font-semibold xs:hidden">Excel</span>
+                  </>
+                )}
+              </button>
+              <button
                 onClick={handleRefresh}
                 disabled={refreshing}
-                className="p-2 sm:p-3 bg-white border-2 border-gray-200 rounded-xl hover:bg-gray-50 transition-all shadow-sm disabled:opacity-50 flex-shrink-0"
+                className="p-2 sm:p-3 bg-white border-2 border-gray-200 rounded-xl hover:bg-gray-50 transition-all shadow-sm disabled:opacity-50 shrink-0"
                 title="Refresh data"
               >
                 <RefreshCw
@@ -627,7 +801,7 @@ export default function AmountDashboard() {
               </button>
               <button
                 onClick={openCreateModal}
-                className="bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white px-3 sm:px-5 py-2 sm:py-3 rounded-xl flex items-center gap-1 sm:gap-2 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 text-sm sm:text-base flex-shrink-0"
+                className="bg-linear-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white px-3 sm:px-5 py-2 sm:py-3 rounded-xl flex items-center gap-1 sm:gap-2 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 text-sm sm:text-base shrink-0"
               >
                 <Plus size={18} strokeWidth={2.5} />
                 <span className="font-semibold hidden xs:inline">
@@ -693,9 +867,9 @@ export default function AmountDashboard() {
               {/* Tabs */}
               <div className="flex gap-1 sm:gap-2 w-full lg:w-auto overflow-x-auto pb-2 lg:pb-0">
                 <button
-                  className={`px-4 sm:px-6 py-2 sm:py-2.5 rounded-xl font-semibold transition-all whitespace-nowrap flex-shrink-0 ${
+                  className={`px-4 sm:px-6 py-2 sm:py-2.5 rounded-xl font-semibold transition-all whitespace-nowrap shrink-0 ${
                     activeTab === "revenue"
-                      ? "bg-gradient-to-r from-emerald-500 to-green-600 text-white shadow-md"
+                      ? "bg-linear-to-r from-emerald-500 to-green-600 text-white shadow-md"
                       : "bg-gray-50 text-gray-600 hover:bg-gray-100"
                   }`}
                   onClick={() => setActiveTab("revenue")}
@@ -703,9 +877,9 @@ export default function AmountDashboard() {
                   Revenue ({totalTransactions})
                 </button>
                 <button
-                  className={`px-4 sm:px-6 py-2 sm:py-2.5 rounded-xl font-semibold transition-all whitespace-nowrap flex-shrink-0 ${
+                  className={`px-4 sm:px-6 py-2 sm:py-2.5 rounded-xl font-semibold transition-all whitespace-nowrap shrink-0 ${
                     activeTab === "expenses"
-                      ? "bg-gradient-to-r from-rose-500 to-red-600 text-white shadow-md"
+                      ? "bg-linear-to-r from-rose-500 to-red-600 text-white shadow-md"
                       : "bg-gray-50 text-gray-600 hover:bg-gray-100"
                   }`}
                   onClick={() => setActiveTab("expenses")}
@@ -728,7 +902,7 @@ export default function AmountDashboard() {
                 </div>
                 <button
                   onClick={() => setShowFilters(!showFilters)}
-                  className={`p-2 sm:p-2.5 rounded-xl transition-all flex-shrink-0 ${
+                  className={`p-2 sm:p-2.5 rounded-xl transition-all shrink-0 flex items-center gap-2 ${
                     showFilters
                       ? "bg-indigo-50 text-indigo-600 ring-2 ring-indigo-200"
                       : "bg-gray-50 hover:bg-gray-100 text-gray-600"
@@ -736,11 +910,16 @@ export default function AmountDashboard() {
                   title="Toggle filters"
                 >
                   <Filter className="w-4 h-4 sm:w-5 sm:h-5" />
+                  {showFilters ? (
+                    <ChevronUp className="w-4 h-4 hidden sm:block" />
+                  ) : (
+                    <ChevronDown className="w-4 h-4 hidden sm:block" />
+                  )}
                 </button>
                 {hasActiveFilters && (
                   <button
                     onClick={clearFilters}
-                    className="px-3 sm:px-4 py-2 sm:py-2.5 text-sm bg-gray-50 hover:bg-gray-100 text-gray-700 rounded-xl transition-all font-medium flex items-center gap-1 sm:gap-2 whitespace-nowrap flex-shrink-0"
+                    className="px-3 sm:px-4 py-2 sm:py-2.5 text-sm bg-gray-50 hover:bg-gray-100 text-gray-700 rounded-xl transition-all font-medium flex items-center gap-1 sm:gap-2 whitespace-nowrap shrink-0"
                   >
                     <X className="w-4 h-4" />
                     <span className="hidden xs:inline">Clear</span>
@@ -751,7 +930,32 @@ export default function AmountDashboard() {
 
             {/* Filters Panel */}
             {showFilters && (
-              <div className="px-4 sm:px-6 pb-4 sm:pb-5 border-t border-gray-100 pt-4 sm:pt-5 bg-gradient-to-b from-gray-50 to-white">
+              <div className="px-4 sm:px-6 pb-4 sm:pb-5 border-t border-gray-100 pt-4 sm:pt-5 bg-linear-to-b from-indigo-50/30 to-white">
+                {/* Quick Filter Buttons */}
+                <div className="mb-4">
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Quick Filters
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      { label: "Today", value: "today" },
+                      { label: "Yesterday", value: "yesterday" },
+                      { label: "Last 7 Days", value: "week" },
+                      { label: "Last 30 Days", value: "month" },
+                      { label: "All Time", value: "all" },
+                    ].map((preset) => (
+                      <button
+                        key={preset.value}
+                        onClick={() => applyQuickFilter(preset.value)}
+                        className="px-3 sm:px-4 py-1.5 sm:py-2 bg-white border-2 border-indigo-200 text-indigo-700 rounded-lg hover:bg-indigo-50 transition-all text-xs sm:text-sm font-semibold"
+                      >
+                        {preset.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Detailed Filters */}
                 <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-4">
                   <Select
                     label="Branch"
@@ -808,6 +1012,52 @@ export default function AmountDashboard() {
                     />
                   )}
                 </div>
+
+                {/* Active Filters Summary */}
+                {hasActiveFilters && (
+                  <div className="mt-4 p-3 bg-indigo-50 border border-indigo-200 rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-semibold text-indigo-900">
+                        Active Filters:
+                      </span>
+                      <span className="text-xs text-indigo-700">
+                        {sortedRows.length} results
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {filters.branch && (
+                        <span className="px-2 py-1 bg-white text-indigo-700 rounded-md text-xs font-medium border border-indigo-200">
+                          Branch: {filters.branch}
+                        </span>
+                      )}
+                      {filters.dateFrom && (
+                        <span className="px-2 py-1 bg-white text-indigo-700 rounded-md text-xs font-medium border border-indigo-200">
+                          From: {formatDateForDisplay(filters.dateFrom)}
+                        </span>
+                      )}
+                      {filters.dateTo && (
+                        <span className="px-2 py-1 bg-white text-indigo-700 rounded-md text-xs font-medium border border-indigo-200">
+                          To: {formatDateForDisplay(filters.dateTo)}
+                        </span>
+                      )}
+                      {filters.paymentMethod && (
+                        <span className="px-2 py-1 bg-white text-indigo-700 rounded-md text-xs font-medium border border-indigo-200">
+                          Method: {filters.paymentMethod.toUpperCase()}
+                        </span>
+                      )}
+                      {filters.procedure && (
+                        <span className="px-2 py-1 bg-white text-indigo-700 rounded-md text-xs font-medium border border-indigo-200">
+                          Procedure: {filters.procedure}
+                        </span>
+                      )}
+                      {tableSearch && (
+                        <span className="px-2 py-1 bg-white text-indigo-700 rounded-md text-xs font-medium border border-indigo-200">
+                          Search: "{tableSearch}"
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -817,6 +1067,7 @@ export default function AmountDashboard() {
             type={activeTab}
             rows={paginatedRows}
             getPatientName={getPatientName}
+            getPatientNumber={getPatientNumber}
             onEdit={openEditModal}
             onDelete={openDeleteConfirm}
             onSort={handleSort}
@@ -861,7 +1112,6 @@ export default function AmountDashboard() {
 }
 
 // ========== TRANSACTION MODAL COMPONENT ==========
-// ========== TRANSACTION MODAL COMPONENT ==========
 function TransactionModal({ transaction, patients, onClose, onSuccess }) {
   const isEdit = !!transaction;
   const [loading, setLoading] = useState(false);
@@ -874,7 +1124,7 @@ function TransactionModal({ transaction, patients, onClose, onSuccess }) {
     _id: transaction?._id || "",
     costType: transaction?.costType || "Revenue",
     method: transaction?.method || "cash",
-    procedure: transaction?.procedure || "hair transplant",
+    procedure: transaction?.procedure || "Sapphire FUE",
     paymentType: transaction?.paymentType || "Booking",
     branch: transaction?.branch || "Delhi",
     amount: transaction?.amount || "",
@@ -894,7 +1144,7 @@ function TransactionModal({ transaction, patients, onClose, onSuccess }) {
         _id: transaction._id,
         costType: transaction.costType || "Revenue",
         method: transaction.method || "cash",
-        procedure: transaction.procedure || "hair transplant",
+        procedure: transaction.procedure || "Sapphire FUE",
         paymentType: transaction.paymentType || "Booking",
         branch: transaction.branch || "Delhi",
         amount: transaction.amount || "",
@@ -1016,7 +1266,7 @@ function TransactionModal({ transaction, patients, onClose, onSuccess }) {
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4 overflow-y-auto">
       <div className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl max-w-3xl w-full my-4 max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="sticky top-0 bg-gradient-to-r from-indigo-500 to-purple-600 px-4 sm:px-8 py-4 sm:py-5 flex justify-between items-center rounded-t-2xl sm:rounded-t-3xl z-10">
+        <div className="sticky top-0 bg-linear-to-r from-indigo-500 to-purple-600 px-4 sm:px-8 py-4 sm:py-5 flex justify-between items-center rounded-t-2xl sm:rounded-t-3xl z-10">
           <h2 className="text-xl sm:text-2xl font-bold text-white">
             {isEdit ? "Edit Transaction" : "Add New Transaction"}
           </h2>
@@ -1032,7 +1282,7 @@ function TransactionModal({ transaction, patients, onClose, onSuccess }) {
         <form onSubmit={handleSubmit} className="p-4 sm:p-6 lg:p-8">
           {error && (
             <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm flex items-start gap-2 sm:gap-3">
-              <AlertCircle size={18} className="flex-shrink-0 mt-0.5" />
+              <AlertCircle size={18} className="shrink-0 mt-0.5" />
               <span>{error}</span>
             </div>
           )}
@@ -1124,7 +1374,7 @@ function TransactionModal({ transaction, patients, onClose, onSuccess }) {
                         </p>
                       </div>
                       <CheckCircle2
-                        className="text-emerald-600 flex-shrink-0 ml-2"
+                        className="text-emerald-600 shrink-0 ml-2"
                         size={20}
                       />
                     </div>
@@ -1279,10 +1529,9 @@ function TransactionModal({ transaction, patients, onClose, onSuccess }) {
             />
 
             {/* Pending Amount Display */}
-            {/* Pending Amount Display */}
             {formData.costType === "Revenue" && selectedPatient && (
               <div className="flex items-end">
-                <div className="w-full p-3 bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl">
+                <div className="w-full p-3 bg-linear-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl">
                   <p className="text-xs font-semibold text-blue-700 mb-1">
                     {formData.amount
                       ? "Pending Amount (After Transaction)"
@@ -1331,7 +1580,7 @@ function TransactionModal({ transaction, patients, onClose, onSuccess }) {
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 px-4 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl hover:from-indigo-600 hover:to-purple-700 transition-all font-semibold disabled:opacity-50 disabled:cursor-not-allowed shadow-lg flex items-center justify-center gap-2 text-sm sm:text-base"
+              className="flex-1 px-4 sm:px-6 py-2.5 sm:py-3 bg-linear-to-r from-indigo-500 to-purple-600 text-white rounded-xl hover:from-indigo-600 hover:to-purple-700 transition-all font-semibold disabled:opacity-50 disabled:cursor-not-allowed shadow-lg flex items-center justify-center gap-2 text-sm sm:text-base"
             >
               {loading ? (
                 <>
@@ -1356,6 +1605,7 @@ function DataTable({
   type,
   rows,
   getPatientName,
+  getPatientNumber,
   onEdit,
   onDelete,
   onSort,
@@ -1365,11 +1615,13 @@ function DataTable({
   const columns =
     type === "revenue"
       ? [
+        { key: "date", label: "Date", sortable: true },
           { key: "patient", label: "Patient", sortable: true },
           { key: "procedure", label: "Procedure", sortable: true },
           { key: "method", label: "Method", sortable: true },
+          { key: "totalPackage", label: "Total Package", sortable: false },
           { key: "amount", label: "Amount", sortable: true },
-          { key: "date", label: "Date", sortable: true },
+          { key: "pending", label: "Pending", sortable: false },
           { key: "branch", label: "Branch", sortable: true },
           { key: "remarks", label: "Remarks", sortable: false },
           { key: "actions", label: "Actions", sortable: false },
@@ -1387,11 +1639,13 @@ function DataTable({
 
   const getProcedureColor = (proc) => {
     const colors = {
-      "hair transplant": "bg-indigo-100 text-indigo-700 border-indigo-200",
+      "sapphire fue": "bg-indigo-100 text-indigo-700 border-indigo-200",
+      dhi: "bg-purple-100 text-purple-700 border-purple-200",
+      "turkish dhi": "bg-pink-100 text-pink-700 border-pink-200",
+      "beard transplant": "bg-amber-100 text-amber-700 border-amber-200",
       prp: "bg-emerald-100 text-emerald-700 border-emerald-200",
-      "beard transplant": "bg-purple-100 text-purple-700 border-purple-200",
-      medicine: "bg-amber-100 text-amber-700 border-amber-200",
-      gfc: "bg-pink-100 text-pink-700 border-pink-200",
+      gfc: "bg-cyan-100 text-cyan-700 border-cyan-200",
+      medicine: "bg-orange-100 text-orange-700 border-orange-200",
     };
     return (
       colors[proc?.toLowerCase()] || "bg-gray-100 text-gray-700 border-gray-200"
@@ -1402,7 +1656,8 @@ function DataTable({
     const colors = {
       cash: "bg-emerald-100 text-emerald-700 border-emerald-200",
       upi: "bg-blue-100 text-blue-700 border-blue-200",
-      banking: "bg-purple-100 text-purple-700 border-purple-200",
+      card: "bg-purple-100 text-purple-700 border-purple-200",
+      banking: "bg-indigo-100 text-indigo-700 border-indigo-200",
       loan: "bg-orange-100 text-orange-700 border-orange-200",
     };
     return (
@@ -1427,8 +1682,8 @@ function DataTable({
   return (
     <div>
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[800px]">
-          <thead className="bg-gradient-to-r from-gray-50 to-gray-100 border-b-2 border-gray-200">
+        <table className="w-full min-w-225">
+          <thead className="bg-linear-to-r from-gray-50 to-gray-100 border-b-2 border-gray-200">
             <tr>
               {columns.map((col) => (
                 <th
@@ -1474,6 +1729,9 @@ function DataTable({
               rows.map((row, i) => {
                 const netAmount = calculateNetAmount(row);
                 const hasDiscount = parseFloat(row.discount || 0) > 0;
+                const pendingAmount = row.patient?.payments?.pendingAmount || 0;
+                const totalPackage = row.patient?.payments?.totalAmount || 0;
+                const phoneNumber = getPatientNumber(row.patient);
 
                 return (
                   <tr
@@ -1482,16 +1740,27 @@ function DataTable({
                   >
                     {type === "revenue" ? (
                       <>
+                      <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 text-gray-700 font-semibold text-sm">
+                          {formatDateForDisplay(row.date)}
+                        </td>
                         <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4">
-                          <div className="flex items-center gap-2 min-w-0">
-                            <div className="w-6 h-6 sm:w-8 sm:h-8 bg-indigo-100 rounded-full flex items-center justify-center flex-shrink-0">
-                              <User className="w-3 h-3 sm:w-4 sm:h-4 text-indigo-600" />
+                          <div className="flex items-center gap-3 min-w-0">
+                            {/* <div className="w-6 h-6 sm:w-10 sm:h-10 bg-indigo-100 rounded-full flex items-center justify-center shrink-0">
+                              <User className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-600" />
+                            </div> */}
+                            <div className="min-w-0">
+                              <div className="font-medium text-gray-900 text-sm truncate">
+                                {getPatientName(row.patient)}
+                                <br />
+                                <span className="text-xs font-semibold text-black">
+                                  {" "}
+                                  {phoneNumber || "N/A"}
+                                </span>
+                              </div>
                             </div>
-                            <span className="font-medium text-gray-900 text-sm truncate">
-                              {getPatientName(row.patient)}
-                            </span>
                           </div>
                         </td>
+
                         <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4">
                           <span
                             className={`px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg text-xs font-semibold border ${getProcedureColor(
@@ -1510,8 +1779,15 @@ function DataTable({
                             {row.method?.toUpperCase()}
                           </span>
                         </td>
+
+                        <td className="px-3 text-center sm:px-4 lg:px-6 py-3 sm:py-4">
+                          <div className="font-bold text-indigo-600 text-sm">
+                            {formatCurrency(totalPackage)}
+                          </div>
+                        </td>
+
                         <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4">
-                          <div className="text-right">
+                          <div className="text-center">
                             {hasDiscount ? (
                               <>
                                 <div className="font-bold text-emerald-600 text-sm sm:text-base">
@@ -1532,15 +1808,26 @@ function DataTable({
                             )}
                           </div>
                         </td>
-                        <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 text-gray-700 font-medium text-sm">
-                          {formatDateForDisplay(row.date)}
+                        <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4">
+                          <div className="text-center">
+                            <span
+                              className={`font-semibold text-sm ${
+                                pendingAmount > 0
+                                  ? "text-orange-600"
+                                  : "text-gray-400"
+                              }`}
+                            >
+                              {formatCurrency(pendingAmount)}
+                            </span>
+                          </div>
                         </td>
+                        
                         <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4">
                           <span className="px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg text-xs font-semibold bg-blue-100 text-blue-700 border border-blue-200">
                             {row.branch}
                           </span>
                         </td>
-                        <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 text-gray-600 text-sm max-w-[120px] lg:max-w-xs truncate">
+                        <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 text-gray-600 text-sm max-w-30 lg:max-w-xs truncate">
                           {row.remarks || "-"}
                         </td>
                         <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4">
@@ -1592,7 +1879,7 @@ function DataTable({
                             {row.branch}
                           </span>
                         </td>
-                        <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 text-gray-600 text-sm max-w-[120px] lg:max-w-xs truncate">
+                        <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 text-gray-600 text-sm max-w-30 lg:max-w-xs truncate">
                           {row.remarks || "-"}
                         </td>
                         <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4">
@@ -1624,7 +1911,7 @@ function DataTable({
       </div>
 
       {/* Pagination */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4 px-4 sm:px-6 py-4 sm:py-5 border-t border-gray-200 bg-gradient-to-b from-white to-gray-50">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4 px-4 sm:px-6 py-4 sm:py-5 border-t border-gray-200 bg-linear-to-b from-white to-gray-50">
         <p className="text-xs sm:text-sm text-gray-600 font-medium">
           Showing{" "}
           <span className="font-bold text-gray-900">
@@ -1753,7 +2040,7 @@ function Select({ label, value, onChange, options, required, icon: Icon }) {
             </option>
           ))}
         </select>
-        <ChevronLeft className="absolute right-2 sm:right-3 top-1/2 transform -translate-y-1/2 rotate-[-90deg] text-gray-400 w-4 h-4 sm:w-5 sm:h-5 pointer-events-none" />
+        <ChevronLeft className="absolute right-2 sm:right-3 top-1/2 transform -translate-y-1/2 rotate-90 text-gray-400 w-4 h-4 sm:w-5 sm:h-5 pointer-events-none" />
       </div>
     </label>
   );

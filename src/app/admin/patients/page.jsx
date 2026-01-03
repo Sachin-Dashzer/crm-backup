@@ -425,13 +425,13 @@ function PatientDashboardContent() {
               </div>
             </div>
 
-            <Link
+            {/* <Link
               href="/admin/add-patient"
               className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition-colors text-sm font-medium"
             >
               <Plus className="w-4 h-4" />
               <span className="hidden sm:inline">New Patient</span>
-            </Link>
+            </Link> */}
           </div>
         </div>
 
@@ -527,6 +527,7 @@ function PatientDashboardContent() {
                       <Th label="Technique" />
                       <Th label="Package" />
                       <Th label="Received" />
+                      <Th label="Pending" />
                       <Th label="Status" />
                       <Th label="Action" className="w-32" />
                     </tr>
@@ -587,7 +588,10 @@ function PatientDashboardContent() {
                           <td className="px-4 py-3.5 text-sm text-gray-600 whitespace-nowrap">
                             {p.payments?.amountReceived}
                           </td>
-                          <td className="px-4 py-3.5">
+                          <td className="px-4 py-3.5 text-sm text-gray-600 whitespace-nowrap">
+                            {p.payments?.pendingAmount}
+                          </td>
+                          <td className="px-0 py-3.5">
                             <span
                               className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium border ${
                                 STATUS_COLORS[p?.ops?.status] ||
@@ -806,7 +810,7 @@ function PatientDashboardContent() {
                       />
                     </Field>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    {/* <div className="grid grid-cols-2 gap-4">
                       <Field label="Doctor">
                         <Select
                           value={filters.doctor}
@@ -853,7 +857,7 @@ function PatientDashboardContent() {
                           })),
                         ]}
                       />
-                    </Field>
+                    </Field> */}
                   </Section>
 
                   {/* Surgery Details */}
