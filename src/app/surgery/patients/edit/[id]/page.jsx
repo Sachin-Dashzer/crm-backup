@@ -14,7 +14,6 @@ import {
   Calendar,
   User,
   Heart,
-  CreditCard,
   Scissors,
   FileUp,
   Save,
@@ -22,168 +21,7 @@ import {
   Edit3,
   Eye,
   Download,
-  Plus,
-  Droplet,
 } from "lucide-react";
-
-const BenefitsManager = ({ benefits, onChange, onAdd, onRemove }) => {
-  const predefinedBenefits = [
-    "5 Free PRP Sessions",
-    "Deep Headwash",
-    "5 Days Medicines Included",
-    "Bandage Removal",
-    "GFC",
-  ];
-
-  const handleBenefitToggle = (benefit) => {
-    const currentBenefits = [...benefits];
-    const benefitIndex = currentBenefits.indexOf(benefit);
-
-    if (benefitIndex > -1) {
-      onRemove(benefitIndex);
-    } else {
-      onAdd(benefit);
-    }
-  };
-
-  const handleCustomBenefitAdd = (customBenefit) => {
-    if (customBenefit.trim() && !benefits.includes(customBenefit.trim())) {
-      onAdd(customBenefit.trim());
-    }
-  };
-
-  return (
-    <div className="md:col-span-2">
-      <label className="block text-md underline font-semibold text-gray-700 mb-4">
-        Additional Benefits *
-      </label>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
-        {predefinedBenefits.map((benefit) => (
-          <label
-            key={benefit}
-            className="flex items-center space-x-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors duration-200"
-          >
-            <input
-              type="checkbox"
-              checked={benefits.includes(benefit)}
-              onChange={() => handleBenefitToggle(benefit)}
-              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-            />
-            <span className="text-sm font-medium text-gray-700">{benefit}</span>
-          </label>
-        ))}
-      </div>
-
-      <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Add Custom Benefit
-        </label>
-        <div className="flex space-x-3">
-          <input
-            type="text"
-            className="flex-1 px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 shadow-sm"
-            placeholder="Enter custom benefit"
-            onKeyPress={(e) => {
-              if (e.key === "Enter") {
-                handleCustomBenefitAdd(e.target.value);
-                e.target.value = "";
-              }
-            }}
-          />
-          <button
-            type="button"
-            className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors duration-200 font-medium"
-            onClick={(e) => {
-              const input = e.target.previousElementSibling;
-              handleCustomBenefitAdd(input.value);
-              input.value = "";
-            }}
-          >
-            Add
-          </button>
-        </div>
-      </div>
-
-      {benefits.length > 0 && (
-        <div className="mt-4">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Selected Benefits ({benefits.length})
-          </label>
-          <div className="flex flex-wrap gap-2">
-            {benefits.map((benefit, index) => (
-              <div
-                key={index}
-                className="flex items-center space-x-2 bg-blue-100 text-blue-800 px-3 py-2 rounded-lg"
-              >
-                <span className="text-sm font-medium">{benefit}</span>
-                <button
-                  type="button"
-                  className="text-blue-600 hover:text-blue-800 transition-colors duration-200"
-                  onClick={() => onRemove(index)}
-                >
-                  <X size={14} />
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
-
-const PRPManager = ({ prpSessions, onChange, onAdd, onRemove }) => {
-  return (
-    <div className="md:col-span-2">
-      <h4 className="text-lg font-semibold text-gray-700 mb-4">PRP Sessions</h4>
-      {prpSessions && prpSessions.length > 0 ? (
-        <div className="space-y-4">
-          {prpSessions.map((session, index) => (
-            <div
-              key={index}
-              className="bg-gray-50 p-6 rounded-lg border relative"
-            >
-              <button
-                type="button"
-                onClick={() => onRemove(index)}
-                className="absolute top-4 right-4 text-red-500 hover:text-red-700 p-1"
-                title="Remove PRP Session"
-              >
-                <X size={20} />
-              </button>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pr-12">
-                <InputField
-                  label="PRP Number"
-                  type="number"
-                  value={session.prpNumber || ""}
-                  onChange={(e) => onChange(index, "prpNumber", e.target.value)}
-                  placeholder="Enter PRP session number"
-                />
-                <InputField
-                  label="Date"
-                  type="date"
-                  value={session.date ? session.date.split("T")[0] : ""}
-                  onChange={(e) => onChange(index, "date", e.target.value)}
-                />
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <p className="text-gray-500 text-sm mb-4">No PRP sessions added yet</p>
-      )}
-      <button
-        type="button"
-        className="mt-4 px-6 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors duration-200 font-medium flex items-center gap-2"
-        onClick={onAdd}
-      >
-        <Plus size={20} />
-        Add PRP Session
-      </button>
-    </div>
-  );
-};
 
 const StepHeader = ({ icon: Icon, title, description, color }) => (
   <div className="text-center mb-8">
@@ -194,68 +32,6 @@ const StepHeader = ({ icon: Icon, title, description, color }) => (
     </div>
     <h3 className="text-2xl font-bold text-gray-900">{title}</h3>
     <p className="text-gray-600">{description}</p>
-  </div>
-);
-
-const TransactionManager = ({ transactions, onChange, onAdd, onRemove }) => (
-  <div className="md:col-span-2">
-    <h4 className="text-lg font-semibold text-gray-700 mb-4">Transactions</h4>
-    {transactions.map((transaction, index) => (
-      <div key={index} className="bg-gray-50 p-6 rounded-lg mb-4 border">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <InputField
-            label="Date"
-            type="date"
-            value={transaction.date ? transaction.date.split("T")[0] : ""}
-            onChange={(e) => onChange(index, "date", e.target.value)}
-          />
-          <InputField
-            label="Payment Type"
-            type="select"
-            value={transaction.paymentType || ""}
-            onChange={(e) => onChange(index, "paymentType", e.target.value)}
-            options={[
-              { value: "Full-payment", label: "Full Payment" },
-              { value: "Advance", label: "Advance" },
-              { value: "Installment", label: "Installment" },
-              { value: "EMI", label: "EMI" },
-            ]}
-          />
-          <InputField
-            label="Branch"
-            type="select"
-            value={transaction.branch || ""}
-            onChange={(e) => onChange(index, "branch", e.target.value)}
-            options={[
-              { value: "Delhi", label: "Delhi" },
-              { value: "Mumbai", label: "Mumbai" },
-              { value: "Hyderabad", label: "Hyderabad" },
-            ]}
-          />
-          <InputField
-            label="Amount"
-            type="number"
-            value={transaction.amount || ""}
-            onChange={(e) => onChange(index, "amount", e.target.value)}
-            placeholder="Transaction amount"
-          />
-        </div>
-        <button
-          type="button"
-          className="mt-3 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors duration-200"
-          onClick={() => onRemove(index)}
-        >
-          Remove Transaction
-        </button>
-      </div>
-    ))}
-    <button
-      type="button"
-      className="px-6 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors duration-200 font-medium"
-      onClick={onAdd}
-    >
-      + Add Transaction
-    </button>
   </div>
 );
 
@@ -531,20 +307,6 @@ export default function PatientEditDetails() {
       hiv: "",
       hcv: "",
     },
-    counselling: {
-      counsellor: "",
-      techniqueSuggested: "",
-      finlpackage: "",
-      graftsSuggested: "",
-      readyForSurgery: false,
-      notes: "",
-      additionalbenefits: [],
-      medicines: [],
-      hairlossType: "",
-      areaofConcern: "",
-      hairlossreason: "",
-      hairlossduration: "",
-    },
     surgery: {
       surgeryDate: "",
       location: "",
@@ -559,19 +321,6 @@ export default function PatientEditDetails() {
       implanterLeft: [],
       graftingPerson: [],
       helper: [],
-    },
-    afterSurgery: {
-      headwashDate: "",
-      bandageRemovalDate: "",
-      prp: [],
-    },
-    payments: {
-      totalAmount: "",
-      amountReceived: "",
-      pendingAmount: "",
-      medicineAmount: "",
-      discount: "",
-      transactions: [],
     },
     documents: {
       images: [],
@@ -665,23 +414,6 @@ export default function PatientEditDetails() {
               hiv: patientData.medical?.hiv || "",
               hcv: patientData.medical?.hcv || "",
             },
-            counselling: {
-              counsellor: patientData.counselling?.counsellor?._id || "",
-              techniqueSuggested:
-                patientData.counselling?.techniqueSuggested || "",
-              finlpackage: patientData.counselling?.finlpackage || "",
-              graftsSuggested: patientData.counselling?.graftsSuggested || "",
-              readyForSurgery:
-                patientData.counselling?.readyForSurgery || false,
-              notes: patientData.counselling?.notes || "",
-              additionalbenefits:
-                patientData.counselling?.additionalbenefits || [],
-              medicines: patientData.counselling?.medicines || [],
-              hairlossType: patientData.counselling?.hairlossType || "",
-              areaofConcern: patientData.counselling?.areaofConcern || "",
-              hairlossreason: patientData.counselling?.hairlossreason || "",
-              hairlossduration: patientData.counselling?.hairlossduration || "",
-            },
             surgery: {
               surgeryDate: patientData.surgery?.surgeryDate
                 ? patientData.surgery.surgeryDate.split("T")[0]
@@ -698,23 +430,6 @@ export default function PatientEditDetails() {
               implanterLeft: extractIds(patientData.surgery?.implanterLeft),
               graftingPerson: extractIds(patientData.surgery?.graftingPerson),
               helper: extractIds(patientData.surgery?.helper),
-            },
-            afterSurgery: {
-              headwashDate: patientData.afterSurgery?.headwashDate
-                ? patientData.afterSurgery.headwashDate.split("T")[0]
-                : "",
-              bandageRemovalDate: patientData.afterSurgery?.bandageRemovalDate
-                ? patientData.afterSurgery.bandageRemovalDate.split("T")[0]
-                : "",
-              prp: patientData.afterSurgery?.prp || [],
-            },
-            payments: {
-              totalAmount: patientData.payments?.totalAmount || "",
-              amountReceived: patientData.payments?.amountReceived || "",
-              pendingAmount: patientData.payments?.pendingAmount || "",
-              medicineAmount: patientData.payments?.medicineAmount || "",
-              discount: patientData.payments?.discount || "",
-              transactions: patientData.payments?.transactions || [],
             },
             documents: {
               images: patientData.documents?.images || [],
@@ -738,14 +453,12 @@ export default function PatientEditDetails() {
     fetchPatientData();
   }, [id, router]);
 
+  // Updated to only 4 steps
   const stepConfig = [
     { number: 1, title: "Personal Details", icon: User, color: "blue" },
-    { number: 2, title: "Counsellor Details", icon: FileText, color: "green" },
-    { number: 3, title: "Medical Information", icon: Heart, color: "red" },
-    { number: 4, title: "Surgery Details", icon: Scissors, color: "orange" },
-    { number: 5, title: "After Surgery Care", icon: Droplet, color: "pink" },
-    { number: 6, title: "Payment Details", icon: CreditCard, color: "purple" },
-    { number: 7, title: "Document Upload", icon: FileUp, color: "indigo" },
+    { number: 2, title: "Medical Details", icon: Heart, color: "red" },
+    { number: 3, title: "Surgery Details", icon: Scissors, color: "orange" },
+    { number: 4, title: "Documents", icon: FileUp, color: "indigo" },
   ];
 
   const handleChange = (section, field, value) => {
@@ -764,82 +477,6 @@ export default function PatientEditDetails() {
         e.target.type === "checkbox" ? e.target.checked : e.target.value;
       handleChange(section, field, value);
     };
-  };
-
-  const handleArrayChange = (section, field, value, index) => {
-    const newArray = [...formData[section][field]];
-    newArray[index] = value;
-    setFormData((prev) => ({
-      ...prev,
-      [section]: {
-        ...prev[section],
-        [field]: newArray,
-      },
-    }));
-  };
-
-  const addArrayItem = (section, field, value = "") => {
-    setFormData((prev) => ({
-      ...prev,
-      [section]: {
-        ...prev[section],
-        [field]: [...prev[section][field], value],
-      },
-    }));
-  };
-
-  const removeArrayItem = (section, field, index) => {
-    const newArray = formData[section][field].filter((_, i) => i !== index);
-    setFormData((prev) => ({
-      ...prev,
-      [section]: {
-        ...prev[section],
-        [field]: newArray,
-      },
-    }));
-  };
-
-  // PRP handlers
-  const handlePRPChange = (index, field, value) => {
-    const newPRP = [...formData.afterSurgery.prp];
-    newPRP[index] = {
-      ...newPRP[index],
-      [field]: value,
-    };
-    setFormData((prev) => ({
-      ...prev,
-      afterSurgery: {
-        ...prev.afterSurgery,
-        prp: newPRP,
-      },
-    }));
-  };
-
-  const addPRPSession = () => {
-    setFormData((prev) => ({
-      ...prev,
-      afterSurgery: {
-        ...prev.afterSurgery,
-        prp: [
-          ...prev.afterSurgery.prp,
-          {
-            prpNumber: "",
-            date: "",
-          },
-        ],
-      },
-    }));
-  };
-
-  const removePRPSession = (index) => {
-    const newPRP = formData.afterSurgery.prp.filter((_, i) => i !== index);
-    setFormData((prev) => ({
-      ...prev,
-      afterSurgery: {
-        ...prev.afterSurgery,
-        prp: newPRP,
-      },
-    }));
   };
 
   const handleFileUpload = async (section, files) => {
@@ -973,35 +610,6 @@ export default function PatientEditDetails() {
     }
   };
 
-  const handleTransactionChange = (index, field, value) => {
-    const newTransactions = [...formData.payments.transactions];
-    newTransactions[index] = {
-      ...newTransactions[index],
-      [field]: value,
-      _id: newTransactions[index]._id || undefined,
-    };
-    handleChange("payments", "transactions", newTransactions);
-  };
-
-  const addTransaction = () => {
-    handleChange("payments", "transactions", [
-      ...formData.payments.transactions,
-      {
-        date: "",
-        paymentType: "",
-        branch: "",
-        amount: "",
-      },
-    ]);
-  };
-
-  const removeTransaction = (index) => {
-    const newTransactions = formData.payments.transactions.filter(
-      (_, i) => i !== index
-    );
-    handleChange("payments", "transactions", newTransactions);
-  };
-
   // Clean empty ObjectId fields before sending to API
   const cleanObjectIdFields = (data) => {
     const cleaned = JSON.parse(JSON.stringify(data));
@@ -1009,10 +617,9 @@ export default function PatientEditDetails() {
     // Single ObjectId fields
     const objectIdFields = {
       personal: ["reference"],
-      counselling: ["counsellor"],
     };
 
-    // Array ObjectId fields - ALL surgery team fields are now arrays
+    // Array ObjectId fields
     const arrayObjectIdFields = {
       surgery: [
         "doctor",
@@ -1062,15 +669,7 @@ export default function PatientEditDetails() {
     // Clean empty number fields
     const numberFields = {
       personal: ["age", "packageQuoted"],
-      counselling: ["finlpackage", "graftsSuggested"],
       surgery: ["OT", "graftsneed", "graftsImplanted"],
-      payments: [
-        "totalAmount",
-        "amountReceived",
-        "pendingAmount",
-        "medicineAmount",
-        "discount",
-      ],
     };
 
     Object.keys(numberFields).forEach((section) => {
@@ -1148,7 +747,7 @@ export default function PatientEditDetails() {
     }
   };
 
-  const nextStep = () => setStep(Math.min(step + 1, 7));
+  const nextStep = () => setStep(Math.min(step + 1, 4));
   const prevStep = () => setStep(Math.max(step - 1, 1));
 
   return (
@@ -1236,7 +835,7 @@ export default function PatientEditDetails() {
           </div>
 
           <div className="px-8 py-8">
-            {/* Step 1: Personal Details - Keep as is from your original code */}
+            {/* Step 1: Personal Details */}
             {step === 1 && (
               <div className="space-y-8">
                 <StepHeader
@@ -1379,314 +978,8 @@ export default function PatientEditDetails() {
               </div>
             )}
 
+            {/* Step 2: Medical Details */}
             {step === 2 && (
-              <div className="space-y-8">
-                <StepHeader
-                  icon={FileText}
-                  title="Counselling Details"
-                  description="Update consultation information"
-                  color="green"
-                />
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 gap-x-12">
-                  <InputField
-                    label="Counsellor"
-                    type="select"
-                    value={formData.counselling.counsellor}
-                    onChange={createChangeHandler("counselling", "counsellor")}
-                    options={employees.Counsellor.map((emp) => ({
-                      value: emp._id,
-                      label: emp.name,
-                    }))}
-                  />
-
-                  <InputField
-                    label="Technique Suggested"
-                    type="select"
-                    value={formData.counselling.techniqueSuggested}
-                    onChange={createChangeHandler(
-                      "counselling",
-                      "techniqueSuggested"
-                    )}
-                    options={[
-                      { value: "FUE", label: "FUE" },
-                      { value: "INDIAN DHI", label: "INDIAN DHI" },
-                      { value: "TURKISH DHI", label: "Turkish DHI" },
-                      { value: "HYBRID", label: "HYBRID" },
-                      { value: "PRP", label: "PRP" },
-                      { value: "GFC", label: "GFC" },
-                      { value: "Other", label: "Other" },
-                    ]}
-                  />
-
-                  <InputField
-                    label="Final Package Amount (₹)"
-                    type="number"
-                    value={formData.counselling.finlpackage}
-                    onChange={createChangeHandler("counselling", "finlpackage")}
-                    placeholder="Final package amount"
-                  />
-
-                  <InputField
-                    label="Grafts Suggested"
-                    type="number"
-                    value={formData.counselling.graftsSuggested}
-                    onChange={createChangeHandler(
-                      "counselling",
-                      "graftsSuggested"
-                    )}
-                    placeholder="Number of grafts"
-                  />
-
-                  {/* Hair Loss Type - Radio Buttons */}
-                  <div className="space-y-3 my-3">
-                    <label className="block mb-4 text-md underline font-bold text-gray-700">
-                      Hair Loss Type *
-                    </label>
-                    <div className="space-y-2 flex flex-wrap space-x-7">
-                      {[
-                        {
-                          value: "male_pattern",
-                          label: "Male Pattern Baldness",
-                        },
-                        {
-                          value: "female_pattern",
-                          label: "Female Pattern Baldness",
-                        },
-                        {
-                          value: "receding_hairline",
-                          label: "Receding Hairline",
-                        },
-                        { value: "crown_thinning", label: "Crown Thinning" },
-                        {
-                          value: "diffuse_thinning",
-                          label: "Diffuse Thinning",
-                        },
-                        { value: "frontal_loss", label: "Frontal Hair Loss" },
-                        {
-                          value: "traction_alopecia",
-                          label: "Traction Alopecia",
-                        },
-                        { value: "other", label: "Other" },
-                      ].map((option) => (
-                        <label
-                          key={option.value}
-                          className="flex items-center align-middle space-x-1"
-                        >
-                          <input
-                            type="radio"
-                            name="hairlossType"
-                            value={option.value}
-                            checked={
-                              formData.counselling.hairlossType === option.value
-                            }
-                            onChange={createChangeHandler(
-                              "counselling",
-                              "hairlossType"
-                            )}
-                            className="text-blue-600 focus:ring-blue-500"
-                          />
-                          <span className="text-md text-gray-700">
-                            {option.label}
-                          </span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Area of Concern - Radio Buttons */}
-                  <div className="space-y-3 my-3">
-                    <label className="block mb-4 text-md underline font-bold text-gray-700">
-                      Area of Concern *
-                    </label>
-                    <div className="space-y-2 flex flex-wrap space-x-7">
-                      {[
-                        { value: "frontal", label: "Frontal Area" },
-                        { value: "mid_scalp", label: "Mid Scalp" },
-                        { value: "crown", label: "Crown/Vortex" },
-                        { value: "hairline", label: "Hairline Correction" },
-                        { value: "temples", label: "Temples" },
-                        { value: "beard", label: "Beard/Moustache" },
-                        { value: "multiple_areas", label: "Multiple Areas" },
-                      ].map((option) => (
-                        <label
-                          key={option.value}
-                          className="flex items-center align-baseline space-x-1"
-                        >
-                          <input
-                            type="radio"
-                            name="areaofConcern"
-                            value={option.value}
-                            checked={
-                              formData.counselling.areaofConcern ===
-                              option.value
-                            }
-                            onChange={createChangeHandler(
-                              "counselling",
-                              "areaofConcern"
-                            )}
-                            className="text-blue-600 focus:ring-blue-500"
-                          />
-                          <span className="text-md text-gray-700">
-                            {option.label}
-                          </span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Hair Loss Reason - Radio Buttons */}
-                  <div className="space-y-3">
-                    <label className="block mb-4 text-lg underline font-bold text-gray-700">
-                      Hair Loss Reason *
-                    </label>
-                    <div className="flex flex-wrap space-x-7 space-y-2">
-                      {[
-                        { value: "genetic", label: "Genetic/Hereditary" },
-                        { value: "hormonal", label: "Hormonal Changes" },
-                        { value: "stress", label: "Stress Related" },
-                        {
-                          value: "nutritional",
-                          label: "Nutritional Deficiency",
-                        },
-                        { value: "medical", label: "Medical Condition" },
-                        {
-                          value: "medication",
-                          label: "Medication Side Effects",
-                        },
-                        { value: "lifestyle", label: "Lifestyle Factors" },
-                        { value: "ageing", label: "Ageing Process" },
-                        { value: "unknown", label: "Unknown/Idiopathic" },
-                      ].map((option) => (
-                        <label
-                          key={option.value}
-                          className="flex items-center align-middle space-x-1"
-                        >
-                          <input
-                            type="radio"
-                            name="hairlossreason"
-                            value={option.value}
-                            checked={
-                              formData.counselling.hairlossreason ===
-                              option.value
-                            }
-                            onChange={createChangeHandler(
-                              "counselling",
-                              "hairlossreason"
-                            )}
-                            className="text-blue-600 focus:ring-blue-500"
-                          />
-                          <span className="text-md text-gray-700">
-                            {option.label}
-                          </span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Hair Loss Duration - Radio Buttons */}
-                  <div className="space-y-3">
-                    <label className="block mb-4 text-md underline font-bold text-gray-700">
-                      Hair Loss Duration *
-                    </label>
-                    <div className="space-y-2 flex flex-wrap space-x-5">
-                      {[
-                        {
-                          value: "less_than_1_year",
-                          label: "Less than 1 year",
-                        },
-                        { value: "1_2_years", label: "1-2 years" },
-                        { value: "2_5_years", label: "2-5 years" },
-                        { value: "5_10_years", label: "5-10 years" },
-                        {
-                          value: "more_than_10_years",
-                          label: "More than 10 years",
-                        },
-                        {
-                          value: "progressive",
-                          label: "Progressive (ongoing)",
-                        },
-                        {
-                          value: "recent_accelerated",
-                          label: "Recent accelerated loss",
-                        },
-                      ].map((option) => (
-                        <label
-                          key={option.value}
-                          className="flex items-center space-x-1"
-                        >
-                          <input
-                            type="radio"
-                            name="hairlossduration"
-                            value={option.value}
-                            checked={
-                              formData.counselling.hairlossduration ===
-                              option.value
-                            }
-                            onChange={createChangeHandler(
-                              "counselling",
-                              "hairlossduration"
-                            )}
-                            className="text-blue-600 focus:ring-blue-500"
-                          />
-                          <span className="text-md text-gray-700">
-                            {option.label}
-                          </span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Updated Benefits Manager */}
-                  <BenefitsManager
-                    benefits={formData.counselling.additionalbenefits}
-                    onChange={(value, index) =>
-                      handleArrayChange(
-                        "counselling",
-                        "additionalbenefits",
-                        value,
-                        index
-                      )
-                    }
-                    onAdd={(value) =>
-                      addArrayItem("counselling", "additionalbenefits", value)
-                    }
-                    onRemove={(index) =>
-                      removeArrayItem(
-                        "counselling",
-                        "additionalbenefits",
-                        index
-                      )
-                    }
-                  />
-
-                  <InputField
-                    label="Notes"
-                    type="textarea"
-                    value={formData.counselling.notes}
-                    onChange={createChangeHandler("counselling", "notes")}
-                    placeholder="Additional counselling notes"
-                    className="md:col-span-2 mt-3"
-                  />
-
-                  <div className="md:col-span-2">
-                    <InputField
-                      label="Ready for Surgery"
-                      type="checkbox"
-                      value={formData.counselling.readyForSurgery}
-                      onChange={createChangeHandler(
-                        "counselling",
-                        "readyForSurgery"
-                      )}
-                      className="mt-4"
-                      placeholder="Patient is ready for surgery"
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {step === 3 && (
               <div className="space-y-8">
                 <StepHeader
                   icon={Heart}
@@ -1784,8 +1077,9 @@ export default function PatientEditDetails() {
                 </div>
               </div>
             )}
-            {/* Step 4: Surgery Details - UPDATED WITH MULTI-SELECT */}
-            {step === 4 && (
+
+            {/* Step 3: Surgery Details */}
+            {step === 3 && (
               <div className="space-y-8">
                 <StepHeader
                   icon={Scissors}
@@ -1926,110 +1220,8 @@ export default function PatientEditDetails() {
               </div>
             )}
 
-            {/* Step 5: After Surgery Care - NEW STEP */}
-            {step === 5 && (
-              <div className="space-y-8">
-                <StepHeader
-                  icon={Droplet}
-                  title="After Surgery Care"
-                  description="Post-operative care schedule"
-                  color="pink"
-                />
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 gap-x-12">
-                  <InputField
-                    label="Head Wash Date"
-                    type="date"
-                    value={formData.afterSurgery.headwashDate}
-                    onChange={createChangeHandler(
-                      "afterSurgery",
-                      "headwashDate"
-                    )}
-                  />
-
-                  <InputField
-                    label="Bandage Removal Date"
-                    type="date"
-                    value={formData.afterSurgery.bandageRemovalDate}
-                    onChange={createChangeHandler(
-                      "afterSurgery",
-                      "bandageRemovalDate"
-                    )}
-                  />
-
-                  <PRPManager
-                    prpSessions={formData.afterSurgery.prp}
-                    onChange={handlePRPChange}
-                    onAdd={addPRPSession}
-                    onRemove={removePRPSession}
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* Step 6: Payment Details - Keep your existing code */}
-            {step === 6 && (
-              <div className="space-y-8">
-                <StepHeader
-                  icon={CreditCard}
-                  title="Payment Details"
-                  description="Update financial information and transactions"
-                  color="purple"
-                />
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 gap-x-12">
-                  <InputField
-                    label="Total Amount (₹)"
-                    type="number"
-                    value={formData.payments.totalAmount}
-                    onChange={createChangeHandler("payments", "totalAmount")}
-                    placeholder="Total amount quoted"
-                  />
-
-                  <InputField
-                    label="Amount Received (₹)"
-                    type="number"
-                    value={formData.payments.amountReceived}
-                    onChange={createChangeHandler("payments", "amountReceived")}
-                    placeholder="Amount received"
-                  />
-
-                  <InputField
-                    label="Pending Amount (₹)"
-                    type="number"
-                    value={formData.payments.pendingAmount}
-                    onChange={createChangeHandler("payments", "pendingAmount")}
-                    placeholder="Pending amount"
-                  />
-
-                  <InputField
-                    label="Medicine Amount (₹)"
-                    type="number"
-                    value={formData.payments.medicineAmount}
-                    onChange={createChangeHandler("payments", "medicineAmount")}
-                    placeholder="Medicine cost"
-                  />
-
-                  <InputField
-                    label="Discount (₹)"
-                    type="number"
-                    value={formData.payments.discount}
-                    onChange={createChangeHandler("payments", "discount")}
-                    placeholder="Discount amount"
-                  />
-
-                  <TransactionManager
-                    transactions={formData.payments.transactions}
-                    onChange={handleTransactionChange}
-                    onAdd={addTransaction}
-                    onRemove={removeTransaction}
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* Step 7: Document Upload - Keep your existing code */}
-            {step === 7 && (
+            {/* Step 4: Documents */}
+            {step === 4 && (
               <div className="space-y-8">
                 <StepHeader
                   icon={FileUp}
@@ -2106,7 +1298,7 @@ export default function PatientEditDetails() {
               )}
 
               <div className="flex space-x-4">
-                {step < 7 && (
+                {step < 4 && (
                   <button
                     type="button"
                     className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 transition-colors duration-200"
