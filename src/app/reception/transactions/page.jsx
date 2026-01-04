@@ -1209,10 +1209,6 @@ function TransactionModal({ transaction, patients, onClose, onSuccess }) {
       return;
     }
 
-    if (discountValue > parseFloat(formData.amount)) {
-      setError("Discount cannot be greater than amount");
-      return;
-    }
 
     if (formData.costType === "Expenses" && !formData.expense) {
       setError("Expense type is required");
