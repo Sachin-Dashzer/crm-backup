@@ -119,7 +119,7 @@ export default function SalesReports() {
   ];
 
   return (
-    <div className="flex min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+    <div className="flex min-h-screen bg-linear-to-br from-gray-50 to-gray-100">
       <Sidebar
         sidebarOpen={sidebarOpen}
         setSidebarOpen={setSidebarOpen}
@@ -136,7 +136,7 @@ export default function SalesReports() {
           </div>
 
           {/* Report Period Info */}
-          {/* <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-xl p-6 mb-8">
+          {/* <div className="bg-linear-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-xl p-6 mb-8">
             <div className="flex items-center gap-3">
               <div className="p-3 bg-white rounded-lg shadow-sm">
                 <Calendar className="h-6 w-6 text-indigo-600" />
@@ -161,11 +161,11 @@ export default function SalesReports() {
                 key={report.id}
                 className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-lg transition-all"
               >
-                <div className={`h-2 bg-gradient-to-r ${report.color}`}></div>
+                <div className={`h-2 bg-linear-to-r ${report.color}`}></div>
                 <div className="p-6">
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-4">
-                      <div className={`p-3 bg-gradient-to-br ${report.color} rounded-lg`}>
+                      <div className={`p-3 bg-linear-to-br ${report.color} rounded-lg`}>
                         <report.icon className="h-6 w-6 text-white" />
                       </div>
                       <div>
@@ -190,7 +190,7 @@ export default function SalesReports() {
                   <button
                     onClick={() => downloadReport(report.id)}
                     disabled={loading[report.id]}
-                    className={`w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r ${report.color} text-white rounded-lg font-semibold transition-all hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed`}
+                    className={`w-full flex items-center justify-center gap-2 px-4 py-3 bg-linear-to-r ${report.color} text-white rounded-lg font-semibold transition-all hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed`}
                   >
                     {loading[report.id] ? (
                       <>
@@ -212,7 +212,7 @@ export default function SalesReports() {
           {/* Info Box */}
           <div className="mt-8 bg-blue-50 border border-blue-200 rounded-xl p-6">
             <div className="flex gap-4">
-              <div className="flex-shrink-0">
+              <div className="shrink-0">
                 <div className="p-2 bg-blue-100 rounded-lg">
                   <FileText className="h-6 w-6 text-blue-600" />
                 </div>

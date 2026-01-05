@@ -9,7 +9,7 @@ export default function MetricCard({ title, value, icon: Icon, color, trend, onC
       } animate-fadeIn`}
     >
       <div className="flex items-center justify-between mb-4">
-        <div className={`p-3 rounded-lg bg-gradient-to-r ${color}`}>
+        <div className={`p-3 rounded-lg bg-linear-to-r ${color}`}>
           <Icon className="w-6 h-6 text-white" />
         </div>
       </div>

@@ -29,7 +29,7 @@ const NavItem = ({ item, href, isActive, onClick, icon: Icon }) => (
       }`}
     >
       <Icon className="w-5 h-5" />
-      <span className="flex-grow">{item}</span>
+      <span className="grow">{item}</span>
       {isActive && <div className="w-1 h-6 bg-green-600 rounded-full"></div>}
     </button>
   </Link>
@@ -93,7 +93,7 @@ export default function SurgerySidebar() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <Link href="/surgery/dashboard" className="flex items-center gap-2">
-            <div className="w-10 h-10 bg-gradient-to-r from-green-600 to-emerald-600 rounded-lg flex items-center justify-center">
+            <div className="w-10 h-10 bg-linear-to-r from-green-600 to-emerald-600 rounded-lg flex items-center justify-center">
               <Stethoscope className="w-6 h-6 text-white" />
             </div>
             <div>
@@ -143,9 +143,9 @@ export default function SurgerySidebar() {
 
         {/* User Info & Logout */}
         <div className="space-y-3 border-t pt-4">
-          <div className="p-3 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg">
+          <div className="p-3 bg-linear-to-r from-green-50 to-emerald-50 rounded-lg">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-r from-green-600 to-emerald-600 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-full bg-linear-to-r from-green-600 to-emerald-600 flex items-center justify-center">
                 <Stethoscope className="w-5 h-5 text-white" />
               </div>
               <div>

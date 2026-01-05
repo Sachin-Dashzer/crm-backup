@@ -255,7 +255,7 @@ export default function SurgeryReports() {
                       </div>
                       <div className="w-full bg-gray-200 rounded-full h-2">
                         <div 
-                          className="bg-gradient-to-r from-green-500 to-green-600 h-2 rounded-full transition-all duration-300"
+                          className="bg-linear-to-r from-green-500 to-green-600 h-2 rounded-full transition-all duration-300"
                           style={{ width: `${data.percentage}%` }}
                         ></div>
                       </div>
@@ -285,7 +285,7 @@ export default function SurgeryReports() {
                       </div>
                       <div className="w-full bg-gray-200 rounded-full h-2">
                         <div 
-                          className="bg-gradient-to-r from-blue-500 to-blue-600 h-2 rounded-full transition-all duration-300"
+                          className="bg-linear-to-r from-blue-500 to-blue-600 h-2 rounded-full transition-all duration-300"
                           style={{ width: `${data.percentage}%` }}
                         ></div>
                       </div>

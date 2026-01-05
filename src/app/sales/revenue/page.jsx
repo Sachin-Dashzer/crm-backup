@@ -108,7 +108,7 @@ function SalesRevenueContent() {
   };
 
   return (
-    <div className="flex min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+    <div className="flex min-h-screen bg-linear-to-br from-gray-50 to-gray-100">
       <Sidebar
         sidebarOpen={sidebarOpen}
         setSidebarOpen={setSidebarOpen}
@@ -137,7 +137,7 @@ function SalesRevenueContent() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
             <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
               <div className="flex items-center justify-between mb-4">
-                <div className="p-3 bg-gradient-to-br from-emerald-500 to-green-600 rounded-lg">
+                <div className="p-3 bg-linear-to-br from-emerald-500 to-green-600 rounded-lg">
                   <IndianRupee className="h-6 w-6 text-white" />
                 </div>
               </div>
@@ -147,7 +147,7 @@ function SalesRevenueContent() {
             
             <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
               <div className="flex items-center justify-between mb-4">
-                <div className="p-3 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-lg">
+                <div className="p-3 bg-linear-to-br from-blue-500 to-cyan-600 rounded-lg">
                   <TrendingUp className="h-6 w-6 text-white" />
                 </div>
               </div>
@@ -157,7 +157,7 @@ function SalesRevenueContent() {
             
             <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
               <div className="flex items-center justify-between mb-4">
-                <div className="p-3 bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg">
+                <div className="p-3 bg-linear-to-br from-purple-500 to-pink-600 rounded-lg">
                   <CreditCard className="h-6 w-6 text-white" />
                 </div>
               </div>
@@ -169,7 +169,7 @@ function SalesRevenueContent() {
             
             <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
               <div className="flex items-center justify-between mb-4">
-                <div className="p-3 bg-gradient-to-br from-amber-500 to-orange-600 rounded-lg">
+                <div className="p-3 bg-linear-to-br from-amber-500 to-orange-600 rounded-lg">
                   <Calendar className="h-6 w-6 text-white" />
                 </div>
               </div>
@@ -218,7 +218,7 @@ function SalesRevenueContent() {
 
               <button
                 onClick={exportToCSV}
-                className="flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all shadow-sm hover:shadow-md font-medium"
+                className="flex items-center justify-center gap-2 px-4 py-2.5 bg-linear-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all shadow-sm hover:shadow-md font-medium"
               >
                 <Download className="h-5 w-5" />
                 Export CSV
@@ -330,7 +330,7 @@ function SalesRevenueContent() {
 export default function SalesRevenue() {
   return (
     <Suspense fallback={
-      <div className="flex min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+      <div className="flex min-h-screen bg-linear-to-br from-gray-50 to-gray-100">
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500 mx-auto"></div>

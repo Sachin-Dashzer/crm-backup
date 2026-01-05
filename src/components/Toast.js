@@ -145,7 +145,7 @@ function Toast({ type, message, title, duration, position, onClose }) {
         className={`fixed ${positions[position] || positions["top-right"]} z-50 toast-animate min-w-[320px] max-w-md`}
       >
         <div className={`border-l-4 ${currentConfig.style} rounded-lg shadow-lg p-4 flex items-start space-x-3`}>
-          <div className={`flex-shrink-0 ${currentConfig.iconColor}`}>
+          <div className={`shrink-0 ${currentConfig.iconColor}`}>
             <Icon className="w-6 h-6" />
           </div>
 
@@ -156,7 +156,7 @@ function Toast({ type, message, title, duration, position, onClose }) {
 
           <button
             onClick={onClose}
-            className="flex-shrink-0 text-gray-400 hover:text-gray-600 transition-colors"
+            className="shrink-0 text-gray-400 hover:text-gray-600 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>

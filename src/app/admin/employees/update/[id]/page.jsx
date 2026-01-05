@@ -86,7 +86,7 @@ const RoleDescriptionCard = ({ role }) => {
   return (
     <div className={`bg-${roleInfo.color}-50 border-l-4 border-${roleInfo.color}-500 rounded-lg p-6`}>
       <div className="flex items-start">
-        <AlertCircle className={`text-${roleInfo.color}-600 mr-3 flex-shrink-0 mt-1`} size={20} />
+        <AlertCircle className={`text-${roleInfo.color}-600 mr-3 shrink-0 mt-1`} size={20} />
         <div>
           <h4 className={`text-sm font-bold text-${roleInfo.color}-900 mb-2`}>
             Role: {role}
@@ -304,7 +304,7 @@ export default function EmployeeUpdate() {
         <div className="max-w-4xl mx-auto">
           <div className="bg-white rounded-lg shadow-sm overflow-hidden">
             {/* Header */}
-            <div className="px-8 py-6 bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
+            <div className="px-8 py-6 bg-linear-to-r from-blue-600 to-indigo-600 text-white">
               <div className="flex items-center justify-between">
                 <div>
                   <h1 className="text-2xl font-bold flex items-center space-x-2">
@@ -400,7 +400,7 @@ export default function EmployeeUpdate() {
                 {/* Info Box */}
                 <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                   <div className="flex items-start">
-                    <AlertCircle className="text-yellow-600 mr-3 flex-shrink-0 mt-0.5" size={20} />
+                    <AlertCircle className="text-yellow-600 mr-3 shrink-0 mt-0.5" size={20} />
                     <div>
                       <h4 className="text-sm font-semibold text-yellow-900 mb-1">
                         Update Information

@@ -338,7 +338,7 @@ export default function BookAppointment() {
                   </div>
                   <button
                     type="submit"
-                    className="inline-flex items-center px-8 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors duration-200 min-w-[200px] justify-center"
+                    className="inline-flex items-center px-8 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors duration-200 min-w-50 justify-center"
                     disabled={isSubmitting}
                   >
                     {isSubmitting ? (

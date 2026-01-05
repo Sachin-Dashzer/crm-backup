@@ -167,7 +167,7 @@ const DocumentUpload = ({
                     >
                       <div className="flex items-center space-x-3 flex-1 min-w-0">
                         <div
-                          className={`flex-shrink-0 w-8 h-8 rounded flex items-center justify-center ${
+                          className={`shrink-0 w-8 h-8 rounded flex items-center justify-center ${
                             isPdf ? "bg-red-100" : "bg-blue-100"
                           }`}
                         >
@@ -186,7 +186,7 @@ const DocumentUpload = ({
                           </p>
                         </div>
                       </div>
-                      <div className="flex items-center space-x-2 ml-2 flex-shrink-0">
+                      <div className="flex items-center space-x-2 ml-2 shrink-0">
                         <button
                           type="button"
                           onClick={() => handleViewFile(filePath)}
@@ -756,7 +756,7 @@ export default function PatientEditDetails() {
 
       <main className="flex-1 px-12 py-4">
         <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-          <div className="px-8 py-6 bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
+          <div className="px-8 py-6 bg-linear-to-r from-blue-600 to-indigo-600 text-white">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
                 <button
@@ -796,7 +796,7 @@ export default function PatientEditDetails() {
               }`}
             >
               <div className="flex">
-                <div className="flex-shrink-0">
+                <div className="shrink-0">
                   {updateStatus.type === "success" ? "✓" : "⚠"}
                 </div>
                 <div className="ml-3">

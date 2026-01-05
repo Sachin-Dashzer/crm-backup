@@ -93,7 +93,7 @@ const RoleDescriptionCard = ({ role }) => {
   return (
     <div className={`${colors.bg} border-l-4 ${colors.border} rounded-lg p-6`}>
       <div className="flex items-start">
-        <AlertCircle className={`${colors.text} mr-3 flex-shrink-0 mt-1`} size={20} />
+        <AlertCircle className={`${colors.text} mr-3 shrink-0 mt-1`} size={20} />
         <div>
           <h4 className={`text-sm font-bold ${colors.textDark} mb-2`}>
             Role: {role}
@@ -230,7 +230,7 @@ export default function EmployeeRegistration() {
         <div className="max-w-4xl mx-auto">
           <div className="bg-white rounded-lg shadow-sm overflow-hidden">
             {/* Header */}
-            <div className="px-8 py-6 bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
+            <div className="px-8 py-6 bg-linear-to-r from-blue-600 to-indigo-600 text-white">
               <div className="flex items-center justify-between">
                 <div>
                   <h1 className="text-2xl font-bold flex items-center space-x-2">
@@ -314,7 +314,7 @@ export default function EmployeeRegistration() {
                 {/* Info Box */}
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                   <div className="flex items-start">
-                    <AlertCircle className="text-blue-600 mr-3 flex-shrink-0 mt-0.5" size={20} />
+                    <AlertCircle className="text-blue-600 mr-3 shrink-0 mt-0.5" size={20} />
                     <div>
                       <h4 className="text-sm font-semibold text-blue-900 mb-1">
                         Important Information

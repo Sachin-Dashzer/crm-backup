@@ -89,7 +89,7 @@ export default function PerformancePage() {
   }
 
   return (
-    <div className="flex min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+    <div className="flex min-h-screen bg-linear-to-br from-gray-50 to-gray-100">
       <SalesSidebar
       />
 
@@ -350,28 +350,28 @@ export default function PerformancePage() {
 
         {/* Summary Stats */}
         <div className="mt-6 grid grid-cols-1 md:grid-cols-4 gap-6">
-          <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg shadow p-6 text-white">
+          <div className="bg-linear-to-br from-blue-500 to-blue-600 rounded-lg shadow p-6 text-white">
             <h3 className="text-sm font-medium opacity-90">Total Revenue</h3>
             <p className="text-3xl font-bold mt-2">
               ₹{chartData.totalRevenue?.toLocaleString("en-IN") || 0}
             </p>
           </div>
 
-          <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-lg shadow p-6 text-white">
+          <div className="bg-linear-to-br from-green-500 to-green-600 rounded-lg shadow p-6 text-white">
             <h3 className="text-sm font-medium opacity-90">Total Patients</h3>
             <p className="text-3xl font-bold mt-2">
               {chartData.totalPatients || 0}
             </p>
           </div>
 
-          <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg shadow p-6 text-white">
+          <div className="bg-linear-to-br from-purple-500 to-purple-600 rounded-lg shadow p-6 text-white">
             <h3 className="text-sm font-medium opacity-90">Conversion Rate</h3>
             <p className="text-3xl font-bold mt-2">
               {chartData.conversionRate || 0}%
             </p>
           </div>
 
-          <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg shadow p-6 text-white">
+          <div className="bg-linear-to-br from-orange-500 to-orange-600 rounded-lg shadow p-6 text-white">
             <h3 className="text-sm font-medium opacity-90">Avg Transaction</h3>
             <p className="text-3xl font-bold mt-2">
               ₹{chartData.avgTransaction?.toLocaleString("en-IN") || 0}

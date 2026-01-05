@@ -156,7 +156,7 @@ export default function NotVisited() {
                 className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md hover:border-amber-200 transition-all cursor-pointer group"
               >
                 <div className="flex items-start justify-between mb-4">
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center">
+                  <div className="w-12 h-12 rounded-full bg-linear-to-br from-amber-500 to-orange-500 flex items-center justify-center">
                     <span className="text-white font-bold text-lg">
                       {patient.personal?.name?.charAt(0).toUpperCase()}
                     </span>
@@ -199,7 +199,7 @@ export default function NotVisited() {
           </div>
         ) : (
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
-            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-amber-100 to-orange-100 flex items-center justify-center mx-auto mb-4">
+            <div className="w-16 h-16 rounded-full bg-linear-to-br from-amber-100 to-orange-100 flex items-center justify-center mx-auto mb-4">
               <UserX className="w-8 h-8 text-amber-600" />
             </div>
             <h3 className="text-lg font-semibold text-gray-900 mb-2">

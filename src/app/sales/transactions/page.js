@@ -337,7 +337,7 @@ export default function SalesTransactionDashboard() {
 
   if (loading)
     return (
-      <div className="flex h-screen items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+      <div className="flex h-screen items-center justify-center bg-linear-to-br from-blue-50 via-indigo-50 to-purple-50">
         <div className="text-center">
           <Loader2 className="animate-spin h-16 w-16 text-indigo-500 mx-auto mb-4" />
           <p className="text-gray-600 font-medium">Loading transactions...</p>
@@ -347,7 +347,7 @@ export default function SalesTransactionDashboard() {
 
   if (error)
     return (
-      <div className="flex h-screen items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+      <div className="flex h-screen items-center justify-center bg-linear-to-br from-blue-50 via-indigo-50 to-purple-50">
         <div className="text-center bg-white p-8 rounded-3xl shadow-xl border border-red-100 max-w-md">
           <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
             <AlertCircle className="w-8 h-8 text-red-500" />
@@ -367,7 +367,7 @@ export default function SalesTransactionDashboard() {
     );
 
   return (
-    <div className="flex min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+    <div className="flex min-h-screen bg-linear-to-br from-blue-50 via-indigo-50 to-purple-50">
       <SalesSidebar />
       <main className="flex-1 p-4 sm:p-6 lg:p-8">
         {/* Header */}
@@ -397,7 +397,7 @@ export default function SalesTransactionDashboard() {
               <button
                 onClick={exportToCSV}
                 disabled={sortedRows.length === 0}
-                className="flex-1 sm:flex-none bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white px-5 py-3 rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 sm:flex-none bg-linear-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white px-5 py-3 rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Download size={20} strokeWidth={2.5} />
                 <span className="font-semibold hidden sm:inline">Export</span>
@@ -412,7 +412,7 @@ export default function SalesTransactionDashboard() {
             title="Total Revenue"
             value={formatCurrency(stats.totalRevenue)}
             icon={TrendingUp}
-            gradient="from-emerald-400 to-green-500"
+            linear="from-emerald-400 to-green-500"
             count={`${stats.totalTransactions} transactions`}
             iconBg="bg-emerald-100"
             iconColor="text-emerald-600"
@@ -421,7 +421,7 @@ export default function SalesTransactionDashboard() {
             title="Avg Transaction"
             value={formatCurrency(stats.avgTransaction)}
             icon={BarChart3}
-            gradient="from-blue-400 to-indigo-500"
+            linear="from-blue-400 to-indigo-500"
             count="Per transaction"
             iconBg="bg-blue-100"
             iconColor="text-blue-600"
@@ -430,7 +430,7 @@ export default function SalesTransactionDashboard() {
             title="Last 7 Days"
             value={formatCurrency(stats.recentRevenue)}
             icon={Activity}
-            gradient="from-purple-400 to-pink-500"
+            linear="from-purple-400 to-pink-500"
             count={`${stats.recentCount} transactions`}
             iconBg="bg-purple-100"
             iconColor="text-purple-600"
@@ -443,7 +443,7 @@ export default function SalesTransactionDashboard() {
               ).size
             }
             icon={User}
-            gradient="from-amber-400 to-orange-500"
+            linear="from-amber-400 to-orange-500"
             count="Total patients"
             iconBg="bg-amber-100"
             iconColor="text-amber-600"
@@ -456,7 +456,7 @@ export default function SalesTransactionDashboard() {
           <div className="border-b border-gray-200">
             <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 px-6 py-4">
               <div className="flex items-center gap-3">
-                <div className="px-4 py-2 bg-gradient-to-r from-emerald-100 to-green-100 rounded-xl border-2 border-emerald-200">
+                <div className="px-4 py-2 bg-linear-to-r from-emerald-100 to-green-100 rounded-xl border-2 border-emerald-200">
                   <p className="text-sm font-semibold text-emerald-800 flex items-center gap-2">
                     <Receipt className="w-4 h-4" />
                     Revenue Only View
@@ -501,7 +501,7 @@ export default function SalesTransactionDashboard() {
 
             {/* Filters Panel */}
             {showFilters && (
-              <div className="px-6 pb-5 border-t border-gray-100 pt-5 bg-gradient-to-b from-gray-50 to-white">
+              <div className="px-6 pb-5 border-t border-gray-100 pt-5 bg-linear-to-b from-gray-50 to-white">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   <Select
                     label="Branch"
@@ -679,14 +679,14 @@ function StatCard({
   title,
   value,
   icon: Icon,
-  gradient,
+  linear,
   count,
   iconBg,
   iconColor,
 }) {
   return (
     <div
-      className={`bg-gradient-to-br ${gradient} p-6 rounded-2xl shadow-lg text-white relative overflow-hidden transform hover:scale-105 transition-transform duration-300`}
+      className={`bg-linear-to-br ${linear} p-6 rounded-2xl shadow-lg text-white relative overflow-hidden transform hover:scale-105 transition-transform duration-300`}
     >
       <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16" />
       <div className="relative">
@@ -774,7 +774,7 @@ function DataTable({ rows, getPatientName, onSort, sortConfig, pagination }) {
     <div>
       <div className="overflow-x-auto">
         <table className="w-full">
-          <thead className="bg-gradient-to-r from-gray-50 to-gray-100 border-b-2 border-gray-200">
+          <thead className="bg-linear-to-r from-gray-50 to-gray-100 border-b-2 border-gray-200">
             <tr>
               {columns.map((col) => (
                 <th
@@ -824,7 +824,7 @@ function DataTable({ rows, getPatientName, onSort, sortConfig, pagination }) {
                 >
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center flex-shrink-0">
+                      <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center shrink-0">
                         <User className="w-4 h-4 text-indigo-600" />
                       </div>
                       <div>
@@ -888,7 +888,7 @@ function DataTable({ rows, getPatientName, onSort, sortConfig, pagination }) {
       </div>
 
       {/* Pagination */}
-      <div className="flex flex-col md:flex-row items-center justify-between gap-4 px-6 py-5 border-t border-gray-200 bg-gradient-to-b from-white to-gray-50">
+      <div className="flex flex-col md:flex-row items-center justify-between gap-4 px-6 py-5 border-t border-gray-200 bg-linear-to-b from-white to-gray-50">
         <p className="text-sm text-gray-600 font-medium">
           Showing{" "}
           <span className="font-bold text-gray-900">
@@ -1007,7 +1007,7 @@ function Select({ label, value, onChange, options, icon: Icon }) {
             </option>
           ))}
         </select>
-        <ChevronLeft className="absolute right-3 top-1/2 transform -translate-y-1/2 rotate-[-90deg] text-gray-400 w-5 h-5 pointer-events-none" />
+        <ChevronLeft className="absolute right-3 top-1/2 transform -translate-y-1/2 -rotate-90 text-gray-400 w-5 h-5 pointer-events-none" />
       </div>
     </label>
   );
