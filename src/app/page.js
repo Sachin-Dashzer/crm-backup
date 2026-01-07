@@ -15,7 +15,7 @@ import {
   Building2,
   UserCog,
   ClipboardList,
-  DollarSign,
+  IndianRupee,
   ArrowRight,
 } from "lucide-react";
 
@@ -43,7 +43,7 @@ export default function Homepage() {
       color: "purple",
     },
     {
-      icon: DollarSign,
+      icon: IndianRupee,
       title: "Financial Tracking",
       description:
         "Real-time transaction management, billing, and revenue analytics.",

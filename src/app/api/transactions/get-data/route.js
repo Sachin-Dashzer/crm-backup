@@ -27,6 +27,7 @@ const handler = async(req) =>{
             patient : transactions.patient,
             branch : transactions.branch,
             procedure : transactions.procedure,
+            paymentId : transactions.paymentId,
             expense : transactions.expense,
             method : transactions.method,
             amount : transactions.amount,

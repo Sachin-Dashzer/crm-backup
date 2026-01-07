@@ -13,7 +13,7 @@ import {
   Edit2,
   User,
   Calendar,
-  DollarSign,
+  IndianRupee,
   TrendingUp,
   TrendingDown,
   CreditCard,
@@ -30,6 +30,7 @@ import {
   FileSpreadsheet,
   ChevronDown,
   ChevronUp,
+  Hash,
 } from "lucide-react";
 
 // ========== UTILITY FUNCTIONS ==========
@@ -149,6 +150,14 @@ function DeleteConfirmModal({ transaction, onClose, onConfirm }) {
             be undone and will update patient balance if applicable.
           </p>
           <div className="bg-gray-50 rounded-xl p-3 sm:p-4 mb-4 sm:mb-6 space-y-2">
+            {transaction?.paymentId && (
+              <div className="flex justify-between items-center pb-2 border-b border-gray-200">
+                <span className="text-sm text-gray-600">TransID / CardNo:</span>
+                <span className="font-bold text-gray-900 text-sm sm:text-base">
+                  {transaction.paymentId}
+                </span>
+              </div>
+            )}
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-600">Original Amount:</span>
               <span
@@ -229,16 +238,16 @@ export default function AmountDashboard() {
   const [revenue, setRevenue] = useState([]);
   const [expenses, setExpenses] = useState([]);
   const [patients, setPatients] = useState([]);
-  
+
   // Set default filters to today's date
   const [filters, setFilters] = useState({
     branch: "",
     dateFrom: getTodayDate(), // Default to today
-    dateTo: getTodayDate(),   // Default to today
+    dateTo: getTodayDate(), // Default to today
     paymentMethod: "",
     procedure: "",
   });
-  
+
   const [activeTab, setActiveTab] = useState("revenue");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -404,10 +413,14 @@ export default function AmountDashboard() {
   const searchedRows = useMemo(() => {
     // If there's a search term, search across all data (not just today's)
     // Otherwise, use the filtered data (which defaults to today)
-    const rowsToSearch = tableSearch 
-      ? (activeTab === "revenue" ? allRevenue : allExpenses)
-      : (activeTab === "revenue" ? filteredRevenue : filteredExpenses);
-    
+    const rowsToSearch = tableSearch
+      ? activeTab === "revenue"
+        ? allRevenue
+        : allExpenses
+      : activeTab === "revenue"
+      ? filteredRevenue
+      : filteredExpenses;
+
     if (!tableSearch) return rowsToSearch;
 
     return rowsToSearch.filter((row) => {
@@ -422,6 +435,7 @@ export default function AmountDashboard() {
           row.method?.toLowerCase().includes(searchLower) ||
           row.branch?.toLowerCase().includes(searchLower) ||
           row.remarks?.toLowerCase().includes(searchLower) ||
+          row.paymentId?.toLowerCase().includes(searchLower) ||
           row.amount.toString().includes(searchLower) ||
           (row.discount && row.discount.toString().includes(searchLower)) ||
           row.patient?.payments?.totalAmount?.toString().includes(searchLower)
@@ -432,11 +446,19 @@ export default function AmountDashboard() {
           row.method?.toLowerCase().includes(searchLower) ||
           row.branch?.toLowerCase().includes(searchLower) ||
           row.remarks?.toLowerCase().includes(searchLower) ||
+          row.paymentId?.toLowerCase().includes(searchLower) ||
           row.amount.toString().includes(searchLower)
         );
       }
     });
-  }, [activeTab, filteredRevenue, filteredExpenses, allRevenue, allExpenses, tableSearch]);
+  }, [
+    activeTab,
+    filteredRevenue,
+    filteredExpenses,
+    allRevenue,
+    allExpenses,
+    tableSearch,
+  ]);
 
   // Sorting
   const sortedRows = useMemo(() => {
@@ -491,17 +513,17 @@ export default function AmountDashboard() {
     if (!patient) return "Walk-in Customer";
     return patient.personal?.name || "N/A";
   };
-  
+
   const getPatientNumber = (patient) => {
     if (!patient) return "";
     return patient.personal?.phone || "";
   };
-  
+
   const clearFilters = () => {
     setFilters({
       branch: "",
       dateFrom: getTodayDate(), // Reset to today after clear
-      dateTo: getTodayDate(),   // Reset to today after clear
+      dateTo: getTodayDate(), // Reset to today after clear
       paymentMethod: "",
       procedure: "",
     });
@@ -593,6 +615,7 @@ export default function AmountDashboard() {
             "Payment Type": row.paymentType || "",
             "Payment Method": row.method?.toUpperCase() || "",
             "Original Amount": parseFloat(row.amount) || 0,
+            "TransID / CardNo": row.paymentId || "",
             Discount: hasDiscount ? parseFloat(row.discount) || 0 : 0,
             "Net Amount": netAmount,
             "Pending Amount": patientData?.payments?.pendingAmount || 0,
@@ -607,6 +630,7 @@ export default function AmountDashboard() {
             "Expense Type": row.expense || "",
             "Payment Method": row.method?.toUpperCase() || "",
             Amount: parseFloat(row.amount) || 0,
+            "TransID / CardNo": row.paymentId || "",
             "Given To": row.expenseGiver || "",
             Remarks: row.remarks || "",
           };
@@ -836,7 +860,7 @@ export default function AmountDashboard() {
           <StatCard
             title="Net Balance"
             value={formatCurrency(netBalance)}
-            icon={DollarSign}
+            icon={IndianRupee}
             gradient={
               netBalance >= 0
                 ? "from-indigo-400 to-purple-500"
@@ -1126,6 +1150,7 @@ function TransactionModal({ transaction, patients, onClose, onSuccess }) {
     method: transaction?.method || "cash",
     procedure: transaction?.procedure || "Sapphire FUE",
     paymentType: transaction?.paymentType || "Booking",
+    paymentId: transaction?.paymentId || "",
     branch: transaction?.branch || "Delhi",
     amount: transaction?.amount || "",
     discount: transaction?.discount || "0",
@@ -1146,6 +1171,7 @@ function TransactionModal({ transaction, patients, onClose, onSuccess }) {
         method: transaction.method || "cash",
         procedure: transaction.procedure || "Sapphire FUE",
         paymentType: transaction.paymentType || "Booking",
+        paymentId: transaction.paymentId || "",
         branch: transaction.branch || "Delhi",
         amount: transaction.amount || "",
         discount: transaction.discount || "0",
@@ -1209,7 +1235,6 @@ function TransactionModal({ transaction, patients, onClose, onSuccess }) {
       return;
     }
 
-
     if (formData.costType === "Expenses" && !formData.expense) {
       setError("Expense type is required");
       return;
@@ -1231,6 +1256,7 @@ function TransactionModal({ transaction, patients, onClose, onSuccess }) {
         discount:
           formData.costType === "Revenue" ? formData.discount || "0" : "0",
         amount: formData.amount,
+        paymentId: formData.paymentId || undefined,
       };
 
       if (!isEdit) {
@@ -1494,10 +1520,19 @@ function TransactionModal({ transaction, patients, onClose, onSuccess }) {
               value={formData.amount}
               onChange={(val) => setFormData({ ...formData, amount: val })}
               required
-              icon={DollarSign}
+              icon={IndianRupee}
               placeholder="0"
               min="1"
               step="0.01"
+            />
+
+            {/* TransID / CardNo Field */}
+            <Input
+              label="TransID / CardNo"
+              value={formData.paymentId}
+              onChange={(val) => setFormData({ ...formData, paymentId: val })}
+              icon={Hash}
+              placeholder="Enter transaction reference ID"
             />
 
             {/* Discount Field - Only for Revenue */}
@@ -1611,23 +1646,25 @@ function DataTable({
   const columns =
     type === "revenue"
       ? [
-        { key: "date", label: "Date", sortable: true },
+          { key: "date", label: "Date", sortable: true },
           { key: "patient", label: "Patient", sortable: true },
           { key: "procedure", label: "Procedure", sortable: true },
           { key: "method", label: "Method", sortable: true },
           { key: "totalPackage", label: "Total Package", sortable: false },
           { key: "amount", label: "Amount", sortable: true },
+          { key: "paymentId", label: "TransID / CardNo", sortable: true },
           { key: "pending", label: "Pending", sortable: false },
           { key: "branch", label: "Branch", sortable: true },
           { key: "remarks", label: "Remarks", sortable: false },
           { key: "actions", label: "Actions", sortable: false },
         ]
       : [
+          { key: "date", label: "Date", sortable: true },
           { key: "expense", label: "Expense", sortable: true },
           { key: "category", label: "Category", sortable: false },
           { key: "method", label: "Method", sortable: true },
           { key: "amount", label: "Amount", sortable: true },
-          { key: "date", label: "Date", sortable: true },
+          { key: "paymentId", label: "TransID / CardNo", sortable: true },
           { key: "branch", label: "Branch", sortable: true },
           { key: "remarks", label: "Remarks", sortable: false },
           { key: "actions", label: "Actions", sortable: false },
@@ -1678,7 +1715,7 @@ function DataTable({
   return (
     <div>
       <div className="overflow-x-auto">
-        <table className="w-full min-w-225">
+        <table className="w-full min-w-max">
           <thead className="bg-linear-to-r from-gray-50 to-gray-100 border-b-2 border-gray-200">
             <tr>
               {columns.map((col) => (
@@ -1736,20 +1773,17 @@ function DataTable({
                   >
                     {type === "revenue" ? (
                       <>
-                      <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 text-gray-700 font-semibold text-sm">
+                        <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 text-gray-700 font-semibold text-sm">
                           {formatDateForDisplay(row.date)}
                         </td>
+
                         <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4">
                           <div className="flex items-center gap-3 min-w-0">
-                            {/* <div className="w-6 h-6 sm:w-10 sm:h-10 bg-indigo-100 rounded-full flex items-center justify-center shrink-0">
-                              <User className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-600" />
-                            </div> */}
                             <div className="min-w-0">
                               <div className="font-medium text-gray-900 text-sm truncate">
                                 {getPatientName(row.patient)}
                                 <br />
                                 <span className="text-xs font-semibold text-black">
-                                  {" "}
                                   {phoneNumber || "N/A"}
                                 </span>
                               </div>
@@ -1804,6 +1838,16 @@ function DataTable({
                             )}
                           </div>
                         </td>
+
+                        <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4">
+                          {row.paymentId ? (
+                            <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded-md text-xs font-mono">
+                              {row.paymentId}
+                            </span>
+                          ) : (
+                            <span className="text-gray-400 text-xs">-</span>
+                          )}
+                        </td>
                         <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4">
                           <div className="text-center">
                             <span
@@ -1817,7 +1861,7 @@ function DataTable({
                             </span>
                           </div>
                         </td>
-                        
+
                         <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4">
                           <span className="px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg text-xs font-semibold bg-blue-100 text-blue-700 border border-blue-200">
                             {row.branch}
@@ -1847,6 +1891,9 @@ function DataTable({
                       </>
                     ) : (
                       <>
+                        <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 text-gray-700 font-medium text-sm">
+                          {formatDateForDisplay(row.date)}
+                        </td>
                         <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 font-medium text-gray-900 text-sm">
                           {row.expense}
                         </td>
@@ -1867,9 +1914,16 @@ function DataTable({
                         <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 text-right font-bold text-rose-600 text-sm sm:text-base">
                           {formatCurrency(row.amount)}
                         </td>
-                        <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 text-gray-700 font-medium text-sm">
-                          {formatDateForDisplay(row.date)}
+                        <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4">
+                          {row.paymentId ? (
+                            <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded-md text-xs font-mono">
+                              {row.paymentId}
+                            </span>
+                          ) : (
+                            <span className="text-gray-400 text-xs">-</span>
+                          )}
                         </td>
+
                         <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4">
                           <span className="px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg text-xs font-semibold bg-blue-100 text-blue-700 border border-blue-200">
                             {row.branch}

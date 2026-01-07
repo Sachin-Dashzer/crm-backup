@@ -8,7 +8,7 @@ import {
   Calendar,
   UserCog,
   UserPlus,
-  DollarSign,
+  IndianRupee,
   BarChart3,
   TrendingUp,
   Target,
@@ -76,7 +76,7 @@ export default function SalesSidebar() {
     },
     { name: "Agents", path: "/sales/agents", icon: UserCog },
     // { name: "Add Agents", path: "/sales/add-agents", icon: UserPlus },
-    { name: "Transactions", path: "/sales/transactions", icon: DollarSign },
+    { name: "Transactions", path: "/sales/transactions", icon: IndianRupee },
     { name: "Reports", path: "/sales/reports", icon: BarChart3 },
     { name: "Performance", path: "/sales/performance", icon: TrendingUp },
   ];

@@ -13,7 +13,7 @@ import {
   TrendingUp,
   Edit,
   Users,
-  DollarSign,
+  IndianRupee,
   Activity,
 } from "lucide-react";
 
@@ -523,7 +523,7 @@ export default function StaffDashboard() {
             <SummaryCard
               title="Total Revenue"
               value={formatCurrency(totals.amountReceived)}
-              icon={<DollarSign className="w-5 h-5" />}
+              icon={<IndianRupee className="w-5 h-5" />}
               color="indigo"
             />
           </div>
@@ -832,7 +832,7 @@ export default function StaffDashboard() {
                   {/* Amount Filter */}
                   <Section
                     title="Amount Received"
-                    icon={<DollarSign className="w-4 h-4" />}
+                    icon={<IndianRupee className="w-4 h-4" />}
                   >
                     <div className="grid grid-cols-2 gap-4">
                       <Field label="Min Amount (₹)">

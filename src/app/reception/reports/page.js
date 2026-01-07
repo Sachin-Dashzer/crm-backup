@@ -8,7 +8,7 @@ import {
   Calendar, 
   FileText,
   Users,
-  DollarSign,
+  IndianRupee,
   Activity,
   TrendingUp,
   PieChart,
@@ -177,7 +177,7 @@ export default function ReportsPage() {
       description: "Complete revenue analysis from all procedures and transactions",
       category: "Financial Reports",
       type: "revenue",
-      icon: DollarSign,
+      icon: IndianRupee,
       color: "green",
     },
     {
@@ -186,7 +186,7 @@ export default function ReportsPage() {
       description: "All business expenses and cost analysis",
       category: "Financial Reports",
       type: "expenses",
-      icon: DollarSign,
+      icon: IndianRupee,
       color: "red",
     },
     {
@@ -204,7 +204,7 @@ export default function ReportsPage() {
       description: "Patients with pending payments and outstanding amounts",
       category: "Financial Reports",
       type: "outstanding-payments",
-      icon: DollarSign,
+      icon: IndianRupee,
       color: "orange",
     },
     {
@@ -242,7 +242,7 @@ export default function ReportsPage() {
       description: "Revenue analysis by branch location",
       category: "Branch Reports",
       type: "branch-revenue",
-      icon: DollarSign,
+      icon: IndianRupee,
       color: "green",
     },
     {

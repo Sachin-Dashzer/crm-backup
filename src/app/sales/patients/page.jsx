@@ -11,7 +11,7 @@ import {
   ChevronLeft, 
   Search, 
   Calendar,
-  DollarSign,
+  IndianRupee,
   TrendingUp,
   Users,
   FileText,
@@ -912,7 +912,7 @@ function SalesPatientDashboardContent() {
                   {/* Payment Filters */}
                   <Section
                     title="Payment Information"
-                    icon={<DollarSign className="w-4 h-4" />}
+                    icon={<IndianRupee className="w-4 h-4" />}
                   >
                     <Field label="Payment Status">
                       <Select

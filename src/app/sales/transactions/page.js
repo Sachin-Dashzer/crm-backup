@@ -9,7 +9,7 @@ import {
   ChevronRight,
   Search,
   Calendar,
-  DollarSign,
+  IndianRupee,
   TrendingUp,
   CreditCard,
   Building2,

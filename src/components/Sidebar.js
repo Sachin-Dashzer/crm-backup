@@ -5,7 +5,7 @@ import {
   LayoutDashboard,
   Users,
   UserCog,
-  DollarSign,
+  IndianRupee,
   BarChart3,
   TrendingUp,
   Shield,
@@ -75,20 +75,7 @@ export default function AdminSidebar() {
     if (name) setUserName(decodeURIComponent(name));
   }, []);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const res = await fetch("/api/admin/sidebar");
-        if (!res.ok) throw new Error("Failed to fetch patient data");
-        const ptdata = await res.json();
-        setdata(ptdata);
-      } catch (e) {
-        console.log(e);
-      }
-    };
-    fetchData();
-  }, []);
-
+  
   const toggleSection = (section) => {
     setExpandedSections((prev) => ({
       ...prev,
@@ -151,35 +138,10 @@ export default function AdminSidebar() {
             <X className="w-5 h-5 text-gray-600" />
           </button>
         </div>
-        {/* Quick Stats Dashboard */}
-        <div className="grid grid-cols-2 gap-3">
-          <div className="p-3 bg-linear-to-br from-blue-50 to-indigo-50 rounded-lg border border-blue-100">
-            <div className="flex items-center gap-2 mb-1">
-              <Activity className="w-4 h-4 text-blue-600" />
-              <span className="text-xs text-gray-600">Active</span>
-            </div>
-            <p className="text-lg font-bold text-gray-900">
-              {" "}
-              {data ? data.activePatients : 0}
-            </p>
-            <p className="text-xs text-gray-500">Patients</p>
-          </div>
-          <div className="p-3 bg-linear-to-br from-green-50 to-emerald-50 rounded-lg border border-green-100">
-            <div className="flex items-center gap-2 mb-1">
-              <DollarSign className="w-4 h-4 text-green-600" />
-              <span className="text-xs text-gray-600">Revenue</span>
-            </div>
-            <p className="text-lg font-bold text-gray-900">
-              {" "}
-              ₹{data ? data.finalvalue : 0}
-            </p>
-            <p className="text-xs text-gray-500">This Month</p>
-          </div>
-        </div>
         {/* Navigation */}
-        <nav className="flex-1 space-y-1 overflow-y-auto scrollbar-hide">
+        <nav className="flex-1 space-y-1 overflow-y-auto mt-4 scrollbar-hide">
           {/* Main Section */}
-          <NavSection title="Main">
+          <NavSection title="">
             <NavItem
               item="Dashboard"
               href="/admin/dashboard"
@@ -222,14 +184,14 @@ export default function AdminSidebar() {
             <NavItem
               item="Amounts"
               href="/admin/amounts"
-              icon={DollarSign}
+              icon={IndianRupee}
               isActive={pathname === "/admin/amounts"}
               onClick={() => setSidebarOpen(false)}
             />
             <NavItem
               item="View Bills"
               href="/admin/view-bill"
-              icon={DollarSign}
+              icon={IndianRupee}
               isActive={pathname === "/admin/view-bill"}
               onClick={() => setSidebarOpen(false)}
             />

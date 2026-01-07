@@ -8,7 +8,7 @@ import {
   Search,
   Users,
   TrendingUp,
-  DollarSign,
+  IndianRupee,
   Calendar,
   Filter,
   Phone,
@@ -245,7 +245,7 @@ export default function AgentDashboard() {
                       {formatCurrency(totalRevenue)}
                     </p>
                   </div>
-                  <DollarSign className="h-8 w-8 text-green-500" />
+                  <IndianRupee className="h-8 w-8 text-green-500" />
                 </div>
               </div>
 
@@ -625,7 +625,7 @@ export default function AgentDashboard() {
 
                               <div className="bg-white p-4 rounded-lg shadow-sm">
                                 <div className="flex items-center gap-3">
-                                  <DollarSign className="h-8 w-8 text-purple-500" />
+                                  <IndianRupee className="h-8 w-8 text-purple-500" />
                                   <div>
                                     <p className="text-sm text-gray-600">Avg Revenue</p>
                                     <p className="text-xl font-bold text-gray-900">

@@ -24,8 +24,8 @@ const handler = async (req) => {
       );
     }
 
-    // Validation: Discount cannot be negative or greater than amount
-   
+    
+    
     // Validation: Patient ID format
     if (data.patient && !mongoose.Types.ObjectId.isValid(data.patient)) {
       return NextResponse.json(
@@ -33,7 +33,7 @@ const handler = async (req) => {
         { status: 400 }
       );
     }
-
+    
     // For revenue transactions, patient is required
     if (data.costType === "Revenue" && !data.patient) {
       return NextResponse.json(
@@ -57,9 +57,15 @@ const handler = async (req) => {
       }
     }
 
+
+
+    data.amount = Math.floor(Number(data.amount));
+    data.amount = Math.floor(data.amount);
+    
     // Create the transaction
     const newTransaction = await Transactions.create({
       ...data,
+      paymentId : data.paymentId || "",
       discount: data.discount || 0,
       date: data.date || new Date(),
     });

@@ -6,7 +6,7 @@ import {
   Calendar,
   UserPlus,
   Users,
-  DollarSign,
+  IndianRupee,
   Clock,
   CheckCircle,
   TrendingUp,
@@ -301,7 +301,7 @@ export default function ReceptionDashboard() {
             <MetricCard
               title="Today's Revenue"
               value={`₹${dashboardData.todayRevenue.toLocaleString()}`}
-              icon={DollarSign}
+              icon={IndianRupee}
               color="from-purple-500 to-purple-600"
               trend={dashboardData.trends?.revenue}
               onClick={() => handleMetricClick("revenue")}
@@ -328,7 +328,7 @@ export default function ReceptionDashboard() {
               />
               <QuickAction
                 title="Create Bill"
-                icon={DollarSign}
+                icon={IndianRupee}
                 color="from-green-500 to-green-600"
                 onClick={() => router.push("/reception/create-bill")}
               />

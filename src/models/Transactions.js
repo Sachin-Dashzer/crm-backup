@@ -33,6 +33,7 @@ const transactionSchema = new mongoose.Schema({
     type: String,
     enum: ["Booking", "Pending", "Full-payment", "Other"],
   },
+  paymentId : String,
   branch: {
     type: String,
     enum: ["Delhi", "Mumbai", "Hyderabad"],

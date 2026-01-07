@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import {
   TrendingUp,
   TrendingDown,
-  DollarSign,
+  IndianRupee,
   Users,
   Activity,
   Target,
@@ -483,7 +483,7 @@ export default function PerformancePage() {
               title="Total Revenue"
               value={`₹${(overallMetrics.totalRevenue / 1000).toFixed(0)}K`}
               change={overallMetrics.revenueGrowth || 0}
-              icon={DollarSign}
+              icon={IndianRupee}
               color="indigo"
             />
             <MetricCard
