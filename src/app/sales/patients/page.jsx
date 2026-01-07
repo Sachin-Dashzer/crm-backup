@@ -11,7 +11,6 @@ import {
   ChevronLeft, 
   Search, 
   Calendar,
-  IndianRupee,
   TrendingUp,
   Users,
   FileText,

@@ -21,7 +21,6 @@ import {
   User,
   Receipt,
   BarChart3,
-  IndianRupee,
   Activity,
 } from "lucide-react";
 
