@@ -1,12 +1,19 @@
 import "./globals.css";
 import { ToastProvider } from "@/components/Toast.js";
-export const metadata = { title: "Clinic CRM" };
+import NextAuthProvider from "@/components/SessionProvider";
+
+export const metadata = {
+  title: "Hair Transplant Clinic",
+  description: "Clinic Management System",
+};
 
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body className="min-h-screen">
-        <ToastProvider>{children} </ToastProvider>
+        <NextAuthProvider>
+          <ToastProvider>{children} </ToastProvider>
+        </NextAuthProvider>
       </body>
     </html>
   );

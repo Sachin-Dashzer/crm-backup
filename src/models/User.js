@@ -7,21 +7,50 @@ const userSchema = new mongoose.Schema({
   password: { type: String, required: true, select: false },
   role: {
     type: String,
-    enum: ['admin', 'sales', 'reception', 'surgery' , 'counsellor'],
+    enum: ['admin', 'sales', 'reception', 'surgery', 'counsellor'],
     default: 'reception',
     lowercase: true,
   },
+  branch: { type: String },
   lastLogin: Date,
+  
+  sessionVersion: { 
+    type: Number, 
+    default: 0,
+    select: false
+  },
+  
+  passwordChangedAt: Date,
+  
 }, { timestamps: true });
 
+// Hash password before saving
 userSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next();
+  
   this.password = await bcrypt.hash(this.password, 12);
+  
+  // Increment session version when password changes
+  if (!this.isNew) {
+    this.sessionVersion = (this.sessionVersion || 0) + 1;
+    this.passwordChangedAt = Date.now();
+  }
+  
   next();
 });
 
+// Method to compare passwords
 userSchema.methods.correctPassword = async function (candidatePass, userPass) {
   return await bcrypt.compare(candidatePass, userPass);
+};
+
+// Method to check if password was changed after JWT was issued
+userSchema.methods.changedPasswordAfter = function(JWTTimestamp) {
+  if (this.passwordChangedAt) {
+    const changedTimestamp = parseInt(this.passwordChangedAt.getTime() / 1000, 10);
+    return JWTTimestamp < changedTimestamp;
+  }
+  return false;
 };
 
 export default mongoose.models.User || mongoose.model('User', userSchema);

@@ -26,8 +26,6 @@ import {
   Menu,
   Tag,
   ArrowUpDown,
-  Download,
-  FileSpreadsheet,
   ChevronDown,
   ChevronUp,
   Hash,
@@ -255,7 +253,6 @@ export default function AmountDashboard() {
   const [tableSearch, setTableSearch] = useState("");
   const [refreshing, setRefreshing] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [downloading, setDownloading] = useState(false);
 
   // Modal states
   const [showModal, setShowModal] = useState(false);
@@ -591,98 +588,6 @@ export default function AmountDashboard() {
     }
   };
 
-  // Excel Download Function
-  const downloadExcel = async () => {
-    try {
-      setDownloading(true);
-
-      // Import xlsx dynamically
-      const { utils, writeFile } = await import("xlsx");
-
-      // Prepare data based on active tab
-      const dataToExport = sortedRows.map((row) => {
-        if (activeTab === "revenue") {
-          const netAmount = calculateNetAmount(row);
-          const hasDiscount = parseFloat(row.discount || 0) > 0;
-          const patientData = row.patient;
-
-          return {
-            Date: formatDateForDisplay(row.date),
-            "Patient Name": patientData?.personal?.name || "Walk-in Customer",
-            Phone: patientData?.personal?.phone || "N/A",
-            Branch: row.branch || "",
-            Procedure: row.procedure || "",
-            "Payment Type": row.paymentType || "",
-            "Payment Method": row.method?.toUpperCase() || "",
-            "Original Amount": parseFloat(row.amount) || 0,
-            "TransID / CardNo": row.paymentId || "",
-            Discount: hasDiscount ? parseFloat(row.discount) || 0 : 0,
-            "Net Amount": netAmount,
-            "Pending Amount": patientData?.payments?.pendingAmount || 0,
-            "Total Package": patientData?.payments?.totalAmount || 0,
-            "Amount Received": patientData?.payments?.amountReceived || 0,
-            Remarks: row.remarks || "",
-          };
-        } else {
-          return {
-            Date: formatDateForDisplay(row.date),
-            Branch: row.branch || "",
-            "Expense Type": row.expense || "",
-            "Payment Method": row.method?.toUpperCase() || "",
-            Amount: parseFloat(row.amount) || 0,
-            "TransID / CardNo": row.paymentId || "",
-            "Given To": row.expenseGiver || "",
-            Remarks: row.remarks || "",
-          };
-        }
-      });
-
-      // Create workbook
-      const wb = utils.book_new();
-      const ws = utils.json_to_sheet(dataToExport);
-
-      // Set column widths
-      const maxWidth = 30;
-      const colWidths = Object.keys(dataToExport[0] || {}).map((key) => ({
-        wch: Math.min(Math.max(key.length, 10), maxWidth),
-      }));
-      ws["!cols"] = colWidths;
-
-      // Add worksheet to workbook
-      utils.book_append_sheet(
-        wb,
-        ws,
-        activeTab === "revenue" ? "Revenue" : "Expenses"
-      );
-
-      // Generate filename
-      const filterInfo = [];
-      if (filters.branch) filterInfo.push(filters.branch);
-      if (filters.dateFrom || filters.dateTo) {
-        const dateRange = `${filters.dateFrom || "Start"}_to_${
-          filters.dateTo || "End"
-        }`;
-        filterInfo.push(dateRange);
-      }
-
-      const filterSuffix =
-        filterInfo.length > 0 ? `_${filterInfo.join("_")}` : "";
-      const fileName = `${activeTab}_transactions${filterSuffix}_${
-        new Date().toISOString().split("T")[0]
-      }.xlsx`;
-
-      // Download file
-      writeFile(wb, fileName);
-
-      toast.success(`✓ Downloaded ${sortedRows.length} ${activeTab} records!`);
-    } catch (error) {
-      console.error("Download error:", error);
-      toast.error("Failed to download Excel file");
-    } finally {
-      setDownloading(false);
-    }
-  };
-
   // Quick filter presets
   const applyQuickFilter = (preset) => {
     const today = getTodayDate();
@@ -789,28 +694,6 @@ export default function AmountDashboard() {
               </div>
             </div>
             <div className="flex gap-2 sm:gap-3">
-              <button
-                onClick={downloadExcel}
-                disabled={downloading || sortedRows.length === 0}
-                className="bg-linear-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white px-3 sm:px-5 py-2 sm:py-3 rounded-xl flex items-center gap-1 sm:gap-2 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 text-sm sm:text-base shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {downloading ? (
-                  <>
-                    <Loader2 size={18} className="animate-spin" />
-                    <span className="font-semibold hidden xs:inline">
-                      Downloading...
-                    </span>
-                  </>
-                ) : (
-                  <>
-                    <Download size={18} strokeWidth={2.5} />
-                    <span className="font-semibold hidden xs:inline">
-                      Export Excel
-                    </span>
-                    <span className="font-semibold xs:hidden">Excel</span>
-                  </>
-                )}
-              </button>
               <button
                 onClick={handleRefresh}
                 disabled={refreshing}
