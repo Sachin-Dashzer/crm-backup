@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import ReceptionSidebar from "@/components/SurgerySidebar";
+import ReceptionSidebar from "@/components/Sidebars/SurgerySidebar";
 import {
   ArrowLeft,
   Download,

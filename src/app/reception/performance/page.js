@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { TrendingUp, TrendingDown } from "lucide-react";
-import ReceptionSidebar from "@/components/ReceptionSidebar";
+import ReceptionSidebar from "@/components/Sidebars/ReceptionSidebar";
 import Topbar from "../../../components/Topbar";
 
 export default function PerformancePage() {

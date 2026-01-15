@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import ReceptionSidebar from "@/components/ReceptionSidebar";
+import ReceptionSidebar from "@/components/Sidebars/ReceptionSidebar";
 import { 
   Download, 
   Filter, 

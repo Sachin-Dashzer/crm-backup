@@ -9,7 +9,7 @@ import {
   Stethoscope,
   Wallet,
 } from "lucide-react";
-import Sidebar from "../../../components/Sidebar";
+import Sidebar from "../../../components/Sidebars/Sidebar";
 import Topbar from "../../../components/Topbar";
 import MetricCard from "../../../components/MetricCard";
 import ChartsSection from "../../../components/ChartsSection";

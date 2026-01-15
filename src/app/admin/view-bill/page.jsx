@@ -21,7 +21,7 @@ import {
   Clock,
   Tag,
 } from "lucide-react";
-import Sidebar from "@/components/Sidebar";
+import Sidebar from "@/components/Sidebars/Sidebar";
 import { useToast } from "@/components/Toast";
 
 export default function ViewBills() {
@@ -73,7 +73,7 @@ export default function ViewBills() {
 
   const fetchPatients = async () => {
     try {
-      const res = await fetch("/api/admin/get-patient");
+      const res = await fetch("/api/patients/get-patient");
       const data = await res.json();
       if (data.success) {
         setPatients(data.patients || []);

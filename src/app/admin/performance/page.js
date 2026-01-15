@@ -18,7 +18,7 @@ import {
   ChevronRight,
   AlertCircle,
 } from "lucide-react";
-import Sidebar from "../../../components/Sidebar";
+import Sidebar from "../../../components/Sidebars/Sidebar";
 import Topbar from "../../../components/Topbar";
 
 export default function PerformancePage() {

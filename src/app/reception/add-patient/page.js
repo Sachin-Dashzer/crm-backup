@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useToast } from "@/components/Toast";
 import InputField from "@/components/InputField";
-import ReceptionSidebar from "@/components/ReceptionSidebar";
+import ReceptionSidebar from "@/components/Sidebars/ReceptionSidebar";
 import {
   Eye, Download, Plus,
   Upload,

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Download, FileText, Users, IndianRupee, TrendingUp, Calendar, CheckCircle } from "lucide-react";
-import Sidebar from "../../../components/SalesSidebar";
+import Sidebar from "../../../components/Sidebars/SalesSidebar";
 import Topbar from "../../../components/Topbar";
 
 export default function SalesReports() {

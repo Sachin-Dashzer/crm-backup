@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import SalesSidebar from "@/components/SalesSidebar";
+import SalesSidebar from "@/components/Sidebars/SalesSidebar";
 import { 
   Filter, 
   X, 

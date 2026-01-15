@@ -10,7 +10,7 @@ import {
   Search,
   Filter,
 } from "lucide-react";
-import ReceptionSidebar from "@/components/ReceptionSidebar";
+import ReceptionSidebar from "@/components/Sidebars/ReceptionSidebar";
 import { useToast } from "@/components/Toast";
 
 export default function NotVisited() {

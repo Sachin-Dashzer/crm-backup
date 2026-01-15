@@ -3,154 +3,143 @@ import { withDB } from "@/lib/withDB";
 import Transactions from "@/models/Transactions";
 import Patient from "@/models/Patient";
 import mongoose from "mongoose";
+import { getServerSession } from "next-auth";
+import { authOptions } from "../../auth/[...nextauth]/route";
 
 const handler = async (req) => {
   try {
+    // Authentication check
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.name || !session?.user?.email || !session?.user?.branch) {
+      return NextResponse.json(
+        { success: false, message: "Unauthorized. Please login." },
+        { status: 401 }
+      );
+    }
+
     const data = await req.json();
 
-    // Validation: Required fields
+    // Basic validations
     if (!data.costType || !data.method || !data.amount) {
       return NextResponse.json(
-        { message: "All fields are required", success: false },
+        { success: false, message: "Cost type, method, and amount are required" },
         { status: 400 }
       );
     }
 
-    // Validation: Amount must be positive
     if (data.amount <= 0) {
       return NextResponse.json(
-        { message: "Amount must be a positive number", success: false },
+        { success: false, message: "Amount must be positive" },
         { status: 400 }
       );
     }
 
-    
-    
-    // Validation: Patient ID format
-    if (data.patient && !mongoose.Types.ObjectId.isValid(data.patient)) {
-      return NextResponse.json(
-        { message: "Invalid patient ID", success: false },
-        { status: 400 }
-      );
-    }
-    
-    // For revenue transactions, patient is required
+    // Revenue transactions require patient
     if (data.costType === "Revenue" && !data.patient) {
       return NextResponse.json(
-        {
-          message: "Patient is required for revenue transactions",
-          success: false,
-        },
+        { success: false, message: "Patient is required for revenue transactions" },
         { status: 400 }
       );
     }
 
-    // Check if patient exists
-    let existingPatient = null;
+    // Validate patient if provided
     if (data.patient) {
-      existingPatient = await Patient.findById(data.patient);
-      if (!existingPatient) {
+      if (!mongoose.Types.ObjectId.isValid(data.patient)) {
         return NextResponse.json(
-          { message: "Patient not found", success: false },
+          { success: false, message: "Invalid patient ID" },
+          { status: 400 }
+        );
+      }
+
+      const patientExists = await Patient.findById(data.patient);
+      if (!patientExists) {
+        return NextResponse.json(
+          { success: false, message: "Patient not found" },
           { status: 404 }
         );
       }
     }
 
-
-
-    data.amount = Math.floor(Number(data.amount));
-    data.amount = Math.floor(data.amount);
-    
-    // Create the transaction
+    // Create transaction
     const newTransaction = await Transactions.create({
       ...data,
-      paymentId : data.paymentId || "",
+      amount: Math.floor(Number(data.amount)),
+      paymentId: data.paymentId || "",
       discount: data.discount || 0,
       date: data.date || new Date(),
+      createdBy: {
+        name: session.user.name,
+        email: session.user.email,
+        branch: session.user.branch,
+        date: new Date(),
+      },
+      editors: [],
     });
 
     let updatedPatient = null;
-    
-    // Update patient payment details for Revenue transactions
+
+    // Update patient payments for Revenue transactions
     if (data.patient && data.costType === "Revenue") {
       const patient = await Patient.findById(data.patient);
 
-      if (!patient) {
-        console.warn(
-          `Patient ${data.patient} not found after transaction creation`
-        );
-      } else {
-        // Initialize payments object if not exists
-        if (!patient.payments) {
-          patient.payments = {
-            amountReceived: 0,
-            pendingAmount: 0,
-            medicineAmount: 0,
-            discount: 0,
-            totalAmount: 0,
-            transactions: [],
-          };
-        }
-
-        if (!patient.payments.transactions) {
-          patient.payments.transactions = [];
-        }
+      if (patient) {
+        // Initialize payments if needed
+        patient.payments = patient.payments || {
+          amountReceived: 0,
+          pendingAmount: 0,
+          medicineAmount: 0,
+          discount: 0,
+          totalAmount: 0,
+          transactions: [],
+        };
 
         // Add transaction reference
         patient.payments.transactions.push(newTransaction._id);
 
-        // Determine if this is a medicine transaction
+        // Update amounts based on procedure type
         const isMedicine = data.procedure?.toLowerCase() === "medicine";
-
-        // Update amounts
         if (isMedicine) {
-          const currentMedicineAmount = patient.payments.medicineAmount || 0;
-          patient.payments.medicineAmount =
-            currentMedicineAmount + parseFloat(data.amount);
+          patient.payments.medicineAmount += parseFloat(data.amount);
         } else {
-          const currentAmountReceived = patient.payments.amountReceived || 0;
-          patient.payments.amountReceived =
-            currentAmountReceived + parseFloat(data.amount);
+          patient.payments.amountReceived += parseFloat(data.amount);
         }
 
-        // Recalculate total discount from all transactions
-        // This ensures accuracy even if transactions are edited/deleted
+        // Recalculate discount from all transactions
         const allTransactions = await Transactions.find({
           _id: { $in: patient.payments.transactions },
           costType: "Revenue",
         });
-
-        const totalDiscount = allTransactions.reduce(
-          (sum, transaction) => sum + (transaction.discount || 0),
+        patient.payments.discount = allTransactions.reduce(
+          (sum, t) => sum + (t.discount || 0),
           0
         );
-        patient.payments.discount = totalDiscount;
 
         // Calculate pending amount
-        // Formula: Pending = (TotalAmount - TotalDiscount) - AmountReceived
-        const totalAmount = patient.payments.totalAmount || 0;
-        const amountReceived = patient.payments.amountReceived || 0;
-        const adjustedTotal = Math.max(0, totalAmount - totalDiscount);
-        
+        const adjustedTotal = Math.max(
+          0,
+          patient.payments.totalAmount - patient.payments.discount
+        );
         patient.payments.pendingAmount = Math.max(
           0,
-          adjustedTotal - amountReceived
+          adjustedTotal - patient.payments.amountReceived
         );
 
-        // Save the updated patient
-        updatedPatient = await patient.save();
+        // Add editor entry
+        patient.editors = patient.editors || [];
+        patient.editors.push({
+          name: session.user.name,
+          email: session.user.email,
+          branch: session.user.branch,
+          date: new Date(),
+        });
 
-        if (!updatedPatient) {
-          console.warn(
-            `Transaction created but failed to update patient ${data.patient}`
-          );
-        }
+        updatedPatient = await patient.save();
       }
     }
 
     return NextResponse.json(
       {
+        success: true,
         message: "Transaction created successfully",
         data: newTransaction,
         updatedPatient: updatedPatient
@@ -159,7 +148,6 @@ const handler = async (req) => {
               payments: updatedPatient.payments,
             }
           : null,
-        success: true,
       },
       { status: 201 }
     );
@@ -168,28 +156,13 @@ const handler = async (req) => {
 
     if (error.name === "ValidationError") {
       return NextResponse.json(
-        { message: "Validation Error", error: error.message, success: false },
-        { status: 400 }
-      );
-    }
-
-    if (error.name === "CastError") {
-      return NextResponse.json(
-        {
-          message: "Invalid data format",
-          error: error.message,
-          success: false,
-        },
+        { success: false, message: error.message },
         { status: 400 }
       );
     }
 
     return NextResponse.json(
-      {
-        message: "Internal Server Error",
-        error: error.message,
-        success: false,
-      },
+      { success: false, message: "Internal server error" },
       { status: 500 }
     );
   }

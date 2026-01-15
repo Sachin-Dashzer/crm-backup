@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import Sidebar from "@/components/ReceptionSidebar";
+import Sidebar from "@/components/Sidebars/ReceptionSidebar";
 import { useToast } from "@/components/Toast";
 import InputField from "@/components/InputField";
 import { X } from "lucide-react";

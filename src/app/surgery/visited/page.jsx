@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { CheckCircle, Search, Calendar, MapPin, Phone } from "lucide-react";
-import Sidebar from "@/components/SurgerySidebar";
+import Sidebar from "@/components/Sidebars/SurgerySidebar";
 import Link from "next/link";
 
 export default function VisitedPatients() {

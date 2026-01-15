@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import LogoutButton from "../LogoutButton";
 
 const NavItem = ({ item, href, isActive, onClick, icon: Icon }) => (
   <Link href={href} className="block w-full">
@@ -81,14 +82,6 @@ export default function SalesSidebar() {
     { name: "Performance", path: "/sales/performance", icon: TrendingUp },
   ];
 
-  const handleLogout = async () => {
-    try {
-      await fetch("/api/auth/logout", { method: "POST" });
-      router.push("/login");
-    } catch (error) {
-      console.error("Logout error:", error);
-    }
-  };
 
   return (
     <>
@@ -181,13 +174,9 @@ export default function SalesSidebar() {
             </div>
           </div>
 
-          <button
-            onClick={handleLogout}
-            className="w-full px-4 py-2.5 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors flex items-center justify-center gap-2 font-medium"
-          >
-            <LogOut className="w-4 h-4" />
-            Logout
-          </button>
+          <LogoutButton />
+
+          
         </div>
       </aside>
     </>

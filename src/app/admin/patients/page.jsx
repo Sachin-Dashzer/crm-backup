@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import Sidebar from "@/components/Sidebar";
+import Sidebar from "@/components/Sidebars/Sidebar";
 import {
   Filter,
   X,
@@ -94,7 +94,7 @@ function PatientDashboardContent() {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const res = await fetch("/api/admin/get-patient");
+        const res = await fetch("/api/patients/get-patient");
         if (!res.ok) throw new Error("Failed to fetch patient data");
         const data = await res.json();
         setPatients(data.patients || []);

@@ -16,7 +16,7 @@ import {
   Pie,
   Cell,
 } from "recharts";
-import SalesSidebar from "@/components/SalesSidebar";
+import SalesSidebar from "@/components/Sidebars/SalesSidebar";
 
 const COLORS = [
   "#3B82F6",

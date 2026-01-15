@@ -3,7 +3,7 @@
 import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Search, Filter, Download, IndianRupee, TrendingUp, Calendar, CreditCard } from "lucide-react";
-import Sidebar from "../../../components/SalesSidebar";
+import Sidebar from "../../../components/Sidebars/SalesSidebar";
 import Topbar from "../../../components/Topbar";
 
 // Content component that uses useSearchParams

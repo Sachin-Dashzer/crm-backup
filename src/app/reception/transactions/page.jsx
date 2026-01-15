@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import ReceptionSidebar from "@/components/ReceptionSidebar";
+import ReceptionSidebar from "@/components/Sidebars/ReceptionSidebar";
 import { useToast } from "@/components/Toast";
 import {
   Filter,
@@ -306,7 +306,7 @@ export default function AmountDashboard() {
 
   const fetchPatients = async () => {
     try {
-      const res = await fetch("/api/admin/get-patient");
+      const res = await fetch("/api/patients/get-patient");
       const data = await res.json();
       if (data.success) {
         setPatients(data.patients || []);

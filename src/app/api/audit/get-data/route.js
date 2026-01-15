@@ -1,10 +1,10 @@
 // app/api/transactions/get-data/route.js
 import { NextResponse } from "next/server";
 import { withDB } from "@/lib/withDB";
-import Transactions from "@/models/Transactions";
+import Audit from "@/models/Audit";
 
 const handler = async (req) => {
-  const transactions = await Transactions.find({})
+  const data = await Audit.find({})
     .populate({
       path: "patient",
       select:
@@ -13,7 +13,7 @@ const handler = async (req) => {
     })
     .sort({ date: -1 });
 
-  const finaldata = transactions.reduce((acc, transaction) => {
+  const finaldata = data.reduce((acc, transaction) => {
     const type = transaction.costType || "other";
 
     if (!acc[type]) {

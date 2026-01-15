@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Sidebar from "@/components/Sidebar";
+import Sidebar from "@/components/Sidebars/Sidebar";
 import Link from "next/link";
 import {
   Filter,

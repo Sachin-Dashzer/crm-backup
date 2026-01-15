@@ -83,7 +83,7 @@ function PatientDashboardContent() {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const res = await fetch("/api/admin/get-patient");
+        const res = await fetch("/api/patients/get-patient");
         if (!res.ok) throw new Error("Failed to fetch patient data");
         const data = await res.json();
         setPatients(data.patients || []);

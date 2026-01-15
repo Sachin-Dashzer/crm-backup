@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 import Patient from "./Patient";
 
-const transactionSchema = new mongoose.Schema({
+const auditSchema = new mongoose.Schema({
   costType: {
     type: String,
     required: true,
@@ -53,22 +53,6 @@ const transactionSchema = new mongoose.Schema({
   },
   expenseGiver: String,
   remarks: String,
-  editors: [
-    {
-      name: String,
-      email: String,
-      branch: String,
-      date: {
-        type: Date,
-        default: Date.now,
-      },
-      updatedFields : [{
-        name : String,
-        previousValue : String ,
-        newValue : String
-      }]
-    },
-  ],
   createdBy: {
     name: String,
     email: String,
@@ -80,5 +64,5 @@ const transactionSchema = new mongoose.Schema({
   },
 });
 
-export default mongoose.models.Transactions ||
-  mongoose.model("Transactions", transactionSchema);
+export default mongoose.models.Audit ||
+  mongoose.model("Audit", auditSchema);

@@ -12,7 +12,7 @@ import {
   MapPin,
   BarChart3
 } from "lucide-react";
-import Sidebar from "@/components/SurgerySidebar";
+import Sidebar from "@/components/Sidebars/SurgerySidebar";
 import Topbar from "@/components/Topbar";
 
 export default function SurgeryReports() {

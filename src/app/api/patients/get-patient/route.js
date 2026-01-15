@@ -1,10 +1,34 @@
 import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { withDB } from "@/lib/withDB";
 import Patient from "@/models/Patient";
 import Employee from "@/models/Employee";
 
 const handler = async (req) => {
   try {
+    // const session = await getServerSession(authOptions);
+
+    // if (!session || !session.user) {
+    //   return NextResponse.json(
+    //     {
+    //       success: false,
+    //       error: "Unauthorized. Please login.",
+    //     },
+    //     { status: 401 }
+    //   );
+    // }
+
+    // const userBranch = session.user.branch;
+
+    
+    // let query = {};
+     
+    // if (userBranch && userBranch !== 'All') {
+    //   query['personal.branch'] = userBranch;
+    // } 
+
+    // Fetch patients with branch filter
     const patients = await Patient.find({})
       .populate({
         path: "personal.reference",
@@ -46,7 +70,8 @@ const handler = async (req) => {
         select: "name",
         model: "Employee",
       })
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 }); // Sort by latest patients first
+
 
     return NextResponse.json(
       {
@@ -62,7 +87,6 @@ const handler = async (req) => {
       {
         success: false,
         error: "Failed to fetch patients",
-        details: error.message,
       },
       { status: 500 }
     );

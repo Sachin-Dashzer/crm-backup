@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import SalesSidebar from "@/components/SalesSidebar";
+import SalesSidebar from "@/components/Sidebars/SalesSidebar";
 import {
   Filter,
   X,

@@ -20,7 +20,7 @@ import {
   Target,
   BarChart3,
 } from "lucide-react";
-import SalesSidebar from "@/components/SalesSidebar";
+import SalesSidebar from "@/components/Sidebars/SalesSidebar";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function AgentDashboard() {

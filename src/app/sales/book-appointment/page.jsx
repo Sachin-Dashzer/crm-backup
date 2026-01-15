@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import SalesSidebar from "@/components/SalesSidebar";
+import SalesSidebar from "@/components/Sidebars/SalesSidebar";
 import { useToast } from "@/components/Toast";
 import InputField from "@/components/InputField";
 import {

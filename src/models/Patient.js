@@ -73,38 +73,52 @@ const patientSchema = new mongoose.Schema(
       graftsneed: Number,
       graftsImplanted: Number,
       donorCondition: String,
-      doctor: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Employee",
-      }],
-      seniorTech: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Employee",
-      }],
-      implanterRight: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Employee",
-      }],
-      implanterLeft: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Employee",
-      }],
-      graftingPerson: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Employee",
-      }],
-      helper: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Employee",
-      }],
+      doctor: [
+        {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Employee",
+        },
+      ],
+      seniorTech: [
+        {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Employee",
+        },
+      ],
+      implanterRight: [
+        {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Employee",
+        },
+      ],
+      implanterLeft: [
+        {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Employee",
+        },
+      ],
+      graftingPerson: [
+        {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Employee",
+        },
+      ],
+      helper: [
+        {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Employee",
+        },
+      ],
     },
     afterSurgery: {
       headwashDate: Date,
       bandageRemovalDate: Date,
-      prp: [{
-        prpNumber: Number,
-        date: Date,
-      }],
+      prp: [
+        {
+          prpNumber: Number,
+          date: Date,
+        },
+      ],
     },
     payments: {
       amountReceived: { type: Number, default: 0 },
@@ -137,6 +151,26 @@ const patientSchema = new mongoose.Schema(
         default: "NEW",
       },
     },
+    editors: [
+      {
+        name: String,
+        email: String,
+        branch: String,
+        date: {
+          type: Date,
+          default: Date.now,
+        },
+      },
+    ],
+    createdBy: {
+        name: String,
+        email: String,
+        branch: String,
+        date: {
+          type: Date,
+          default: Date.now,
+        },
+      },
   },
   { timestamps: true }
 );
@@ -158,11 +192,15 @@ patientSchema.pre("save", function (next) {
   }
   if (patient.counselling?.finlpackage) {
     patient.payments = patient.payments || {};
-    patient.payments.pendingAmount = patient.counselling.finlpackage - patient.payments.amountReceived -  patient.payments.discount;
+    patient.payments.pendingAmount =
+      patient.counselling.finlpackage -
+      patient.payments.amountReceived -
+      patient.payments.discount;
   }
 
   // Check if doctor array has any entries
-  const hasDoctor = patient.surgery?.doctor && patient.surgery.doctor.length > 0;
+  const hasDoctor =
+    patient.surgery?.doctor && patient.surgery.doctor.length > 0;
 
   if (hasDoctor) {
     patient.ops.status = "CLOSED";

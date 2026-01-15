@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Sidebar from "@/components/ReceptionSidebar";
+import Sidebar from "@/components/Sidebars/ReceptionSidebar";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/Toast";
 import { useParams } from "next/navigation";

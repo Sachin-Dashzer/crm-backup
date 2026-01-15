@@ -4,7 +4,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import UserFormModal from "@/components/UserFormModal";
-import Sidebar from "@/components/Sidebar";
+import Sidebar from "@/components/Sidebars/Sidebar";
 
 export default function ManageUsersPage() {
   const router = useRouter();

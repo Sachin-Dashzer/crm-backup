@@ -9,15 +9,15 @@ import {
   BarChart3,
   TrendingUp,
   Shield,
-  Activity,
-  LogOut,
+  UserPlus,
   X,
   Menu,
-  ChevronDown,
-  ChevronRight,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
+
+import LogoutButton from "../LogoutButton";
 
 const NavItem = ({ item, href, isActive, onClick, icon: Icon, badge }) => (
   <Link href={href} className="block w-full">
@@ -59,39 +59,28 @@ const NavSection = ({ title, children }) => (
 export default function AdminSidebar() {
   const pathname = usePathname();
   const router = useRouter();
-  const [data, setdata] = useState({});
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userName, setUserName] = useState("Admin");
-  const [expandedSections, setExpandedSections] = useState({
-    management: true,
-    analytics: true,
-  });
+
+  const { data: session } = useSession();
 
   useEffect(() => {
-    const name = document.cookie
-      .split("; ")
-      .find((row) => row.startsWith("userName="))
-      ?.split("=")[1];
-    if (name) setUserName(decodeURIComponent(name));
-  }, []);
+    if (session) {
+      // Log everything at once
+      console.table({
+        "Full Name": session.user?.name,
+        Email: session.user?.email,
+        Role: session.user?.role,
+        Branch: session.user?.branch,
+        "User ID": session.user?.id,
+      });
+
+      // Set username
+      setUserName(session.user?.email || "Admin");
+    }
+  }, [session]);
 
   
-  const toggleSection = (section) => {
-    setExpandedSections((prev) => ({
-      ...prev,
-      [section]: !prev[section],
-    }));
-  };
-
-  const handleLogout = async () => {
-    try {
-      await fetch("/api/auth/logout", { method: "POST" });
-      router.push("/login");
-    } catch (error) {
-      console.error("Logout error:", error);
-    }
-  };
-
   return (
     <>
       {/* Mobile Menu Button */}
@@ -216,22 +205,22 @@ export default function AdminSidebar() {
           </NavSection>
 
           {/* System Section */}
-          {/* <NavSection title="System">
+          <NavSection title="Settings">
             <NavItem
-              item="Activity Log"
-              href="/admin/activity"
-              icon={Clock}
-              isActive={pathname === "/admin/activity"}
+              item="User Log"
+              href="/admin/manage-users"
+              icon={UserCog}
+              isActive={pathname === "/admin/manage-users"}
               onClick={() => setSidebarOpen(false)}
             />
-            <NavItem
+            {/* <NavItem
               item="Settings"
               href="/admin/settings"
               icon={Settings}
               isActive={pathname === "/admin/settings"}
               onClick={() => setSidebarOpen(false)}
-            />
-          </NavSection> */}
+            /> */}
+          </NavSection>
         </nav>
         {/* User Info & Logout */}
         <div className="space-y-3 border-t pt-4">
@@ -245,18 +234,12 @@ export default function AdminSidebar() {
                 <p className="text-sm font-semibold text-gray-900">
                   {userName}
                 </p>
-                <p className="text-xs text-gray-600">Surgery Team</p>
+                <p className="text-xs text-gray-600">Admin Panel</p>
               </div>
             </div>
           </div>
 
-          <button
-            onClick={handleLogout}
-            className="w-full px-4 py-2.5 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors flex items-center justify-center gap-2 font-medium"
-          >
-            <LogOut className="w-4 h-4" />
-            Logout
-          </button>
+          <LogoutButton />
         </div>{" "}
       </aside>
     </>

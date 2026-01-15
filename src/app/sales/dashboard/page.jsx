@@ -15,7 +15,7 @@ import {
   ArrowDownRight,
 } from "lucide-react";
 import Topbar from "@/components/Topbar";
-import SalesSidebar from "../../../components/SalesSidebar";
+import SalesSidebar from "../../../components/Sidebars/SalesSidebar";
 
 
 
