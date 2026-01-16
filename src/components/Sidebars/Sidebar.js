@@ -207,10 +207,10 @@ export default function AdminSidebar() {
           {/* System Section */}
           <NavSection title="Settings">
             <NavItem
-              item="User Log"
-              href="/admin/manage-users"
+              item="Deleted Log"
+              href="/admin/deleted-data"
               icon={UserCog}
-              isActive={pathname === "/admin/manage-users"}
+              isActive={pathname === "/admin/deleted-data"}
               onClick={() => setSidebarOpen(false)}
             />
             {/* <NavItem

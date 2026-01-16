@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 
-const ROLES = ['sales', 'reception', 'surgery', 'counsellor'];
+const ROLES = ['sales', 'reception', 'surgery','admin', 'counsellor'];
 const BRANCHES = ['Delhi', 'Mumbai', 'Hyderabad', 'All'];
 
 export default function UserFormModal({ isOpen, onClose, user = null, onSuccess }) {

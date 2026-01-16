@@ -30,15 +30,15 @@ export async function POST(req) {
     }
 
     // Prevent creating admin accounts through this endpoint
-    if (role === 'admin') {
-      return NextResponse.json(
-        { success: false, message: "Cannot create admin accounts through this interface" },
-        { status: 400 }
-      );
-    }
+    // if (role === 'admin') {
+    //   return NextResponse.json(
+    //     { success: false, message: "Cannot create admin accounts through this interface" },
+    //     { status: 400 }
+    //   );
+    // }
 
     // Valid non-admin roles
-    const validRoles = ['sales', 'reception', 'surgery', 'counsellor'];
+    const validRoles = ['sales','admin', 'reception', 'surgery', 'counsellor'];
     if (!validRoles.includes(role)) {
       return NextResponse.json(
         { success: false, message: "Invalid role. Must be: sales, reception, surgery, or counsellor" },

@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 import Patient from "./Patient";
 
-const MedicineSchema = new mongoose.Schema(
+const stockSchema = new mongoose.Schema(
   {
     name: {
       type: String,
@@ -24,7 +24,7 @@ const MedicineSchema = new mongoose.Schema(
         date: {
           type: Date,
         },
-        vendor: {
+        vender: {
           type: mongoose.type.Schema,
           ref: Vendor,
         },
@@ -38,6 +38,11 @@ const MedicineSchema = new mongoose.Schema(
         price: {
           type: Number,
           required: true,
+        },
+
+        discount: {
+          type : Number,
+
         },
 
         date: {
@@ -56,6 +61,11 @@ const MedicineSchema = new mongoose.Schema(
         }
       },
     ],
+    
+    transactions: {
+      type : mongoose.Schema.Types.ObjectId,
+      ref: "Transactions"
+    },
 
     gstNo: {
       type: String,
@@ -81,5 +91,5 @@ const MedicineSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-export default mongoose.models.Medicine ||
-  mongoose.model("Medicine", MedicineSchema);
+export default mongoose.models.Stock ||
+  mongoose.model("Stock", stockSchema);

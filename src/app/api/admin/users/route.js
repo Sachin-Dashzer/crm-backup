@@ -20,9 +20,7 @@ export async function GET(req) {
     await connectDB();
 
     // Fetch all non-admin users
-    const users = await User.find({ 
-      role: { $ne: 'admin' } // Exclude admin accounts
-    })
+    const users = await User.find({})
       .select('name email role branch createdAt lastLogin')
       .sort({ createdAt: -1 })
       .lean();

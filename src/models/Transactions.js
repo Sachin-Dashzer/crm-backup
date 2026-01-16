@@ -53,6 +53,14 @@ const transactionSchema = new mongoose.Schema({
   },
   expenseGiver: String,
   remarks: String,
+  stock: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Stock",
+  },
+  vender: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Vender",
+  },
   editors: [
     {
       name: String,

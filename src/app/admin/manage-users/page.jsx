@@ -174,6 +174,12 @@ export default function ManageUsersPage() {
             </p>
           </div>
           <div className="bg-white rounded-lg shadow p-6">
+            <h3 className="text-sm font-medium text-gray-600">Admin</h3>
+            <p className="text-3xl font-bold text-green-600 mt-2">
+              {users.filter((u) => u.role === "admin").length}
+            </p>
+          </div>
+          <div className="bg-white rounded-lg shadow p-6">
             <h3 className="text-sm font-medium text-gray-600">Sales</h3>
             <p className="text-3xl font-bold text-green-600 mt-2">
               {users.filter((u) => u.role === "sales").length}
@@ -223,6 +229,7 @@ export default function ManageUsersPage() {
                 <option value="all">All Roles</option>
                 <option value="sales">Sales</option>
                 <option value="reception">Reception</option>
+                <option value="admin">Admin</option>
                 <option value="surgery">Surgery</option>
                 <option value="counsellor">Counsellor</option>
               </select>
@@ -320,6 +327,8 @@ export default function ManageUsersPage() {
                             user.role === "sales"
                               ? "bg-green-100 text-green-800"
                               : user.role === "reception"
+                              ? "bg-blue-100 text-blue-800"
+                              : user.role === "admin"
                               ? "bg-blue-100 text-blue-800"
                               : user.role === "surgery"
                               ? "bg-red-100 text-red-800"

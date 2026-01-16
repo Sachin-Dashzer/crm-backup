@@ -40,20 +40,20 @@ export async function POST(req) {
     }
 
     // Prevent updating admin accounts through this endpoint
-    if (user.role === 'admin') {
-      return NextResponse.json(
-        { success: false, message: "Cannot update admin accounts through this interface" },
-        { status: 400 }
-      );
-    }
+    // if (user.role === 'admin') {
+    //   return NextResponse.json(
+    //     { success: false, message: "Cannot update admin accounts through this interface" },
+    //     { status: 400 }
+    //   );
+    // }
 
     // Prevent changing user to admin role
-    if (role === 'admin') {
-      return NextResponse.json(
-        { success: false, message: "Cannot change user role to admin through this interface" },
-        { status: 400 }
-      );
-    }
+    // if (role === 'admin') {
+    //   return NextResponse.json(
+    //     { success: false, message: "Cannot change user role to admin through this interface" },
+    //     { status: 400 }
+    //   );
+    // }
 
     // Update fields
     if (name) {
@@ -87,7 +87,7 @@ export async function POST(req) {
     }
 
     if (role) {
-      const validRoles = ['sales', 'reception', 'surgery', 'counsellor'];
+      const validRoles = ['sales', 'reception','admin', 'surgery', 'counsellor'];
       if (!validRoles.includes(role)) {
         return NextResponse.json(
           { success: false, message: "Invalid role" },
@@ -121,7 +121,6 @@ export async function POST(req) {
 
     await user.save();
 
-    console.log(`Admin ${session.user.email} updated user: ${user.email}`);
 
     return NextResponse.json({
       success: true,
