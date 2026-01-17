@@ -1,6 +1,6 @@
 "use client";
 
-import { Menu, Calendar, Check, X, Building } from "lucide-react";
+import { Menu, Calendar, Check, X } from "lucide-react";
 import { useState } from "react";
 
 export default function Topbar({

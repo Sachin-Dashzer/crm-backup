@@ -2,34 +2,9 @@ import Patient from "@/models/Patient";
 import Employee from "@/models/Employee";
 import { withDB } from "@/lib/withDB";
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
 const handler = async (req) => {
-  const session = await getServerSession(authOptions);
-
-  if (!session || !session.user) {
-    return NextResponse.json(
-      
-      {
-        success: false,
-        error: "Unauthorized. Please login.",
-      },
-      { status: 401 }
-    );
-  }
-
   
-  if (!session.user.name || !session.user.email || !session.user.branch) {
-    return NextResponse.json(
-      {
-        success: false,
-        error: "Invalid session data. Please login again.",
-      },
-      { status: 401 }
-    );
-  }
-
   const {
     personal,
     medical,

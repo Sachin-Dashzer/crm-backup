@@ -427,7 +427,7 @@ const DeletedData = () => {
                         </td>
                         <td className="py-3 px-4">
                           <div className="flex items-center gap-2">
-                            <User className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                            <User className="h-4 w-4 text-gray-400 shrink-0" />
                             <div className="min-w-0">
                               <div className="text-sm font-medium truncate">{item.patient?.name || "N/A"}</div>
                               {item.patient?.phone && (
@@ -441,7 +441,7 @@ const DeletedData = () => {
                         </td>
                         <td className="py-3 px-4">
                           <div className="flex items-center gap-2">
-                            <Building className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                            <Building className="h-4 w-4 text-gray-400 shrink-0" />
                             <span className="text-sm">{item.branch || "N/A"}</span>
                           </div>
                         </td>

@@ -66,15 +66,7 @@ export default function AdminSidebar() {
 
   useEffect(() => {
     if (session) {
-      // Log everything at once
-      console.table({
-        "Full Name": session.user?.name,
-        Email: session.user?.email,
-        Role: session.user?.role,
-        Branch: session.user?.branch,
-        "User ID": session.user?.id,
-      });
-
+     
       // Set username
       setUserName(session.user?.email || "Admin");
     }
