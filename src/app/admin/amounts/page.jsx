@@ -44,7 +44,7 @@ const calculateNetAmount = (transaction) => {
   if (!transaction) return 0;
   const amount = parseFloat(transaction.amount) || 0;
   const discount = parseFloat(transaction.discount) || 0;
-  return Math.max(0, amount - discount);
+  return Math.max(0, amount );
 };
 
 const getTodayDate = () => {
@@ -1206,7 +1206,7 @@ function DataTable({
     <div className="flex flex-col h-full bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
       {/* Desktop Table Header */}
       <div 
-        className="hidden md:grid items-center bg-linear-to-r from-slate-50 to-slate-100 border-b border-slate-200 min-h-[52px] px-2"
+        className="hidden md:grid items-center bg-linear-to-r from-slate-50 to-slate-100 border-b border-slate-200 min-h-13 px-2"
         style={{ gridTemplateColumns }}
       >
         {columns.map((col) => (
@@ -1277,7 +1277,7 @@ function DataTable({
                   }`}>
                     {/* Desktop View - Grid Layout */}
                     <div 
-                      className="hidden md:grid items-center min-h-[64px] px-2"
+                      className="hidden md:grid items-center min-h-16 px-2"
                       style={{ gridTemplateColumns }}
                     >
                       {type === "revenue" ? (

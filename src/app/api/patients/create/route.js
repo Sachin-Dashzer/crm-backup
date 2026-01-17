@@ -2,9 +2,12 @@ import Patient from "@/models/Patient";
 import Employee from "@/models/Employee";
 import { withDB } from "@/lib/withDB";
 import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
 const handler = async (req) => {
-  
+  const session = await getServerSession(authOptions);
+
   const {
     personal,
     medical,
@@ -81,9 +84,9 @@ const handler = async (req) => {
       documents: documents || {},
       ops: ops || {},
       createdBy: {
-        name: session.user.name,
-        email: session.user.email,
-        branch: session.user.branch,
+        name: session.user.name || "",
+        email: session.user.email || "",
+        branch: session.user.branch || "",
         date: new Date(), 
       },
       editors: [], 
