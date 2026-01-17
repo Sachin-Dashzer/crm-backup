@@ -35,8 +35,8 @@ import {
 const calculateNetAmount = (transaction) => {
   if (!transaction) return 0;
   const amount = parseFloat(transaction.amount) || 0;
-  const discount = parseFloat(transaction.discount) || 0;
-  return Math.max(0, amount - discount);
+  // Don't subtract discount - amount is the actual amount received
+  return amount;
 };
 
 const getTodayDate = () => {
@@ -157,32 +157,18 @@ function DeleteConfirmModal({ transaction, onClose, onConfirm }) {
               </div>
             )}
             <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">Original Amount:</span>
-              <span
-                className={`font-bold text-gray-900 text-sm sm:text-base ${
-                  hasDiscount ? "line-through text-gray-500" : ""
-                }`}
-              >
+              <span className="text-sm text-gray-600">Amount Received:</span>
+              <span className="font-bold text-emerald-600 text-sm sm:text-base">
                 {formatCurrency(transaction?.amount || 0)}
               </span>
             </div>
             {hasDiscount && (
-              <>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Discount:</span>
-                  <span className="font-bold text-amber-600 text-sm sm:text-base">
-                    -{formatCurrency(transaction?.discount || 0)}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center pt-2 border-t border-gray-200">
-                  <span className="text-sm font-semibold text-gray-700">
-                    Net Amount:
-                  </span>
-                  <span className="font-bold text-emerald-600 text-sm sm:text-base">
-                    {formatCurrency(netAmount)}
-                  </span>
-                </div>
-              </>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-600">Discount Given:</span>
+                <span className="font-bold text-amber-600 text-sm sm:text-base">
+                  {formatCurrency(transaction?.discount || 0)}
+                </span>
+              </div>
             )}
             <div className="flex justify-between items-center pt-2 border-t border-gray-200">
               <span className="text-sm text-gray-600">Date:</span>
@@ -382,7 +368,7 @@ export default function AmountDashboard() {
     return list;
   }, [expenses, filters]);
 
-  // Calculate totals with discount (for display - today's data by default)
+  // Calculate totals - amount is already the actual received amount
   const totalIncome = useMemo(() => {
     return filteredRevenue.reduce((sum, t) => sum + calculateNetAmount(t), 0);
   }, [filteredRevenue]);
@@ -394,7 +380,7 @@ export default function AmountDashboard() {
     );
   }, [filteredExpenses]);
 
-  // Calculate total discount
+  // Calculate total discount (for information only)
   const totalDiscount = useMemo(() => {
     return filteredRevenue.reduce(
       (sum, t) => sum + (parseFloat(t.discount) || 0),
@@ -471,10 +457,10 @@ export default function AmountDashboard() {
           bVal = b.patient?.personal?.name || "Walk-in Customer";
         }
 
-        // Handle net amount calculation for amount sorting
-        if (sortConfig.key === "amount" && activeTab === "revenue") {
-          aVal = calculateNetAmount(a);
-          bVal = calculateNetAmount(b);
+        // Handle amount sorting (no discount subtraction needed)
+        if (sortConfig.key === "amount") {
+          aVal = parseFloat(a.amount) || 0;
+          bVal = parseFloat(b.amount) || 0;
         }
 
         // Handle dates
@@ -754,7 +740,7 @@ export default function AmountDashboard() {
             iconColor={netBalance >= 0 ? "text-indigo-600" : "text-gray-600"}
           />
           <StatCard
-            title="Total Discount"
+            title="Total Discount Given"
             value={formatCurrency(totalDiscount)}
             icon={Tag}
             gradient="from-amber-400 to-orange-500"
@@ -1087,16 +1073,17 @@ function TransactionModal({ transaction, patients, onClose, onSuccess }) {
   }, [patients, formData.patient]);
 
   // Calculate pending amount for the patient
+  // Amount is what we're receiving, so we subtract it from pending
   const pendingAmount = useMemo(() => {
     if (formData.costType !== "Revenue" || !selectedPatient) return 0;
 
     const existingPendingAmount =
       parseFloat(selectedPatient.payments?.pendingAmount) || 0;
     const formAmount = parseFloat(formData.amount) || 0;
-    const formDiscount = parseFloat(formData.discount) || 0;
 
-    return Math.max(0, existingPendingAmount - formAmount - formDiscount);
-  }, [formData.amount, formData.discount, formData.costType, selectedPatient]);
+    // Subtract only the amount being received, not the discount
+    return Math.max(0, existingPendingAmount - formAmount);
+  }, [formData.amount, formData.costType, selectedPatient]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -1398,7 +1385,7 @@ function TransactionModal({ transaction, patients, onClose, onSuccess }) {
             />
 
             <Input
-              label="Amount"
+              label="Amount Received"
               type="number"
               value={formData.amount}
               onChange={(val) => setFormData({ ...formData, amount: val })}
@@ -1418,10 +1405,10 @@ function TransactionModal({ transaction, patients, onClose, onSuccess }) {
               placeholder="Enter transaction reference ID"
             />
 
-            {/* Discount Field - Only for Revenue */}
+            {/* Discount Field - Only for Revenue (for tracking purposes) */}
             {formData.costType === "Revenue" && (
               <Input
-                label="Discount"
+                label="Discount Given (for tracking)"
                 type="number"
                 value={formData.discount}
                 onChange={(val) => setFormData({ ...formData, discount: val })}
@@ -1460,8 +1447,7 @@ function TransactionModal({ transaction, patients, onClose, onSuccess }) {
                       {formatCurrency(
                         selectedPatient.payments?.pendingAmount || 0
                       )}{" "}
-                      - Payment: {formatCurrency(formData.amount)} - Discount:{" "}
-                      {formatCurrency(formData.discount)}
+                      - Payment: {formatCurrency(formData.amount)}
                     </p>
                   ) : (
                     <p className="text-xs text-blue-600 mt-1">
@@ -1534,7 +1520,8 @@ function DataTable({
           { key: "procedure", label: "Procedure", sortable: true },
           { key: "method", label: "Method", sortable: true },
           { key: "totalPackage", label: "Total Package", sortable: false },
-          { key: "amount", label: "Amount", sortable: true },
+          { key: "amount", label: "Amount Received", sortable: true },
+          { key: "discount", label: "Discount Given", sortable: false },
           { key: "paymentId", label: "TransID / CardNo", sortable: true },
           { key: "pending", label: "Pending", sortable: false },
           { key: "branch", label: "Branch", sortable: true },
@@ -1700,26 +1687,20 @@ function DataTable({
                         </td>
 
                         <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4">
-                          <div className="text-center">
-                            {hasDiscount ? (
-                              <>
-                                <div className="font-bold text-emerald-600 text-sm sm:text-base">
-                                  {formatCurrency(netAmount)}
-                                </div>
-                                <div className="text-xs text-gray-500 line-through">
-                                  {formatCurrency(row.amount)}
-                                </div>
-                                <div className="text-xs text-amber-600 font-medium mt-0.5 flex items-center justify-end gap-1">
-                                  <Tag className="w-3 h-3" />-
-                                  {formatCurrency(row.discount)}
-                                </div>
-                              </>
-                            ) : (
-                              <div className="font-bold text-emerald-600 text-sm sm:text-base">
-                                {formatCurrency(netAmount)}
-                              </div>
-                            )}
+                          <div className="font-bold text-emerald-600 text-sm sm:text-base text-center">
+                            {formatCurrency(netAmount)}
                           </div>
+                        </td>
+
+                        <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 text-center">
+                          {hasDiscount ? (
+                            <div className="font-semibold text-amber-600 text-sm flex items-center justify-center gap-1">
+                              <Tag className="w-3 h-3" />
+                              {formatCurrency(row.discount)}
+                            </div>
+                          ) : (
+                            <span className="text-gray-400 text-xs">-</span>
+                          )}
                         </td>
 
                         <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4">
