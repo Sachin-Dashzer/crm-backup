@@ -23,7 +23,7 @@ const handler = async (req) => {
     if (!data._id || !mongoose.Types.ObjectId.isValid(data._id)) {
       return NextResponse.json(
         { success: false, message: "Valid transaction ID is required" },
-        { status: 400 }
+        { status: 402 }
       );
     }
 
@@ -40,34 +40,34 @@ const handler = async (req) => {
     if (data.costType !== undefined && !data.costType) {
       return NextResponse.json(
         { success: false, message: "Cost type is required" },
-        { status: 400 }
+        { status: 403 }
       );
     }
 
     if (data.method !== undefined && !data.method) {
       return NextResponse.json(
         { success: false, message: "Payment method is required" },
-        { status: 400 }
+        { status: 405 }
       );
     }
 
     if (data.amount !== undefined && data.amount <= 0) {
       return NextResponse.json(
         { success: false, message: "Amount must be positive" },
-        { status: 400 }
+        { status: 406 }
       );
     }
 
     // Validate discount
-    if (data.discount !== undefined) {
-      const checkAmount = data.amount !== undefined ? data.amount : existingTransaction.amount;
-      if (data.discount < 0 || data.discount > checkAmount) {
-        return NextResponse.json(
-          { success: false, message: "Invalid discount amount" },
-          { status: 400 }
-        );
-      }
-    }
+    // if (data.discount !== undefined) {
+    //   const checkAmount = data.amount !== undefined ? data.amount : existingTransaction.amount;
+    //   if (data.discount < 0 || data.discount > checkAmount) {
+    //     return NextResponse.json(
+    //       { success: false, message: "Invalid discount amount" },
+    //       { status: 407 }
+    //     );
+    //   }
+    // }
 
     // Store original values
     const originalPatientId = existingTransaction.patient?.toString();
@@ -275,7 +275,7 @@ const handler = async (req) => {
     if (error.name === "ValidationError") {
       return NextResponse.json(
         { success: false, message: error.message },
-        { status: 400 }
+        { status: 408 }
       );
     }
 
