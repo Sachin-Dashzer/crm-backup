@@ -1,6 +1,4 @@
-
-
-// scripts/addPurposeFieldToPatients.js
+git 
 import mongoose from "mongoose";
 
 // Load environment variables
