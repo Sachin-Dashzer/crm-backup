@@ -1,4 +1,3 @@
-git 
 import mongoose from "mongoose";
 
 // Load environment variables

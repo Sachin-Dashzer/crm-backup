@@ -2,11 +2,11 @@ import Patient from "@/models/Patient";
 import Employee from "@/models/Employee";
 import { withDB } from "@/lib/withDB";
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+// import { getServerSession } from "next-auth/next";
+// import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
 const handler = async (req) => {
-  const session = await getServerSession(authOptions);
+  // const session = await getServerSession(authOptions);
 
   const {
     personal,
@@ -67,7 +67,7 @@ const handler = async (req) => {
         email: personal.email?.trim() || "",
         age: personal.age || null,
         gender: personal.gender || "MALE",
-        branch: personal.branch || session.user.branch, 
+        branch: personal.branch || "", 
         address: personal.address || "",
         profession: personal.profession || "",
         visitDate: personal.visitDate || new Date(),
@@ -84,12 +84,6 @@ const handler = async (req) => {
       payments: payments || {},
       documents: documents || {},
       ops: ops || {},
-      createdBy: {
-        name: session.user.name || "",
-        email: session.user.email || "",
-        branch: session.user.branch || "",
-        date: new Date(), 
-      },
       editors: [], 
     });
 
