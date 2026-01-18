@@ -23,6 +23,7 @@ const patientSchema = new mongoose.Schema(
         type: mongoose.Schema.Types.ObjectId,
         ref: "Employee",
       },
+      purpose: String,
       packageQuoted: Number,
       techniqueQuoted: String,
       remarks: String,

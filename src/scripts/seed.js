@@ -1,86 +1,72 @@
-// scripts/migrateTransactionSchemaAdvanced.js
+
+
+// scripts/addPurposeFieldToPatients.js
 import mongoose from "mongoose";
 
-const MONGODB_URI = "mongodb+srv://sachindashzer:user8520@crm.hwjor1r.mongodb.net/";
+// Load environment variables
 
-async function migrateTransactionSchema() {
+const MONGODB_URI = "mongodb+srv://sachindashzer:user8520@crm.hwjor1r.mongodb.net/";
+// const MONGODB_URI = process.env.MONGODB_URI;
+
+if (!MONGODB_URI) {
+  throw new Error("Please define MONGODB_URI in your .env.local file");
+}
+
+async function addPurposeField() {
   try {
+    console.log("Connecting to MongoDB...");
     await mongoose.connect(MONGODB_URI);
-    console.log("✅ Connected to MongoDB");
+    console.log("Connected to MongoDB successfully");
 
     const db = mongoose.connection.db;
-    const transactionsCollection = db.collection("transactions");
+    const patientsCollection = db.collection("patients");
 
-    const totalDocs = await transactionsCollection.countDocuments();
-    console.log(`📊 Total transaction documents: ${totalDocs}`);
-
-    // Process in batches for better performance
-    const batchSize = 100;
-    let processed = 0;
-
-    const cursor = transactionsCollection.find({
-      $or: [
-        { editors: { $exists: false } },
-        { createdBy: { $exists: false } }
-      ]
+    // Find all patients that don't have the purpose field
+    const patientsWithoutPurpose = await patientsCollection.countDocuments({
+      "personal.purpose": { $exists: false },
     });
 
-    const documentsToUpdate = await cursor.toArray();
-    console.log(`📝 Documents to update: ${documentsToUpdate.length}`);
+    console.log(
+      `Found ${patientsWithoutPurpose} patients without purpose field`
+    );
 
-    for (let i = 0; i < documentsToUpdate.length; i += batchSize) {
-      const batch = documentsToUpdate.slice(i, i + batchSize);
-      
-      const bulkOps = batch.map(doc => ({
-        updateOne: {
-          filter: { _id: doc._id },
-          update: {
-            $set: {
-              editors: [],
-              createdBy: {
-                name: "Legacy Data",
-                email: "legacy@system.com",
-                branch: doc.branch || "Unknown",
-                date: doc.date || doc.createdAt || new Date()
-              }
-            }
-          }
-        }
-      }));
-
-      const result = await transactionsCollection.bulkWrite(bulkOps);
-      processed += result.modifiedCount;
-      console.log(`🔄 Progress: ${processed}/${documentsToUpdate.length} documents updated`);
+    if (patientsWithoutPurpose === 0) {
+      console.log("All patients already have the purpose field. No updates needed.");
+      await mongoose.disconnect();
+      return;
     }
 
-    console.log(`\n✅ Migration completed!`);
-    console.log(`📊 Total documents updated: ${processed}`);
+    // Update all patients to add the purpose field with empty string as default
+    const result = await patientsCollection.updateMany(
+      { "personal.purpose": { $exists: false } },
+      { 
+        $set: { 
+          "personal.purpose": "" // Set to empty string, or use null if you prefer
+        } 
+      }
+    );
 
-    // Verify
-    const verifyCount = await transactionsCollection.countDocuments({
-      editors: { $exists: true },
-      createdBy: { $exists: true }
+    console.log(`Migration completed successfully!`);
+    console.log(`Matched: ${result.matchedCount} documents`);
+    console.log(`Modified: ${result.modifiedCount} documents`);
+
+    // Verify the update
+    const remainingWithoutPurpose = await patientsCollection.countDocuments({
+      "personal.purpose": { $exists: false },
     });
-    console.log(`✔️  Documents with new fields: ${verifyCount}`);
 
-    // Show sample of migrated data
-    const sample = await transactionsCollection.findOne({ editors: { $exists: true } });
-    console.log("\n📋 Sample migrated document:");
-    console.log(JSON.stringify({
-      _id: sample._id,
-      branch: sample.branch,
-      createdBy: sample.createdBy,
-      editors: sample.editors
-    }, null, 2));
+    console.log(
+      `Remaining patients without purpose field: ${remainingWithoutPurpose}`
+    );
 
+    await mongoose.disconnect();
+    console.log("Disconnected from MongoDB");
   } catch (error) {
-    console.error("❌ Migration failed:", error);
+    console.error("Migration failed:", error);
+    await mongoose.disconnect();
     process.exit(1);
-  } finally {
-    await mongoose.connection.close();
-    console.log("\n🔌 Database connection closed");
-    process.exit(0);
   }
 }
 
-migrateTransactionSchema();
+// Run the migration
+addPurposeField();

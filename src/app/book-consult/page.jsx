@@ -21,6 +21,7 @@ export default function BookAppointment() {
       branch: "",
       visitDate: "",
       reference: "",
+      purpose: "", // ✅ Added purpose field
       packageQuoted: "",
       techniqueQuoted: "",
       remarks: "",
@@ -102,7 +103,6 @@ export default function BookAppointment() {
         body: JSON.stringify(cleanObjectIdFields(formData)),
       });
 
-
       if (!res.ok) throw new Error("Patient already exists with this phone number");
 
       toast.success("Appointment booked successfully");
@@ -118,6 +118,7 @@ export default function BookAppointment() {
             branch: "",
             visitDate: "",
             reference: "",
+            purpose: "", // ✅ Reset purpose field
             packageQuoted: "",
             techniqueQuoted: "",
             remarks: "",
@@ -169,13 +170,13 @@ export default function BookAppointment() {
               icon={Phone}
             />
 
-            <InputField
+            {/* <InputField
               label="Email"
               type="email"
               value={formData.personal.email}
               onChange={createChangeHandler("personal", "email")}
               icon={Mail}
-            />
+            /> */}
 
             <InputField
               label="Age"
@@ -230,6 +231,22 @@ export default function BookAppointment() {
               ]}
             />
 
+            {/* ✅ PURPOSE FIELD */}
+            <InputField
+              label="Purpose of Visit"
+              type="select"
+              value={formData.personal.purpose}
+              onChange={createChangeHandler("personal", "purpose")}
+              options={[
+                { value: "Consult", label: "Consult" },
+                { value: "Consult + Surgery", label: "Consult + Surgery" },
+                { value: "Surgery", label: "Surgery" },
+                { value: "PRP Treatment", label: "PRP Treatment" },
+                { value: "GFC Treatment", label: "GFC Treatment" },
+                { value: "Other", label: "Other" },
+              ]}
+            />
+
             <InputField
               label="Expected Budget (₹)"
               type="number"
@@ -265,7 +282,7 @@ export default function BookAppointment() {
           {/* SUBMIT */}
           <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4 border-t pt-6">
             <p className="text-sm text-gray-500">
-              We’ll contact you within 24 hours
+              We'll contact you within 24 hours
             </p>
             <button
               type="submit"

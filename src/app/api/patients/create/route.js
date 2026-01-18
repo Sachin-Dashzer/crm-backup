@@ -72,6 +72,7 @@ const handler = async (req) => {
         profession: personal.profession || "",
         visitDate: personal.visitDate || new Date(),
         reference: personal.reference || null,
+        purpose : personal.purpose || "",
         packageQuoted: personal.packageQuoted || 0, 
         techniqueQuoted: personal.techniqueQuoted || "",
         remarks: personal.remarks || "",
