@@ -233,6 +233,20 @@ const TransactionManager = ({ transactions, onChange, onAdd, onRemove }) => (
             ]}
           />
           <InputField
+            label="Purpose"
+            type="select"
+            value={transaction.purpose || ""}
+            onChange={(e) => onChange(index, "purpose", e.target.value)}
+            options={[
+              { value: "Consult", label: "Consult" },
+              { value: "Consult + Surgery", label: "Consult + Surgery" },
+              { value: "Surgery", label: "Surgery" },
+              { value: "PRP Treatment", label: "PRP Treatment" },
+              { value: "GFC Treatment", label: "GFC Treatment" },
+              { value: "Other", label: "Other" },
+            ]}
+          />
+          <InputField
             label="Amount"
             type="number"
             value={transaction.amount || ""}
@@ -512,6 +526,7 @@ export default function PatientEditDetails() {
       age: "",
       gender: "",
       branch: "",
+      purpose: "",
       address: "",
       profession: "",
       visitDate: "",
@@ -644,6 +659,7 @@ export default function PatientEditDetails() {
               age: patientData.personal?.age || "",
               gender: patientData.personal?.gender || "",
               branch: patientData.personal?.branch || "",
+              purpose: patientData.personal?.purpose || "",
               address: patientData.personal?.address || "",
               profession: patientData.personal?.profession || "",
               visitDate: patientData.personal?.visitDate
@@ -997,7 +1013,7 @@ export default function PatientEditDetails() {
 
   const removeTransaction = (index) => {
     const newTransactions = formData.payments.transactions.filter(
-      (_, i) => i !== index
+      (_, i) => i !== index,
     );
     handleChange("payments", "transactions", newTransactions);
   };
@@ -1044,7 +1060,7 @@ export default function PatientEditDetails() {
         arrayObjectIdFields[section].forEach((field) => {
           if (Array.isArray(cleaned[section][field])) {
             cleaned[section][field] = cleaned[section][field].filter(
-              (id) => id && id !== ""
+              (id) => id && id !== "",
             );
             if (cleaned[section][field].length === 0) {
               cleaned[section][field] = [];
@@ -1115,7 +1131,7 @@ export default function PatientEditDetails() {
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(
-          errorData.message || `HTTP error! status: ${response.status}`
+          errorData.message || `HTTP error! status: ${response.status}`,
         );
       }
 
@@ -1220,8 +1236,8 @@ export default function PatientEditDetails() {
                         stepInfo.number === step
                           ? `bg-${stepInfo.color}-600 text-white shadow-lg scale-110`
                           : stepInfo.number < step
-                          ? "bg-green-500 text-white shadow-md hover:scale-105"
-                          : "bg-gray-200 text-gray-500 hover:bg-gray-300"
+                            ? "bg-green-500 text-white shadow-md hover:scale-105"
+                            : "bg-gray-200 text-gray-500 hover:bg-gray-300"
                       }`}
                     >
                       <Icon size={20} />
@@ -1303,6 +1319,23 @@ export default function PatientEditDetails() {
                       { value: "Hyderabad", label: "Hyderabad" },
                     ]}
                   />
+                  <InputField
+                    label="Purpose"
+                    type="select"
+                    value={formData.personal.purpose}
+                    onChange={createChangeHandler("personal", "purpose")}
+                    options={[
+                      { value: "Consult", label: "Consult" },
+                      {
+                        value: "Consult + Surgery",
+                        label: "Consult + Surgery",
+                      },
+                      { value: "Surgery", label: "Surgery" },
+                      { value: "PRP Treatment", label: "PRP Treatment" },
+                      { value: "GFC Treatment", label: "GFC Treatment" },
+                      { value: "Other", label: "Other" },
+                    ]}
+                  />
 
                   <InputField
                     label="Profession"
@@ -1344,7 +1377,7 @@ export default function PatientEditDetails() {
                     value={formData.personal.techniqueQuoted}
                     onChange={createChangeHandler(
                       "personal",
-                      "techniqueQuoted"
+                      "techniqueQuoted",
                     )}
                     options={[
                       { value: "FUE", label: "FUE" },
@@ -1406,7 +1439,7 @@ export default function PatientEditDetails() {
                     value={formData.counselling.techniqueSuggested}
                     onChange={createChangeHandler(
                       "counselling",
-                      "techniqueSuggested"
+                      "techniqueSuggested",
                     )}
                     options={[
                       { value: "FUE", label: "FUE" },
@@ -1433,7 +1466,7 @@ export default function PatientEditDetails() {
                     value={formData.counselling.graftsSuggested}
                     onChange={createChangeHandler(
                       "counselling",
-                      "graftsSuggested"
+                      "graftsSuggested",
                     )}
                     placeholder="Number of grafts"
                   />
@@ -1482,7 +1515,7 @@ export default function PatientEditDetails() {
                             }
                             onChange={createChangeHandler(
                               "counselling",
-                              "hairlossType"
+                              "hairlossType",
                             )}
                             className="text-blue-600 focus:ring-blue-500"
                           />
@@ -1523,7 +1556,7 @@ export default function PatientEditDetails() {
                             }
                             onChange={createChangeHandler(
                               "counselling",
-                              "areaofConcern"
+                              "areaofConcern",
                             )}
                             className="text-blue-600 focus:ring-blue-500"
                           />
@@ -1572,7 +1605,7 @@ export default function PatientEditDetails() {
                             }
                             onChange={createChangeHandler(
                               "counselling",
-                              "hairlossreason"
+                              "hairlossreason",
                             )}
                             className="text-blue-600 focus:ring-blue-500"
                           />
@@ -1625,7 +1658,7 @@ export default function PatientEditDetails() {
                             }
                             onChange={createChangeHandler(
                               "counselling",
-                              "hairlossduration"
+                              "hairlossduration",
                             )}
                             className="text-blue-600 focus:ring-blue-500"
                           />
@@ -1645,7 +1678,7 @@ export default function PatientEditDetails() {
                         "counselling",
                         "additionalbenefits",
                         value,
-                        index
+                        index,
                       )
                     }
                     onAdd={(value) =>
@@ -1655,7 +1688,7 @@ export default function PatientEditDetails() {
                       removeArrayItem(
                         "counselling",
                         "additionalbenefits",
-                        index
+                        index,
                       )
                     }
                   />
@@ -1676,7 +1709,7 @@ export default function PatientEditDetails() {
                       value={formData.counselling.readyForSurgery}
                       onChange={createChangeHandler(
                         "counselling",
-                        "readyForSurgery"
+                        "readyForSurgery",
                       )}
                       className="mt-4"
                       placeholder="Patient is ready for surgery"
@@ -1943,7 +1976,7 @@ export default function PatientEditDetails() {
                     value={formData.afterSurgery.headwashDate}
                     onChange={createChangeHandler(
                       "afterSurgery",
-                      "headwashDate"
+                      "headwashDate",
                     )}
                   />
 
@@ -1953,7 +1986,7 @@ export default function PatientEditDetails() {
                     value={formData.afterSurgery.bandageRemovalDate}
                     onChange={createChangeHandler(
                       "afterSurgery",
-                      "bandageRemovalDate"
+                      "bandageRemovalDate",
                     )}
                   />
 

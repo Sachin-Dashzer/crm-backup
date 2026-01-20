@@ -200,15 +200,15 @@ export default function SalesDashboard() {
         router.push(`/sales/patients?${params.toString()}`);
         break;
       case "newPatients":
-        params.set("status", "NEW");
+        params.set("status", "NOT_VISITED");
         router.push(`/sales/patients?${params.toString()}`);
         break;
       case "converted":
-        params.set("converted", "true");
+        params.set("status", "CONSULTED");
         router.push(`/sales/patients?${params.toString()}`);
         break;
       case "notConverted":
-        params.set("converted", "false");
+        params.set("status", "NOT_CONVERTED");
         router.push(`/sales/patients?${params.toString()}`);
         break;
       case "revenue":
@@ -255,7 +255,7 @@ export default function SalesDashboard() {
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
                 <MetricCard
                   title="Total Appointment"
                   value={dashboardData?.totalLeads || 0}
@@ -272,14 +272,14 @@ export default function SalesDashboard() {
                   trend={dashboardData?.trends?.newPatients}
                   onClick={() => handleMetricClick("newPatients")}
                 />
-                <MetricCard
+                {/* <MetricCard
                   title="Consulted"
                   value={dashboardData?.contacted || 0}
                   icon={Phone}
                   color="from-purple-500 to-purple-600"
                   trend={dashboardData?.trends?.contacted}
                   onClick={() => handleMetricClick("contacted")}
-                />
+                /> */}
                 <MetricCard
                   title="Active Agents"
                   value={dashboardData?.activeAgents || 0}

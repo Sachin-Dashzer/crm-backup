@@ -41,14 +41,11 @@ const PatientProfile = () => {
         const data = await res.json();
 
         if (data.success && data.patient) {
-          console.log("Patient data received:", data.patient);
-          console.log("Surgery data:", data.patient.surgery);
           setPatientData(data.patient);
         } else {
           router.push("/404");
         }
       } catch (err) {
-        console.error("Error fetching patient data:", err);
         router.push("/404");
       } finally {
         setIsLoading(false);
@@ -752,6 +749,14 @@ const PatientProfile = () => {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-600 mb-1">
+                      Purpose
+                    </label>
+                    <p className="text-gray-900 font-medium">
+                      {patientData.personal?.purpose || "N/A"}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-600 mb-1">
                       Visit Date
                     </label>
                     <p className="text-gray-900 font-medium">
@@ -1349,6 +1354,9 @@ const PatientProfile = () => {
                               <th className="border border-gray-300 px-4 py-2 text-left text-sm font-medium text-gray-700">
                                 Branch
                               </th>
+                              <th className="border border-gray-300 px-4 py-2 text-left text-sm font-medium text-gray-700">
+                                Purpose
+                              </th>
                               <th className="border border-gray-300 px-4 py-2 text-right text-sm font-medium text-gray-700">
                                 Amount
                               </th>
@@ -1366,6 +1374,9 @@ const PatientProfile = () => {
                                   </td>
                                   <td className="border border-gray-300 px-4 py-2 text-sm">
                                     {transaction.branch || "N/A"}
+                                  </td>
+                                  <td className="border border-gray-300 px-4 py-2 text-sm">
+                                    {transaction.purpose || "N/A"}
                                   </td>
                                   <td className="border border-gray-300 px-4 py-2 text-sm text-right font-medium">
                                     {formatCurrency(transaction.amount)}

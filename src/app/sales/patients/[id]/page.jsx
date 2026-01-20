@@ -2,17 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import ReceptionSidebar from "@/components/Sidebars/ReceptionSidebar";
-import {
-  ArrowLeft,
-  Download,
-  Printer,
-  FileText,
-  Image as ImageIcon,
-  Eye,
-  Droplet,
-  Clock,
-} from "lucide-react";
+import ReceptionSidebar from "@/components/Sidebars/SalesSidebar";
+import { ArrowLeft, Download } from "lucide-react";
 
 const PatientProfile = () => {
   const params = useParams();
@@ -20,7 +11,6 @@ const PatientProfile = () => {
   const [patientData, setPatientData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [selectedImage, setSelectedImage] = useState(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -41,8 +31,6 @@ const PatientProfile = () => {
         const data = await res.json();
 
         if (data.success && data.patient) {
-          console.log("Patient data received:", data.patient);
-          console.log("Surgery data:", data.patient.surgery);
           setPatientData(data.patient);
         } else {
           router.push("/404");
@@ -62,11 +50,9 @@ const PatientProfile = () => {
   const formatEmployeeNames = (employees) => {
     if (!employees) return "N/A";
     
-    // If it's an array
     if (Array.isArray(employees)) {
       if (employees.length === 0) return "N/A";
       
-      // Map employees - handle both populated objects and IDs
       const names = employees.map((emp) => {
         if (typeof emp === "object" && emp !== null) {
           return emp.name || "Unknown";
@@ -77,7 +63,6 @@ const PatientProfile = () => {
       return names.filter(name => name !== "Unknown").join(", ") || "N/A";
     }
     
-    // If it's a single object
     if (typeof employees === "object" && employees !== null && employees.name) {
       return employees.name;
     }
@@ -85,15 +70,12 @@ const PatientProfile = () => {
     return "N/A";
   };
 
-  // Helper functions for formatting
   const formatDate = (date) => {
     if (!date) return "Not scheduled";
     
     try {
-      // Handle both Date objects and ISO strings
       const dateObj = date instanceof Date ? date : new Date(date);
       
-      // Check if date is valid
       if (isNaN(dateObj.getTime())) {
         return "Invalid date";
       }
@@ -231,7 +213,7 @@ const PatientProfile = () => {
       referenceHTML = `<div style="margin-top: 15px; padding: 15px; background: #f8f9fa; border-radius: 5px;"><strong>Reference:</strong> ${data.personal.reference.name || "N/A"}</div>`;
     }
 
-    // Generate surgery HTML - FIXED CONDITION
+    // Generate surgery HTML
     let surgeryHTML = "";
     if (data.surgery) {
       const hasSurgeryData = data.surgery.surgeryDate || 
@@ -401,14 +383,6 @@ const PatientProfile = () => {
               font-weight: 600;
               color: #2c5aa0;
             }
-            .status-badge { 
-              background: #d4edda; 
-              color: #155724; 
-              padding: 4px 8px; 
-              border-radius: 4px;
-              font-size: 12px;
-              font-weight: 600;
-            }
             .footer { 
               text-align: center; 
               margin-top: 40px; 
@@ -522,22 +496,6 @@ const PatientProfile = () => {
             </div>
           </div>
 
-          <!-- Surgery Information -->
-          <div class="section">
-            <h2>SURGERY INFORMATION</h2>
-            ${surgeryHTML}
-          </div>
-
-          <!-- After Surgery Care -->
-          <div class="section">
-            <h2>AFTER SURGERY CARE</h2>
-            <div class="grid">
-              <div class="info-item"><span class="info-label">Head Wash Date:</span> <span class="info-value">${formatDatePDF(data.afterSurgery?.headwashDate)}</span></div>
-              <div class="info-item"><span class="info-label">Bandage Removal Date:</span> <span class="info-value">${formatDatePDF(data.afterSurgery?.bandageRemovalDate)}</span></div>
-            </div>
-            ${prpHTML}
-          </div>
-
           <!-- Payment Information -->
           <div class="section">
             <h2>PAYMENT INFORMATION</h2>
@@ -549,29 +507,6 @@ const PatientProfile = () => {
               <div class="info-item"><span class="info-label">Medicine Amount:</span> <span class="info-value amount-neutral">${formatCurrencyPDF(data.payments?.medicineAmount)}</span></div>
             </div>
             ${transactionsHTML}
-          </div>
-
-          <!-- Documents Section -->
-          <div class="section">
-            <h2>DOCUMENTS UPLOADED</h2>
-            <div class="grid">
-              <div class="info-item">
-                <span class="info-label">Patient Images:</span>
-                <span class="info-value">${data.documents?.images?.length || 0} file(s)</span>
-              </div>
-              <div class="info-item">
-                <span class="info-label">Consent Forms:</span>
-                <span class="info-value">${data.documents?.consentForm?.length || 0} file(s)</span>
-              </div>
-              <div class="info-item">
-                <span class="info-label">Surgery Forms:</span>
-                <span class="info-value">${data.documents?.suregeryForm?.length || 0} file(s)</span>
-              </div>
-              <div class="info-item">
-                <span class="info-label">Consult Forms:</span>
-                <span class="info-value">${data.documents?.consultForm?.length || 0} file(s)</span>
-              </div>
-            </div>
           </div>
 
           <div class="footer">
@@ -611,7 +546,7 @@ const PatientProfile = () => {
         setSidebarOpen={setSidebarOpen}
       />
 
-      <main className="flex-1 px-12 py-4 bg-gray-50">
+      <main className="flex-1 px-12 py-8 bg-gray-50">
         <div className="max-w-7xl mx-auto">
           {/* Header Actions */}
           <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -1030,255 +965,6 @@ const PatientProfile = () => {
                 </div>
               </div>
 
-              {/* Surgery Information - FIXED CONDITION */}
-              <div className="mb-8">
-                <h2 className="text-xl font-bold text-gray-900 mb-4 border-b pb-2">
-                  SURGERY INFORMATION
-                </h2>
-                
-                {/* Check if surgery object exists and has any data */}
-                {patientData.surgery ? (
-                  (() => {
-                    const hasSurgeryData = 
-                      patientData.surgery.surgeryDate || 
-                      patientData.surgery.location || 
-                      patientData.surgery.OT || 
-                      (patientData.surgery.doctor && patientData.surgery.doctor.length > 0);
-                    
-                    return hasSurgeryData ? (
-                      <>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
-                          {patientData.surgery.surgeryDate && (
-                            <div>
-                              <label className="block text-sm text-gray-600 mb-1">
-                                Surgery Date
-                              </label>
-                              <p className="font-medium">
-                                {formatDate(patientData.surgery.surgeryDate)}
-                              </p>
-                            </div>
-                          )}
-                          {patientData.surgery.location && (
-                            <div>
-                              <label className="block text-sm text-gray-600 mb-1">
-                                Location
-                              </label>
-                              <p className="font-medium">
-                                {patientData.surgery.location || "N/A"}
-                              </p>
-                            </div>
-                          )}
-                          {patientData.surgery.OT && (
-                            <div>
-                              <label className="block text-sm text-gray-600 mb-1">
-                                OT Number
-                              </label>
-                              <p className="font-medium">
-                                {patientData.surgery.OT || "N/A"}
-                              </p>
-                            </div>
-                          )}
-                          {patientData.surgery.technique && (
-                            <div>
-                              <label className="block text-sm text-gray-600 mb-1">
-                                Technique
-                              </label>
-                              <p className="font-medium">
-                                {patientData.surgery.technique || "N/A"}
-                              </p>
-                            </div>
-                          )}
-                          {(patientData.surgery.graftsneed || patientData.surgery.graftsneed === 0) && (
-                            <div>
-                              <label className="block text-sm text-gray-600 mb-1">
-                                Grafts Needed
-                              </label>
-                              <p className="font-medium">
-                                {patientData.surgery.graftsneed || "N/A"}
-                              </p>
-                            </div>
-                          )}
-                          {(patientData.surgery.graftsImplanted || patientData.surgery.graftsImplanted === 0) && (
-                            <div>
-                              <label className="block text-sm text-gray-600 mb-1">
-                                Grafts Implanted
-                              </label>
-                              <p className="font-medium">
-                                {patientData.surgery.graftsImplanted || "N/A"}
-                              </p>
-                            </div>
-                          )}
-                        </div>
-
-                        {patientData.surgery.donorCondition && (
-                          <div className="mb-4">
-                            <label className="block text-sm text-gray-600 mb-1">
-                              Donor Condition
-                            </label>
-                            <p className="font-medium">
-                              {patientData.surgery.donorCondition || "N/A"}
-                            </p>
-                          </div>
-                        )}
-
-                        {/* Surgical Team */}
-                        <div className="mb-4">
-                          <h3 className="text-lg font-semibold text-gray-800 mb-3">
-                            Surgical Team
-                          </h3>
-                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {patientData.surgery.doctor && patientData.surgery.doctor.length > 0 && (
-                              <div>
-                                <label className="block text-sm text-gray-600 mb-1">
-                                  Doctor(s)
-                                </label>
-                                <p className="font-medium">
-                                  {formatEmployeeNames(patientData.surgery.doctor)}
-                                </p>
-                              </div>
-                            )}
-                            {patientData.surgery.seniorTech && patientData.surgery.seniorTech.length > 0 && (
-                              <div>
-                                <label className="block text-sm text-gray-600 mb-1">
-                                  Senior Technician(s)
-                                </label>
-                                <p className="font-medium">
-                                  {formatEmployeeNames(patientData.surgery.seniorTech)}
-                                </p>
-                              </div>
-                            )}
-                            {patientData.surgery.implanterRight && patientData.surgery.implanterRight.length > 0 && (
-                              <div>
-                                <label className="block text-sm text-gray-600 mb-1">
-                                  Implanter Right(s)
-                                </label>
-                                <p className="font-medium">
-                                  {formatEmployeeNames(patientData.surgery.implanterRight)}
-                                </p>
-                              </div>
-                            )}
-                            {patientData.surgery.implanterLeft && patientData.surgery.implanterLeft.length > 0 && (
-                              <div>
-                                <label className="block text-sm text-gray-600 mb-1">
-                                  Implanter Left(s)
-                                </label>
-                                <p className="font-medium">
-                                  {formatEmployeeNames(patientData.surgery.implanterLeft)}
-                                </p>
-                              </div>
-                            )}
-                            {patientData.surgery.graftingPerson && patientData.surgery.graftingPerson.length > 0 && (
-                              <div>
-                                <label className="block text-sm text-gray-600 mb-1">
-                                  Grafting Person(s)
-                                </label>
-                                <p className="font-medium">
-                                  {formatEmployeeNames(patientData.surgery.graftingPerson)}
-                                </p>
-                              </div>
-                            )}
-                            {patientData.surgery.helper && patientData.surgery.helper.length > 0 && (
-                              <div>
-                                <label className="block text-sm text-gray-600 mb-1">
-                                  Helper(s)
-                                </label>
-                                <p className="font-medium">
-                                  {formatEmployeeNames(patientData.surgery.helper)}
-                                </p>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </>
-                    ) : (
-                      <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-                        <p className="text-gray-500 text-lg">
-                          Surgery details not yet entered
-                        </p>
-                        <p className="text-gray-400 text-sm mt-2">
-                          Surgery details will appear here once entered
-                        </p>
-                      </div>
-                    );
-                  })()
-                ) : (
-                  <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-                    <p className="text-gray-500 text-lg">
-                      No surgery details available
-                    </p>
-                    <p className="text-gray-400 text-sm mt-2">
-                      Surgery details will appear here once entered
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              {/* After Surgery Care */}
-              <div className="mb-8">
-                <h2 className="text-xl font-bold text-gray-900 mb-4 border-b pb-2">
-                  AFTER SURGERY CARE
-                </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
-                  <div>
-                    <label className="block text-sm text-gray-600 mb-1">
-                      Head Wash Date
-                    </label>
-                    <p className="font-medium">
-                      {formatDate(patientData.afterSurgery?.headwashDate)}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="block text-sm text-gray-600 mb-1">
-                      Bandage Removal Date
-                    </label>
-                    <p className="font-medium">
-                      {formatDate(patientData.afterSurgery?.bandageRemovalDate)}
-                    </p>
-                  </div>
-                </div>
-
-                {patientData.afterSurgery?.prp && patientData.afterSurgery.prp.length > 0 ? (
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
-                      <Droplet className="text-blue-600" size={20} />
-                      PRP Sessions
-                    </h3>
-                    <div className="overflow-x-auto">
-                      <table className="w-full border-collapse border border-gray-300">
-                        <thead>
-                          <tr className="bg-gray-100">
-                            <th className="border border-gray-300 px-4 py-2 text-left text-sm font-medium text-gray-700">
-                              Session Number
-                            </th>
-                            <th className="border border-gray-300 px-4 py-2 text-left text-sm font-medium text-gray-700">
-                              Date
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {patientData.afterSurgery.prp.map((session, index) => (
-                            <tr key={index} className="hover:bg-gray-50">
-                              <td className="border border-gray-300 px-4 py-2 text-sm">
-                                PRP Session {session.prpNumber || index + 1}
-                              </td>
-                              <td className="border border-gray-300 px-4 py-2 text-sm flex items-center gap-1">
-                                <Clock size={14} className="text-gray-500" />
-                                {formatDate(session.date)}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="text-center py-8 bg-gray-50 rounded-lg border border-gray-200">
-                    <Droplet className="mx-auto text-gray-400 mb-2" size={32} />
-                    <p className="text-gray-500">No PRP sessions scheduled</p>
-                  </div>
-                )}
-              </div>
-
               {/* Payment Information */}
               <div className="mb-8">
                 <h2 className="text-xl font-bold text-gray-900 mb-4 border-b pb-2">
@@ -1380,194 +1066,6 @@ const PatientProfile = () => {
                   )}
               </div>
 
-              {/* Documents Section */}
-              <div className="mb-8">
-                <h2 className="text-xl font-bold text-gray-900 mb-4 border-b pb-2">
-                  DOCUMENTS & ATTACHMENTS
-                </h2>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Patient Images */}
-                  <div className="border rounded-lg p-4 bg-gray-50">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-2">
-                        <ImageIcon className="text-blue-600" size={20} />
-                        <h3 className="font-semibold text-gray-800">
-                          Patient Images
-                        </h3>
-                      </div>
-                      <span
-                        className={`text-xs px-2 py-1 rounded font-medium ${
-                          patientData.documents?.images?.length > 0
-                            ? "bg-green-100 text-green-800"
-                            : "bg-gray-200 text-gray-600"
-                        }`}
-                      >
-                        {patientData.documents?.images?.length || 0} file(s)
-                      </span>
-                    </div>
-                    {patientData.documents?.images?.length > 0 && (
-                      <div className="space-y-2">
-                        {patientData.documents.images.map((img, idx) => (
-                          <div
-                            key={idx}
-                            className="flex items-center justify-between p-2 bg-white rounded border text-sm"
-                          >
-                            <span className="text-gray-700 truncate">
-                              Image {idx + 1}
-                            </span>
-                            <a
-                              href={img}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-blue-600 hover:text-blue-800 flex items-center gap-1"
-                            >
-                              <Eye size={14} />
-                              View
-                            </a>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Consent Forms */}
-                  <div className="border rounded-lg p-4 bg-gray-50">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-2">
-                        <FileText className="text-purple-600" size={20} />
-                        <h3 className="font-semibold text-gray-800">
-                          Consent Forms
-                        </h3>
-                      </div>
-                      <span
-                        className={`text-xs px-2 py-1 rounded font-medium ${
-                          patientData.documents?.consentForm?.length > 0
-                            ? "bg-green-100 text-green-800"
-                            : "bg-gray-200 text-gray-600"
-                        }`}
-                      >
-                        {patientData.documents?.consentForm?.length || 0}{" "}
-                        file(s)
-                      </span>
-                    </div>
-                    {patientData.documents?.consentForm?.length > 0 && (
-                      <div className="space-y-2">
-                        {patientData.documents.consentForm.map((doc, idx) => (
-                          <div
-                            key={idx}
-                            className="flex items-center justify-between p-2 bg-white rounded border text-sm"
-                          >
-                            <span className="text-gray-700 truncate">
-                              Consent {idx + 1}
-                            </span>
-                            <a
-                              href={doc}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-blue-600 hover:text-blue-800 flex items-center gap-1"
-                            >
-                              <Eye size={14} />
-                              View
-                            </a>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Surgery Forms */}
-                  <div className="border rounded-lg p-4 bg-gray-50">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-2">
-                        <FileText className="text-red-600" size={20} />
-                        <h3 className="font-semibold text-gray-800">
-                          Surgery Forms
-                        </h3>
-                      </div>
-                      <span
-                        className={`text-xs px-2 py-1 rounded font-medium ${
-                          patientData.documents?.suregeryForm?.length > 0
-                            ? "bg-green-100 text-green-800"
-                            : "bg-gray-200 text-gray-600"
-                        }`}
-                      >
-                        {patientData.documents?.suregeryForm?.length || 0}{" "}
-                        file(s)
-                      </span>
-                    </div>
-                    {patientData.documents?.suregeryForm?.length > 0 && (
-                      <div className="space-y-2">
-                        {patientData.documents.suregeryForm.map((doc, idx) => (
-                          <div
-                            key={idx}
-                            className="flex items-center justify-between p-2 bg-white rounded border text-sm"
-                          >
-                            <span className="text-gray-700 truncate">
-                              Surgery Form {idx + 1}
-                            </span>
-                            <a
-                              href={doc}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-blue-600 hover:text-blue-800 flex items-center gap-1"
-                            >
-                              <Eye size={14} />
-                              View
-                            </a>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Consult Forms */}
-                  <div className="border rounded-lg p-4 bg-gray-50">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-2">
-                        <FileText className="text-green-600" size={20} />
-                        <h3 className="font-semibold text-gray-800">
-                          Consult Forms
-                        </h3>
-                      </div>
-                      <span
-                        className={`text-xs px-2 py-1 rounded font-medium ${
-                          patientData.documents?.consultForm?.length > 0
-                            ? "bg-green-100 text-green-800"
-                            : "bg-gray-200 text-gray-600"
-                        }`}
-                      >
-                        {patientData.documents?.consultForm?.length || 0}{" "}
-                        file(s)
-                      </span>
-                    </div>
-                    {patientData.documents?.consultForm?.length > 0 && (
-                      <div className="space-y-2">
-                        {patientData.documents.consultForm.map((doc, idx) => (
-                          <div
-                            key={idx}
-                            className="flex items-center justify-between p-2 bg-white rounded border text-sm"
-                          >
-                            <span className="text-gray-700 truncate">
-                              Consult {idx + 1}
-                            </span>
-                            <a
-                              href={doc}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-blue-600 hover:text-blue-800 flex items-center gap-1"
-                            >
-                              <Eye size={14} />
-                              View
-                            </a>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
               {/* Footer */}
               <div className="mt-8 pt-6 border-t border-gray-300 text-center text-sm text-gray-600">
                 <p>
@@ -1581,48 +1079,8 @@ const PatientProfile = () => {
               </div>
             </div>
           </div>
-
-          {/* Additional Actions */}
-          <div className="mt-6 flex justify-center gap-4">
-            <button
-              onClick={downloadPDF}
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
-            >
-              <Download size={20} />
-              Download PDF Report
-            </button>
-            <button
-              onClick={() => window.print()}
-              className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2"
-            >
-              <Printer size={20} />
-              Print
-            </button>
-          </div>
         </div>
       </main>
-
-      {/* Image Modal */}
-      {selectedImage && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4"
-          onClick={() => setSelectedImage(null)}
-        >
-          <div className="relative max-w-4xl max-h-screen">
-            <button
-              onClick={() => setSelectedImage(null)}
-              className="absolute -top-10 right-0 text-white text-xl font-bold hover:text-gray-300"
-            >
-              ✕ Close
-            </button>
-            <img
-              src={selectedImage}
-              alt="Patient document"
-              className="max-w-full max-h-screen object-contain"
-            />
-          </div>
-        </div>
-      )}
     </section>
   );
 };

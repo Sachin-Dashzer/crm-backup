@@ -2,23 +2,18 @@
 
 import { useState, useEffect } from "react";
 import {
-  Building2,
   LayoutDashboard,
   Users,
   Calendar,
   UserCog,
-  UserPlus,
   IndianRupee,
   BarChart3,
-  TrendingUp,
   Target,
-  Award,
-  LogOut,
   X,
   Menu,
 } from "lucide-react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import LogoutButton from "../LogoutButton";
 
 const NavItem = ({ item, href, isActive, onClick, icon: Icon }) => (
@@ -33,38 +28,25 @@ const NavItem = ({ item, href, isActive, onClick, icon: Icon }) => (
     >
       <Icon className="w-5 h-5" />
       <span className="grow">{item}</span>
-      {isActive && <div className="w-1 h-6 bg-purple-600 rounded-full"></div>}
+      {isActive && (
+        <div className="w-1 h-6 bg-purple-600 rounded-full"></div>
+      )}
     </button>
   </Link>
 );
 
 export default function SalesSidebar() {
   const pathname = usePathname();
-  const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userName, setUserName] = useState("User");
-  const [data , setdata] = useState({})
 
   useEffect(() => {
     const name = document.cookie
       .split("; ")
       .find((row) => row.startsWith("userName="))
       ?.split("=")[1];
-    if (name) setUserName(decodeURIComponent(name));
-  }, []);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const res = await fetch("/api/admin/sidebar");
-        if (!res.ok) throw new Error("Failed to fetch patient data");
-        const ptdata = await res.json();
-        setdata(ptdata);
-      } catch (e) {
-        console.log(e);
-      }
-    };
-    fetchData();
+    if (name) setUserName(decodeURIComponent(name));
   }, []);
 
   const navItems = [
@@ -76,12 +58,9 @@ export default function SalesSidebar() {
       icon: Calendar,
     },
     { name: "Agents", path: "/sales/agents", icon: UserCog },
-    // { name: "Add Agents", path: "/sales/add-agents", icon: UserPlus },
     { name: "Transactions", path: "/sales/transactions", icon: IndianRupee },
     { name: "Reports", path: "/sales/reports", icon: BarChart3 },
-    { name: "Performance", path: "/sales/performance", icon: TrendingUp },
   ];
-
 
   return (
     <>
@@ -98,7 +77,7 @@ export default function SalesSidebar() {
         <div
           className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
           onClick={() => setSidebarOpen(false)}
-        ></div>
+        />
       )}
 
       {/* Sidebar */}
@@ -108,16 +87,19 @@ export default function SalesSidebar() {
         }`}
       >
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center mb-10 justify-between">
           <Link href="/sales/dashboard" className="flex items-center gap-2">
             <div className="w-10 h-10 bg-linear-to-r from-purple-600 to-pink-600 rounded-lg flex items-center justify-center">
               <Target className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h1 className="font-bold text-lg text-gray-900">Ryan Clinic</h1>
+              <h1 className="font-bold text-lg text-gray-900">
+                Ryan Clinic
+              </h1>
               <p className="text-xs text-gray-500">Sales Panel</p>
             </div>
           </Link>
+
           <button
             className="lg:hidden p-1 hover:bg-gray-100 rounded"
             onClick={() => setSidebarOpen(false)}
@@ -126,26 +108,8 @@ export default function SalesSidebar() {
           </button>
         </div>
 
-        {/* Quick Stats */}
-        <div className="grid grid-cols-2 gap-3">
-          <div className="p-3 bg-purple-50 rounded-lg border border-purple-100">
-            <div className="flex items-center gap-2 mb-1">
-              <Target className="w-4 h-4 text-purple-600" />
-              <span className="text-xs text-gray-600">Target</span>
-            </div>
-            <p className="text-sm font-bold text-gray-900">₹180L</p>
-          </div>
-          <div className="p-3 bg-pink-50 rounded-lg border border-pink-100">
-            <div className="flex items-center gap-2 mb-1">
-              <Award className="w-4 h-4 text-pink-600" />
-              <span className="text-xs text-gray-600">Achieved</span>
-            </div>
-            <p className="text-sm font-bold text-gray-900">₹{data ? data.finalvalue : 0}</p>
-          </div>
-        </div>
-
         {/* Navigation */}
-        <nav className="flex-1 space-y-1 overflow-y-auto scrollbar-hide mt-3">
+        <nav className="flex-1 space-y-1 overflow-y-auto mt-3">
           {navItems.map((item) => (
             <NavItem
               key={item.name}
@@ -175,8 +139,6 @@ export default function SalesSidebar() {
           </div>
 
           <LogoutButton />
-
-          
         </div>
       </aside>
     </>

@@ -25,8 +25,8 @@ const stockSchema = new mongoose.Schema(
           type: Date,
         },
         vender: {
-          type: mongoose.type.Schema,
-          ref: Vendor,
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Vendor",
         },
         quantity: {
           type: Number,
@@ -41,30 +41,29 @@ const stockSchema = new mongoose.Schema(
         },
 
         discount: {
-          type : Number,
-
+          type: Number,
         },
 
         date: {
           type: Date,
         },
         patient: {
-          type: mongoose.type.Schema,
-          ref: Patient,
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Patient",
         },
         quantity: {
           type: Number,
         },
-        otherPatient:{
-            name : String,
-            contact : number
-        }
+        otherPatient: {
+          name: String,
+          contact: Number,
+        },
       },
     ],
-    
+
     transactions: {
-      type : mongoose.Schema.Types.ObjectId,
-      ref: "Transactions"
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Transactions",
     },
 
     gstNo: {
@@ -87,9 +86,36 @@ const stockSchema = new mongoose.Schema(
     expiry: {
       type: Date,
     },
+
+    editors: [
+      {
+        name: String,
+        email: String,
+        branch: String,
+        date: {
+          type: Date,
+          default: Date.now,
+        },
+        updatedFields: [
+          {
+            name: String,
+            previousValue: String,
+            newValue: String,
+          },
+        ],
+      },
+    ],
+    createdBy: {
+      name: String,
+      email: String,
+      branch: String,
+      date: {
+        type: Date,
+        default: Date.now,
+      },
+    },
   },
   { timestamps: true }
 );
 
-export default mongoose.models.Stock ||
-  mongoose.model("Stock", stockSchema);
+export default mongoose.models.Stock || mongoose.model("Stock", stockSchema);
