@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebars/Sidebar";
-import Topbar from "@/components/Topbar";
+// import Topbar from "@/components/Topbar";
 import { useSession } from "next-auth/react";
 
 export default function VendorsPage() {
@@ -82,7 +82,7 @@ export default function VendorsPage() {
 
   return (
     <div className="min-h-screen bg-linear-to-br from-blue-50 via-white to-purple-50">
-      <Topbar />
+      {/* <Topbar /> */}
       <div className="flex">
         <Sidebar />
         <main className="flex-1 p-8">
@@ -144,7 +144,7 @@ export default function VendorsPage() {
                   Clear
                 </button>
                 <button
-                  onClick={() => router.push("/admin/vendors/create")}
+                  onClick={() => router.push("/stock/vendors/create")}
                   className="px-6 py-2 bg-linear-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all shadow-md"
                 >
                   + Add Vendor
@@ -219,7 +219,7 @@ export default function VendorsPage() {
                           <div className="flex justify-center gap-2">
                             <button
                               onClick={() =>
-                                router.push(`/admin/vendors/edit/${vendor._id}`)
+                                router.push(`/stock/vendors/edit/${vendor._id}`)
                               }
                               className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors text-sm font-medium"
                             >

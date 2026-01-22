@@ -1013,6 +1013,37 @@ function TransactionModal({ transaction, patients, onClose, onSuccess }) {
   const [showPatientDropdown, setShowPatientDropdown] = useState(false);
   const toast = useToast();
 
+  
+  // Define placeholder mapping
+  const paymentMethodPlaceholders = {
+    upi: "UPI Ref No",
+    card: "Card No",
+    banking: "Transaction Id",
+    loan: "Bajaj DO Id",
+    cash: "Transaction Id",
+    other: "Transaction Id",
+  };
+  // Methods that require TransID to be filled
+  const mandatoryTransIdMethods = ['upi', 'card', 'banking', 'loan'];
+
+  // Check if current method requires TransID
+  const isTransIdRequired = () => {
+    const method = formData.method?.toLowerCase();
+    return mandatoryTransIdMethods.includes(method);
+  };
+
+  // Get current placeholder based on payment method
+  const getPaymentMethodPlaceholder = () => {
+    const method = formData.method?.toLowerCase();
+    const placeholder = paymentMethodPlaceholders[method] || "ENTER TRANSACTION ID";
+    
+    // Add required indicator to placeholder for mandatory methods
+    if (isTransIdRequired()) {
+      return `${placeholder} `;
+    }
+    return placeholder;
+  };
+
   const [formData, setFormData] = useState({
     _id: transaction?._id || "",
     costType: transaction?.costType || "Revenue",
@@ -1021,8 +1052,8 @@ function TransactionModal({ transaction, patients, onClose, onSuccess }) {
     paymentType: transaction?.paymentType || "Booking",
     paymentId: transaction?.paymentId || "",
     branch: transaction?.branch || "Delhi",
-    amount: transaction?.amount || "",
-    discount: transaction?.discount || "0",
+    amount: transaction?.amount?.toString() || "",
+    discount: transaction?.discount?.toString() || "0",
     date: transaction?.date
       ? new Date(transaction.date).toISOString().split("T")[0]
       : new Date().toISOString().split("T")[0],
@@ -1031,7 +1062,6 @@ function TransactionModal({ transaction, patients, onClose, onSuccess }) {
     patient: transaction?.patient?._id || "",
   });
 
-  // Update formData when transaction prop changes
   useEffect(() => {
     if (transaction) {
       setFormData({
@@ -1042,8 +1072,8 @@ function TransactionModal({ transaction, patients, onClose, onSuccess }) {
         paymentType: transaction.paymentType || "Booking",
         paymentId: transaction.paymentId || "",
         branch: transaction.branch || "Delhi",
-        amount: transaction.amount || "",
-        discount: transaction.discount || "0",
+        amount: transaction.amount?.toString() || "",
+        discount: transaction.discount?.toString() || "0",
         date: transaction.date
           ? new Date(transaction.date).toISOString().split("T")[0]
           : new Date().toISOString().split("T")[0],
@@ -1067,28 +1097,41 @@ function TransactionModal({ transaction, patients, onClose, onSuccess }) {
       .slice(0, 10);
   }, [patients, searchPatient]);
 
-  // Define selectedPatient BEFORE using it in pendingAmount
   const selectedPatient = useMemo(() => {
     return patients.find((p) => p._id === formData.patient);
   }, [patients, formData.patient]);
 
-  // Calculate pending amount for the patient
-  // Amount is what we're receiving, so we subtract it from pending
   const pendingAmount = useMemo(() => {
     if (formData.costType !== "Revenue" || !selectedPatient) return 0;
 
     const existingPendingAmount =
       parseFloat(selectedPatient.payments?.pendingAmount) || 0;
     const formAmount = parseFloat(formData.amount) || 0;
+    const formDiscount = parseFloat(formData.discount) || 0;
 
-    // Subtract only the amount being received, not the discount
-    return Math.max(0, existingPendingAmount - formAmount);
-  }, [formData.amount, formData.costType, selectedPatient]);
+    return Math.max(0, existingPendingAmount - formAmount - formDiscount);
+  }, [formData.amount, formData.discount, formData.costType, selectedPatient]);
+
+  // Handle payment method change
+  const handlePaymentMethodChange = (method) => {
+    setFormData({
+      ...formData,
+      method,
+      // Clear payment ID when changing method (optional - remove if you want to keep it)
+      paymentId: ""
+    });
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Validation
+    // Validation for TransID based on payment method
+    if (isTransIdRequired() && !formData.paymentId?.trim()) {
+      const method = formData.method?.toUpperCase();
+      setError(`${method} transactions require Transaction ID to be filled`);
+      return;
+    }
+
     if (formData.costType === "Revenue" && !formData.patient) {
       setError("Patient is required for revenue transactions");
       return;
@@ -1119,7 +1162,6 @@ function TransactionModal({ transaction, patients, onClose, onSuccess }) {
         : "/api/transactions/create";
       const method = isEdit ? "PUT" : "POST";
 
-      // Prepare payload
       const payload = {
         ...formData,
         patient: formData.costType === "Expenses" ? null : formData.patient,
@@ -1143,11 +1185,14 @@ function TransactionModal({ transaction, patients, onClose, onSuccess }) {
 
       if (data.success) {
         onSuccess();
+        toast.success(isEdit ? "Transaction updated successfully" : "Transaction created successfully");
       } else {
         setError(data.message || "Failed to save transaction");
+        toast.error(data.message || "Failed to save transaction");
       }
     } catch (err) {
       setError("An error occurred while saving");
+      toast.error("An error occurred while saving");
       console.error("Transaction save error:", err);
     } finally {
       setLoading(false);
@@ -1157,7 +1202,6 @@ function TransactionModal({ transaction, patients, onClose, onSuccess }) {
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4 overflow-y-auto">
       <div className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl max-w-3xl w-full my-4 max-h-[90vh] overflow-y-auto">
-        {/* Header */}
         <div className="sticky top-0 bg-linear-to-r from-indigo-500 to-purple-600 px-4 sm:px-8 py-4 sm:py-5 flex justify-between items-center rounded-t-2xl sm:rounded-t-3xl z-10">
           <h2 className="text-xl sm:text-2xl font-bold text-white">
             {isEdit ? "Edit Transaction" : "Add New Transaction"}
@@ -1180,7 +1224,6 @@ function TransactionModal({ transaction, patients, onClose, onSuccess }) {
           )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
-            {/* Type Selection */}
             <div className="md:col-span-2">
               <label className="block text-sm font-semibold text-gray-700 mb-3">
                 Transaction Type <span className="text-red-500">*</span>
@@ -1212,7 +1255,6 @@ function TransactionModal({ transaction, patients, onClose, onSuccess }) {
               </div>
             </div>
 
-            {/* Patient Selection - Only for Revenue */}
             {formData.costType === "Revenue" && (
               <div className="md:col-span-2">
                 <label className="block text-sm font-semibold text-gray-700 mb-3">
@@ -1375,7 +1417,7 @@ function TransactionModal({ transaction, patients, onClose, onSuccess }) {
             <Select
               label="Payment Method"
               value={formData.method}
-              onChange={(val) => setFormData({ ...formData, method: val })}
+              onChange={handlePaymentMethodChange}
               options={PAYMENT_METHODS.map((m) => ({
                 value: m,
                 label: m.toUpperCase(),
@@ -1385,7 +1427,7 @@ function TransactionModal({ transaction, patients, onClose, onSuccess }) {
             />
 
             <Input
-              label="Amount Received"
+              label="Amount"
               type="number"
               value={formData.amount}
               onChange={(val) => setFormData({ ...formData, amount: val })}
@@ -1396,19 +1438,18 @@ function TransactionModal({ transaction, patients, onClose, onSuccess }) {
               step="0.01"
             />
 
-            {/* TransID / CardNo Field */}
             <Input
-              label="TransID / CardNo"
+              label={getPaymentMethodPlaceholder()}
               value={formData.paymentId}
               onChange={(val) => setFormData({ ...formData, paymentId: val })}
               icon={Hash}
-              placeholder="Enter transaction reference ID"
+              placeholder={getPaymentMethodPlaceholder()}
+              required={isTransIdRequired()}
             />
 
-            {/* Discount Field - Only for Revenue (for tracking purposes) */}
             {formData.costType === "Revenue" && (
               <Input
-                label="Discount Given (for tracking)"
+                label="Discount"
                 type="number"
                 value={formData.discount}
                 onChange={(val) => setFormData({ ...formData, discount: val })}
@@ -1429,7 +1470,6 @@ function TransactionModal({ transaction, patients, onClose, onSuccess }) {
               max={new Date().toISOString().split("T")[0]}
             />
 
-            {/* Pending Amount Display */}
             {formData.costType === "Revenue" && selectedPatient && (
               <div className="flex items-end">
                 <div className="w-full p-3 bg-linear-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl">
@@ -1447,7 +1487,8 @@ function TransactionModal({ transaction, patients, onClose, onSuccess }) {
                       {formatCurrency(
                         selectedPatient.payments?.pendingAmount || 0
                       )}{" "}
-                      - Payment: {formatCurrency(formData.amount)}
+                      - Payment: {formatCurrency(formData.amount)} - Discount:{" "}
+                      {formatCurrency(formData.discount)}
                     </p>
                   ) : (
                     <p className="text-xs text-blue-600 mt-1">

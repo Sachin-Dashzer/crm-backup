@@ -44,12 +44,12 @@ const calculateNetAmount = (transaction) => {
   if (!transaction) return 0;
   const amount = parseFloat(transaction.amount) || 0;
   const discount = parseFloat(transaction.discount) || 0;
-  return Math.max(0, amount );
+  return Math.max(0, amount);
 };
 
 const getTodayDate = () => {
   const now = new Date();
-  return now.toISOString().split('T')[0];
+  return now.toISOString().split("T")[0];
 };
 
 const formatDateForDisplay = (date) => {
@@ -334,6 +334,37 @@ function TransactionModal({ transaction, patients, onClose, onSuccess }) {
   const [showPatientDropdown, setShowPatientDropdown] = useState(false);
   const toast = useToast();
 
+  
+  // Define placeholder mapping
+  const paymentMethodPlaceholders = {
+    upi: "UPI Ref No",
+    card: "Card No",
+    banking: "Transaction Id",
+    loan: "Bajaj DO Id",
+    cash: "Transaction Id",
+    other: "Transaction Id",
+  };
+  // Methods that require TransID to be filled
+  const mandatoryTransIdMethods = ['upi', 'card', 'banking', 'loan'];
+
+  // Check if current method requires TransID
+  const isTransIdRequired = () => {
+    const method = formData.method?.toLowerCase();
+    return mandatoryTransIdMethods.includes(method);
+  };
+
+  // Get current placeholder based on payment method
+  const getPaymentMethodPlaceholder = () => {
+    const method = formData.method?.toLowerCase();
+    const placeholder = paymentMethodPlaceholders[method] || "ENTER TRANSACTION ID";
+    
+    // Add required indicator to placeholder for mandatory methods
+    if (isTransIdRequired()) {
+      return `${placeholder} `;
+    }
+    return placeholder;
+  };
+
   const [formData, setFormData] = useState({
     _id: transaction?._id || "",
     costType: transaction?.costType || "Revenue",
@@ -402,8 +433,25 @@ function TransactionModal({ transaction, patients, onClose, onSuccess }) {
     return Math.max(0, existingPendingAmount - formAmount - formDiscount);
   }, [formData.amount, formData.discount, formData.costType, selectedPatient]);
 
+  // Handle payment method change
+  const handlePaymentMethodChange = (method) => {
+    setFormData({
+      ...formData,
+      method,
+      // Clear payment ID when changing method (optional - remove if you want to keep it)
+      paymentId: ""
+    });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Validation for TransID based on payment method
+    if (isTransIdRequired() && !formData.paymentId?.trim()) {
+      const method = formData.method?.toUpperCase();
+      setError(`${method} transactions require Transaction ID to be filled`);
+      return;
+    }
 
     if (formData.costType === "Revenue" && !formData.patient) {
       setError("Patient is required for revenue transactions");
@@ -690,7 +738,7 @@ function TransactionModal({ transaction, patients, onClose, onSuccess }) {
             <Select
               label="Payment Method"
               value={formData.method}
-              onChange={(val) => setFormData({ ...formData, method: val })}
+              onChange={handlePaymentMethodChange}
               options={PAYMENT_METHODS.map((m) => ({
                 value: m,
                 label: m.toUpperCase(),
@@ -712,11 +760,12 @@ function TransactionModal({ transaction, patients, onClose, onSuccess }) {
             />
 
             <Input
-              label="TransID / CardNo"
+              label={getPaymentMethodPlaceholder()}
               value={formData.paymentId}
               onChange={(val) => setFormData({ ...formData, paymentId: val })}
               icon={Hash}
-              placeholder="Enter transaction reference ID"
+              placeholder={getPaymentMethodPlaceholder()}
+              required={isTransIdRequired()}
             />
 
             {formData.costType === "Revenue" && (
@@ -812,7 +861,6 @@ function TransactionModal({ transaction, patients, onClose, onSuccess }) {
     </div>
   );
 }
-
 // ========== EXPANDED ROW DETAILS COMPONENT ==========
 function ExpandedRowDetails({ transaction, isExpanded }) {
   const [activeTab, setActiveTab] = useState("summary");
@@ -829,8 +877,12 @@ function ExpandedRowDetails({ transaction, isExpanded }) {
               <History className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-slate-900">Complete Audit Trail</h3>
-              <p className="text-sm text-slate-600">Full transaction history and changes</p>
+              <h3 className="text-lg font-bold text-slate-900">
+                Complete Audit Trail
+              </h3>
+              <p className="text-sm text-slate-600">
+                Full transaction history and changes
+              </p>
             </div>
           </div>
 
@@ -840,7 +892,9 @@ function ExpandedRowDetails({ transaction, isExpanded }) {
               <div className="text-2xl font-bold text-indigo-700">
                 {transaction.totalEdits || 0}
               </div>
-              <div className="text-xs text-slate-600 font-medium">Total Edits</div>
+              <div className="text-xs text-slate-600 font-medium">
+                Total Edits
+              </div>
             </div>
             <div className="h-10 w-px bg-slate-200" />
             <div className="text-center flex-1 sm:flex-initial">
@@ -850,7 +904,8 @@ function ExpandedRowDetails({ transaction, isExpanded }) {
             <div className="h-10 w-px bg-slate-200" />
             <div className="text-center flex-1 sm:flex-initial">
               <div className="text-2xl font-bold text-purple-700">
-                {new Set(transaction.editors?.map((e) => e.email) || []).size || 0}
+                {new Set(transaction.editors?.map((e) => e.email) || []).size ||
+                  0}
               </div>
               <div className="text-xs text-slate-600 font-medium">Editors</div>
             </div>
@@ -898,8 +953,12 @@ function ExpandedRowDetails({ transaction, isExpanded }) {
                     <UserCheck className="w-6 h-6 text-white" />
                   </div>
                   <div>
-                    <h4 className="text-sm font-bold text-slate-900">Created By</h4>
-                    <p className="text-xs text-slate-600">Original entry creator</p>
+                    <h4 className="text-sm font-bold text-slate-900">
+                      Created By
+                    </h4>
+                    <p className="text-xs text-slate-600">
+                      Original entry creator
+                    </p>
                   </div>
                 </div>
                 {transaction.createdBy ? (
@@ -928,12 +987,16 @@ function ExpandedRowDetails({ transaction, isExpanded }) {
                     <div className="pt-3 border-t border-slate-200">
                       <div className="flex items-center gap-2 text-xs text-slate-600">
                         <Clock className="w-4 h-4 text-slate-400" />
-                        <span>{formatDateTime(transaction.createdBy.date)}</span>
+                        <span>
+                          {formatDateTime(transaction.createdBy.date)}
+                        </span>
                       </div>
                     </div>
                   </div>
                 ) : (
-                  <p className="text-sm text-slate-500 italic">No creator information available</p>
+                  <p className="text-sm text-slate-500 italic">
+                    No creator information available
+                  </p>
                 )}
               </div>
 
@@ -945,8 +1008,12 @@ function ExpandedRowDetails({ transaction, isExpanded }) {
                       <Edit2 className="w-6 h-6 text-white" />
                     </div>
                     <div>
-                      <h4 className="text-sm font-bold text-slate-900">Last Edited By</h4>
-                      <p className="text-xs text-slate-600">Most recent modification</p>
+                      <h4 className="text-sm font-bold text-slate-900">
+                        Last Edited By
+                      </h4>
+                      <p className="text-xs text-slate-600">
+                        Most recent modification
+                      </p>
                     </div>
                   </div>
                   <div className="space-y-3">
@@ -974,7 +1041,9 @@ function ExpandedRowDetails({ transaction, isExpanded }) {
                     <div className="pt-3 border-t border-slate-200">
                       <div className="flex items-center gap-2 text-xs text-slate-600">
                         <Clock className="w-4 h-4 text-slate-400" />
-                        <span>{formatDateTime(transaction.lastEditedBy.date)}</span>
+                        <span>
+                          {formatDateTime(transaction.lastEditedBy.date)}
+                        </span>
                       </div>
                     </div>
 
@@ -983,17 +1052,20 @@ function ExpandedRowDetails({ transaction, isExpanded }) {
                       <div className="mt-4 pt-4 border-t border-slate-200">
                         <p className="text-xs font-bold text-slate-700 mb-2 flex items-center gap-2">
                           <Tag className="w-4 h-4 text-indigo-600" />
-                          Modified Fields ({transaction.lastEditedBy.updatedFields.length})
+                          Modified Fields (
+                          {transaction.lastEditedBy.updatedFields.length})
                         </p>
                         <div className="flex flex-wrap gap-2">
-                          {transaction.lastEditedBy.updatedFields.map((field, idx) => (
-                            <span
-                              key={idx}
-                              className="px-3 py-1.5 bg-linear-to-r from-indigo-50 to-purple-50 text-indigo-700 rounded-lg text-xs font-semibold border border-indigo-200 shadow-sm"
-                            >
-                              {formatFieldName(field.name)}
-                            </span>
-                          ))}
+                          {transaction.lastEditedBy.updatedFields.map(
+                            (field, idx) => (
+                              <span
+                                key={idx}
+                                className="px-3 py-1.5 bg-linear-to-r from-indigo-50 to-purple-50 text-indigo-700 rounded-lg text-xs font-semibold border border-indigo-200 shadow-sm"
+                              >
+                                {formatFieldName(field.name)}
+                              </span>
+                            ),
+                          )}
                         </div>
                       </div>
                     )}
@@ -1021,8 +1093,12 @@ function ExpandedRowDetails({ transaction, isExpanded }) {
                             </span>
                           </div>
                           <div>
-                            <p className="text-base font-bold text-slate-900">{editor.name}</p>
-                            <p className="text-xs text-slate-600">{editor.email}</p>
+                            <p className="text-base font-bold text-slate-900">
+                              {editor.name}
+                            </p>
+                            <p className="text-xs text-slate-600">
+                              {editor.email}
+                            </p>
                           </div>
                         </div>
                         <span className="px-3 py-1.5 bg-linear-to-r from-indigo-600 to-purple-600 text-white text-xs font-bold rounded-full shadow-md">
@@ -1036,13 +1112,17 @@ function ExpandedRowDetails({ transaction, isExpanded }) {
                           <div className="w-8 h-8 bg-purple-50 rounded-lg flex items-center justify-center">
                             <MapPin className="w-4 h-4 text-purple-600" />
                           </div>
-                          <span className="text-slate-700 font-medium">{editor.branch}</span>
+                          <span className="text-slate-700 font-medium">
+                            {editor.branch}
+                          </span>
                         </div>
                         <div className="flex items-center gap-2 text-sm">
                           <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center">
                             <Clock className="w-4 h-4 text-blue-600" />
                           </div>
-                          <span className="text-slate-600">{formatDateTime(editor.date)}</span>
+                          <span className="text-slate-600">
+                            {formatDateTime(editor.date)}
+                          </span>
                         </div>
                       </div>
 
@@ -1073,7 +1153,7 @@ function ExpandedRowDetails({ transaction, isExpanded }) {
                                       Previous Value:
                                     </span>
                                     <p className="text-sm text-slate-900 font-medium wrap-break-words">
-                                      {field.previousValue || '(Empty)'}
+                                      {field.previousValue || "(Empty)"}
                                     </p>
                                   </div>
                                   <div className="bg-green-50 rounded-lg p-3 border-2 border-green-200">
@@ -1081,7 +1161,7 @@ function ExpandedRowDetails({ transaction, isExpanded }) {
                                       New Value:
                                     </span>
                                     <p className="text-sm text-slate-900 font-medium wrap-break-words">
-                                      {field.newValue || '(Empty)'}
+                                      {field.newValue || "(Empty)"}
                                     </p>
                                   </div>
                                 </div>
@@ -1097,7 +1177,9 @@ function ExpandedRowDetails({ transaction, isExpanded }) {
                   <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
                     <FileText className="w-8 h-8 text-slate-400" />
                   </div>
-                  <p className="text-base font-semibold text-slate-700 mb-1">No Edit History</p>
+                  <p className="text-base font-semibold text-slate-700 mb-1">
+                    No Edit History
+                  </p>
                   <p className="text-sm text-slate-500">
                     This record hasn't been modified since creation
                   </p>
@@ -1130,11 +1212,26 @@ function DataTable({
       ? [
           { key: "date", label: "Date", sortable: true, width: "110px" },
           { key: "patient", label: "Patient", sortable: true, width: "160px" },
-          { key: "procedure", label: "Procedure", sortable: true, width: "130px" },
+          {
+            key: "procedure",
+            label: "Procedure",
+            sortable: true,
+            width: "130px",
+          },
           { key: "method", label: "Method", sortable: true, width: "110px" },
-          { key: "totalPackage", label: "Total", sortable: false, width: "120px" },
+          {
+            key: "totalPackage",
+            label: "Total",
+            sortable: false,
+            width: "120px",
+          },
           { key: "amount", label: "Amount", sortable: true, width: "130px" },
-          { key: "paymentId", label: "Trans ID", sortable: true, width: "150px" },
+          {
+            key: "paymentId",
+            label: "Trans ID",
+            sortable: true,
+            width: "150px",
+          },
           { key: "pending", label: "Pending", sortable: false, width: "110px" },
           { key: "branch", label: "Branch", sortable: true, width: "110px" },
           { key: "creator", label: "Audit", sortable: false, width: "120px" },
@@ -1144,10 +1241,20 @@ function DataTable({
       : [
           { key: "date", label: "Date", sortable: true, width: "110px" },
           { key: "expense", label: "Expense", sortable: true, width: "160px" },
-          { key: "category", label: "Category", sortable: false, width: "130px" },
+          {
+            key: "category",
+            label: "Category",
+            sortable: false,
+            width: "130px",
+          },
           { key: "method", label: "Method", sortable: true, width: "110px" },
           { key: "amount", label: "Amount", sortable: true, width: "130px" },
-          { key: "paymentId", label: "Trans ID", sortable: true, width: "150px" },
+          {
+            key: "paymentId",
+            label: "Trans ID",
+            sortable: true,
+            width: "150px",
+          },
           { key: "branch", label: "Branch", sortable: true, width: "110px" },
           { key: "creator", label: "Audit", sortable: false, width: "120px" },
           { key: "remarks", label: "Remarks", sortable: false, width: "180px" },
@@ -1200,12 +1307,12 @@ function DataTable({
     setExpandedRow(expandedRow === rowId ? null : rowId);
   };
 
-  const gridTemplateColumns = columns.map(col => col.width).join(' ');
+  const gridTemplateColumns = columns.map((col) => col.width).join(" ");
 
   return (
     <div className="flex flex-col h-full bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
       {/* Desktop Table Header */}
-      <div 
+      <div
         className="hidden md:grid items-center bg-linear-to-r from-slate-50 to-slate-100 border-b border-slate-200 min-h-13 px-2"
         style={{ gridTemplateColumns }}
       >
@@ -1241,7 +1348,7 @@ function DataTable({
           <div className="text-right">
             <p className="text-xs font-medium text-slate-700">Sorted by</p>
             <p className="text-sm font-bold text-indigo-700">
-              {sortConfig.key.replace(/([A-Z])/g, ' $1').trim()}
+              {sortConfig.key.replace(/([A-Z])/g, " $1").trim()}
             </p>
           </div>
         </div>
@@ -1254,9 +1361,12 @@ function DataTable({
             <div className="w-16 h-16 bg-indigo-50 rounded-full flex items-center justify-center mb-4">
               <Search className="w-8 h-8 text-indigo-400" />
             </div>
-            <h3 className="text-lg font-semibold text-slate-900 mb-2">No records found</h3>
+            <h3 className="text-lg font-semibold text-slate-900 mb-2">
+              No records found
+            </h3>
             <p className="text-sm text-slate-600 text-center max-w-md">
-              Try adjusting your search filters or add a new {type === "revenue" ? "revenue" : "expense"} record
+              Try adjusting your search filters or add a new{" "}
+              {type === "revenue" ? "revenue" : "expense"} record
             </p>
           </div>
         ) : (
@@ -1272,11 +1382,13 @@ function DataTable({
               return (
                 <div key={row._id || i}>
                   {/* Main Row */}
-                  <div className={`group transition-all duration-200 ${
-                    isExpanded ? 'bg-indigo-50/50' : 'hover:bg-indigo-50/30'
-                  }`}>
+                  <div
+                    className={`group transition-all duration-200 ${
+                      isExpanded ? "bg-indigo-50/50" : "hover:bg-indigo-50/30"
+                    }`}
+                  >
                     {/* Desktop View - Grid Layout */}
-                    <div 
+                    <div
                       className="hidden md:grid items-center min-h-16 px-2"
                       style={{ gridTemplateColumns }}
                     >
@@ -1300,13 +1412,17 @@ function DataTable({
                           </div>
 
                           <div className="px-2 py-3">
-                            <span className={`inline-flex px-2 py-1 rounded-lg text-xs font-semibold border ${getProcedureColor(row.procedure)}`}>
+                            <span
+                              className={`inline-flex px-2 py-1 rounded-lg text-xs font-semibold border ${getProcedureColor(row.procedure)}`}
+                            >
                               {row.procedure}
                             </span>
                           </div>
 
                           <div className="px-2 py-3">
-                            <span className={`inline-flex px-2 py-1 rounded-lg text-xs font-semibold border ${getMethodColor(row.method)}`}>
+                            <span
+                              className={`inline-flex px-2 py-1 rounded-lg text-xs font-semibold border ${getMethodColor(row.method)}`}
+                            >
                               {row.method?.toUpperCase()}
                             </span>
                           </div>
@@ -1319,7 +1435,9 @@ function DataTable({
 
                           <div className="px-2 py-3">
                             <div className="text-center">
-                              <div className={`text-sm font-bold ${hasDiscount ? 'text-emerald-700' : 'text-emerald-600'}`}>
+                              <div
+                                className={`text-sm font-bold ${hasDiscount ? "text-emerald-700" : "text-emerald-600"}`}
+                              >
                                 {formatCurrency(netAmount)}
                               </div>
                               {hasDiscount && (
@@ -1344,7 +1462,9 @@ function DataTable({
                           </div>
 
                           <div className="px-2 py-3 text-center">
-                            <span className={`text-sm font-semibold ${pendingAmount > 0 ? 'text-orange-600' : 'text-slate-400'}`}>
+                            <span
+                              className={`text-sm font-semibold ${pendingAmount > 0 ? "text-orange-600" : "text-slate-400"}`}
+                            >
                               {formatCurrency(pendingAmount)}
                             </span>
                           </div>
@@ -1360,29 +1480,35 @@ function DataTable({
                               onClick={() => toggleExpanded(row._id)}
                               className={`group/btn inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all duration-200 border-2 ${
                                 isExpanded
-                                  ? 'bg-linear-to-r from-indigo-600 to-purple-600 text-white border-transparent shadow-md'
-                                  : 'bg-white hover:bg-indigo-50 border-slate-200 hover:border-indigo-300 text-slate-700 hover:text-indigo-700'
+                                  ? "bg-linear-to-r from-indigo-600 to-purple-600 text-white border-transparent shadow-md"
+                                  : "bg-white hover:bg-indigo-50 border-slate-200 hover:border-indigo-300 text-slate-700 hover:text-indigo-700"
                               }`}
                             >
                               {row.totalEdits > 0 ? (
                                 <>
                                   <div className="relative">
                                     <Edit2 className="w-3.5 h-3.5" />
-                                    <span className={`absolute -top-1 -right-1 w-3 h-3 text-[8px] font-bold rounded-full flex items-center justify-center ${
-                                      isExpanded ? 'bg-white text-indigo-700' : 'bg-indigo-600 text-white'
-                                    }`}>
+                                    <span
+                                      className={`absolute -top-1 -right-1 w-3 h-3 text-[8px] font-bold rounded-full flex items-center justify-center ${
+                                        isExpanded
+                                          ? "bg-white text-indigo-700"
+                                          : "bg-indigo-600 text-white"
+                                      }`}
+                                    >
                                       {row.totalEdits}
                                     </span>
                                   </div>
                                   <span className="text-xs font-semibold">
-                                    {row.lastEditedBy?.name?.split(" ")[0] || "Edited"}
+                                    {row.lastEditedBy?.name?.split(" ")[0] ||
+                                      "Edited"}
                                   </span>
                                 </>
                               ) : (
                                 <>
                                   <UserCheck className="w-3.5 h-3.5" />
                                   <span className="text-xs font-semibold">
-                                    {row.createdBy?.name?.split(" ")[0] || "Created"}
+                                    {row.createdBy?.name?.split(" ")[0] ||
+                                      "Created"}
                                   </span>
                                 </>
                               )}
@@ -1396,7 +1522,11 @@ function DataTable({
 
                           <div className="px-2 py-3">
                             <p className="text-sm text-slate-600 truncate">
-                              {row.remarks || <span className="text-slate-400">No remarks</span>}
+                              {row.remarks || (
+                                <span className="text-slate-400">
+                                  No remarks
+                                </span>
+                              )}
                             </p>
                           </div>
 
@@ -1440,7 +1570,9 @@ function DataTable({
                           </div>
 
                           <div className="px-2 py-3">
-                            <span className={`inline-flex px-2 py-1 rounded-lg text-xs font-semibold border ${getMethodColor(row.method)}`}>
+                            <span
+                              className={`inline-flex px-2 py-1 rounded-lg text-xs font-semibold border ${getMethodColor(row.method)}`}
+                            >
                               {row.method?.toUpperCase()}
                             </span>
                           </div>
@@ -1472,29 +1604,35 @@ function DataTable({
                               onClick={() => toggleExpanded(row._id)}
                               className={`group/btn inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all duration-200 border-2 ${
                                 isExpanded
-                                  ? 'bg-linear-to-r from-indigo-600 to-purple-600 text-white border-transparent shadow-md'
-                                  : 'bg-white hover:bg-indigo-50 border-slate-200 hover:border-indigo-300 text-slate-700 hover:text-indigo-700'
+                                  ? "bg-linear-to-r from-indigo-600 to-purple-600 text-white border-transparent shadow-md"
+                                  : "bg-white hover:bg-indigo-50 border-slate-200 hover:border-indigo-300 text-slate-700 hover:text-indigo-700"
                               }`}
                             >
                               {row.totalEdits > 0 ? (
                                 <>
                                   <div className="relative">
                                     <Edit2 className="w-3.5 h-3.5" />
-                                    <span className={`absolute -top-1 -right-1 w-3 h-3 text-[8px] font-bold rounded-full flex items-center justify-center ${
-                                      isExpanded ? 'bg-white text-indigo-700' : 'bg-indigo-600 text-white'
-                                    }`}>
+                                    <span
+                                      className={`absolute -top-1 -right-1 w-3 h-3 text-[8px] font-bold rounded-full flex items-center justify-center ${
+                                        isExpanded
+                                          ? "bg-white text-indigo-700"
+                                          : "bg-indigo-600 text-white"
+                                      }`}
+                                    >
                                       {row.totalEdits}
                                     </span>
                                   </div>
                                   <span className="text-xs font-semibold">
-                                    {row.lastEditedBy?.name?.split(" ")[0] || "Edited"}
+                                    {row.lastEditedBy?.name?.split(" ")[0] ||
+                                      "Edited"}
                                   </span>
                                 </>
                               ) : (
                                 <>
                                   <UserCheck className="w-3.5 h-3.5" />
                                   <span className="text-xs font-semibold">
-                                    {row.createdBy?.name?.split(" ")[0] || "Created"}
+                                    {row.createdBy?.name?.split(" ")[0] ||
+                                      "Created"}
                                   </span>
                                 </>
                               )}
@@ -1508,7 +1646,11 @@ function DataTable({
 
                           <div className="px-2 py-3">
                             <p className="text-sm text-slate-600 truncate">
-                              {row.remarks || <span className="text-slate-400">No remarks</span>}
+                              {row.remarks || (
+                                <span className="text-slate-400">
+                                  No remarks
+                                </span>
+                              )}
                             </p>
                           </div>
 
@@ -1541,54 +1683,82 @@ function DataTable({
                         <div className="flex items-start justify-between">
                           <div>
                             <div className="flex items-center gap-2 mb-1">
-                              <span className={`px-2 py-1 rounded text-xs font-semibold ${type === 'revenue' ? getProcedureColor(row.procedure) : 'bg-amber-100 text-amber-700'}`}>
-                                {type === 'revenue' ? row.procedure : row.expense}
+                              <span
+                                className={`px-2 py-1 rounded text-xs font-semibold ${type === "revenue" ? getProcedureColor(row.procedure) : "bg-amber-100 text-amber-700"}`}
+                              >
+                                {type === "revenue"
+                                  ? row.procedure
+                                  : row.expense}
                               </span>
-                              <span className={`px-2 py-1 rounded text-xs font-semibold ${getMethodColor(row.method)}`}>
+                              <span
+                                className={`px-2 py-1 rounded text-xs font-semibold ${getMethodColor(row.method)}`}
+                              >
                                 {row.method?.toUpperCase()}
                               </span>
                             </div>
                             <h4 className="text-base font-bold text-slate-900">
-                              {type === 'revenue' ? getPatientName(row.patient) : row.expense}
+                              {type === "revenue"
+                                ? getPatientName(row.patient)
+                                : row.expense}
                             </h4>
-                            {type === 'revenue' && (
-                              <p className="text-sm text-slate-600 font-medium">{phoneNumber}</p>
+                            {type === "revenue" && (
+                              <p className="text-sm text-slate-600 font-medium">
+                                {phoneNumber}
+                              </p>
                             )}
                           </div>
                           <div className="text-right">
-                            <div className={`text-lg font-bold ${type === 'revenue' ? 'text-emerald-700' : 'text-rose-600'}`}>
-                              {formatCurrency(type === 'revenue' ? netAmount : row.amount)}
+                            <div
+                              className={`text-lg font-bold ${type === "revenue" ? "text-emerald-700" : "text-rose-600"}`}
+                            >
+                              {formatCurrency(
+                                type === "revenue" ? netAmount : row.amount,
+                              )}
                             </div>
-                            <p className="text-xs text-slate-500">{formatDateForDisplay(row.date)}</p>
+                            <p className="text-xs text-slate-500">
+                              {formatDateForDisplay(row.date)}
+                            </p>
                           </div>
                         </div>
 
                         {/* Details Grid */}
                         <div className="grid grid-cols-2 gap-3">
-                          {type === 'revenue' && (
+                          {type === "revenue" && (
                             <>
                               <div>
-                                <p className="text-xs text-slate-500 mb-1">Total Package</p>
+                                <p className="text-xs text-slate-500 mb-1">
+                                  Total Package
+                                </p>
                                 <p className="text-sm font-semibold text-indigo-700">
                                   {formatCurrency(totalPackage)}
                                 </p>
                               </div>
                               <div>
-                                <p className="text-xs text-slate-500 mb-1">Pending</p>
-                                <p className={`text-sm font-semibold ${pendingAmount > 0 ? 'text-orange-600' : 'text-slate-400'}`}>
+                                <p className="text-xs text-slate-500 mb-1">
+                                  Pending
+                                </p>
+                                <p
+                                  className={`text-sm font-semibold ${pendingAmount > 0 ? "text-orange-600" : "text-slate-400"}`}
+                                >
                                   {formatCurrency(pendingAmount)}
                                 </p>
                               </div>
                             </>
                           )}
                           <div>
-                            <p className="text-xs text-slate-500 mb-1">Branch</p>
-                            <p className="text-sm font-semibold text-blue-700">{row.branch}</p>
+                            <p className="text-xs text-slate-500 mb-1">
+                              Branch
+                            </p>
+                            <p className="text-sm font-semibold text-blue-700">
+                              {row.branch}
+                            </p>
                           </div>
                           <div>
-                            <p className="text-xs text-slate-500 mb-1">Transaction ID</p>
+                            <p className="text-xs text-slate-500 mb-1">
+                              Transaction ID
+                            </p>
                             <p className="text-sm font-mono text-slate-700 truncate">
-                              {row.paymentId || '-'}
+                              {row.paymentId || "-"}
                             </p>
                           </div>
                         </div>
@@ -1596,8 +1766,12 @@ function DataTable({
                         {/* Remarks */}
                         {row.remarks && (
                           <div>
-                            <p className="text-xs text-slate-500 mb-1">Remarks</p>
-                            <p className="text-sm text-slate-700">{row.remarks}</p>
+                            <p className="text-xs text-slate-500 mb-1">
+                              Remarks
+                            </p>
+                            <p className="text-sm text-slate-700">
+                              {row.remarks}
+                            </p>
                           </div>
                         )}
 
@@ -1607,8 +1781,8 @@ function DataTable({
                             onClick={() => toggleExpanded(row._id)}
                             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
                               isExpanded
-                                ? 'bg-linear-to-r from-indigo-600 to-purple-600 text-white shadow-md'
-                                : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100'
+                                ? "bg-linear-to-r from-indigo-600 to-purple-600 text-white shadow-md"
+                                : "bg-indigo-50 text-indigo-700 hover:bg-indigo-100"
                             }`}
                           >
                             {row.totalEdits > 0 ? (
@@ -1622,7 +1796,11 @@ function DataTable({
                                 <span>Audit Trail</span>
                               </>
                             )}
-                            {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                            {isExpanded ? (
+                              <ChevronUp size={14} />
+                            ) : (
+                              <ChevronDown size={14} />
+                            )}
                           </button>
                           <div className="flex items-center gap-2">
                             <button
@@ -1646,7 +1824,10 @@ function DataTable({
                   </div>
 
                   {/* Expanded Row Details */}
-                  <ExpandedRowDetails transaction={row} isExpanded={isExpanded} />
+                  <ExpandedRowDetails
+                    transaction={row}
+                    isExpanded={isExpanded}
+                  />
                 </div>
               );
             })}
@@ -1658,16 +1839,22 @@ function DataTable({
       <div className="border-t border-slate-200 bg-white">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 sm:px-6 py-4">
           <div className="text-sm text-slate-600">
-            <span className="font-medium text-slate-900">{pagination.startIdx + 1}-{pagination.endIdx}</span>
+            <span className="font-medium text-slate-900">
+              {pagination.startIdx + 1}-{pagination.endIdx}
+            </span>
             <span className="mx-2">of</span>
-            <span className="font-medium text-slate-900">{pagination.total.toLocaleString()}</span>
+            <span className="font-medium text-slate-900">
+              {pagination.total.toLocaleString()}
+            </span>
             <span className="ml-2">records</span>
           </div>
 
           <div className="flex items-center gap-4">
             {/* Rows per page */}
             <div className="flex items-center gap-2">
-              <span className="text-sm text-slate-600 hidden sm:inline">Show</span>
+              <span className="text-sm text-slate-600 hidden sm:inline">
+                Show
+              </span>
               <select
                 className="text-sm border border-slate-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white font-medium transition-all"
                 value={pagination.perPage}
@@ -1682,7 +1869,9 @@ function DataTable({
                   </option>
                 ))}
               </select>
-              <span className="text-sm text-slate-600 hidden sm:inline">per page</span>
+              <span className="text-sm text-slate-600 hidden sm:inline">
+                per page
+              </span>
             </div>
 
             {/* Page navigation */}
@@ -1695,49 +1884,57 @@ function DataTable({
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
-              
+
               <div className="flex items-center gap-1 mx-2">
                 {(() => {
                   const pages = [];
                   const totalPages = pagination.pages;
                   const currentPage = pagination.page;
-                  
+
                   if (currentPage > 2) {
                     pages.push(1);
-                    if (currentPage > 3) pages.push('...');
+                    if (currentPage > 3) pages.push("...");
                   }
-                  
-                  for (let i = Math.max(1, currentPage - 1); i <= Math.min(totalPages, currentPage + 1); i++) {
+
+                  for (
+                    let i = Math.max(1, currentPage - 1);
+                    i <= Math.min(totalPages, currentPage + 1);
+                    i++
+                  ) {
                     pages.push(i);
                   }
-                  
+
                   if (currentPage < totalPages - 1) {
-                    if (currentPage < totalPages - 2) pages.push('...');
+                    if (currentPage < totalPages - 2) pages.push("...");
                     pages.push(totalPages);
                   }
-                  
-                  return pages.map((page, idx) => (
-                    page === '...' ? (
-                      <span key={idx} className="px-2 text-slate-400">...</span>
+
+                  return pages.map((page, idx) =>
+                    page === "..." ? (
+                      <span key={idx} className="px-2 text-slate-400">
+                        ...
+                      </span>
                     ) : (
                       <button
                         key={idx}
                         onClick={() => pagination.setPage(page)}
                         className={`w-8 h-8 rounded-lg text-sm font-medium transition-all ${
                           page === currentPage
-                            ? 'bg-indigo-600 text-white border border-indigo-600'
-                            : 'text-slate-700 hover:bg-slate-100 border border-transparent'
+                            ? "bg-indigo-600 text-white border border-indigo-600"
+                            : "text-slate-700 hover:bg-slate-100 border border-transparent"
                         }`}
                       >
                         {page}
                       </button>
-                    )
-                  ));
+                    ),
+                  );
                 })()}
               </div>
 
               <button
-                onClick={() => pagination.setPage((p) => Math.min(pagination.pages, p + 1))}
+                onClick={() =>
+                  pagination.setPage((p) => Math.min(pagination.pages, p + 1))
+                }
                 disabled={pagination.page >= pagination.pages}
                 className="p-2 rounded-lg border border-slate-300 bg-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 hover:border-slate-400 transition-all disabled:hover:bg-white disabled:hover:border-slate-300"
                 aria-label="Next page"
@@ -1865,15 +2062,15 @@ export default function AmountDashboard() {
     let list = [...revenue];
     if (filters.branch)
       list = list.filter(
-        (t) => t.branch.toLowerCase() === filters.branch.toLowerCase()
+        (t) => t.branch.toLowerCase() === filters.branch.toLowerCase(),
       );
     if (filters.paymentMethod)
       list = list.filter(
-        (t) => t.method.toLowerCase() === filters.paymentMethod.toLowerCase()
+        (t) => t.method.toLowerCase() === filters.paymentMethod.toLowerCase(),
       );
     if (filters.procedure)
       list = list.filter(
-        (t) => t.procedure.toLowerCase() === filters.procedure.toLowerCase()
+        (t) => t.procedure.toLowerCase() === filters.procedure.toLowerCase(),
       );
 
     list = filterByDateRange(list, filters.dateFrom, filters.dateTo);
@@ -1884,11 +2081,11 @@ export default function AmountDashboard() {
     let list = [...expenses];
     if (filters.branch)
       list = list.filter(
-        (e) => e.branch.toLowerCase() === filters.branch.toLowerCase()
+        (e) => e.branch.toLowerCase() === filters.branch.toLowerCase(),
       );
     if (filters.paymentMethod)
       list = list.filter(
-        (e) => e.method.toLowerCase() === filters.paymentMethod.toLowerCase()
+        (e) => e.method.toLowerCase() === filters.paymentMethod.toLowerCase(),
       );
 
     list = filterByDateRange(list, filters.dateFrom, filters.dateTo);
@@ -1902,14 +2099,14 @@ export default function AmountDashboard() {
   const totalExpense = useMemo(() => {
     return filteredExpenses.reduce(
       (sum, e) => sum + (parseFloat(e.amount) || 0),
-      0
+      0,
     );
   }, [filteredExpenses]);
 
   const totalDiscount = useMemo(() => {
     return filteredRevenue.reduce(
       (sum, t) => sum + (parseFloat(t.discount) || 0),
-      0
+      0,
     );
   }, [filteredRevenue]);
 
@@ -1923,8 +2120,8 @@ export default function AmountDashboard() {
         ? allRevenue
         : allExpenses
       : activeTab === "revenue"
-      ? filteredRevenue
-      : filteredExpenses;
+        ? filteredRevenue
+        : filteredExpenses;
 
     if (!tableSearch) return rowsToSearch;
 
@@ -2163,14 +2360,16 @@ export default function AmountDashboard() {
             };
 
             if (activeTab === "revenue") {
-              baseInfo["Patient Name"] = row.patient?.personal?.name || "Walk-in Customer";
+              baseInfo["Patient Name"] =
+                row.patient?.personal?.name || "Walk-in Customer";
               baseInfo["Patient Phone"] = row.patient?.personal?.phone || "N/A";
               baseInfo["Procedure"] = row.procedure || "";
             } else {
               baseInfo["Expense Type"] = row.expense || "";
             }
 
-            baseInfo["Edit Number"] = `Edit #${editIndex + 1} of ${row.editors.length}`;
+            baseInfo["Edit Number"] =
+              `Edit #${editIndex + 1} of ${row.editors.length}`;
             baseInfo["Editor Name"] = editor.name || "N/A";
             baseInfo["Editor Email"] = editor.email || "N/A";
             baseInfo["Editor Branch"] = editor.branch || "N/A";
@@ -2212,36 +2411,59 @@ export default function AmountDashboard() {
       utils.book_append_sheet(
         wb,
         ws,
-        activeTab === "revenue" ? "Revenue" : "Expenses"
+        activeTab === "revenue" ? "Revenue" : "Expenses",
       );
 
       // Add detailed edit history sheet if there are edits
       if (editHistoryData.length > 0) {
         const wsHistory = utils.json_to_sheet(editHistoryData);
-        const historyColWidths = Object.keys(editHistoryData[0] || {}).map((key) => ({
-          wch: Math.min(Math.max(key.length, 15), maxWidth),
-        }));
+        const historyColWidths = Object.keys(editHistoryData[0] || {}).map(
+          (key) => ({
+            wch: Math.min(Math.max(key.length, 15), maxWidth),
+          }),
+        );
         wsHistory["!cols"] = historyColWidths;
         utils.book_append_sheet(wb, wsHistory, "Edit History");
       }
 
       // Add summary sheet
       const summaryData = [
-        { "Report Details": "Report Type", "Value": activeTab === "revenue" ? "Revenue Transactions" : "Expense Transactions" },
-        { "Report Details": "Generated On", "Value": formatDateTime(new Date()) },
-        { "Report Details": "Total Records", "Value": sortedRows.length },
-        { "Report Details": "Records with Edits", "Value": sortedRows.filter(r => r.totalEdits > 0).length },
-        { "Report Details": "Total Edit Actions", "Value": sortedRows.reduce((sum, r) => sum + (r.totalEdits || 0), 0) },
-        { "Report Details": "", "Value": "" },
-        { "Report Details": "Applied Filters:", "Value": "" },
-        { "Report Details": "Branch", "Value": filters.branch || "All Branches" },
-        { "Report Details": "Date From", "Value": filters.dateFrom || "No limit" },
-        { "Report Details": "Date To", "Value": filters.dateTo || "No limit" },
-        { "Report Details": "Payment Method", "Value": filters.paymentMethod || "All Methods" },
+        {
+          "Report Details": "Report Type",
+          Value:
+            activeTab === "revenue"
+              ? "Revenue Transactions"
+              : "Expense Transactions",
+        },
+        { "Report Details": "Generated On", Value: formatDateTime(new Date()) },
+        { "Report Details": "Total Records", Value: sortedRows.length },
+        {
+          "Report Details": "Records with Edits",
+          Value: sortedRows.filter((r) => r.totalEdits > 0).length,
+        },
+        {
+          "Report Details": "Total Edit Actions",
+          Value: sortedRows.reduce((sum, r) => sum + (r.totalEdits || 0), 0),
+        },
+        { "Report Details": "", Value: "" },
+        { "Report Details": "Applied Filters:", Value: "" },
+        { "Report Details": "Branch", Value: filters.branch || "All Branches" },
+        {
+          "Report Details": "Date From",
+          Value: filters.dateFrom || "No limit",
+        },
+        { "Report Details": "Date To", Value: filters.dateTo || "No limit" },
+        {
+          "Report Details": "Payment Method",
+          Value: filters.paymentMethod || "All Methods",
+        },
       ];
 
       if (activeTab === "revenue") {
-        summaryData.push({ "Report Details": "Procedure", "Value": filters.procedure || "All Procedures" });
+        summaryData.push({
+          "Report Details": "Procedure",
+          Value: filters.procedure || "All Procedures",
+        });
       }
 
       const wsSummary = utils.json_to_sheet(summaryData);
@@ -2266,7 +2488,9 @@ export default function AmountDashboard() {
 
       writeFile(wb, fileName);
 
-      toast.success(`✓ Downloaded ${sortedRows.length} ${activeTab} records with complete audit trail!`);
+      toast.success(
+        `✓ Downloaded ${sortedRows.length} ${activeTab} records with complete audit trail!`,
+      );
     } catch (error) {
       console.error("Download error:", error);
       toast.error("Failed to download Excel file");
