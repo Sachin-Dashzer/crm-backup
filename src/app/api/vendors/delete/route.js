@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
-import Vendor from "@/models/Vender";
+import Vendor from "@/models/Vendor";
 import Stock from "@/models/Stock";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
@@ -46,7 +46,7 @@ export async function DELETE(req) {
 
     // Check if vendor has associated stock purchases
     const stocksWithVendor = await Stock.find({
-      "purchase.vender": id
+      "purchase.vendor": id
     });
 
     if (stocksWithVendor.length > 0) {

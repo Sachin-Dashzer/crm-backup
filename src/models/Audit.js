@@ -11,10 +11,13 @@ const auditSchema = new mongoose.Schema({
     type: String,
     enum: ["upi", "cash", "card", "banking", "Loan", "other"],
   },
-
   patient: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Patient",
+  },
+  newPatient: {
+    name : String, 
+    phone: Number
   },
   procedure: {
     type: String,

@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint"
   },
+  "type": "module",
   "dependencies": {
     "bcryptjs": "^3.0.2",
     "chart.js": "^4.5.1",
@@ -29,6 +30,7 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
+    "baseline-browser-mapping": "^2.9.19",
     "eslint": "^9",
     "eslint-config-next": "15.5.5",
     "tailwindcss": "^4"

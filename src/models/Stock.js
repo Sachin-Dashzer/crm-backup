@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import Patient from "./Patient";
+import Patient from "./Patient.js";
 
 const stockSchema = new mongoose.Schema(
   {
@@ -14,57 +14,17 @@ const stockSchema = new mongoose.Schema(
       default: 0,
     },
 
-    purchase: [
-      {
-        price: {
-          type: Number,
-          required: true,
-        },
-
-        date: {
-          type: Date,
-        },
-        vender: {
-          type: mongoose.Schema.Types.ObjectId,
-          ref: "Vendor",
-        },
-        quantity: {
-          type: Number,
-        },
-      },
-    ],
-    sell: [
-      {
-        price: {
-          type: Number,
-          required: true,
-        },
-
-        discount: {
-          type: Number,
-        },
-
-        date: {
-          type: Date,
-        },
-        patient: {
-          type: mongoose.Schema.Types.ObjectId,
-          ref: "Patient",
-        },
-        quantity: {
-          type: Number,
-        },
-        otherPatient: {
-          name: String,
-          contact: Number,
-        },
-      },
-    ],
-
     transactions: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Transactions",
     },
+
+    vendors: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Vendor",
+      },
+    ],
 
     gstNo: {
       type: String,
@@ -81,6 +41,12 @@ const stockSchema = new mongoose.Schema(
     mrp: {
       type: Number,
       required: true,
+    },
+    purchaseAmt: {
+      type: Number,
+    },
+    soldAmt: {
+      type: Number,
     },
 
     expiry: {
@@ -115,7 +81,8 @@ const stockSchema = new mongoose.Schema(
       },
     },
   },
-  { timestamps: true }
+
+  { timestamps: true },
 );
 
 export default mongoose.models.Stock || mongoose.model("Stock", stockSchema);

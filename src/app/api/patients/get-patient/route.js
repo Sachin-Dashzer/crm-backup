@@ -21,12 +21,11 @@ const handler = async (req) => {
 
     // const userBranch = session.user.branch;
 
-    
     // let query = {};
-     
+
     // if (userBranch && userBranch !== 'All') {
     //   query['personal.branch'] = userBranch;
-    // } 
+    // }
 
     // Fetch patients with branch filter
     const patients = await Patient.find({})
@@ -70,8 +69,7 @@ const handler = async (req) => {
         select: "name",
         model: "Employee",
       })
-      .sort({ createdAt: -1 }); // Sort by latest patients first
-
+      .sort({ "personal.name": 1 }); // Note the quotes around the string
 
     return NextResponse.json(
       {
@@ -79,7 +77,7 @@ const handler = async (req) => {
         success: true,
         count: patients.length,
       },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error) {
     console.error("Error fetching patients:", error);
@@ -88,7 +86,7 @@ const handler = async (req) => {
         success: false,
         error: "Failed to fetch patients",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 };
