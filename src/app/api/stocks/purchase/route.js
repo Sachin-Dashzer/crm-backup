@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import dbConnect from "@/lib/db";
 import Stock from "@/models/Stock";
-import vendor from "@/models/Vendor";
+import Vendor from "@/models/Vendor"; // ✅ FIX: Capitalize to match convention
 
 export async function POST(req) {
   try {
@@ -55,9 +55,9 @@ export async function POST(req) {
       }
     }
 
-    // Verify vendor exists
-    const vendor = await vendor.findById(vendorId);
-    if (!vendor) {
+    // ✅ FIX: Changed variable name from 'vendor' to 'vendorDoc' to avoid conflict
+    const vendorDoc = await Vendor.findById(vendorId);
+    if (!vendorDoc) {
       return NextResponse.json(
         { success: false, message: "Vendor not found" },
         { status: 404 }
@@ -137,6 +137,10 @@ export async function POST(req) {
       {
         success: true,
         message: "Stock purchase completed successfully",
+        vendor: {
+          id: vendorDoc._id,
+          name: vendorDoc.name,
+        },
         itemsProcessed: items.length,
         totalAmount: totalAmount,
         totalQuantity: totalQuantity,

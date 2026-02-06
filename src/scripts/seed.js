@@ -1,181 +1,198 @@
-/**
- * Migration Script: Update Transactions to New Structure
- * 
- * Run with: node scripts/migrate-to-new-transactions.js
- */
-
-import mongoose from 'mongoose';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
-
-// Get directory paths
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-// Load environment variables from the root .env file
-
-// Import models AFTER dotenv is loaded
-const Transaction = (await import('../models/Transactions.js')).default;
-const Patient = (await import('../models/Patient.js')).default;
-const Stock = (await import('../models/Stock.js')).default;
-
 // Get MongoDB URI from environment
+import mongoose from "mongoose";
+
 const MONGODB_URI = "mongodb+srv://sachindashzer:user8520@crm.hwjor1r.mongodb.net/";
+// Transaction Schema (minimal for migration)
+const transactionSchema = new mongoose.Schema({
+  transactionCategory: String,
+  costType: String,
+  procedure: String,
+  amount: Number,
+  date: Date,
+}, { timestamps: true });
 
-if (!MONGODB_URI) {
-  console.error('❌ Error: MONGODB_URI not found in environment variables');
-  console.error('   Make sure you have a .env file in the root directory with MONGODB_URI');
-  process.exit(1);
-}
+const Transaction = mongoose.model("Transactions", transactionSchema);
 
-async function migrateTransactions() {
+/**
+ * Migration script to update transactionCategory field
+ * Based on existing costType and procedure fields
+ */
+async function migrateTransactionCategories(dryRun = false) {
   try {
-    console.log('🚀 Starting Transaction Migration...\n');
+    console.log("🚀 Starting Transaction Category Migration...");
+    console.log(`Mode: ${dryRun ? "DRY RUN (no changes will be made)" : "LIVE UPDATE"}`);
+    console.log("━".repeat(60));
 
-    // Connect to database
+    // Connect to MongoDB
+    if (!MONGODB_URI) {
+      throw new Error("MONGODB_URI not found in environment variables");
+    }
+
     await mongoose.connect(MONGODB_URI);
-    console.log('✅ Connected to database\n');
+    console.log("✅ Connected to MongoDB");
 
-    // Get total count before migration
-    const totalBefore = await Transaction.countDocuments();
-    console.log(`📊 Total transactions before migration: ${totalBefore}\n`);
+    // Get total count
+    const totalCount = await Transaction.countDocuments();
+    console.log(`📊 Total transactions found: ${totalCount}`);
+    console.log("━".repeat(60));
 
-    // Find all transactions without transactionCategory
-    const transactionsToMigrate = await Transaction.find({
-      transactionCategory: { $exists: false }
-    });
+    const stats = {
+      total: totalCount,
+      expense: 0,
+      medicine: 0,
+      service: 0,
+      transplant: 0,
+      skipped: 0,
+      errors: 0,
+    };
 
-    console.log(`🔄 Transactions to migrate: ${transactionsToMigrate.length}\n`);
+    // Process in batches for better performance
+    const batchSize = 100;
+    let processed = 0;
 
-    if (transactionsToMigrate.length === 0) {
-      console.log('✅ No transactions to migrate. All transactions already have transactionCategory.\n');
-      return;
-    }
+    while (processed < totalCount) {
+      const transactions = await Transaction.find()
+        .skip(processed)
+        .limit(batchSize)
+        .lean();
 
-    let migratedCount = 0;
-    let errorCount = 0;
-    const errors = [];
+      const bulkOps = [];
 
-    for (const transaction of transactionsToMigrate) {
-      try {
-        const updates = {};
+      for (const transaction of transactions) {
+        let newCategory = null;
 
-        // 1. Determine transactionCategory
-        if (transaction.costType === 'Revenue') {
-          if (['Sapphire FUE', 'DHI', 'Turkish DHI', 'Beard Transplant'].includes(transaction.procedure)) {
-            updates.transactionCategory = 'TRANSPLANT';
-          } else if (['PRP', 'GFC'].includes(transaction.procedure)) {
-            updates.transactionCategory = 'SERVICE';
-            // For SERVICE, set quantity and perSessionCost
-            updates.quantity = 1; // Default to 1 session
-            updates.perSessionCost = transaction.amount;
-          } else if (transaction.procedure === 'Medicine') {
-            updates.transactionCategory = 'MEDICINE';
-            // If stock reference exists, set medicineId
-            if (transaction.stock) {
-              updates.medicineId = transaction.stock;
-              updates.quantity = 1; // Default quantity
-              updates.perUnitCost = transaction.amount;
-            }
+        // Determine the transaction category based on the logic
+        if (transaction.costType === "Expenses") {
+          newCategory = "EXPENSE";
+          stats.expense++;
+        } else if (transaction.costType === "Revenue") {
+          if (transaction.procedure === "Medicine") {
+            newCategory = "MEDICINE";
+            stats.medicine++;
+          } else if (["PRP", "GFC"].includes(transaction.procedure)) {
+            newCategory = "SERVICE";
+            stats.service++;
           } else {
-            updates.transactionCategory = 'SERVICE'; // Default to SERVICE for other revenue
+            newCategory = "TRANSPLANT";
+            stats.transplant++;
           }
-        } else if (transaction.costType === 'Expenses') {
-          updates.transactionCategory = 'EXPENSE';
-          
-          // Migrate expenseGiver field
-          if (transaction.vendor) {
-            updates.expenseGiver = {
-              type: 'VENDOR',
-              vendorId: transaction.vendor,
-              name: '' // Will be populated from vendor
-            };
-          } else if (transaction.expenseGiverOld || transaction.expense) {
-            updates.expenseGiver = {
-              type: 'MANUAL',
-              name: transaction.expenseGiverOld || transaction.expense || 'Unknown'
-            };
-          }
+        } else {
+          // Skip if neither Revenue nor Expenses
+          stats.skipped++;
+          console.warn(`⚠️  Skipping transaction ${transaction._id}: Unknown costType "${transaction.costType}"`);
+          continue;
         }
 
-        // 2. Populate patient name and phone if patient exists
-        if (transaction.patient) {
-          const patient = await Patient.findById(transaction.patient)
-            .select('personal.name personal.phone');
-          
-          if (patient) {
-            updates.patientName = patient.personal?.name || '';
-            updates.patientPhone = patient.personal?.phone || '';
+        // Add to bulk operations
+        bulkOps.push({
+          updateOne: {
+            filter: { _id: transaction._id },
+            update: {
+              $set: { transactionCategory: newCategory }
+            }
           }
-        }
-
-        // 3. Update the transaction
-        await Transaction.findByIdAndUpdate(
-          transaction._id,
-          { $set: updates },
-          { new: true }
-        );
-
-        migratedCount++;
-        
-        // Show progress every 100 transactions
-        if (migratedCount % 100 === 0) {
-          console.log(`   Migrated ${migratedCount} transactions...`);
-        }
-
-      } catch (error) {
-        errorCount++;
-        errors.push({
-          transactionId: transaction._id,
-          error: error.message
         });
-        console.error(`❌ Error migrating transaction ${transaction._id}: ${error.message}`);
       }
+
+      // Execute bulk update if not in dry run mode
+      if (!dryRun && bulkOps.length > 0) {
+        await Transaction.bulkWrite(bulkOps);
+      }
+
+      processed += transactions.length;
+      const progress = ((processed / totalCount) * 100).toFixed(1);
+      console.log(`⏳ Progress: ${processed}/${totalCount} (${progress}%)`);
     }
 
-    console.log('\n📊 Migration Summary:');
-    console.log(`   ✅ Successfully migrated: ${migratedCount}`);
-    console.log(`   ❌ Errors: ${errorCount}`);
-    console.log(`   📝 Total processed: ${transactionsToMigrate.length}\n`);
+    console.log("━".repeat(60));
+    console.log("✅ Migration completed successfully!");
+    console.log("━".repeat(60));
+    console.log("📈 Summary:");
+    console.log(`   Total Processed: ${stats.total}`);
+    console.log(`   🏥 TRANSPLANT:   ${stats.transplant}`);
+    console.log(`   💉 SERVICE:      ${stats.service}`);
+    console.log(`   💊 MEDICINE:     ${stats.medicine}`);
+    console.log(`   💰 EXPENSE:      ${stats.expense}`);
+    console.log(`   ⏭️  Skipped:      ${stats.skipped}`);
+    console.log(`   ❌ Errors:       ${stats.errors}`);
+    console.log("━".repeat(60));
 
-    // Verify counts
-    const totalAfter = await Transaction.countDocuments();
-    const transplantCount = await Transaction.countDocuments({ transactionCategory: 'TRANSPLANT' });
-    const serviceCount = await Transaction.countDocuments({ transactionCategory: 'SERVICE' });
-    const medicineCount = await Transaction.countDocuments({ transactionCategory: 'MEDICINE' });
-    const expenseCount = await Transaction.countDocuments({ transactionCategory: 'EXPENSE' });
-
-    console.log('📊 Post-Migration Counts:');
-    console.log(`   Total transactions: ${totalAfter}`);
-    console.log(`   TRANSPLANT: ${transplantCount}`);
-    console.log(`   SERVICE: ${serviceCount}`);
-    console.log(`   MEDICINE: ${medicineCount}`);
-    console.log(`   EXPENSE: ${expenseCount}\n`);
-
-    // Verify integrity
-    if (totalBefore === totalAfter) {
-      console.log('✅ Data integrity verified: No transactions lost\n');
-    } else {
-      console.log('⚠️  Warning: Transaction count mismatch!\n');
+    if (dryRun) {
+      console.log("⚠️  DRY RUN MODE - No changes were made to the database");
+      console.log("   Run with 'npm run migrate:live' to apply changes");
     }
-
-    if (errors.length > 0) {
-      console.log('❌ Errors encountered:');
-      errors.forEach(err => {
-        console.log(`   Transaction ${err.transactionId}: ${err.error}`);
-      });
-    }
-
-    console.log('✅ Migration completed!\n');
 
   } catch (error) {
-    console.error('❌ Migration failed:', error);
-    process.exit(1);
+    console.error("❌ Migration failed:", error);
+    throw error;
   } finally {
     await mongoose.disconnect();
-    console.log('🔌 Disconnected from database');
+    console.log("🔌 Disconnected from MongoDB");
   }
 }
 
+/**
+ * Verify migration results
+ */
+async function verifyMigration() {
+  try {
+    console.log("\n🔍 Verifying migration results...");
+    console.log("━".repeat(60));
+
+    await mongoose.connect(MONGODB_URI);
+
+    const results = await Transaction.aggregate([
+      {
+        $group: {
+          _id: "$transactionCategory",
+          count: { $sum: 1 }
+        }
+      },
+      {
+        $sort: { _id: 1 }
+      }
+    ]);
+
+    console.log("Current distribution of transactionCategory:");
+    results.forEach(result => {
+      const category = result._id || "null/undefined";
+      console.log(`   ${category}: ${result.count}`);
+    });
+
+    // Check for any transactions without transactionCategory
+    const missingCategory = await Transaction.countDocuments({
+      transactionCategory: { $exists: false }
+    });
+
+    const nullCategory = await Transaction.countDocuments({
+      transactionCategory: null
+    });
+
+    console.log("━".repeat(60));
+    console.log(`Transactions missing transactionCategory: ${missingCategory}`);
+    console.log(`Transactions with null transactionCategory: ${nullCategory}`);
+
+    if (missingCategory > 0 || nullCategory > 0) {
+      console.log("⚠️  Some transactions still need category assignment!");
+    } else {
+      console.log("✅ All transactions have been categorized!");
+    }
+
+  } catch (error) {
+    console.error("❌ Verification failed:", error);
+  } finally {
+    await mongoose.disconnect();
+  }
+}
+
+// Parse command line arguments
+const args = process.argv.slice(2);
+const mode = args[0] || "dry-run";
+
 // Run migration
-migrateTransactions();
+if (mode === "verify") {
+  verifyMigration();
+} else {
+  const isDryRun = mode !== "live";
+  migrateTransactionCategories(isDryRun);
+}

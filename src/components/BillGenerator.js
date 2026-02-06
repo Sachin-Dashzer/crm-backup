@@ -48,7 +48,7 @@ const formatDateForDisplay = (date) => {
   const dateObj = new Date(date);
   return dateObj.toLocaleDateString("en-IN", {
     day: "2-digit",
-    month: "short",
+    month: "2-digit",
     year: "numeric",
   });
 };
@@ -75,59 +75,343 @@ const formatCurrency = (amount) => {
   }).format(num);
 };
 
-// ========== STANDARD INVOICE COMPONENT ==========
-function StandardInvoice({
+// ========== SERVICE INVOICE (Image 1) ==========
+function ServiceInvoice({ transaction, patient, consultant, branch }) {
+  const clinic = CLINIC_BRANCHES[branch] || CLINIC_BRANCHES.Delhi;
+  const grossAmount = parseFloat(transaction.amount) || 0;
+  const discount = parseFloat(transaction.discount) || 0;
+  const netAmount = grossAmount - discount;
+  const invoiceNo = `#INV${transaction._id.slice(-5).toUpperCase()}`;
+
+  return (
+    <div className="max-w-4xl mx-auto bg-white p-8" style={{ fontFamily: "Arial, sans-serif" }}>
+      {/* Header */}
+      <div className="flex justify-between items-start mb-6 pb-4 border-b-2 border-gray-300">
+        <div>
+          <h1 className="text-2xl font-bold mb-2">{clinic.name}</h1>
+          <p className="text-sm text-gray-700">{clinic.address}</p>
+          {clinic.city && <p className="text-sm text-gray-700">{clinic.city}</p>}
+          <p className="text-sm"><strong>Phone:</strong> {clinic.phone}</p>
+          <p className="text-sm"><strong>Website:</strong> {clinic.website}</p>
+          <p className="text-sm"><strong>GST No:</strong> {clinic.gstin}</p>
+        </div>
+        <div className="text-right">
+          <Image src={clinic.img} alt="Logo" width={120} height={120} />
+        </div>
+      </div>
+
+      {/* Customer & Invoice Details */}
+      <div className="grid grid-cols-2 gap-4 mb-6">
+        <div>
+          <h2 className="font-bold text-lg mb-2">{patient.name}</h2>
+          <p className="text-sm">{patient.gender}, {patient.age} Years</p>
+          <p className="text-sm">📞 {patient.phone}</p>
+        </div>
+        <div className="text-right">
+          <p className="text-sm"><strong>Date:</strong> {formatDateTime(transaction.date)}</p>
+          <p className="text-sm"><strong>Invoice No:</strong> {invoiceNo}</p>
+        </div>
+      </div>
+
+      {/* Invoice Title */}
+      <h3 className="text-center text-xl font-bold mb-4">Invoice</h3>
+
+      {/* Services Table */}
+      <table className="w-full border-collapse border border-gray-400 mb-6">
+        <thead>
+          <tr className="bg-gray-100">
+            <th className="border border-gray-400 px-4 py-2 text-left">S No.</th>
+            <th className="border border-gray-400 px-4 py-2 text-left">Services & Products</th>
+            <th className="border border-gray-400 px-4 py-2 text-left">Consultant</th>
+            <th className="border border-gray-400 px-4 py-2 text-center">Qty</th>
+            <th className="border border-gray-400 px-4 py-2 text-right">Unit Cost (INR)</th>
+            <th className="border border-gray-400 px-4 py-2 text-right">Discount (INR)</th>
+            <th className="border border-gray-400 px-4 py-2 text-right">Total Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td className="border border-gray-400 px-4 py-2">1</td>
+            <td className="border border-gray-400 px-4 py-2">Service {transaction.procedure}</td>
+            <td className="border border-gray-400 px-4 py-2">{consultant}</td>
+            <td className="border border-gray-400 px-4 py-2 text-center">{transaction.quantity || 1}</td>
+            <td className="border border-gray-400 px-4 py-2 text-right">{grossAmount.toFixed(2)}</td>
+            <td className="border border-gray-400 px-4 py-2 text-right">{discount.toFixed(2)}</td>
+            <td className="border border-gray-400 px-4 py-2 text-right font-bold">{netAmount.toFixed(2)}</td>
+          </tr>
+        </tbody>
+      </table>
+
+      {/* Payment History */}
+      <h4 className="font-bold text-lg mb-2">Paid Amounts:</h4>
+      <table className="w-full border-collapse border border-gray-400 mb-6">
+        <thead>
+          <tr className="bg-gray-100">
+            <th className="border border-gray-400 px-4 py-2 text-left">Date</th>
+            <th className="border border-gray-400 px-4 py-2 text-left">Payment Mode</th>
+            <th className="border border-gray-400 px-4 py-2 text-right">Amount Paid (INR)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td className="border border-gray-400 px-4 py-2">{formatDateForDisplay(transaction.date)}</td>
+            <td className="border border-gray-400 px-4 py-2 capitalize">{transaction.method}</td>
+            <td className="border border-gray-400 px-4 py-2 text-right font-bold">{netAmount.toFixed(2)}</td>
+          </tr>
+        </tbody>
+      </table>
+
+      {/* Footer */}
+      <div className="flex justify-between items-end">
+        <div>
+          <p className="font-bold mb-2">Authorized Signatory</p>
+          <div className="mt-8 text-sm text-gray-500">Print &nbsp; Back</div>
+        </div>
+        <div className="text-right">
+          <p className="mb-1"><strong>Total:</strong> <span className="ml-4">{formatCurrency(netAmount)}</span></p>
+          <p className="mb-1"><strong>Tax:</strong> <span className="ml-4">0</span></p>
+          <p className="mb-1"><strong>Amount Paid:</strong> <span className="ml-4">{formatCurrency(netAmount)}</span></p>
+          <p className="mb-1 font-bold"><strong>Balance:</strong> <span className="ml-4">₹0.00</span></p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ========== MEDICINE INVOICE (Image 2) ==========
+function MedicineInvoice({ transactions, patient, consultant, branch }) {
+  const clinic = CLINIC_BRANCHES[branch] || CLINIC_BRANCHES.Delhi;
+  const firstTransaction = transactions[0];
+  const invoiceNo = `#INV${firstTransaction._id.slice(-5).toUpperCase()}`;
+
+  // Calculate totals
+  let grossTotal = 0;
+  let discountTotal = 0;
+  transactions.forEach((t) => {
+    grossTotal += parseFloat(t.amount) || 0;
+    discountTotal += parseFloat(t.discount) || 0;
+  });
+  const netTotal = grossTotal - discountTotal;
+
+  return (
+    <div className="max-w-4xl mx-auto bg-white p-8" style={{ fontFamily: "Arial, sans-serif" }}>
+      {/* Header */}
+      <div className="flex justify-between items-start mb-6 pb-4 border-b-2 border-gray-300">
+        <div>
+          <h1 className="text-2xl font-bold mb-2">{clinic.name}</h1>
+          <p className="text-sm text-gray-700">{clinic.address}</p>
+          {clinic.city && <p className="text-sm text-gray-700">{clinic.city}</p>}
+          <p className="text-sm"><strong>Phone:</strong> {clinic.phone}</p>
+          <p className="text-sm"><strong>Website:</strong> {clinic.website}</p>
+          <p className="text-sm"><strong>GST No:</strong> {clinic.gstin}</p>
+        </div>
+        <div className="text-right">
+          <Image src={clinic.img} alt="Logo" width={120} height={120} />
+        </div>
+      </div>
+
+      {/* Customer & Invoice Details */}
+      <div className="grid grid-cols-2 gap-4 mb-6">
+        <div>
+          <h2 className="font-bold text-lg mb-2">{patient.name}</h2>
+          <p className="text-sm">{patient.gender},</p>
+          <p className="text-sm">📞 {patient.phone}</p>
+        </div>
+        <div className="text-right">
+          <p className="text-sm"><strong>Date:</strong> {formatDateTime(firstTransaction.date)}</p>
+          <p className="text-sm"><strong>Invoice No:</strong> {invoiceNo}</p>
+        </div>
+      </div>
+
+      {/* Invoice Title */}
+      <h3 className="text-center text-xl font-bold mb-4">Invoice</h3>
+
+      {/* Products Table */}
+      <table className="w-full border-collapse border border-gray-400 mb-6">
+        <thead>
+          <tr className="bg-gray-100">
+            <th className="border border-gray-400 px-4 py-2 text-left">S No.</th>
+            <th className="border border-gray-400 px-4 py-2 text-left">Services & Products</th>
+            <th className="border border-gray-400 px-4 py-2 text-left">Consultant</th>
+            <th className="border border-gray-400 px-4 py-2 text-center">Qty</th>
+            <th className="border border-gray-400 px-4 py-2 text-right">Unit Cost (INR)</th>
+            <th className="border border-gray-400 px-4 py-2 text-right">Discount (INR)</th>
+            <th className="border border-gray-400 px-4 py-2 text-right">Total Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          {transactions.map((t, idx) => {
+            const gross = parseFloat(t.amount) || 0;
+            const disc = parseFloat(t.discount) || 0;
+            const net = gross - disc;
+            return (
+              <tr key={idx}>
+                <td className="border border-gray-400 px-4 py-2">{idx + 1}</td>
+                <td className="border border-gray-400 px-4 py-2">Product {t.medicineName}</td>
+                <td className="border border-gray-400 px-4 py-2">{consultant}</td>
+                <td className="border border-gray-400 px-4 py-2 text-center">{t.quantity || 1}</td>
+                <td className="border border-gray-400 px-4 py-2 text-right">{gross.toFixed(2)}</td>
+                <td className="border border-gray-400 px-4 py-2 text-right">{disc.toFixed(2)}</td>
+                <td className="border border-gray-400 px-4 py-2 text-right font-bold">{net.toFixed(2)}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+
+      {/* Payment History */}
+      <h4 className="font-bold text-lg mb-2">Paid Amounts:</h4>
+      <table className="w-full border-collapse border border-gray-400 mb-6">
+        <thead>
+          <tr className="bg-gray-100">
+            <th className="border border-gray-400 px-4 py-2 text-left">Date</th>
+            <th className="border border-gray-400 px-4 py-2 text-left">Payment Mode</th>
+            <th className="border border-gray-400 px-4 py-2 text-right">Amount Paid (INR)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td className="border border-gray-400 px-4 py-2">{formatDateForDisplay(firstTransaction.date)}</td>
+            <td className="border border-gray-400 px-4 py-2 capitalize">{firstTransaction.method}</td>
+            <td className="border border-gray-400 px-4 py-2 text-right font-bold">{netTotal.toFixed(2)}</td>
+          </tr>
+        </tbody>
+      </table>
+
+      {/* Footer */}
+      <div className="flex justify-between items-end">
+        <div>
+          <p className="font-bold mb-2">Authorized Signatory</p>
+          <div className="mt-8 text-sm text-gray-500">Print &nbsp; Back</div>
+        </div>
+        <div className="text-right">
+          <p className="mb-1"><strong>Total:</strong> <span className="ml-4">{formatCurrency(netTotal)}</span></p>
+          <p className="mb-1"><strong>Tax:</strong> <span className="ml-4">0</span></p>
+          <p className="mb-1"><strong>Amount Paid:</strong> <span className="ml-4">{formatCurrency(netTotal)}</span></p>
+          <p className="mb-1 font-bold"><strong>Balance:</strong> <span className="ml-4">₹0.00</span></p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ========== TRANSPLANT INVOICE (Image 3) ==========
+function TransplantInvoice({
   transactions,
   patient,
-  category,
+  consultant,
   branch,
-  isBatch = false,
-  packageAmount = 0,
-  packageDiscount = 0,
+  packageAmount,
+  packageDiscount,
 }) {
-  const currentClinic = CLINIC_BRANCHES[branch] || CLINIC_BRANCHES.Delhi;
-  const mainTransaction = Array.isArray(transactions)
-    ? transactions[0]
-    : transactions;
-  const allTransactions = Array.isArray(transactions)
-    ? transactions
-    : [transactions];
+  const clinic = CLINIC_BRANCHES[branch] || CLINIC_BRANCHES.Delhi;
+  const firstTransaction = transactions[0] || {};
+  const invoiceNo = `#INV${firstTransaction._id?.slice(-5).toUpperCase() || "00000"}`;
 
-  // Calculate totals based on transaction type
-  let grossAmount = 0;
-  let totalDiscount = 0;
+  const packageTotal = parseFloat(packageAmount) || 0;
+  const discountOnPackage = parseFloat(packageDiscount) || 0;
+  const amountAfterDiscount = packageTotal - discountOnPackage;
+  
+  const totalPaid = transactions.reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0);
+  const pending = amountAfterDiscount - totalPaid;
 
-  if (category === "TRANSPLANT") {
-    // Use package amounts for transplant
-    grossAmount = packageAmount || parseFloat(mainTransaction.amount) || 0;
-    totalDiscount =
-      packageDiscount || parseFloat(mainTransaction.discount) || 0;
-  } else if (isBatch) {
-    // Sum all batch transactions
-    allTransactions.forEach((t) => {
-      grossAmount += parseFloat(t.amount) || 0;
-      totalDiscount += parseFloat(t.discount) || 0;
-    });
-  } else {
-    // Single transaction
-    grossAmount = parseFloat(mainTransaction.amount) || 0;
-    totalDiscount = parseFloat(mainTransaction.discount) || 0;
-  }
+  return (
+    <div className="max-w-4xl mx-auto bg-white p-8" style={{ fontFamily: "Arial, sans-serif" }}>
+      {/* Header */}
+      <div className="flex justify-between items-start mb-6 pb-4 border-b-2 border-gray-300">
+        <div>
+          <h1 className="text-2xl font-bold mb-2">{clinic.name}</h1>
+          <p className="text-sm text-gray-700">{clinic.address}</p>
+          {clinic.city && <p className="text-sm text-gray-700">{clinic.city}</p>}
+          <p className="text-sm"><strong>Phone:</strong> {clinic.phone}</p>
+          <p className="text-sm"><strong>Website:</strong> {clinic.website}</p>
+          <p className="text-sm"><strong>GST No:</strong> {clinic.gstin}</p>
+        </div>
+        <div className="text-right">
+          <Image src={clinic.img} alt="Logo" width={120} height={120} />
+        </div>
+      </div>
 
-  const totalAfterDiscount = grossAmount - totalDiscount;
-  const totalPaid = allTransactions.reduce(
-    (sum, t) => sum + (parseFloat(t.amount) || 0),
-    0,
+      {/* Customer & Invoice Details */}
+      <div className="grid grid-cols-2 gap-4 mb-6">
+        <div>
+          <h2 className="font-bold text-lg mb-2">{patient.name}</h2>
+          <p className="text-sm">{patient.gender},</p>
+          <p className="text-sm"><strong>Phone:</strong> {patient.phone}</p>
+          <p className="text-sm"><strong>Branch:</strong> {branch}</p>
+        </div>
+        <div className="text-right">
+          <p className="text-sm"><strong>Date:</strong> {formatDateTime(firstTransaction.date)}</p>
+          <p className="text-sm"><strong>Invoice No:</strong> {invoiceNo}</p>
+        </div>
+      </div>
+
+      {/* Invoice Title */}
+      <h3 className="text-center text-xl font-bold mb-4">Invoice</h3>
+
+      {/* Package Table */}
+      <table className="w-full border-collapse border border-gray-400 mb-6">
+        <thead>
+          <tr className="bg-gray-100">
+            <th className="border border-gray-400 px-4 py-2 text-left">S No.</th>
+            <th className="border border-gray-400 px-4 py-2 text-left">Services & Products</th>
+            <th className="border border-gray-400 px-4 py-2 text-left">Consultant</th>
+            <th className="border border-gray-400 px-4 py-2 text-center">Qty</th>
+            <th className="border border-gray-400 px-4 py-2 text-right">Package Cost (INR)</th>
+            <th className="border border-gray-400 px-4 py-2 text-right">Discount (INR)</th>
+            <th className="border border-gray-400 px-4 py-2 text-right">After Discount</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td className="border border-gray-400 px-4 py-2">1</td>
+            <td className="border border-gray-400 px-4 py-2">Service {firstTransaction.procedure || "Hair Transplant"}</td>
+            <td className="border border-gray-400 px-4 py-2">{consultant}</td>
+            <td className="border border-gray-400 px-4 py-2 text-center">1</td>
+            <td className="border border-gray-400 px-4 py-2 text-right">{packageTotal.toFixed(2)}</td>
+            <td className="border border-gray-400 px-4 py-2 text-right">{discountOnPackage.toFixed(2)}</td>
+            <td className="border border-gray-400 px-4 py-2 text-right font-bold">{amountAfterDiscount.toFixed(2)}</td>
+          </tr>
+        </tbody>
+      </table>
+
+      {/* Payment History */}
+      <h4 className="font-bold text-lg mb-2">Paid Amounts:</h4>
+      <table className="w-full border-collapse border border-gray-400 mb-6">
+        <thead>
+          <tr className="bg-gray-100">
+            <th className="border border-gray-400 px-4 py-2 text-left">Date</th>
+            <th className="border border-gray-400 px-4 py-2 text-left">Payment Mode</th>
+            <th className="border border-gray-400 px-4 py-2 text-right">Amount Paid (INR)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {transactions.map((t, idx) => (
+            <tr key={idx}>
+              <td className="border border-gray-400 px-4 py-2">{formatDateForDisplay(t.date)}</td>
+              <td className="border border-gray-400 px-4 py-2 capitalize">{t.method}</td>
+              <td className="border border-gray-400 px-4 py-2 text-right">{parseFloat(t.amount || 0).toFixed(2)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      {/* Footer */}
+      <div className="flex justify-between items-end">
+        <div>
+          <p className="font-bold mb-2">Authorized Signatory</p>
+        </div>
+        <div className="text-right">
+          <p className="mb-1"><strong>Package Total:</strong> <span className="ml-4">{formatCurrency(packageTotal)}</span></p>
+          <p className="mb-1"><strong>Discount on Package:</strong> <span className="ml-4">{formatCurrency(discountOnPackage)}</span></p>
+          <p className="mb-1 font-bold"><strong>Amount After Discount:</strong> <span className="ml-4">{formatCurrency(amountAfterDiscount)}</span></p>
+          <p className="mb-1"><strong>Amount Received:</strong> <span className="ml-4">{formatCurrency(totalPaid)}</span></p>
+          <p className="mb-1 font-bold text-red-600"><strong>Pending:</strong> <span className="ml-4">{formatCurrency(pending)}</span></p>
+          <p className="mb-1"><strong>Tax:</strong> <span className="ml-4">0</span></p>
+        </div>
+      </div>
+    </div>
   );
-  const balance = totalAfterDiscount - totalPaid;
-  const isTransplant = category === "TRANSPLANT";
-  const consultant =
-    mainTransaction.patient?.counselling?.counsellor?.name ||
-    mainTransaction.patient?.counselling?.counsellorName?.name ||
-    patient.counsellor ||
-    "Dr. Ryan";
-
- 
 }
 
 // ========== MAIN BILL GENERATOR COMPONENT ==========
@@ -135,12 +419,7 @@ export default function BillGenerator({ transactionId, onClose }) {
   const [generating, setGenerating] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [transactions, setTransactions] = useState([]);
-  const [isBatch, setIsBatch] = useState(false);
-  const [packageAmount, setPackageAmount] = useState(0);
-  const [packageDiscount, setPackageDiscount] = useState(0);
-  const [category, setCategory] = useState("GENERAL");
-  const [branch, setBranch] = useState("Delhi");
+  const [invoiceData, setInvoiceData] = useState(null);
 
   useEffect(() => {
     if (transactionId) {
@@ -153,7 +432,6 @@ export default function BillGenerator({ transactionId, onClose }) {
       setLoading(true);
       setError(null);
 
-      // Fetch invoice-specific data from optimized endpoint
       const res = await fetch(
         `/api/transactions/invoice-data?id=${transactionId}`,
       );
@@ -163,56 +441,13 @@ export default function BillGenerator({ transactionId, onClose }) {
         throw new Error(result.error || "Failed to fetch invoice data");
       }
 
-      const { data } = result;
-
-      setCategory(data.category);
-      setBranch(data.branch);
-      setTransactions(data.transactions);
-      setIsBatch(data.isBatch);
-
-      // For TRANSPLANT, set package details
-      if (data.category === "TRANSPLANT") {
-        setPackageAmount(data.packageAmount);
-        setPackageDiscount(data.packageDiscount);
-      }
+      setInvoiceData(result.data);
     } catch (error) {
       console.error("Error fetching transaction:", error);
       setError(error.message);
     } finally {
       setLoading(false);
     }
-  };
-  const getPatientDetails = () => {
-    const firstTransaction = transactions[0];
-    if (!firstTransaction)
-      return {
-        name: "N/A",
-        phone: "N/A",
-        email: "N/A",
-        counsellor: "Dr. Ryan",
-      };
-
-    if (
-      firstTransaction.patient &&
-      typeof firstTransaction.patient === "object"
-    ) {
-      return {
-        name: firstTransaction.patient.personal?.name || "Walk-in Customer",
-        phone: firstTransaction.patient.personal?.phone || "N/A",
-        email: firstTransaction.patient.personal?.email || "N/A",
-        counsellor:
-          firstTransaction.patient.counselling?.counsellor?.name ||
-          firstTransaction.patient.counselling?.counsellorName?.name ||
-          "Dr. Ryan",
-      };
-    }
-
-    return {
-      name: firstTransaction.patientName || "Walk-in Customer",
-      phone: firstTransaction.patientPhone || "N/A",
-      email: "N/A",
-      counsellor: "Dr. Ryan",
-    };
   };
 
   const handlePrint = () => {
@@ -252,7 +487,7 @@ export default function BillGenerator({ transactionId, onClose }) {
     );
   }
 
-  if (error || transactions.length === 0) {
+  if (error || !invoiceData) {
     return (
       <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
         <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md">
@@ -278,21 +513,29 @@ export default function BillGenerator({ transactionId, onClose }) {
     );
   }
 
-  const patient = getPatientDetails();
+  const { category, branch, transactions, patient, consultant, isBatch, packageAmount, packageDiscount } = invoiceData;
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
       <div className="bg-white rounded-2xl shadow-2xl max-w-5xl w-full my-8">
         {/* Header */}
-        <div className="bg-linear-to-r from-indigo-600 to-purple-600 px-6 py-4 rounded-t-2xl flex items-center justify-between no-print">
+        <div className="bg-gradient-to-r from-indigo-600 to-purple-600 px-6 py-4 rounded-t-2xl flex items-center justify-between no-print">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
               <Bill className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-white">Generate Invoice</h2>
+              <h2 className="text-xl font-bold text-white">
+                {category === "TRANSPLANT"
+                  ? "Transplant Invoice"
+                  : category === "SERVICE"
+                    ? "Service Invoice"
+                    : category === "MEDICINE"
+                      ? "Medicine Invoice"
+                      : "Invoice"}
+              </h2>
               <p className="text-white/80 text-sm">
-                {isBatch
+                {isBatch && category === "MEDICINE"
                   ? `Batch Invoice (${transactions.length} items)`
                   : category === "TRANSPLANT"
                     ? `Complete Payment History (${transactions.length} payments)`
@@ -311,15 +554,37 @@ export default function BillGenerator({ transactionId, onClose }) {
         {/* Bill Preview */}
         <div className="p-6 max-h-[600px] overflow-y-auto">
           <div id="bill-content" className="bg-white">
-            <StandardInvoice
-              transactions={transactions}
-              patient={patient}
-              category={category}
-              branch={branch}
-              isBatch={isBatch}
-              packageAmount={packageAmount}
-              packageDiscount={packageDiscount}
-            />
+            {category === "TRANSPLANT" ? (
+              <TransplantInvoice
+                transactions={transactions}
+                patient={patient}
+                consultant={consultant}
+                branch={branch}
+                packageAmount={packageAmount}
+                packageDiscount={packageDiscount}
+              />
+            ) : category === "SERVICE" ? (
+              <ServiceInvoice
+                transaction={transactions[0]}
+                patient={patient}
+                consultant={consultant}
+                branch={branch}
+              />
+            ) : category === "MEDICINE" ? (
+              <MedicineInvoice
+                transactions={transactions}
+                patient={patient}
+                consultant={consultant}
+                branch={branch}
+              />
+            ) : (
+              <ServiceInvoice
+                transaction={transactions[0]}
+                patient={patient}
+                consultant={consultant}
+                branch={branch}
+              />
+            )}
           </div>
         </div>
 
@@ -327,7 +592,7 @@ export default function BillGenerator({ transactionId, onClose }) {
         <div className="px-6 py-4 bg-gray-50 rounded-b-2xl flex gap-3 no-print">
           <button
             onClick={handlePrint}
-            className="flex-1 px-6 py-3 bg-linear-to-r from-indigo-500 to-purple-600 text-white rounded-xl hover:from-indigo-600 hover:to-purple-700 transition-all font-semibold flex items-center justify-center gap-2"
+            className="flex-1 px-6 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl hover:from-indigo-600 hover:to-purple-700 transition-all font-semibold flex items-center justify-center gap-2"
           >
             <Printer className="w-5 h-5" />
             Print Invoice
@@ -335,7 +600,7 @@ export default function BillGenerator({ transactionId, onClose }) {
           <button
             onClick={handleDownloadPDF}
             disabled={generating}
-            className="flex-1 px-6 py-3 bg-linear-to-r from-emerald-500 to-green-600 text-white rounded-xl hover:from-emerald-600 hover:to-green-700 transition-all font-semibold flex items-center justify-center gap-2 disabled:opacity-50"
+            className="flex-1 px-6 py-3 bg-gradient-to-r from-emerald-500 to-green-600 text-white rounded-xl hover:from-emerald-600 hover:to-green-700 transition-all font-semibold flex items-center justify-center gap-2 disabled:opacity-50"
           >
             {generating ? (
               <>

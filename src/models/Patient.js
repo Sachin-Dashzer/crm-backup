@@ -61,7 +61,7 @@ const patientSchema = new mongoose.Schema(
       weight: String,
       hiv: String,
       hcv: String,
-    },
+    }, 
     surgery: {
       surgeryDate: Date,
       location: {

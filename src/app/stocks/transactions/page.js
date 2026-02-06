@@ -98,7 +98,8 @@ const formatFieldName = (fieldName) => {
 };
 
 const BRANCHES = ["Delhi", "Mumbai", "Hyderabad"];
-const PAYMENT_METHODS = ["upi", "cash", "card", "banking", "loan", "other"];
+// ✅ FIX 1: Match schema - "Loan" with capital L
+const PAYMENT_METHODS = ["upi", "cash", "card", "banking", "Loan", "other"];
 const TRANSPLANT_PROCEDURES = [
   "Sapphire FUE",
   "DHI",
@@ -112,6 +113,24 @@ const TRANSACTION_CATEGORIES = [
   { value: "MEDICINE", label: "Medicine", icon: Pill, color: "emerald" },
   { value: "EXPENSE", label: "Expenses", icon: Receipt, color: "rose" },
 ];
+
+// ✅ FIX 7: Hardcoded gradient classes for each category (Tailwind JIT compatibility)
+const getCategoryGradientClass = (categoryValue, isActive) => {
+  if (!isActive) return "bg-gray-50 text-gray-600 hover:bg-gray-100";
+
+  const gradients = {
+    TRANSPLANT:
+      "bg-gradient-to-r from-indigo-500 to-indigo-600 text-white shadow-md",
+    SERVICE: "bg-gradient-to-r from-pink-500 to-pink-600 text-white shadow-md",
+    MEDICINE:
+      "bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-md",
+    EXPENSE: "bg-gradient-to-r from-rose-500 to-rose-600 text-white shadow-md",
+  };
+
+  return gradients[categoryValue] || "bg-gray-50 text-gray-600";
+};
+
+// ... (StatCard, DeleteConfirmModal, Input, Select components remain the same)
 
 // ========== STAT CARD COMPONENT ==========
 function StatCard({
@@ -306,6 +325,7 @@ function Select({ label, value, onChange, options, required, icon: Icon }) {
 }
 
 // ========== EXPANDED ROW DETAILS COMPONENT ==========
+// (Keep the same - no changes needed)
 function ExpandedRowDetails({ transaction, isExpanded }) {
   const [activeTab, setActiveTab] = useState("summary");
 
@@ -606,6 +626,7 @@ function ExpandedRowDetails({ transaction, isExpanded }) {
 }
 
 // ========== DATA TABLE COMPONENT ==========
+// (Keep same - just fix mobile bill button around line 1450)
 function DataTable({
   category,
   rows,
@@ -826,6 +847,7 @@ function DataTable({
   };
 
   const getExpenseGiverName = (row) => {
+    // ✅ Already correct - handles both VENDOR and MANUAL
     if (row.expenseGiver?.type === "VENDOR") {
       if (typeof row.expenseGiver.vendorId === "object") {
         return (
@@ -839,6 +861,7 @@ function DataTable({
 
   return (
     <div className="flex flex-col h-full bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
+      {/* Desktop Header - Keep same */}
       <div
         className="hidden md:grid items-center bg-linear-to-r from-slate-50 to-slate-100 border-b border-slate-200 min-h-13 px-2"
         style={{ gridTemplateColumns }}
@@ -861,6 +884,7 @@ function DataTable({
         ))}
       </div>
 
+      {/* Mobile Header - Keep same */}
       <div className="md:hidden bg-linear-to-r from-slate-50 to-slate-100 border-b border-slate-200 px-4 py-3">
         <div className="flex items-center justify-between">
           <div>
@@ -908,6 +932,7 @@ function DataTable({
                       isExpanded ? "bg-indigo-50/50" : "hover:bg-indigo-50/30"
                     }`}
                   >
+                    {/* Desktop View - Keep all same until actions column */}
                     <div
                       className="hidden md:grid items-center min-h-16 px-2"
                       style={{ gridTemplateColumns }}
@@ -1182,6 +1207,7 @@ function DataTable({
                         </>
                       )}
 
+                      {/* Audit Column */}
                       <div className="px-2 py-3">
                         <button
                           onClick={() => toggleExpanded(row._id)}
@@ -1228,6 +1254,7 @@ function DataTable({
                         </button>
                       </div>
 
+                      {/* Actions Column */}
                       <div className="px-2 py-3">
                         <div className="flex items-center gap-2">
                           <button
@@ -1449,8 +1476,9 @@ function DataTable({
                           </button>
 
                           <div className="flex items-center gap-2">
+                            {/* ✅ FIX 3: Pass entire row object, not just ID */}
                             <button
-                              onClick={() => onGenerateBill(row._id)}
+                              onClick={() => onGenerateBill(row)}
                               className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-lg text-sm font-medium hover:bg-emerald-100 transition-colors"
                             >
                               <Bill size={14} />
@@ -1490,6 +1518,7 @@ function DataTable({
         )}
       </div>
 
+      {/* Pagination - Keep same */}
       <div className="border-t border-slate-200 bg-white">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 sm:px-6 py-4">
           <div className="text-sm text-slate-600">
@@ -1683,6 +1712,7 @@ export default function AllTransactionsPage() {
     let list = transactions.filter((t) => {
       const category = t.transactionCategory || t.category;
       if (activeCategory === "TRANSPLANT") {
+        // ✅ Include undefined/empty categories in TRANSPLANT for backward compatibility
         return category === "TRANSPLANT" || !category || category === "";
       }
       return category === activeCategory;
@@ -1714,7 +1744,7 @@ export default function AllTransactionsPage() {
     return list;
   }, [transactions, activeCategory, filters]);
 
-  // Updated categoryStats to use filteredTransactions instead of all transactions
+  // ✅ Calculate stats from ALL categories but with active filters applied
   const categoryStats = useMemo(() => {
     const stats = {
       TRANSPLANT: { count: 0, total: 0 },
@@ -1723,7 +1753,39 @@ export default function AllTransactionsPage() {
       EXPENSE: { count: 0, total: 0 },
     };
 
-    filteredTransactions.forEach((t) => {
+    // Apply filters but NOT category filter
+    let filteredList = transactions;
+
+    // Apply branch filter
+    if (filters.branch) {
+      filteredList = filteredList.filter(
+        (t) => t.branch?.toLowerCase() === filters.branch.toLowerCase(),
+      );
+    }
+
+    // Apply payment method filter
+    if (filters.paymentMethod) {
+      filteredList = filteredList.filter(
+        (t) => t.method?.toLowerCase() === filters.paymentMethod.toLowerCase(),
+      );
+    }
+
+    // Apply procedure filter (only for TRANSPLANT/SERVICE)
+    if (filters.procedure) {
+      filteredList = filteredList.filter(
+        (t) => t.procedure?.toLowerCase() === filters.procedure.toLowerCase(),
+      );
+    }
+
+    // Apply date range filter
+    filteredList = filterByDateRange(
+      filteredList,
+      filters.dateFrom,
+      filters.dateTo,
+    );
+
+    // Now calculate stats for each category from the filtered list
+    filteredList.forEach((t) => {
       const category = t.transactionCategory || t.category;
       const actualCategory = category || "TRANSPLANT";
       if (stats[actualCategory]) {
@@ -1733,8 +1795,7 @@ export default function AllTransactionsPage() {
     });
 
     return stats;
-  }, [filteredTransactions]);
-
+  }, [transactions, filters]); // Depend on transactions and filters
   const searchedRows = useMemo(() => {
     if (!tableSearch) return filteredTransactions;
 
@@ -1891,18 +1952,42 @@ export default function AllTransactionsPage() {
     }
   };
 
+  // ✅ FIX 2 & 6: Improved bill generator logic with proper null checks
   const openBillGenerator = (data) => {
-    if (
-      data.costType === "Revenue" &&
-      (data.transactionCategory === "undefined" ||
-        data.transactionCategory === "TRANSPLANT")
-    ) {
-      setSelectedTransactionId(data.patient._id);
-    } else {
-      setSelectedTransactionId(data._id);
-    }
+    try {
+      // Check if this is a revenue transaction with a patient
+      const isRevenueTransaction = data.costType === "Revenue";
+      const hasCategory =
+        data.transactionCategory &&
+        data.transactionCategory !== "undefined" &&
+        data.transactionCategory !== "";
 
-    setShowBillGenerator(true);
+      // For transplant transactions with populated patient, use patient ID
+      if (
+        isRevenueTransaction &&
+        (!hasCategory || data.transactionCategory === "TRANSPLANT") &&
+        data.patient
+      ) {
+        // Check if patient is populated object or just an ID
+        const patientId =
+          typeof data.patient === "object" ? data.patient._id : data.patient;
+
+        if (patientId) {
+          setSelectedTransactionId(patientId);
+        } else {
+          // Fallback to transaction ID if patient ID not available
+          setSelectedTransactionId(data._id);
+        }
+      } else {
+        // For all other transactions (SERVICE, MEDICINE, EXPENSE), use transaction ID
+        setSelectedTransactionId(data._id);
+      }
+
+      setShowBillGenerator(true);
+    } catch (error) {
+      console.error("Error opening bill generator:", error);
+      toast.error("Failed to open bill generator");
+    }
   };
 
   const closeBillGenerator = () => {
@@ -1935,8 +2020,10 @@ export default function AllTransactionsPage() {
         if (activeCategory === "TRANSPLANT") {
           return {
             ...base,
-            "Patient Name": row.patient?.personal?.name || "N/A",
-            "Patient Phone": row.patient?.personal?.phone || "N/A",
+            "Patient Name":
+              row.patient?.personal?.name || row.patientName || "N/A",
+            "Patient Phone":
+              row.patient?.personal?.phone || row.patientPhone || "N/A",
             Procedure: row.procedure || "",
             "Payment Type": row.paymentType || "",
           };
@@ -2150,7 +2237,7 @@ export default function AllTransactionsPage() {
                 <span className="font-semibold hidden xs:inline">
                   Add Transaction
                 </span>
-                <span className="font-semibold xs:hidden">Add</span>
+                <span className="font-semibold xs:inline">Add</span>
               </button>
             </div>
           </div>
@@ -2204,11 +2291,7 @@ export default function AllTransactionsPage() {
                   return (
                     <button
                       key={cat.value}
-                      className={`px-4 sm:px-6 py-2 sm:py-2.5 rounded-xl font-semibold transition-all whitespace-nowrap shrink-0 flex items-center gap-2 ${
-                        activeCategory === cat.value
-                          ? `bg-linear-to-r from-${cat.color}-500 to-${cat.color}-600 text-white shadow-md`
-                          : "bg-gray-50 text-gray-600 hover:bg-gray-100"
-                      }`}
+                      className={`px-4 sm:px-6 py-2 sm:py-2.5 rounded-xl font-semibold transition-all whitespace-nowrap shrink-0 flex items-center gap-2 ${getCategoryGradientClass(cat.value, activeCategory === cat.value)}`}
                       onClick={() => setActiveCategory(cat.value)}
                     >
                       <Icon size={18} />
