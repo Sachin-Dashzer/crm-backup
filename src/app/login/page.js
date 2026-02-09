@@ -50,6 +50,7 @@ export default function LoginPage() {
           counsellor: '/counsellor/patients',
           reception: '/reception/dashboard',
           surgery: '/surgery/dashboard',
+          stock: '/stocks/dashboard',         
         };
 
         router.push(roleRoutes[session?.user?.role] || '/');

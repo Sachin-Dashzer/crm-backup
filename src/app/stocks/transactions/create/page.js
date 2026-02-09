@@ -207,7 +207,7 @@ export default function AllTransactionsPage() {
 
       if (res.ok) {
         alert("Transplant transaction saved successfully!");
-        router.push("/admin/transactions");
+        router.push("/stocks/transactions");
       } else {
         const data = await res.json();
         alert(data.error || "Failed to create transaction");
@@ -320,7 +320,7 @@ export default function AllTransactionsPage() {
 
       if (res.ok) {
         alert("Service transactions saved successfully!");
-        router.push("/admin/transactions");
+        router.push("/stocks/transactions");
       } else {
         const data = await res.json();
         alert(data.error || "Failed to create transactions");
@@ -446,7 +446,7 @@ export default function AllTransactionsPage() {
 
       if (res.ok) {
         alert("Medicine sales saved successfully!");
-        router.push("/admin/transactions");
+        router.push("/stocks/transactions");
       } else {
         const data = await res.json();
         alert(data.error || "Failed to create transactions");
@@ -508,7 +508,7 @@ export default function AllTransactionsPage() {
 
       if (res.ok) {
         alert("Expense transaction saved successfully!");
-        router.push("/admin/transactions");
+        router.push("/stocks/transactions");
       } else {
         const data = await res.json();
         alert(data.error || "Failed to create transaction");
@@ -602,7 +602,7 @@ export default function AllTransactionsPage() {
                     Medicine Sale
                   </div>
                 </button>
-                {session?.user?.role === "admin" && (
+                {/* {session?.user?.role === "admin" && ( */}
                   <button
                     onClick={() => setActiveTab("expense")}
                     className={`px-6 py-3 font-medium border-b-2 transition-colors ${
@@ -616,7 +616,7 @@ export default function AllTransactionsPage() {
                       Expense
                     </div>
                   </button>
-                )}
+                {/* )} */}
               </div>
             </div>
 

@@ -131,7 +131,7 @@ export default function EditStockPage() {
 
       if (data.success) {
         alert("Stock item updated successfully!");
-        router.push("/stocks");
+        router.push("/stocks/dashboard");
       } else {
         alert(data.message || "Failed to update stock item");
       }

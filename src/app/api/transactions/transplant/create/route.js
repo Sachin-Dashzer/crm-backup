@@ -5,12 +5,17 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import connectDB from "@/lib/db";
 import Transactions from "@/models/Transactions";
 import Patient from "@/models/Patient";
+import mongoose from "mongoose";
 
 export async function POST(req) {
   try {
+    // Authentication check
     const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!session?.user?.name || !session?.user?.email || !session?.user?.branch) {
+      return NextResponse.json(
+        { success: false, message: "Unauthorized. Please login." },
+        { status: 401 }
+      );
     }
 
     await connectDB();
@@ -28,31 +33,55 @@ export async function POST(req) {
       remarks,
     } = await req.json();
 
-    // Validation
-    if (!patientId || !procedure || !amount) {
+    // Basic validations
+    if (!patientId || !procedure || !amount || !method) {
       return NextResponse.json(
-        { error: "Missing required fields" },
+        { success: false, message: "Patient, procedure, amount, and payment method are required" },
         { status: 400 }
       );
     }
 
-    // Verify patient exists
-    const patient = await Patient.findById(patientId);
-    if (!patient) {
-      return NextResponse.json({ error: "Patient not found" }, { status: 404 });
+    if (amount <= 0) {
+      return NextResponse.json(
+        { success: false, message: "Amount must be positive" },
+        { status: 400 }
+      );
     }
 
-    // Calculate final amount
-    const finalAmount = parseFloat(amount) - (discount || 0);
+    // Validate procedure is a transplant procedure
+    const validTransplantProcedures = ["Sapphire FUE", "DHI", "Turkish DHI", "Beard Transplant"];
+    if (!validTransplantProcedures.includes(procedure)) {
+      return NextResponse.json(
+        { success: false, message: "Invalid procedure for transplant transaction. Must be one of: Sapphire FUE, DHI, Turkish DHI, or Beard Transplant" },
+        { status: 400 }
+      );
+    }
+
+    // Validate patient ID format
+    if (!mongoose.Types.ObjectId.isValid(patientId)) {
+      return NextResponse.json(
+        { success: false, message: "Invalid patient ID" },
+        { status: 400 }
+      );
+    }
+
+    // Check if patient exists
+    const patientExists = await Patient.findById(patientId);
+    if (!patientExists) {
+      return NextResponse.json(
+        { success: false, message: "Patient not found" },
+        { status: 404 }
+      );
+    }
 
     // Create transaction
-    const transaction = new Transactions({
+    const newTransaction = await Transactions.create({
       transactionCategory: "TRANSPLANT",
       costType: "Revenue",
       patient: patientId,
       procedure,
       paymentType,
-      amount: parseFloat(amount),
+      amount: Math.floor(Number(amount)),
       discount: discount || 0,
       method,
       paymentId: paymentId || "",
@@ -65,31 +94,87 @@ export async function POST(req) {
         branch: session.user.branch,
         date: new Date(),
       },
+      editors: [],
     });
 
-    await transaction.save();
+    // Update patient payments (TRANSPLANT-specific logic)
+    const patient = await Patient.findById(patientId);
+    
+    if (patient) {
+      // Initialize payments if needed
+      patient.payments = patient.payments || {
+        amountReceived: 0,
+        pendingAmount: 0,
+        medicineAmount: 0,
+        discount: 0,
+        totalAmount: 0,
+        transactions: [],
+      };
 
-    // Update patient payment records
-    if (patient.payments) {
-      patient.payments.amountReceived =
-        (patient.payments.amountReceived || 0) + finalAmount;
-      patient.payments.pendingAmount =
-        (patient.payments.totalAmount || 0) -
-        (patient.payments.amountReceived || 0);
+      // Add transaction reference
+      patient.payments.transactions.push(newTransaction._id);
+
+      // For TRANSPLANT: always add to amountReceived
+      patient.payments.amountReceived += parseFloat(amount);
+
+      // Recalculate discount from all transactions
+      const allTransactions = await Transactions.find({
+        _id: { $in: patient.payments.transactions },
+        costType: "Revenue",
+      });
+      patient.payments.discount = allTransactions.reduce(
+        (sum, t) => sum + (t.discount || 0),
+        0
+      );
+
+      // Calculate pending amount
+      const adjustedTotal = Math.max(
+        0,
+        patient.payments.totalAmount - patient.payments.discount
+      );
+      patient.payments.pendingAmount = Math.max(
+        0,
+        adjustedTotal - patient.payments.amountReceived
+      );
+
+      // Add editor entry
+      patient.editors = patient.editors || [];
+      patient.editors.push({
+        name: session.user.name,
+        email: session.user.email,
+        branch: session.user.branch,
+        date: new Date(),
+      });
+
       await patient.save();
     }
 
     return NextResponse.json(
       {
+        success: true,
         message: "Transplant transaction created successfully",
-        transaction,
+        data: newTransaction,
+        updatedPatient: patient
+          ? {
+              _id: patient._id,
+              payments: patient.payments,
+            }
+          : null,
       },
       { status: 201 }
     );
   } catch (error) {
-    console.error("Error creating transplant transaction:", error);
+    console.error("Transplant transaction creation error:", error);
+
+    if (error.name === "ValidationError") {
+      return NextResponse.json(
+        { success: false, message: error.message },
+        { status: 400 }
+      );
+    }
+
     return NextResponse.json(
-      { error: "Failed to create transaction" },
+      { success: false, message: "Internal server error" },
       { status: 500 }
     );
   }

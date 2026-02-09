@@ -38,7 +38,7 @@ export async function POST(req) {
     // }
 
     // Valid non-admin roles
-    const validRoles = ['sales','admin', 'reception', 'surgery', 'counsellor'];
+    const validRoles = ['sales','admin', 'reception', 'surgery', 'counsellor', 'stock'];
     if (!validRoles.includes(role)) {
       return NextResponse.json(
         { success: false, message: "Invalid role. Must be: sales, reception, surgery, or counsellor" },

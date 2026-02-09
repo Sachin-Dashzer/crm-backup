@@ -1,8 +1,7 @@
-// app/api/transactions/expense/delete/route.js
-
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import Transaction from "@/models/Transaction";
+import Vendor from "@/models/Vendor";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
@@ -59,6 +58,75 @@ export async function DELETE(req) {
       date: transaction.date,
       branch: transaction.branch,
     };
+
+    // If this transaction is linked to a vendor, remove the reference
+    if (
+      transaction.expenseGiver?.type === "VENDOR" &&
+      transaction.expenseGiver?.vendorId
+    ) {
+      const vendorDoc = await Vendor.findById(
+        transaction.expenseGiver.vendorId
+      );
+
+      if (vendorDoc) {
+        // Check if this transaction is the one referenced in the vendor
+        if (
+          vendorDoc.Transactions &&
+          vendorDoc.Transactions.toString() === transactionId
+        ) {
+          vendorDoc.Transactions = null;
+
+          // Add editor information
+          vendorDoc.editors.push({
+            name: session.user.name,
+            email: session.user.email,
+            branch: session.user.branch,
+            date: new Date(),
+            updatedFields: [
+              {
+                name: "Transactions",
+                previousValue: transactionId,
+                newValue: "null",
+              },
+            ],
+          });
+
+          await vendorDoc.save();
+        }
+      }
+    }
+
+    // Also check the legacy vendor field for backward compatibility
+    if (transaction.vendor) {
+      const vendorDoc = await Vendor.findById(transaction.vendor);
+
+      if (vendorDoc) {
+        // Check if this transaction is the one referenced in the vendor
+        if (
+          vendorDoc.Transactions &&
+          vendorDoc.Transactions.toString() === transactionId
+        ) {
+          vendorDoc.Transactions = null;
+
+          // Add editor information
+          vendorDoc.editors.push({
+            name: session.user.name,
+            email: session.user.email,
+            branch: session.user.branch,
+            date: new Date(),
+            updatedFields: [
+              {
+                name: "Transactions",
+                previousValue: transactionId,
+                newValue: "null",
+              },
+            ],
+          });
+
+          await vendorDoc.save();
+        }
+      }
+    }
 
     // Delete the transaction
     await Transaction.findByIdAndDelete(transactionId);

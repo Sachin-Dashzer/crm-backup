@@ -9,10 +9,10 @@ const VendorSchema = new mongoose.Schema(
     address: String,
     gstNumber: String,
     DealsIn: String,
-    Transactions: {
+    Transactions: [{
       type: mongoose.Schema.Types.ObjectId,
       ref: "Transactions",
-    },
+    }],
     editors: [
       {
         name: String,

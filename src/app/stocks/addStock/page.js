@@ -224,7 +224,7 @@ export default function StockPurchasePage() {
           "success"
         );
         setTimeout(() => {
-          router.push("/stocks");
+          router.push("/stocks/dashboard");
         }, 1500);
       } else {
         showToast(data.message || "Failed to process purchase", "error");

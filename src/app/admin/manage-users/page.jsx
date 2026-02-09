@@ -1,4 +1,3 @@
-// app/admin/manage-users/page.jsx - CREATE THIS FILE
 "use client";
 
 import { useState, useEffect } from "react";
@@ -203,6 +202,12 @@ export default function ManageUsersPage() {
               {users.filter((u) => u.role === "counsellor").length}
             </p>
           </div>
+          <div className="bg-white rounded-lg shadow p-6">
+            <h3 className="text-sm font-medium text-gray-600">Stock</h3>
+            <p className="text-3xl font-bold text-purple-600 mt-2">
+              {users.filter((u) => u.role === "stock").length}
+            </p>
+          </div>
         </div>
 
         {/* Filters and Actions */}
@@ -232,6 +237,7 @@ export default function ManageUsersPage() {
                 <option value="admin">Admin</option>
                 <option value="surgery">Surgery</option>
                 <option value="counsellor">Counsellor</option>
+                <option value="stock">Stock</option>
               </select>
             </div>
 

@@ -48,11 +48,13 @@ export default function StockSidebar({ sidebarOpen, setSidebarOpen }) {
   }, []);
 
   const navItems = [
-    { name: "Dashboard", path: "/stocks", icon: LayoutDashboard },
+    { name: "Dashboard", path: "/stocks/dashboard", icon: LayoutDashboard },
     { name: "Create Stock", path: "/stocks/create", icon: Building2 },
-    { name: "Purchase Stock", path: "/stocks/purchase", icon: ShoppingCart },
-    { name: "Transactions", path: "/stocks/bill", icon: FileCheck },
+    { name: "Add Stock", path: "/stocks/addStock", icon: ShoppingCart },
+    { name: "All Transaction", path: "/stocks/transactions", icon: Building2 },
+    { name: "Create Transaction", path: "/stocks/transactions/create", icon: FileCheck },
     { name: "Vendors", path: "/stocks/vendors", icon: Users },
+    { name: "Add Vendor", path: "/stocks/vendors/create", icon: Users },
   ];
 
   return (
@@ -80,7 +82,7 @@ export default function StockSidebar({ sidebarOpen, setSidebarOpen }) {
         }`}
       >
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center my-3 justify-between">
           <Link href="/stocks" className="flex items-center gap-2">
             <div className="w-10 h-10 bg-linear-to-r from-emerald-600 to-teal-600 rounded-lg flex items-center justify-center">
               <Package className="w-6 h-6 text-white" />
@@ -99,7 +101,7 @@ export default function StockSidebar({ sidebarOpen, setSidebarOpen }) {
         </div>
 
         {/* Quick Stats */}
-        <div className="grid grid-cols-2 gap-3">
+        {/* <div className="grid grid-cols-2 gap-3">
           <div className="p-3 bg-emerald-50 rounded-lg border border-emerald-100">
             <div className="flex items-center gap-2 mb-1">
               <Package className="w-4 h-4 text-emerald-600" />
@@ -114,10 +116,10 @@ export default function StockSidebar({ sidebarOpen, setSidebarOpen }) {
             </div>
             <p className="text-lg font-bold text-gray-900">--</p>
           </div>
-        </div>
+        </div> */}
 
         {/* Navigation */}
-        <nav className="flex-1 space-y-1 overflow-y-auto scrollbar-hide">
+        <nav className="flex-1 mt-5 space-y-1 overflow-y-auto scrollbar-hide">
           {navItems.map((item) => (
             <NavItem
               key={item.name}

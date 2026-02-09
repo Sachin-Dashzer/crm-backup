@@ -1,9 +1,7 @@
-// app/(dashboard)/admin/transactions/all/page.jsx
-
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import AdminSidebar from "@/components/Sidebars/Sidebar";
+import AdminSidebar from "@/components/Sidebars/StockSidebar";
 import { useToast } from "@/components/Toast";
 import BillGenerator from "@/components/BillGenerator";
 import {
@@ -584,7 +582,7 @@ function ExpandedRowDetails({ transaction, isExpanded }) {
                                     <span className="text-xs text-red-700 font-bold block mb-1">
                                       Previous Value:
                                     </span>
-                                    <p className="text-sm text-slate-900 font-medium break-words">
+                                    <p className="text-sm text-slate-900 font-medium wrap-break-words">
                                       {field.previousValue || "(Empty)"}
                                     </p>
                                   </div>
@@ -592,7 +590,7 @@ function ExpandedRowDetails({ transaction, isExpanded }) {
                                     <span className="text-xs text-green-700 font-bold block mb-1">
                                       New Value:
                                     </span>
-                                    <p className="text-sm text-slate-900 font-medium break-words">
+                                    <p className="text-sm text-slate-900 font-medium wrap-break-words">
                                       {field.newValue || "(Empty)"}
                                     </p>
                                   </div>
@@ -1266,7 +1264,7 @@ function DataTable({
                           </button>
                           <button
                             onClick={() =>
-                              router.push(`/admin/transactions/edit/${row._id}`)
+                              router.push(`/stocks/transactions/edit/${row._id}`)
                             }
                             className="p-2 hover:bg-indigo-100 rounded-lg transition-colors text-indigo-600 hover:text-indigo-800"
                             title="Edit record"
@@ -1487,7 +1485,7 @@ function DataTable({
                             <button
                               onClick={() =>
                                 router.push(
-                                  `/admin/transactions/edit/${row._id}`,
+                                  `/stocks/transactions/edit/${row._id}`,
                                 )
                               }
                               className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 text-indigo-700 rounded-lg text-sm font-medium hover:bg-indigo-100 transition-colors"
@@ -2230,7 +2228,7 @@ export default function AllTransactionsPage() {
               </button>
 
               <button
-                onClick={() => router.push("/admin/transactions/create")}
+                onClick={() => router.push("/stocks/transactions/create")}
                 className="bg-linear-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white px-3 sm:px-5 py-2 sm:py-3 rounded-xl flex items-center gap-1 sm:gap-2 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 text-sm sm:text-base shrink-0"
               >
                 <Plus size={18} strokeWidth={2.5} />
@@ -2478,7 +2476,7 @@ export default function AllTransactionsPage() {
           <DataTable
             category={activeCategory}
             rows={paginatedRows}
-            onEdit={(row) => router.push(`/admin/transactions/edit/${row._id}`)}
+            onEdit={(row) => router.push(`/stocks/transactions/edit/${row._id}`)}
             onDelete={openDeleteConfirm}
             onGenerateBill={openBillGenerator}
             onSort={handleSort}

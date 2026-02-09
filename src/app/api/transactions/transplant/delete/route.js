@@ -1,118 +1,200 @@
 // app/api/transactions/transplant/delete/route.js
 
 import { NextResponse } from "next/server";
-import connectDB from "@/lib/mongodb";
-import Transaction from "@/models/Transaction";
+import connectDB from "@/lib/db";
+import Transactions from "@/models/Transactions";
 import Patient from "@/models/Patient";
+import Audit from "@/models/Audit";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import mongoose from "mongoose";
 
 export async function DELETE(req) {
-  let session;
   try {
-    // Check authentication
-    session = await getServerSession(authOptions);
-    if (!session) {
+    await connectDB();
+
+    // Authentication check
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.name || !session?.user?.email || !session?.user?.branch) {
       return NextResponse.json(
-        { success: false, error: "Unauthorized" },
+        { success: false, message: "Unauthorized. Please login." },
         { status: 401 }
       );
     }
 
-    await connectDB();
-
-    // Get transaction ID from request body
     const { transactionId } = await req.json();
 
+    // Validation
     if (!transactionId) {
       return NextResponse.json(
-        { success: false, error: "Transaction ID is required" },
+        { success: false, message: "Transaction ID is required" },
         { status: 400 }
       );
     }
 
-    // Find the transaction to delete
-    const transaction = await Transaction.findById(transactionId);
-
-    if (!transaction) {
+    if (!mongoose.Types.ObjectId.isValid(transactionId)) {
       return NextResponse.json(
-        { success: false, error: "Transaction not found" },
+        { success: false, message: "Invalid transaction ID format" },
+        { status: 400 }
+      );
+    }
+
+    // Find transaction
+    const transactionToDelete = await Transactions.findById(transactionId);
+
+    if (!transactionToDelete) {
+      return NextResponse.json(
+        { success: false, message: "Transaction not found" },
         { status: 404 }
       );
     }
 
     // Verify it's a TRANSPLANT transaction
-    const category = transaction.transactionCategory || transaction.category;
-    if (category !== "TRANSPLANT") {
+    if (transactionToDelete.transactionCategory !== "TRANSPLANT") {
       return NextResponse.json(
-        { success: false, error: "Not a transplant transaction" },
+        { success: false, message: "Not a transplant transaction" },
         { status: 400 }
       );
     }
 
-    // Get patient ID
-    const patientId = transaction.patient;
-    if (!patientId) {
-      return NextResponse.json(
-        { success: false, error: "Transaction has no associated patient" },
-        { status: 400 }
-      );
-    }
+    const patientId = transactionToDelete.patient;
 
-    // Find the patient
-    const patient = await Patient.findById(patientId);
-    if (!patient) {
-      return NextResponse.json(
-        { success: false, error: "Patient not found" },
-        { status: 404 }
-      );
-    }
-
-    // Calculate the amount to restore
-    const deletedAmount = parseFloat(transaction.amount) || 0;
-
-    // Update patient's payment information
-    // Subtract from totalPaid and add back to pending
-    const currentTotalPaid = parseFloat(patient.payments?.totalPaid || 0);
-    const currentPending = parseFloat(patient.payments?.pending || 0);
-
-    const newTotalPaid = Math.max(0, currentTotalPaid - deletedAmount);
-    const newPending = currentPending + deletedAmount;
-
-    // Update patient
-    patient.payments = {
-      ...patient.payments,
-      totalPaid: newTotalPaid,
-      pending: newPending,
-      // Remove this transaction from transactions array if it exists
-      transactions: (patient.payments?.transactions || []).filter(
-        (txnId) => txnId.toString() !== transactionId.toString()
-      ),
-    };
-
-    // Save patient
-    await patient.save();
-
-    // Delete the transaction
-    await Transaction.findByIdAndDelete(transactionId);
-
-    return NextResponse.json({
-      success: true,
-      message: "Transplant transaction deleted successfully",
-      data: {
-        deletedAmount,
-        restoredPending: deletedAmount,
-        patientId: patient._id,
-        newTotalPaid,
-        newPending,
+    // Create audit entry before deletion
+    const auditData = new Audit({
+      transactionCategory: transactionToDelete.transactionCategory,
+      costType: transactionToDelete.costType,
+      method: transactionToDelete.method,
+      patient: transactionToDelete.patient,
+      procedure: transactionToDelete.procedure,
+      paymentType: transactionToDelete.paymentType,
+      paymentId: transactionToDelete.paymentId,
+      branch: transactionToDelete.branch,
+      discount: transactionToDelete.discount,
+      amount: transactionToDelete.amount,
+      date: transactionToDelete.date,
+      remarks: transactionToDelete.remarks,
+      createdBy: {
+        name: session.user.name,
+        email: session.user.email,
+        branch: session.user.branch,
+        date: new Date(),
       },
     });
+
+    await auditData.save();
+
+    // Delete the transaction
+    const deletedTransaction = await Transactions.findByIdAndDelete(transactionId);
+
+    // Update patient payments
+    if (patientId) {
+      try {
+        const patient = await Patient.findById(patientId);
+
+        if (patient) {
+          // Initialize payments if needed
+          if (!patient.payments) {
+            patient.payments = {
+              amountReceived: 0,
+              medicineAmount: 0,
+              discount: 0,
+              totalAmount: 0,
+              pendingAmount: 0,
+              transactions: [],
+            };
+          }
+
+          // Remove transaction reference from patient
+          if (patient.payments.transactions) {
+            patient.payments.transactions = patient.payments.transactions.filter(
+              (transId) => transId.toString() !== transactionId.toString()
+            );
+          }
+
+          // Recalculate from ALL remaining transactions
+          const remainingTransactions = await Transactions.find({
+            _id: { $in: patient.payments.transactions },
+            costType: "Revenue",
+          });
+
+          let totalAmountReceived = 0;
+          let totalDiscount = 0;
+
+          remainingTransactions.forEach((transaction) => {
+            const amount = transaction.amount || 0;
+            const discount = transaction.discount || 0;
+
+            // For TRANSPLANT: all amounts go to amountReceived
+            totalAmountReceived += amount;
+            totalDiscount += discount;
+          });
+
+          // Update patient payments
+          patient.payments.amountReceived = totalAmountReceived;
+          patient.payments.discount = totalDiscount;
+
+          // Calculate pending amount
+          const totalAmount = patient.payments.totalAmount || 0;
+          const adjustedTotal = Math.max(0, totalAmount - totalDiscount);
+          patient.payments.pendingAmount = Math.max(
+            0,
+            adjustedTotal - totalAmountReceived
+          );
+
+          // Add editor entry
+          patient.editors = patient.editors || [];
+          patient.editors.push({
+            name: session.user.name,
+            email: session.user.email,
+            branch: session.user.branch,
+            date: new Date(),
+          });
+
+          await patient.save();
+
+          console.log(
+            `Patient ${patientId} payments updated after transplant transaction deletion`
+          );
+        } else {
+          console.warn(`Patient ${patientId} not found for payment update`);
+        }
+      } catch (patientUpdateError) {
+        console.error(
+          "Error updating patient payments after transaction deletion:",
+          patientUpdateError
+        );
+        // Don't fail the deletion if patient update fails
+        // Transaction is already deleted at this point
+      }
+    }
+
+    return NextResponse.json(
+      {
+        success: true,
+        message: "Transplant transaction deleted successfully",
+        data: {
+          deletedTransaction,
+          patientUpdated: patientId ? true : false,
+        },
+      },
+      { status: 200 }
+    );
   } catch (error) {
     console.error("Error deleting transplant transaction:", error);
+
+    // Handle specific MongoDB errors
+    if (error.name === "CastError") {
+      return NextResponse.json(
+        { success: false, message: "Invalid transaction ID format" },
+        { status: 400 }
+      );
+    }
+
     return NextResponse.json(
       {
         success: false,
-        error: error.message || "Failed to delete transplant transaction",
+        message: "Failed to delete transplant transaction",
+        error: error.message,
       },
       { status: 500 }
     );

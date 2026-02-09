@@ -95,7 +95,7 @@ function ServiceInvoice({ transaction, patient, consultant, branch }) {
           <p className="text-sm"><strong>Website:</strong> {clinic.website}</p>
           <p className="text-sm"><strong>GST No:</strong> {clinic.gstin}</p>
         </div>
-        <div className="text-right">
+        <div className="text-right bg-black scale-125">
           <Image src={clinic.img} alt="Logo" width={120} height={120} />
         </div>
       </div>
@@ -205,7 +205,7 @@ function MedicineInvoice({ transactions, patient, consultant, branch }) {
           <p className="text-sm"><strong>Website:</strong> {clinic.website}</p>
           <p className="text-sm"><strong>GST No:</strong> {clinic.gstin}</p>
         </div>
-        <div className="text-right">
+        <div className="text-right bg-black scale-125">
           <Image src={clinic.img} alt="Logo" width={120} height={120} />
         </div>
       </div>
@@ -327,7 +327,7 @@ function TransplantInvoice({
           <p className="text-sm"><strong>Website:</strong> {clinic.website}</p>
           <p className="text-sm"><strong>GST No:</strong> {clinic.gstin}</p>
         </div>
-        <div className="text-right">
+        <div className="text-right bg-black scale-125">
           <Image src={clinic.img} alt="Logo" width={120} height={120} />
         </div>
       </div>
@@ -402,10 +402,8 @@ function TransplantInvoice({
           <p className="font-bold mb-2">Authorized Signatory</p>
         </div>
         <div className="text-right">
-          <p className="mb-1"><strong>Package Total:</strong> <span className="ml-4">{formatCurrency(packageTotal)}</span></p>
-          <p className="mb-1"><strong>Discount on Package:</strong> <span className="ml-4">{formatCurrency(discountOnPackage)}</span></p>
-          <p className="mb-1 font-bold"><strong>Amount After Discount:</strong> <span className="ml-4">{formatCurrency(amountAfterDiscount)}</span></p>
-          <p className="mb-1"><strong>Amount Received:</strong> <span className="ml-4">{formatCurrency(totalPaid)}</span></p>
+          <p className="mb-1 font-bold"><strong>Total Amount:</strong> <span className="ml-4">{formatCurrency(amountAfterDiscount)}</span></p>
+          <p className="mb-1"><strong>Received:</strong> <span className="ml-4">{formatCurrency(totalPaid)}</span></p>
           <p className="mb-1 font-bold text-red-600"><strong>Pending:</strong> <span className="ml-4">{formatCurrency(pending)}</span></p>
           <p className="mb-1"><strong>Tax:</strong> <span className="ml-4">0</span></p>
         </div>
@@ -519,7 +517,7 @@ export default function BillGenerator({ transactionId, onClose }) {
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
       <div className="bg-white rounded-2xl shadow-2xl max-w-5xl w-full my-8">
         {/* Header */}
-        <div className="bg-gradient-to-r from-indigo-600 to-purple-600 px-6 py-4 rounded-t-2xl flex items-center justify-between no-print">
+        <div className="bg-linear-to-r from-indigo-600 to-purple-600 px-6 py-4 rounded-t-2xl flex items-center justify-between no-print">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
               <Bill className="w-6 h-6 text-white" />
@@ -592,7 +590,7 @@ export default function BillGenerator({ transactionId, onClose }) {
         <div className="px-6 py-4 bg-gray-50 rounded-b-2xl flex gap-3 no-print">
           <button
             onClick={handlePrint}
-            className="flex-1 px-6 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl hover:from-indigo-600 hover:to-purple-700 transition-all font-semibold flex items-center justify-center gap-2"
+            className="flex-1 px-6 py-3 bg-linear-to-r from-indigo-500 to-purple-600 text-white rounded-xl hover:from-indigo-600 hover:to-purple-700 transition-all font-semibold flex items-center justify-center gap-2"
           >
             <Printer className="w-5 h-5" />
             Print Invoice
@@ -600,7 +598,7 @@ export default function BillGenerator({ transactionId, onClose }) {
           <button
             onClick={handleDownloadPDF}
             disabled={generating}
-            className="flex-1 px-6 py-3 bg-gradient-to-r from-emerald-500 to-green-600 text-white rounded-xl hover:from-emerald-600 hover:to-green-700 transition-all font-semibold flex items-center justify-center gap-2 disabled:opacity-50"
+            className="flex-1 px-6 py-3 bg-linear-to-r from-emerald-500 to-green-600 text-white rounded-xl hover:from-emerald-600 hover:to-green-700 transition-all font-semibold flex items-center justify-center gap-2 disabled:opacity-50"
           >
             {generating ? (
               <>

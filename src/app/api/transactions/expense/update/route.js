@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../../auth/[...nextauth]/route";
 import Transaction from "@/models/Transactions";
+import Vendor from "@/models/Vendor";
 import connectDB from "@/lib/db";
 
 export async function PUT(req) {
@@ -99,6 +100,68 @@ export async function PUT(req) {
     trackField("date", existingTransaction.date, date);
     trackField("remarks", existingTransaction.remarks, remarks);
 
+    // Handle vendor reference changes
+    const oldVendorId = existingTransaction.expenseGiver?.vendorId || existingTransaction.vendor;
+    const newVendorId = expenseGiver.type === "VENDOR" ? expenseGiver.vendorId : null;
+    const vendorChanged = String(oldVendorId) !== String(newVendorId);
+
+    // If vendor changed, update both old and new vendor documents
+    if (vendorChanged) {
+      // Remove transaction reference from old vendor
+      if (oldVendorId) {
+        const oldVendor = await Vendor.findById(oldVendorId);
+        if (oldVendor && oldVendor.Transactions?.toString() === transactionId) {
+          oldVendor.Transactions = null;
+          
+          oldVendor.editors.push({
+            name: session.user.name,
+            email: session.user.email,
+            branch: session.user.branch,
+            date: new Date(),
+            updatedFields: [
+              {
+                name: "Transactions",
+                previousValue: transactionId,
+                newValue: "null",
+              },
+            ],
+          });
+
+          await oldVendor.save();
+        }
+      }
+
+      // Add transaction reference to new vendor
+      if (newVendorId) {
+        const newVendor = await Vendor.findById(newVendorId);
+        if (!newVendor) {
+          return NextResponse.json(
+            { error: "New vendor not found" },
+            { status: 404 }
+          );
+        }
+
+        const previousTransactionId = newVendor.Transactions?.toString() || "null";
+        newVendor.Transactions = transactionId;
+
+        newVendor.editors.push({
+          name: session.user.name,
+          email: session.user.email,
+          branch: session.user.branch,
+          date: new Date(),
+          updatedFields: [
+            {
+              name: "Transactions",
+              previousValue: previousTransactionId,
+              newValue: transactionId,
+            },
+          ],
+        });
+
+        await newVendor.save();
+      }
+    }
+
     // Update transaction
     existingTransaction.expense = expenseCategory;
     existingTransaction.expenseGiver = {
@@ -112,6 +175,7 @@ export async function PUT(req) {
     existingTransaction.branch = branch;
     existingTransaction.date = date;
     existingTransaction.remarks = remarks || "";
+    existingTransaction.vendor = expenseGiver.type === "VENDOR" ? expenseGiver.vendorId : null; // For backward compatibility
 
     // Add edit tracking
     if (updatedFields.length > 0) {

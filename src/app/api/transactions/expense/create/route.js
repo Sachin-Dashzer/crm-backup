@@ -4,21 +4,13 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import connectDB from "@/lib/db";
 import Transactions from "@/models/Transactions";
-import vendor from "@/models/Vendor";
+import Vendor from "@/models/Vendor";
 
 export async function POST(req) {
   try {
     const session = await getServerSession(authOptions);
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    // Check if user is admin
-    if (session.user.role !== "admin") {
-      return NextResponse.json(
-        { error: "Only admins can create expense transactions" },
-        { status: 403 }
-      );
     }
 
     await connectDB();
@@ -50,6 +42,8 @@ export async function POST(req) {
       );
     }
 
+    let vendorDoc = null;
+
     // If vendor type, verify vendor exists
     if (expenseGiver.type === "VENDOR") {
       if (!expenseGiver.vendorId) {
@@ -59,8 +53,8 @@ export async function POST(req) {
         );
       }
 
-      const vendor = await vendor.findById(expenseGiver.vendorId);
-      if (!vendor) {
+      vendorDoc = await Vendor.findById(expenseGiver.vendorId);
+      if (!vendorDoc) {
         return NextResponse.json(
           { error: "Vendor not found" },
           { status: 404 }
@@ -84,7 +78,7 @@ export async function POST(req) {
       branch: branch || session.user.branch,
       date: date ? new Date(date) : new Date(),
       remarks: remarks || "",
-      vendor: expenseGiver.type === "VENDOR" ? expenseGiver.vendorId : null, // For backward compatibility
+      vendor: expenseGiver.type === "VENDOR" ? expenseGiver.vendorId : null,
       createdBy: {
         name: session.user.name,
         email: session.user.email,
@@ -94,6 +88,28 @@ export async function POST(req) {
     });
 
     await transaction.save();
+
+    // Update vendor with transaction reference if it's a vendor expense
+    if (expenseGiver.type === "VENDOR" && vendorDoc) {
+      vendorDoc.Transactions = transaction._id;
+      
+      // Add editor information
+      vendorDoc.editors.push({
+        name: session.user.name,
+        email: session.user.email,
+        branch: session.user.branch,
+        date: new Date(),
+        updatedFields: [
+          {
+            name: "Transactions",
+            previousValue: vendorDoc.Transactions?.toString() || "null",
+            newValue: transaction._id.toString(),
+          },
+        ],
+      });
+
+      await vendorDoc.save();
+    }
 
     return NextResponse.json(
       {

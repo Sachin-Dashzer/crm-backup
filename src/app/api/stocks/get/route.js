@@ -47,10 +47,8 @@ export async function GET(req) {
     // Otherwise, fetch multiple stocks with filters
     const query = {};
 
-    // Branch filter (if user is not admin)
-    if (session.user.role !== "admin" && session.user.branch !== "All") {
-      query.branch = session.user.branch;
-    } else if (branch && branch !== "All") {
+    // Branch filter - anyone can filter by branch
+    if (branch && branch !== "All") {
       query.branch = branch;
     }
 
@@ -75,12 +73,8 @@ export async function GET(req) {
     // Fetch stocks
     const stocks = await Stock.find(query).sort({ name: 1 }).lean();
 
-    // Calculate statistics
-    const allStocks = await Stock.find(
-      session.user.role !== "admin" && session.user.branch !== "All"
-        ? { branch: session.user.branch }
-        : {}
-    ).lean();
+    // Calculate statistics for all stocks
+    const allStocks = await Stock.find({}).lean();
 
     const statistics = {
       totalItems: allStocks.length,
@@ -155,10 +149,8 @@ export async function POST(req) {
     // Build query for multiple stocks
     const query = {};
 
-    // Branch filter
-    if (session.user.role !== "admin" && session.user.branch !== "All") {
-      query.branch = session.user.branch;
-    } else if (branch && branch !== "All") {
+    // Branch filter - anyone can filter by branch
+    if (branch && branch !== "All") {
       query.branch = branch;
     }
 
@@ -184,11 +176,7 @@ export async function POST(req) {
     const stocks = await Stock.find(query).sort({ name: 1 }).lean();
 
     // Calculate statistics for all stocks
-    const allStocks = await Stock.find(
-      session.user.role !== "admin" && session.user.branch !== "All"
-        ? { branch: session.user.branch }
-        : {}
-    ).lean();
+    const allStocks = await Stock.find({}).lean();
 
     const statistics = {
       totalItems: allStocks.length,

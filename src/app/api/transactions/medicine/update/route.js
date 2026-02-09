@@ -14,6 +14,14 @@ export async function PUT(req) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // Only admins can update medicine transactions
+    if (session.user.role !== "admin") {
+      return NextResponse.json(
+        { error: "Only admins can update medicine transactions" },
+        { status: 403 }
+      );
+    }
+
     await connectDB();
 
     const {
@@ -38,6 +46,14 @@ export async function PUT(req) {
       return NextResponse.json(
         { error: "Transaction not found" },
         { status: 404 }
+      );
+    }
+
+    // Check if it's a MEDICINE transaction
+    if (existingTransaction.transactionCategory !== "MEDICINE") {
+      return NextResponse.json(
+        { error: "This is not a medicine transaction" },
+        { status: 400 }
       );
     }
 
@@ -67,8 +83,14 @@ export async function PUT(req) {
       }
     }
 
+    // Get old medicine ID and quantity
+    const oldMedicineId = (existingTransaction.medicineId || existingTransaction.stock)?.toString();
+    const oldQuantity = existingTransaction.quantity;
+    const newMedicineId = medicineId.toString();
+    const newQuantity = parseInt(quantity);
+
     // Verify new medicine exists
-    const newMedicine = await Stock.findById(medicineId);
+    const newMedicine = await Stock.findById(newMedicineId);
     if (!newMedicine) {
       return NextResponse.json(
         { error: "Medicine not found" },
@@ -76,39 +98,60 @@ export async function PUT(req) {
       );
     }
 
-    // Restore stock for old medicine if changed
-    if (
-      existingTransaction.medicineId &&
-      existingTransaction.medicineId.toString() !== medicineId
-    ) {
-      await Stock.findByIdAndUpdate(existingTransaction.medicineId, {
-        $inc: { totalQuantity: existingTransaction.quantity },
-      });
-    } else if (existingTransaction.quantity !== quantity) {
-      // If same medicine but different quantity, restore old quantity
-      await Stock.findByIdAndUpdate(existingTransaction.medicineId, {
-        $inc: { totalQuantity: existingTransaction.quantity },
-      });
-    }
+    // Handle stock updates based on what changed
+    if (oldMedicineId !== newMedicineId) {
+      // Medicine changed - restore old medicine stock and deduct from new medicine
+      
+      // Restore stock to old medicine
+      if (oldMedicineId) {
+        await Stock.findByIdAndUpdate(oldMedicineId, {
+          $inc: { totalQuantity: oldQuantity },
+        });
+      }
 
-    // Check if new medicine has sufficient stock
-    if (newMedicine.totalQuantity < quantity) {
-      return NextResponse.json(
-        {
-          error: `Insufficient stock for ${newMedicine.name}. Available: ${newMedicine.totalQuantity}`,
-        },
-        { status: 400 }
-      );
+      // Check if new medicine has sufficient stock
+      if (newMedicine.totalQuantity < newQuantity) {
+        return NextResponse.json(
+          {
+            error: `Insufficient stock for ${newMedicine.name}. Available: ${newMedicine.totalQuantity}`,
+          },
+          { status: 400 }
+        );
+      }
+
+      // Deduct from new medicine
+      await Stock.findByIdAndUpdate(newMedicineId, {
+        $inc: { totalQuantity: -newQuantity },
+      });
+    } else if (oldQuantity !== newQuantity) {
+      // Same medicine, different quantity - adjust the difference
+      const quantityDifference = newQuantity - oldQuantity;
+
+      // Check if we have sufficient stock for the additional quantity
+      if (quantityDifference > 0 && newMedicine.totalQuantity < quantityDifference) {
+        return NextResponse.json(
+          {
+            error: `Insufficient stock for ${newMedicine.name}. Available: ${newMedicine.totalQuantity}, Additional needed: ${quantityDifference}`,
+          },
+          { status: 400 }
+        );
+      }
+
+      // Update stock by the difference (negative if reducing quantity, positive if increasing)
+      await Stock.findByIdAndUpdate(newMedicineId, {
+        $inc: { totalQuantity: -quantityDifference },
+      });
     }
+    // If same medicine and same quantity, no stock update needed
 
     // Calculate amounts
-    const subtotal = quantity * parseFloat(perUnitCost);
+    const subtotal = newQuantity * parseFloat(perUnitCost);
     const finalAmount = subtotal - (discount || 0);
 
     // Track changes for audit
     const updatedFields = [];
     const trackChange = (fieldName, oldValue, newValue) => {
-      if (oldValue !== newValue) {
+      if (String(oldValue) !== String(newValue)) {
         updatedFields.push({
           name: fieldName,
           previousValue: String(oldValue || ""),
@@ -124,9 +167,11 @@ export async function PUT(req) {
     trackChange("quantity", existingTransaction.quantity, quantity);
     trackChange("perUnitCost", existingTransaction.perUnitCost, perUnitCost);
     trackChange("discount", existingTransaction.discount, discount);
+    trackChange("amount", existingTransaction.amount, finalAmount);
     trackChange("method", existingTransaction.method, method);
     trackChange("paymentId", existingTransaction.paymentId, paymentId);
     trackChange("branch", existingTransaction.branch, branch);
+    trackChange("date", existingTransaction.date, date);
     trackChange("remarks", existingTransaction.remarks, remarks);
 
     // Update transaction
@@ -134,7 +179,7 @@ export async function PUT(req) {
     existingTransaction.patientName = patientName || "";
     existingTransaction.patientPhone = patientPhone || "";
     existingTransaction.medicineId = medicineId;
-    existingTransaction.quantity = quantity;
+    existingTransaction.quantity = newQuantity;
     existingTransaction.perUnitCost = parseFloat(perUnitCost);
     existingTransaction.amount = finalAmount;
     existingTransaction.discount = discount || 0;
@@ -147,30 +192,31 @@ export async function PUT(req) {
 
     // Add editor info
     if (updatedFields.length > 0) {
-      existingTransaction.editors.push({
+      const editorInfo = {
         name: session.user.name,
         email: session.user.email,
         branch: session.user.branch,
         date: new Date(),
         updatedFields,
-      });
+      };
+
+      existingTransaction.editors = existingTransaction.editors || [];
+      existingTransaction.editors.push(editorInfo);
+      existingTransaction.totalEdits = (existingTransaction.totalEdits || 0) + 1;
+      existingTransaction.lastEditedBy = editorInfo;
     }
 
     await existingTransaction.save();
 
-    // Update new medicine stock
-    await Stock.findByIdAndUpdate(medicineId, {
-      $inc: { totalQuantity: -quantity },
-    });
-
     return NextResponse.json({
+      success: true,
       message: "Medicine sale updated successfully",
       transaction: existingTransaction,
     });
   } catch (error) {
     console.error("Error updating medicine transaction:", error);
     return NextResponse.json(
-      { error: "Failed to update transaction" },
+      { error: error.message || "Failed to update transaction" },
       { status: 500 }
     );
   }

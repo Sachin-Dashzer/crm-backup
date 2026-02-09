@@ -19,18 +19,28 @@ const handler = async (req) => {
     ops,
   } = await req.json();
 
-  
   if (!personal || !personal.phone?.trim() || !personal.name?.trim()) {
     return NextResponse.json(
       {
         success: false,
         error: "Please fill all the required fields (name and phone)",
       },
-      { status: 400 } 
+      { status: 400 },
     );
   }
 
-  
+  const phone = personal.phone.trim();
+
+  if (!/^\d{10}$/.test(phone)) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Phone number must be exactly 10 digits",
+      },
+      { status: 400 },
+    );
+  }
+
   const existingPatient = await Patient.findOne({
     "personal.phone": personal.phone,
   });
@@ -41,12 +51,11 @@ const handler = async (req) => {
         success: false,
         error: "Patient already exists with this phone number",
       },
-      { status: 409 } 
+      { status: 409 },
     );
   }
 
   try {
-    
     if (personal.reference) {
       const employeeExists = await Employee.findById(personal.reference);
       if (!employeeExists) {
@@ -55,7 +64,7 @@ const handler = async (req) => {
             success: false,
             error: "Reference employee not found",
           },
-          { status: 404 }
+          { status: 404 },
         );
       }
     }
@@ -67,13 +76,13 @@ const handler = async (req) => {
         email: personal.email?.trim() || "",
         age: personal.age || null,
         gender: personal.gender || "MALE",
-        branch: personal.branch || "", 
+        branch: personal.branch || "",
         address: personal.address || "",
         profession: personal.profession || "",
         visitDate: personal.visitDate || new Date(),
         reference: personal.reference || null,
-        purpose : personal.purpose || "",
-        packageQuoted: personal.packageQuoted || 0, 
+        purpose: personal.purpose || "",
+        packageQuoted: personal.packageQuoted || 0,
         techniqueQuoted: personal.techniqueQuoted || "",
         remarks: personal.remarks || "",
       },
@@ -84,7 +93,7 @@ const handler = async (req) => {
       payments: payments || {},
       documents: documents || {},
       ops: ops || {},
-      editors: [], 
+      editors: [],
     });
 
     const savedPatient = await newPatient.save();
@@ -101,19 +110,18 @@ const handler = async (req) => {
                 patient: savedPatient._id,
               },
             },
-            { new: true }
+            { new: true },
           ).catch((error) => {
             console.error(
               `Error updating employee ${fieldName} with ID ${employeeId}:`,
-              error
+              error,
             );
             return null;
-          })
+          }),
         );
       }
     };
 
-    
     if (personal.reference) {
       addEmployeeUpdate(personal.reference, "reference");
     }
@@ -123,7 +131,6 @@ const handler = async (req) => {
     }
 
     if (surgery) {
-      
       const arrayFields = [
         "doctor",
         "seniorTech",
@@ -140,14 +147,12 @@ const handler = async (req) => {
               addEmployeeUpdate(employeeId, `${field}[${index}]`);
             });
           } else {
-            
             addEmployeeUpdate(surgery[field], field);
           }
         }
       });
     }
 
-    
     if (employeeUpdatePromises.length > 0) {
       await Promise.all(employeeUpdatePromises);
     }
@@ -158,7 +163,7 @@ const handler = async (req) => {
         success: true,
         message: `Patient created successfully and ${employeeUpdatePromises.length} employees updated`,
       },
-      { status: 201 }
+      { status: 201 },
     );
   } catch (error) {
     console.error("Error creating patient:", error);
@@ -166,7 +171,7 @@ const handler = async (req) => {
       {
         error: "Internal server error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 };

@@ -1,197 +1,273 @@
+// app/api/transactions/transplant/update/route.js
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { authOptions } from "../../../auth/[...nextauth]/route";
-import Transaction from "@/models/Transactions";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import Transactions from "@/models/Transactions";
 import Patient from "@/models/Patient";
 import connectDB from "@/lib/db";
+import mongoose from "mongoose";
 
 export async function PUT(req) {
   try {
+    // Authentication check
     const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!session?.user?.name || !session?.user?.email || !session?.user?.branch) {
+      return NextResponse.json(
+        { success: false, message: "Unauthorized. Please login." },
+        { status: 401 }
+      );
     }
 
     await connectDB();
 
-    const body = await req.json();
-    const {
-      transactionId,
-      patientId,
-      procedure,
-      paymentType,
-      amount,
-      discount = 0,
-      method,
-      paymentId,
-      branch,
-      date,
-      remarks,
-    } = body;
+    const data = await req.json();
 
-    // Validation
-    if (!transactionId || !patientId || !amount) {
+    // Validate transaction ID
+    if (!data.transactionId || !mongoose.Types.ObjectId.isValid(data.transactionId)) {
       return NextResponse.json(
-        { error: "Missing required fields" },
+        { success: false, message: "Valid transaction ID is required" },
         { status: 400 }
       );
     }
 
     // Find existing transaction
-    const existingTransaction = await Transaction.findById(transactionId);
+    const existingTransaction = await Transactions.findById(data.transactionId);
     if (!existingTransaction) {
       return NextResponse.json(
-        { error: "Transaction not found" },
+        { success: false, message: "Transaction not found" },
         { status: 404 }
       );
     }
 
-    // Check if it's a transplant transaction
+    // Verify it's a TRANSPLANT transaction
     if (existingTransaction.transactionCategory !== "TRANSPLANT") {
       return NextResponse.json(
-        { error: "This is not a transplant transaction" },
+        { success: false, message: "Not a transplant transaction" },
         { status: 400 }
       );
     }
 
-    // Check permissions
-    if (session.user.role !== "admin") {
-      if (existingTransaction.branch !== session.user.branch) {
+    // Basic validations
+    if (data.method !== undefined && !data.method) {
+      return NextResponse.json(
+        { success: false, message: "Payment method is required" },
+        { status: 400 }
+      );
+    }
+
+    if (data.amount !== undefined && data.amount <= 0) {
+      return NextResponse.json(
+        { success: false, message: "Amount must be positive" },
+        { status: 400 }
+      );
+    }
+
+    // Validate procedure if provided
+    if (data.procedure !== undefined) {
+      const validTransplantProcedures = ["Sapphire FUE", "DHI", "Turkish DHI", "Beard Transplant"];
+      if (!validTransplantProcedures.includes(data.procedure)) {
         return NextResponse.json(
-          { error: "You don't have permission to edit this transaction" },
-          { status: 403 }
+          { success: false, message: "Invalid procedure for transplant transaction" },
+          { status: 400 }
         );
       }
     }
 
-    // Find patient
-    const patient = await Patient.findById(patientId);
-    if (!patient) {
-      return NextResponse.json(
-        { error: "Patient not found" },
-        { status: 404 }
-      );
-    }
+    // Store original values
+    const originalPatientId = existingTransaction.patient?.toString();
+    const originalAmount = existingTransaction.amount || 0;
+    const originalProcedure = existingTransaction.procedure;
+    const originalDiscount = existingTransaction.discount || 0;
 
-    // Calculate old and new amounts
-    const oldAmount = parseFloat(existingTransaction.amount) || 0;
-    const oldDiscount = parseFloat(existingTransaction.discount) || 0;
-    const oldNetAmount = oldAmount - oldDiscount;
+    // New values
+    const newPatientId = data.patientId?.toString();
+    const newAmount = data.amount !== undefined ? Number(data.amount) : originalAmount;
+    const newProcedure = data.procedure || originalProcedure;
+    const newDiscount = data.discount !== undefined ? Number(data.discount) : originalDiscount;
 
-    const newAmount = parseFloat(amount) || 0;
-    const newDiscount = parseFloat(discount) || 0;
-    const newNetAmount = newAmount - newDiscount;
-
-    // Track changes for audit
+    // Track changed fields
     const updatedFields = [];
-    const trackField = (fieldName, oldVal, newVal) => {
-      if (String(oldVal) !== String(newVal)) {
-        updatedFields.push({
-          name: fieldName,
-          previousValue: String(oldVal || ""),
-          newValue: String(newVal || ""),
-        });
-      }
+    const fieldMapping = {
+      patientId: { name: "Patient", getValue: (val) => val?.toString() || "" },
+      procedure: { name: "Procedure", getValue: (val) => val || "" },
+      paymentType: { name: "Payment Type", getValue: (val) => val || "" },
+      amount: { name: "Amount", getValue: (val) => val?.toString() || "0" },
+      discount: { name: "Discount", getValue: (val) => val?.toString() || "0" },
+      method: { name: "Payment Method", getValue: (val) => val || "" },
+      paymentId: { name: "Payment ID", getValue: (val) => val || "" },
+      date: { name: "Date", getValue: (val) => val ? new Date(val).toISOString() : "" },
+      branch: { name: "Branch", getValue: (val) => val || "" },
+      remarks: { name: "Remarks", getValue: (val) => val || "" },
     };
 
-    trackField("procedure", existingTransaction.procedure, procedure);
-    trackField("paymentType", existingTransaction.paymentType, paymentType);
-    trackField("amount", existingTransaction.amount, amount);
-    trackField("discount", existingTransaction.discount, discount);
-    trackField("method", existingTransaction.method, method);
-    trackField("paymentId", existingTransaction.paymentId, paymentId);
-    trackField("branch", existingTransaction.branch, branch);
-    trackField("date", existingTransaction.date, date);
-    trackField("remarks", existingTransaction.remarks, remarks);
+    // Compare fields and track changes
+    Object.keys(data).forEach((key) => {
+      if (key === "transactionId") return; // Skip ID field
+      
+      if (fieldMapping[key]) {
+        const mapping = fieldMapping[key];
+        const fieldKey = key === "patientId" ? "patient" : key;
+        const previousValue = mapping.getValue(existingTransaction[fieldKey]);
+        const newValue = mapping.getValue(data[key]);
+        
+        if (previousValue !== newValue) {
+          updatedFields.push({
+            name: mapping.name,
+            previousValue: previousValue,
+            newValue: newValue,
+          });
+        }
+      }
+    });
 
-    // Update patient's payment info if amount changed
-    const oldPatientId = existingTransaction.patient?.toString();
-    const newPatientId = patientId.toString();
-    const patientChanged = oldPatientId !== newPatientId;
+    // Prepare update data
+    const { transactionId, patientId, ...updateData } = data;
+    
+    // Map patientId to patient field
+    if (patientId !== undefined) {
+      updateData.patient = patientId;
+    }
+    
+    if (updateData.amount !== undefined) {
+      updateData.amount = Number(updateData.amount);
+    }
+    if (updateData.discount !== undefined) {
+      updateData.discount = Number(updateData.discount);
+    }
 
-    if (patientChanged || oldNetAmount !== newNetAmount || oldDiscount !== newDiscount) {
-      // Revert old patient's amounts
-      if (oldPatientId && oldPatientId !== newPatientId) {
-        const oldPatient = await Patient.findById(oldPatientId);
-        if (oldPatient) {
-          oldPatient.payments.amountReceived = Math.max(
-            0,
-            (oldPatient.payments.amountReceived || 0) - oldNetAmount
+    // Add editor to transaction with tracked fields
+    const editorEntry = {
+      name: session.user.name,
+      email: session.user.email,
+      branch: session.user.branch,
+      date: new Date(),
+      updatedFields: updatedFields,
+    };
+
+    // Update the transaction with editor
+    const updatedTransaction = await Transactions.findByIdAndUpdate(
+      data.transactionId,
+      {
+        $set: updateData,
+        $push: { editors: editorEntry },
+      },
+      { new: true, runValidators: true }
+    );
+
+    // Function to recalculate patient payments for TRANSPLANT
+    const recalculatePatientPayments = async (patientId) => {
+      if (!patientId || !mongoose.Types.ObjectId.isValid(patientId)) {
+        return null;
+      }
+
+      const patient = await Patient.findById(patientId);
+      if (!patient) return null;
+
+      // Initialize payments
+      patient.payments = patient.payments || {
+        amountReceived: 0,
+        pendingAmount: 0,
+        medicineAmount: 0,
+        discount: 0,
+        totalAmount: 0,
+        transactions: [],
+      };
+
+      // Fetch all revenue transactions for this patient
+      const allTransactions = await Transactions.find({
+        _id: { $in: patient.payments.transactions },
+        costType: "Revenue",
+      });
+
+      // Recalculate from scratch (TRANSPLANT: all amounts go to amountReceived)
+      let totalAmountReceived = 0;
+      let totalDiscount = 0;
+
+      allTransactions.forEach((transaction) => {
+        const amount = transaction.amount || 0;
+        totalAmountReceived += amount;
+        totalDiscount += transaction.discount || 0;
+      });
+
+      patient.payments.amountReceived = totalAmountReceived;
+      patient.payments.discount = totalDiscount;
+
+      // Calculate pending amount
+      const adjustedTotal = Math.max(0, patient.payments.totalAmount - totalDiscount);
+      patient.payments.pendingAmount = Math.max(0, adjustedTotal - totalAmountReceived);
+
+      // Add editor to patient
+      patient.editors = patient.editors || [];
+      patient.editors.push(editorEntry);
+
+      return await patient.save();
+    };
+
+    // Handle patient updates
+    const patientChanged = originalPatientId !== newPatientId;
+    const dataChanged =
+      originalAmount !== newAmount ||
+      originalDiscount !== newDiscount;
+
+    // Patient changed - update both patients
+    if (patientChanged) {
+      // Remove from original patient
+      if (originalPatientId) {
+        const originalPatient = await Patient.findById(originalPatientId);
+        if (originalPatient?.payments) {
+          originalPatient.payments.transactions = originalPatient.payments.transactions.filter(
+            (tid) => tid.toString() !== data.transactionId.toString()
           );
-          oldPatient.payments.discount = Math.max(
-            0,
-            (oldPatient.payments.discount || 0) - oldDiscount
-          );
-          oldPatient.payments.pendingAmount =
-            (oldPatient.payments.totalAmount || 0) -
-            oldPatient.payments.amountReceived -
-            oldPatient.payments.discount;
-          await oldPatient.save();
+          await originalPatient.save();
+          await recalculatePatientPayments(originalPatientId);
         }
       }
 
-      // Apply to new/same patient
-      if (patientChanged) {
-        // New patient gets full new amounts
-        patient.payments.amountReceived =
-          (patient.payments.amountReceived || 0) + newNetAmount;
-        patient.payments.discount = (patient.payments.discount || 0) + newDiscount;
-      } else {
-        // Same patient gets the difference
-        const amountDiff = newNetAmount - oldNetAmount;
-        const discountDiff = newDiscount - oldDiscount;
-        patient.payments.amountReceived =
-          (patient.payments.amountReceived || 0) + amountDiff;
-        patient.payments.discount = (patient.payments.discount || 0) + discountDiff;
+      // Add to new patient
+      if (newPatientId) {
+        const newPatient = await Patient.findById(newPatientId);
+        if (newPatient) {
+          newPatient.payments = newPatient.payments || {
+            amountReceived: 0,
+            pendingAmount: 0,
+            medicineAmount: 0,
+            discount: 0,
+            totalAmount: 0,
+            transactions: [],
+          };
+          if (!newPatient.payments.transactions.some(tid => tid.toString() === data.transactionId.toString())) {
+            newPatient.payments.transactions.push(data.transactionId);
+          }
+          await newPatient.save();
+          await recalculatePatientPayments(newPatientId);
+        }
       }
-
-      patient.payments.pendingAmount =
-        (patient.payments.totalAmount || 0) -
-        patient.payments.amountReceived -
-        patient.payments.discount;
-
-      await patient.save();
+    }
+    // Same patient but data changed
+    else if (originalPatientId && dataChanged) {
+      await recalculatePatientPayments(originalPatientId);
     }
 
-    // Update transaction
-    existingTransaction.patient = patientId;
-    existingTransaction.procedure = procedure;
-    existingTransaction.paymentType = paymentType;
-    existingTransaction.amount = amount;
-    existingTransaction.discount = discount;
-    existingTransaction.method = method;
-    existingTransaction.paymentId = paymentId || "";
-    existingTransaction.branch = branch;
-    existingTransaction.date = date;
-    existingTransaction.remarks = remarks || "";
-
-    // Add edit tracking
-    if (updatedFields.length > 0) {
-      const editorInfo = {
-        name: session.user.name,
-        email: session.user.email,
-        branch: session.user.branch,
-        date: new Date(),
-        updatedFields,
-      };
-
-      existingTransaction.editors = existingTransaction.editors || [];
-      existingTransaction.editors.push(editorInfo);
-      existingTransaction.totalEdits = (existingTransaction.totalEdits || 0) + 1;
-      existingTransaction.lastEditedBy = editorInfo;
-    }
-
-    await existingTransaction.save();
-
-    return NextResponse.json({
-      success: true,
-      message: "Transplant transaction updated successfully",
-      transaction: existingTransaction,
-    });
+    return NextResponse.json(
+      {
+        success: true,
+        message: "Transplant transaction updated successfully",
+        data: updatedTransaction,
+      },
+      { status: 200 }
+    );
   } catch (error) {
     console.error("Error updating transplant transaction:", error);
+
+    if (error.name === "ValidationError") {
+      return NextResponse.json(
+        { success: false, message: error.message },
+        { status: 400 }
+      );
+    }
+
     return NextResponse.json(
-      { error: error.message || "Failed to update transaction" },
+      { success: false, message: "Internal server error" },
       { status: 500 }
     );
   }

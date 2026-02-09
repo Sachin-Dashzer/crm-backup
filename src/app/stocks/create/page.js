@@ -57,7 +57,7 @@ export default function CreateStockPage() {
 
       if (data.success) {
         alert("Stock item created successfully!");
-        router.push("/stocks");
+        router.push("/stocks/dashboard");
       } else {
         alert(data.message || "Failed to create stock item");
       }
