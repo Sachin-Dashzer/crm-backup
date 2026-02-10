@@ -58,7 +58,6 @@ export default function ReceptionSidebar() {
     { name: "Add Patient", path: "/reception/add-patient", icon: UserPlus },
     { name: "Not Visited", path: "/reception/not-visited", icon: UserX },
     { name: "Transactions", path: "/reception/transactions", icon: IndianRupee },
-    { name: "Create Bill", path: "/reception/create-bill", icon: FileText },
     { name: "Reports", path: "/reception/reports", icon: BarChart3 },
     { name: "Performance", path: "/reception/performance", icon: TrendingUp },
   ];

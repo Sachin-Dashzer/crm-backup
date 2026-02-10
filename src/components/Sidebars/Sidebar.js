@@ -163,19 +163,13 @@ export default function AdminSidebar() {
           {/* Financial Section */}
           <NavSection title="Financial">
             <NavItem
-              item="Amounts"
-              href="/admin/amounts"
+              item="Transactions"
+              href="/admin/transactions"
               icon={IndianRupee}
-              isActive={pathname === "/admin/amounts"}
+              isActive={pathname === "/admin/transactions"}
               onClick={() => setSidebarOpen(false)}
             />
-            <NavItem
-              item="View Bills"
-              href="/admin/view-bill"
-              icon={IndianRupee}
-              isActive={pathname === "/admin/view-bill"}
-              onClick={() => setSidebarOpen(false)}
-            />
+           
           </NavSection>
 
           {/* Analytics Section */}

@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState, useRef } from "react";
+import { useEffect, useMemo, useState } from "react";
 import AdminSidebar from "@/components/Sidebars/Sidebar";
 import { useToast } from "@/components/Toast";
+import BillGenerator from "@/components/BillGenerator";
 import {
   Filter,
   X,
@@ -14,11 +15,8 @@ import {
   User,
   Calendar,
   IndianRupee,
-  TrendingUp,
-  TrendingDown,
   CreditCard,
   Building2,
-  CheckCircle2,
   AlertCircle,
   Trash2,
   RefreshCw,
@@ -29,7 +27,6 @@ import {
   Download,
   ChevronDown,
   ChevronUp,
-  Hash,
   Clock,
   Mail,
   FileText,
@@ -37,13 +34,19 @@ import {
   MapPin,
   History,
   UserCheck,
+  Scissors,
+  Heart,
+  Pill,
+  Receipt,
+  Package,
+  FileText as Bill,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 // ========== UTILITY FUNCTIONS ==========
 const calculateNetAmount = (transaction) => {
   if (!transaction) return 0;
   const amount = parseFloat(transaction.amount) || 0;
-  const discount = parseFloat(transaction.discount) || 0;
   return Math.max(0, amount);
 };
 
@@ -66,10 +69,11 @@ const formatDateTime = (date) => {
   if (!date) return "N/A";
   return new Date(date).toLocaleString("en-IN", {
     day: "2-digit",
-    month: "short",
+    month: "2-digit",
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
+    hour12: true,
   });
 };
 
@@ -78,8 +82,8 @@ const formatCurrency = (amount) => {
   return new Intl.NumberFormat("en-IN", {
     style: "currency",
     currency: "INR",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
   }).format(num);
 };
 
@@ -92,34 +96,53 @@ const formatFieldName = (fieldName) => {
 };
 
 const BRANCHES = ["Delhi", "Mumbai", "Hyderabad"];
-const PAYMENT_METHODS = ["upi", "cash", "card", "banking", "loan", "other"];
-const PROCEDURES = [
+// ✅ FIX 1: Match schema - "Loan" with capital L
+const PAYMENT_METHODS = ["upi", "cash", "card", "banking", "Loan", "other"];
+const TRANSPLANT_PROCEDURES = [
   "Sapphire FUE",
   "DHI",
   "Turkish DHI",
   "Beard Transplant",
-  "PRP",
-  "GFC",
-  "Medicine",
-  "Other",
+];
+const SERVICE_PROCEDURES = ["PRP", "GFC"];
+const TRANSACTION_CATEGORIES = [
+  { value: "TRANSPLANT", label: "Transplant", icon: Scissors, color: "indigo" },
+  { value: "SERVICE", label: "Services", icon: Heart, color: "pink" },
+  { value: "MEDICINE", label: "Medicine", icon: Pill, color: "emerald" },
+  { value: "EXPENSE", label: "Expenses", icon: Receipt, color: "rose" },
 ];
 
-const COST_TYPES = ["Revenue", "Expenses"];
-const PAYMENT_TYPES = ["Booking", "Pending", "Full-payment", "Other"];
+// ✅ FIX 7: Hardcoded gradient classes for each category (Tailwind JIT compatibility)
+const getCategoryGradientClass = (categoryValue, isActive) => {
+  if (!isActive) return "bg-gray-50 text-gray-600 hover:bg-gray-100";
+
+  const gradients = {
+    TRANSPLANT:
+      "bg-gradient-to-r from-indigo-500 to-indigo-600 text-white shadow-md",
+    SERVICE: "bg-gradient-to-r from-pink-500 to-pink-600 text-white shadow-md",
+    MEDICINE:
+      "bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-md",
+    EXPENSE: "bg-gradient-to-r from-rose-500 to-rose-600 text-white shadow-md",
+  };
+
+  return gradients[categoryValue] || "bg-gray-50 text-gray-600";
+};
+
+// ... (StatCard, DeleteConfirmModal, Input, Select components remain the same)
 
 // ========== STAT CARD COMPONENT ==========
 function StatCard({
   title,
   value,
   icon: Icon,
-  linear,
+  gradient,
   count,
   iconBg,
   iconColor,
 }) {
   return (
     <div
-      className={`bg-linear-to-br ${linear} p-4 sm:p-6 rounded-2xl shadow-lg text-white relative overflow-hidden transform hover:scale-105 transition-transform duration-300`}
+      className={`bg-linear-to-br ${gradient} p-4 sm:p-6 rounded-2xl shadow-lg text-white relative overflow-hidden transform hover:scale-105 transition-transform duration-300`}
     >
       <div className="absolute top-0 right-0 w-24 h-24 sm:w-32 sm:h-32 bg-white/10 rounded-full -mr-12 -mt-12 sm:-mr-16 sm:-mt-16" />
       <div className="relative">
@@ -169,44 +192,28 @@ function DeleteConfirmModal({ transaction, onClose, onConfirm }) {
           </h2>
           <p className="text-gray-600 text-center mb-4 sm:mb-6 text-sm sm:text-base">
             Are you sure you want to delete this transaction? This action cannot
-            be undone and will update patient balance if applicable.
+            be undone.
           </p>
           <div className="bg-gray-50 rounded-xl p-3 sm:p-4 mb-4 sm:mb-6 space-y-2">
-            {transaction?.paymentId && (
-              <div className="flex justify-between items-center pb-2 border-b border-gray-200">
-                <span className="text-sm text-gray-600">TransID / CardNo:</span>
-                <span className="font-bold text-gray-900 text-sm sm:text-base">
-                  {transaction.paymentId}
-                </span>
-              </div>
-            )}
             <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">Original Amount:</span>
-              <span
-                className={`font-bold text-gray-900 text-sm sm:text-base ${
-                  hasDiscount ? "line-through text-gray-500" : ""
-                }`}
-              >
-                {formatCurrency(transaction?.amount || 0)}
+              <span className="text-sm text-gray-600">Category:</span>
+              <span className="font-bold text-gray-900 text-sm sm:text-base">
+                {transaction?.transactionCategory || "Uncategorized"}
+              </span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-600">Amount:</span>
+              <span className="font-bold text-emerald-600 text-sm sm:text-base">
+                {formatCurrency(netAmount)}
               </span>
             </div>
             {hasDiscount && (
-              <>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Discount:</span>
-                  <span className="font-bold text-amber-600 text-sm sm:text-base">
-                    -{formatCurrency(transaction?.discount || 0)}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center pt-2 border-t border-gray-200">
-                  <span className="text-sm font-semibold text-gray-700">
-                    Net Amount:
-                  </span>
-                  <span className="font-bold text-emerald-600 text-sm sm:text-base">
-                    {formatCurrency(netAmount)}
-                  </span>
-                </div>
-              </>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-600">Discount:</span>
+                <span className="font-bold text-amber-600 text-sm sm:text-base">
+                  -{formatCurrency(transaction?.discount || 0)}
+                </span>
+              </div>
             )}
             <div className="flex justify-between items-center pt-2 border-t border-gray-200">
               <span className="text-sm text-gray-600">Date:</span>
@@ -214,14 +221,6 @@ function DeleteConfirmModal({ transaction, onClose, onConfirm }) {
                 {formatDateForDisplay(transaction?.date)}
               </span>
             </div>
-            {transaction?.patient && (
-              <div className="mt-2 pt-2 border-t border-gray-200">
-                <div className="text-xs text-gray-500 flex items-center gap-1">
-                  <AlertCircle className="w-3 h-3" />
-                  Patient balance will be updated automatically
-                </div>
-              </div>
-            )}
           </div>
           <div className="flex flex-col xs:flex-row gap-3">
             <button
@@ -266,7 +265,6 @@ function Input({
   placeholder,
   min,
   max,
-  step,
 }) {
   return (
     <label className="block">
@@ -285,7 +283,6 @@ function Input({
           placeholder={placeholder}
           min={min}
           max={max}
-          step={step}
           className={`w-full border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-100 focus:border-indigo-300 transition-all text-sm sm:text-base ${
             Icon ? "pl-9 sm:pl-11 pr-4" : "px-4"
           } py-2.5 sm:py-3`}
@@ -325,543 +322,8 @@ function Select({ label, value, onChange, options, required, icon: Icon }) {
   );
 }
 
-// ========== TRANSACTION MODAL COMPONENT ==========
-function TransactionModal({ transaction, patients, onClose, onSuccess }) {
-  const isEdit = !!transaction;
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [searchPatient, setSearchPatient] = useState("");
-  const [showPatientDropdown, setShowPatientDropdown] = useState(false);
-  const toast = useToast();
-
-  
-  // Define placeholder mapping
-  const paymentMethodPlaceholders = {
-    upi: "UPI Ref No",
-    card: "Card No",
-    banking: "Transaction Id",
-    loan: "Bajaj DO Id",
-    cash: "Transaction Id",
-    other: "Transaction Id",
-  };
-  // Methods that require TransID to be filled
-  const mandatoryTransIdMethods = ['upi', 'card', 'banking', 'loan'];
-
-  // Check if current method requires TransID
-  const isTransIdRequired = () => {
-    const method = formData.method?.toLowerCase();
-    return mandatoryTransIdMethods.includes(method);
-  };
-
-  // Get current placeholder based on payment method
-  const getPaymentMethodPlaceholder = () => {
-    const method = formData.method?.toLowerCase();
-    const placeholder = paymentMethodPlaceholders[method] || "ENTER TRANSACTION ID";
-    
-    // Add required indicator to placeholder for mandatory methods
-    if (isTransIdRequired()) {
-      return `${placeholder} `;
-    }
-    return placeholder;
-  };
-
-  const [formData, setFormData] = useState({
-    _id: transaction?._id || "",
-    costType: transaction?.costType || "Revenue",
-    method: transaction?.method || "cash",
-    procedure: transaction?.procedure || "Sapphire FUE",
-    paymentType: transaction?.paymentType || "Booking",
-    paymentId: transaction?.paymentId || "",
-    branch: transaction?.branch || "Delhi",
-    amount: transaction?.amount?.toString() || "",
-    discount: transaction?.discount?.toString() || "0",
-    date: transaction?.date
-      ? new Date(transaction.date).toISOString().split("T")[0]
-      : new Date().toISOString().split("T")[0],
-    expense: transaction?.expense || "",
-    remarks: transaction?.remarks || "",
-    patient: transaction?.patient?._id || "",
-  });
-
-  useEffect(() => {
-    if (transaction) {
-      setFormData({
-        _id: transaction._id,
-        costType: transaction.costType || "Revenue",
-        method: transaction.method || "cash",
-        procedure: transaction.procedure || "Sapphire FUE",
-        paymentType: transaction.paymentType || "Booking",
-        paymentId: transaction.paymentId || "",
-        branch: transaction.branch || "Delhi",
-        amount: transaction.amount?.toString() || "",
-        discount: transaction.discount?.toString() || "0",
-        date: transaction.date
-          ? new Date(transaction.date).toISOString().split("T")[0]
-          : new Date().toISOString().split("T")[0],
-        expense: transaction.expense || "",
-        remarks: transaction.remarks || "",
-        patient: transaction.patient?._id || "",
-      });
-    }
-  }, [transaction]);
-
-  const filteredPatients = useMemo(() => {
-    if (!searchPatient) return patients.slice(0, 10);
-    return patients
-      .filter(
-        (p) =>
-          p.personal?.name
-            ?.toLowerCase()
-            .includes(searchPatient.toLowerCase()) ||
-          p.personal?.phone?.includes(searchPatient)
-      )
-      .slice(0, 10);
-  }, [patients, searchPatient]);
-
-  const selectedPatient = useMemo(() => {
-    return patients.find((p) => p._id === formData.patient);
-  }, [patients, formData.patient]);
-
-  const pendingAmount = useMemo(() => {
-    if (formData.costType !== "Revenue" || !selectedPatient) return 0;
-
-    const existingPendingAmount =
-      parseFloat(selectedPatient.payments?.pendingAmount) || 0;
-    const formAmount = parseFloat(formData.amount) || 0;
-    const formDiscount = parseFloat(formData.discount) || 0;
-
-    return Math.max(0, existingPendingAmount - formAmount - formDiscount);
-  }, [formData.amount, formData.discount, formData.costType, selectedPatient]);
-
-  // Handle payment method change
-  const handlePaymentMethodChange = (method) => {
-    setFormData({
-      ...formData,
-      method,
-      // Clear payment ID when changing method (optional - remove if you want to keep it)
-      paymentId: ""
-    });
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    // Validation for TransID based on payment method
-    if (isTransIdRequired() && !formData.paymentId?.trim()) {
-      const method = formData.method?.toUpperCase();
-      setError(`${method} transactions require Transaction ID to be filled`);
-      return;
-    }
-
-    if (formData.costType === "Revenue" && !formData.patient) {
-      setError("Patient is required for revenue transactions");
-      return;
-    }
-
-    if (!formData.amount || parseFloat(formData.amount) <= 0) {
-      setError("Please enter a valid amount");
-      return;
-    }
-
-    const discountValue = parseFloat(formData.discount) || 0;
-    if (discountValue < 0) {
-      setError("Discount cannot be negative");
-      return;
-    }
-
-    if (formData.costType === "Expenses" && !formData.expense) {
-      setError("Expense type is required");
-      return;
-    }
-
-    setLoading(true);
-    setError("");
-
-    try {
-      const url = isEdit
-        ? "/api/transactions/update"
-        : "/api/transactions/create";
-      const method = isEdit ? "PUT" : "POST";
-
-      const payload = {
-        ...formData,
-        patient: formData.costType === "Expenses" ? null : formData.patient,
-        discount:
-          formData.costType === "Revenue" ? formData.discount || "0" : "0",
-        amount: formData.amount,
-        paymentId: formData.paymentId || undefined,
-      };
-
-      if (!isEdit) {
-        delete payload._id;
-      }
-
-      const res = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      const data = await res.json();
-
-      if (data.success) {
-        onSuccess();
-        toast.success(isEdit ? "Transaction updated successfully" : "Transaction created successfully");
-      } else {
-        setError(data.message || "Failed to save transaction");
-        toast.error(data.message || "Failed to save transaction");
-      }
-    } catch (err) {
-      setError("An error occurred while saving");
-      toast.error("An error occurred while saving");
-      console.error("Transaction save error:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4 overflow-y-auto">
-      <div className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl max-w-3xl w-full my-4 max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-linear-to-r from-indigo-500 to-purple-600 px-4 sm:px-8 py-4 sm:py-5 flex justify-between items-center rounded-t-2xl sm:rounded-t-3xl z-10">
-          <h2 className="text-xl sm:text-2xl font-bold text-white">
-            {isEdit ? "Edit Transaction" : "Add New Transaction"}
-          </h2>
-          <button
-            onClick={onClose}
-            className="p-1 sm:p-2 hover:bg-white/20 rounded-xl transition-colors"
-            type="button"
-          >
-            <X size={20} className="text-white" />
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="p-4 sm:p-6 lg:p-8">
-          {error && (
-            <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm flex items-start gap-2 sm:gap-3">
-              <AlertCircle size={18} className="shrink-0 mt-0.5" />
-              <span>{error}</span>
-            </div>
-          )}
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
-            <div className="md:col-span-2">
-              <label className="block text-sm font-semibold text-gray-700 mb-3">
-                Transaction Type <span className="text-red-500">*</span>
-              </label>
-              <div className="grid grid-cols-2 gap-2 sm:gap-3">
-                {COST_TYPES.map((type) => (
-                  <button
-                    key={type}
-                    type="button"
-                    onClick={() =>
-                      setFormData({
-                        ...formData,
-                        costType: type,
-                        patient: type === "Expenses" ? "" : formData.patient,
-                        discount: type === "Expenses" ? "0" : formData.discount,
-                      })
-                    }
-                    className={`p-3 sm:p-4 rounded-xl border-2 transition-all font-semibold text-sm sm:text-base ${
-                      formData.costType === type
-                        ? type === "Revenue"
-                          ? "border-emerald-500 bg-emerald-50 text-emerald-700 shadow-md"
-                          : "border-rose-500 bg-rose-50 text-rose-700 shadow-md"
-                        : "border-gray-200 bg-white text-gray-600 hover:border-gray-300"
-                    }`}
-                  >
-                    {type}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {formData.costType === "Revenue" && (
-              <div className="md:col-span-2">
-                <label className="block text-sm font-semibold text-gray-700 mb-3">
-                  Select Patient <span className="text-red-500">*</span>
-                </label>
-                <div className="space-y-3">
-                  <div className="relative">
-                    <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 sm:w-5 sm:h-5" />
-                    <input
-                      type="text"
-                      placeholder="Search patient by name or phone..."
-                      value={searchPatient}
-                      onChange={(e) => {
-                        setSearchPatient(e.target.value);
-                        setShowPatientDropdown(true);
-                      }}
-                      onFocus={() => setShowPatientDropdown(true)}
-                      className="w-full pl-9 sm:pl-11 pr-4 py-2.5 sm:py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-100 focus:border-indigo-300 transition-all text-sm sm:text-base"
-                    />
-                  </div>
-
-                  {selectedPatient && !showPatientDropdown && (
-                    <div className="p-3 sm:p-4 bg-indigo-50 border-2 border-indigo-200 rounded-xl flex items-center justify-between">
-                      <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-gray-900 truncate text-sm sm:text-base">
-                          {selectedPatient.personal?.name}
-                        </p>
-                        <p className="text-xs sm:text-sm text-gray-600 truncate">
-                          Total:{" "}
-                          {formatCurrency(
-                            selectedPatient.payments?.totalAmount || 0
-                          )}{" "}
-                          | Received:{" "}
-                          {formatCurrency(
-                            selectedPatient.payments?.amountReceived || 0
-                          )}{" "}
-                          | Pending:{" "}
-                          {formatCurrency(
-                            selectedPatient.payments?.pendingAmount || 0
-                          )}
-                        </p>
-                        <p className="text-xs sm:text-sm text-gray-600 truncate">
-                          Medicine:{" "}
-                          {formatCurrency(
-                            selectedPatient.payments?.medicineAmount || 0
-                          )}{" "}
-                          | Discount:{" "}
-                          {formatCurrency(
-                            selectedPatient.payments?.discount || 0
-                          )}
-                        </p>
-                      </div>
-                      <CheckCircle2
-                        className="text-emerald-600 shrink-0 ml-2"
-                        size={20}
-                      />
-                    </div>
-                  )}
-
-                  {showPatientDropdown && (
-                    <div className="max-h-48 overflow-y-auto border-2 border-gray-200 rounded-xl bg-white shadow-lg">
-                      {filteredPatients.length === 0 ? (
-                        <div className="p-3 text-center text-gray-500 text-sm">
-                          No patients found
-                        </div>
-                      ) : (
-                        filteredPatients.map((patient) => (
-                          <button
-                            key={patient._id}
-                            type="button"
-                            onClick={() => {
-                              setFormData({
-                                ...formData,
-                                patient: patient._id,
-                              });
-                              setSearchPatient("");
-                              setShowPatientDropdown(false);
-                            }}
-                            className={`w-full p-2 sm:p-3 text-left hover:bg-indigo-50 transition-colors border-b border-gray-100 last:border-0 ${
-                              formData.patient === patient._id
-                                ? "bg-indigo-50"
-                                : ""
-                            }`}
-                          >
-                            <p className="font-medium text-gray-900 text-sm sm:text-base truncate">
-                              {patient.personal?.name} -{" "}
-                              {patient.personal?.phone}
-                            </p>
-                            <p className="text-xs text-gray-600 truncate">
-                              Total:{" "}
-                              {formatCurrency(
-                                patient.payments?.totalAmount || 0
-                              )}{" "}
-                              | Received:{" "}
-                              {formatCurrency(
-                                patient.payments?.amountReceived || 0
-                              )}{" "}
-                              | Pending:{" "}
-                              {formatCurrency(
-                                patient.payments?.pendingAmount || 0
-                              )}
-                            </p>
-                            <p className="text-xs text-gray-600 truncate">
-                              Medicine:{" "}
-                              {formatCurrency(
-                                patient.payments?.medicineAmount || 0
-                              )}{" "}
-                              | Discount:{" "}
-                              {formatCurrency(patient.payments?.discount || 0)}
-                            </p>
-                          </button>
-                        ))
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            <Select
-              label="Branch"
-              value={formData.branch}
-              onChange={(val) => setFormData({ ...formData, branch: val })}
-              options={BRANCHES.map((b) => ({ value: b, label: b }))}
-              required
-              icon={Building2}
-            />
-
-            {formData.costType === "Revenue" ? (
-              <>
-                <Select
-                  label="Procedure"
-                  value={formData.procedure}
-                  onChange={(val) =>
-                    setFormData({ ...formData, procedure: val })
-                  }
-                  options={PROCEDURES.map((p) => ({ value: p, label: p }))}
-                  required
-                />
-                <Select
-                  label="Payment Type"
-                  value={formData.paymentType}
-                  onChange={(val) =>
-                    setFormData({ ...formData, paymentType: val })
-                  }
-                  options={PAYMENT_TYPES.map((t) => ({ value: t, label: t }))}
-                  required
-                />
-              </>
-            ) : (
-              <Input
-                label="Expense Type"
-                value={formData.expense}
-                onChange={(val) => setFormData({ ...formData, expense: val })}
-                required
-                placeholder="e.g., Rent, Salary, Utilities"
-              />
-            )}
-
-            <Select
-              label="Payment Method"
-              value={formData.method}
-              onChange={handlePaymentMethodChange}
-              options={PAYMENT_METHODS.map((m) => ({
-                value: m,
-                label: m.toUpperCase(),
-              }))}
-              required
-              icon={CreditCard}
-            />
-
-            <Input
-              label="Amount"
-              type="number"
-              value={formData.amount}
-              onChange={(val) => setFormData({ ...formData, amount: val })}
-              required
-              icon={IndianRupee}
-              placeholder="0"
-              min="1"
-              step="0.01"
-            />
-
-            <Input
-              label={getPaymentMethodPlaceholder()}
-              value={formData.paymentId}
-              onChange={(val) => setFormData({ ...formData, paymentId: val })}
-              icon={Hash}
-              placeholder={getPaymentMethodPlaceholder()}
-              required={isTransIdRequired()}
-            />
-
-            {formData.costType === "Revenue" && (
-              <Input
-                label="Discount"
-                type="number"
-                value={formData.discount}
-                onChange={(val) => setFormData({ ...formData, discount: val })}
-                icon={Tag}
-                placeholder="0"
-                min="0"
-                step="0.01"
-              />
-            )}
-
-            <Input
-              label="Date"
-              type="date"
-              value={formData.date}
-              onChange={(val) => setFormData({ ...formData, date: val })}
-              required
-              icon={Calendar}
-              max={new Date().toISOString().split("T")[0]}
-            />
-
-            {formData.costType === "Revenue" && selectedPatient && (
-              <div className="flex items-end">
-                <div className="w-full p-3 bg-linear-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl">
-                  <p className="text-xs font-semibold text-blue-700 mb-1">
-                    {formData.amount
-                      ? "Pending Amount (After Transaction)"
-                      : "Current Pending Amount"}
-                  </p>
-                  <p className="text-xl font-bold text-blue-700">
-                    {formatCurrency(pendingAmount)}
-                  </p>
-                  {formData.amount ? (
-                    <p className="text-xs text-blue-600 mt-1">
-                      Existing Pending:{" "}
-                      {formatCurrency(
-                        selectedPatient.payments?.pendingAmount || 0
-                      )}{" "}
-                      - Payment: {formatCurrency(formData.amount)} - Discount:{" "}
-                      {formatCurrency(formData.discount)}
-                    </p>
-                  ) : (
-                    <p className="text-xs text-blue-600 mt-1">
-                      Enter payment amount to see updated balance
-                    </p>
-                  )}
-                </div>
-              </div>
-            )}
-
-            <div className="md:col-span-2">
-              <Input
-                label="Remarks"
-                value={formData.remarks}
-                onChange={(val) => setFormData({ ...formData, remarks: val })}
-                placeholder="Add any additional notes..."
-              />
-            </div>
-          </div>
-
-          <div className="flex flex-col xs:flex-row gap-3 mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-gray-200">
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={loading}
-              className="flex-1 px-4 sm:px-6 py-2.5 sm:py-3 border-2 border-gray-200 rounded-xl hover:bg-gray-50 transition-all font-semibold text-gray-700 disabled:opacity-50 text-sm sm:text-base"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="flex-1 px-4 sm:px-6 py-2.5 sm:py-3 bg-linear-to-r from-indigo-500 to-purple-600 text-white rounded-xl hover:from-indigo-600 hover:to-purple-700 transition-all font-semibold disabled:opacity-50 disabled:cursor-not-allowed shadow-lg flex items-center justify-center gap-2 text-sm sm:text-base"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Saving...
-                </>
-              ) : isEdit ? (
-                "Update Transaction"
-              ) : (
-                "Create Transaction"
-              )}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-}
 // ========== EXPANDED ROW DETAILS COMPONENT ==========
+// (Keep the same - no changes needed)
 function ExpandedRowDetails({ transaction, isExpanded }) {
   const [activeTab, setActiveTab] = useState("summary");
 
@@ -870,7 +332,6 @@ function ExpandedRowDetails({ transaction, isExpanded }) {
   return (
     <div className="bg-linear-to-br from-slate-50 via-indigo-50/30 to-purple-50/30 border-t-2 border-indigo-200 animate-in slide-in-from-top duration-300">
       <div className="p-4 sm:p-6 lg:p-8">
-        {/* Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 bg-linear-to-br from-indigo-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
@@ -885,12 +346,10 @@ function ExpandedRowDetails({ transaction, isExpanded }) {
               </p>
             </div>
           </div>
-
-          {/* Quick Stats */}
           <div className="flex items-center gap-3 sm:gap-4 bg-white rounded-xl px-4 py-3 shadow-md border border-slate-200 w-full sm:w-auto">
             <div className="text-center flex-1 sm:flex-initial">
               <div className="text-2xl font-bold text-indigo-700">
-                {transaction.totalEdits || 0}
+                {transaction.editors?.length || 0}
               </div>
               <div className="text-xs text-slate-600 font-medium">
                 Total Edits
@@ -901,18 +360,9 @@ function ExpandedRowDetails({ transaction, isExpanded }) {
               <div className="text-2xl font-bold text-emerald-700">1</div>
               <div className="text-xs text-slate-600 font-medium">Creator</div>
             </div>
-            <div className="h-10 w-px bg-slate-200" />
-            <div className="text-center flex-1 sm:flex-initial">
-              <div className="text-2xl font-bold text-purple-700">
-                {new Set(transaction.editors?.map((e) => e.email) || []).size ||
-                  0}
-              </div>
-              <div className="text-xs text-slate-600 font-medium">Editors</div>
-            </div>
           </div>
         </div>
 
-        {/* Tab Navigation */}
         <div className="flex gap-2 mb-6 bg-white rounded-xl p-1.5 shadow-sm border border-slate-200 overflow-x-auto">
           <button
             onClick={() => setActiveTab("summary")}
@@ -942,11 +392,9 @@ function ExpandedRowDetails({ transaction, isExpanded }) {
           </button>
         </div>
 
-        {/* Content */}
         <div className="space-y-4">
           {activeTab === "summary" ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Creator Card */}
               <div className="bg-white rounded-xl p-5 shadow-lg border border-slate-200 hover:shadow-xl transition-shadow">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="w-12 h-12 bg-linear-to-br from-emerald-400 to-green-600 rounded-xl flex items-center justify-center shadow-md">
@@ -1000,8 +448,7 @@ function ExpandedRowDetails({ transaction, isExpanded }) {
                 )}
               </div>
 
-              {/* Last Editor Card */}
-              {transaction.lastEditedBy && (
+              {transaction.editors && transaction.editors.length > 0 && (
                 <div className="bg-white rounded-xl p-5 shadow-lg border border-slate-200 hover:shadow-xl transition-shadow">
                   <div className="flex items-center gap-3 mb-4">
                     <div className="w-12 h-12 bg-linear-to-br from-indigo-400 to-purple-600 rounded-xl flex items-center justify-center shadow-md">
@@ -1018,7 +465,7 @@ function ExpandedRowDetails({ transaction, isExpanded }) {
                   </div>
                   <div className="space-y-3">
                     <p className="text-base font-bold text-slate-900">
-                      {transaction.lastEditedBy.name}
+                      {transaction.editors[transaction.editors.length - 1].name}
                     </p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div className="flex items-center gap-2 text-sm">
@@ -1026,7 +473,10 @@ function ExpandedRowDetails({ transaction, isExpanded }) {
                           <Mail className="w-4 h-4 text-blue-600" />
                         </div>
                         <span className="text-slate-700 truncate text-xs">
-                          {transaction.lastEditedBy.email}
+                          {
+                            transaction.editors[transaction.editors.length - 1]
+                              .email
+                          }
                         </span>
                       </div>
                       <div className="flex items-center gap-2 text-sm">
@@ -1034,7 +484,10 @@ function ExpandedRowDetails({ transaction, isExpanded }) {
                           <MapPin className="w-4 h-4 text-purple-600" />
                         </div>
                         <span className="text-slate-900 font-semibold text-xs">
-                          {transaction.lastEditedBy.branch}
+                          {
+                            transaction.editors[transaction.editors.length - 1]
+                              .branch
+                          }
                         </span>
                       </div>
                     </div>
@@ -1042,33 +495,13 @@ function ExpandedRowDetails({ transaction, isExpanded }) {
                       <div className="flex items-center gap-2 text-xs text-slate-600">
                         <Clock className="w-4 h-4 text-slate-400" />
                         <span>
-                          {formatDateTime(transaction.lastEditedBy.date)}
+                          {formatDateTime(
+                            transaction.editors[transaction.editors.length - 1]
+                              .date,
+                          )}
                         </span>
                       </div>
                     </div>
-
-                    {/* Modified Fields */}
-                    {transaction.lastEditedBy.updatedFields?.length > 0 && (
-                      <div className="mt-4 pt-4 border-t border-slate-200">
-                        <p className="text-xs font-bold text-slate-700 mb-2 flex items-center gap-2">
-                          <Tag className="w-4 h-4 text-indigo-600" />
-                          Modified Fields (
-                          {transaction.lastEditedBy.updatedFields.length})
-                        </p>
-                        <div className="flex flex-wrap gap-2">
-                          {transaction.lastEditedBy.updatedFields.map(
-                            (field, idx) => (
-                              <span
-                                key={idx}
-                                className="px-3 py-1.5 bg-linear-to-r from-indigo-50 to-purple-50 text-indigo-700 rounded-lg text-xs font-semibold border border-indigo-200 shadow-sm"
-                              >
-                                {formatFieldName(field.name)}
-                              </span>
-                            ),
-                          )}
-                        </div>
-                      </div>
-                    )}
                   </div>
                 </div>
               )}
@@ -1084,7 +517,6 @@ function ExpandedRowDetails({ transaction, isExpanded }) {
                       key={idx}
                       className="bg-white rounded-xl p-5 shadow-lg border-2 border-slate-200 hover:border-indigo-300 hover:shadow-xl transition-all"
                     >
-                      {/* Editor Header */}
                       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4 pb-4 border-b border-slate-200">
                         <div className="flex items-center gap-3">
                           <div className="w-12 h-12 bg-linear-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-md">
@@ -1106,7 +538,6 @@ function ExpandedRowDetails({ transaction, isExpanded }) {
                         </span>
                       </div>
 
-                      {/* Editor Info */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
                         <div className="flex items-center gap-2 text-sm">
                           <div className="w-8 h-8 bg-purple-50 rounded-lg flex items-center justify-center">
@@ -1126,7 +557,6 @@ function ExpandedRowDetails({ transaction, isExpanded }) {
                         </div>
                       </div>
 
-                      {/* Changed Fields */}
                       {editor.updatedFields?.length > 0 && (
                         <div className="space-y-3 pt-4 border-t border-slate-200">
                           <p className="text-sm font-bold text-slate-700 flex items-center gap-2">
@@ -1194,23 +624,34 @@ function ExpandedRowDetails({ transaction, isExpanded }) {
 }
 
 // ========== DATA TABLE COMPONENT ==========
+// (Keep same - just fix mobile bill button around line 1450)
 function DataTable({
-  type,
+  category,
   rows,
-  getPatientName,
-  getPatientNumber,
   onEdit,
   onDelete,
   onSort,
   sortConfig,
   pagination,
+  onGenerateBill,
 }) {
+  const router = useRouter();
   const [expandedRow, setExpandedRow] = useState(null);
 
-  const columns =
-    type === "revenue"
-      ? [
-          { key: "date", label: "Date", sortable: true, width: "110px" },
+  const hasUndefinedCategory = (row) => {
+    const category = row.transactionCategory || row.category;
+    return !category || category === "";
+  };
+
+  const getColumns = () => {
+    const baseColumns = [
+      { key: "date", label: "Date", sortable: true, width: "110px" },
+    ];
+
+    switch (category) {
+      case "TRANSPLANT":
+        return [
+          ...baseColumns,
           { key: "patient", label: "Patient", sortable: true, width: "160px" },
           {
             key: "procedure",
@@ -1218,37 +659,106 @@ function DataTable({
             sortable: true,
             width: "130px",
           },
-          { key: "method", label: "Method", sortable: true, width: "110px" },
           {
-            key: "totalPackage",
-            label: "Total",
-            sortable: false,
+            key: "paymentType",
+            label: "Payment Type",
+            sortable: true,
             width: "120px",
           },
           { key: "amount", label: "Amount", sortable: true, width: "130px" },
+          { key: "method", label: "Method", sortable: true, width: "110px" },
           {
             key: "paymentId",
             label: "Trans ID",
             sortable: true,
             width: "150px",
           },
-          { key: "pending", label: "Pending", sortable: false, width: "110px" },
           { key: "branch", label: "Branch", sortable: true, width: "110px" },
-          { key: "creator", label: "Audit", sortable: false, width: "120px" },
-          { key: "remarks", label: "Remarks", sortable: false, width: "180px" },
-          { key: "actions", label: "Actions", sortable: false, width: "90px" },
-        ]
-      : [
-          { key: "date", label: "Date", sortable: true, width: "110px" },
+          { key: "audit", label: "Audit", sortable: false, width: "120px" },
+          { key: "actions", label: "Actions", sortable: false, width: "120px" },
+        ];
+      case "SERVICE":
+        return [
+          ...baseColumns,
+          {
+            key: "patient",
+            label: "Patient/Customer",
+            sortable: true,
+            width: "160px",
+          },
+          {
+            key: "procedure",
+            label: "Service",
+            sortable: true,
+            width: "100px",
+          },
+          { key: "quantity", label: "Sessions", sortable: true, width: "90px" },
+          {
+            key: "perSessionCost",
+            label: "Per Session",
+            sortable: true,
+            width: "120px",
+          },
+          { key: "amount", label: "Total", sortable: true, width: "130px" },
+          { key: "method", label: "Method", sortable: true, width: "110px" },
+          {
+            key: "paymentId",
+            label: "Trans ID",
+            sortable: true,
+            width: "150px",
+          },
+          { key: "batchId", label: "Batch", sortable: false, width: "100px" },
+          { key: "branch", label: "Branch", sortable: true, width: "110px" },
+          { key: "audit", label: "Audit", sortable: false, width: "120px" },
+          { key: "actions", label: "Actions", sortable: false, width: "120px" },
+        ];
+      case "MEDICINE":
+        return [
+          ...baseColumns,
+          {
+            key: "patient",
+            label: "Patient/Customer",
+            sortable: true,
+            width: "160px",
+          },
+          {
+            key: "medicine",
+            label: "Medicine",
+            sortable: true,
+            width: "160px",
+          },
+          { key: "quantity", label: "Qty", sortable: true, width: "80px" },
+          {
+            key: "perUnitCost",
+            label: "Per Unit",
+            sortable: true,
+            width: "110px",
+          },
+          { key: "amount", label: "Total", sortable: true, width: "130px" },
+          { key: "method", label: "Method", sortable: true, width: "110px" },
+          {
+            key: "paymentId",
+            label: "Trans ID",
+            sortable: true,
+            width: "150px",
+          },
+          { key: "batchId", label: "Batch", sortable: false, width: "100px" },
+          { key: "branch", label: "Branch", sortable: true, width: "110px" },
+          { key: "audit", label: "Audit", sortable: false, width: "120px" },
+          { key: "actions", label: "Actions", sortable: false, width: "120px" },
+        ];
+      case "EXPENSE":
+        return [
+          ...baseColumns,
           { key: "expense", label: "Expense", sortable: true, width: "160px" },
           {
-            key: "category",
-            label: "Category",
+            key: "expenseGiver",
+            label: "Paid To",
             sortable: false,
-            width: "130px",
+            width: "160px",
           },
-          { key: "method", label: "Method", sortable: true, width: "110px" },
           { key: "amount", label: "Amount", sortable: true, width: "130px" },
+          { key: "method", label: "Method", sortable: true, width: "110px" },
           {
             key: "paymentId",
             label: "Trans ID",
@@ -1256,10 +766,15 @@ function DataTable({
             width: "150px",
           },
           { key: "branch", label: "Branch", sortable: true, width: "110px" },
-          { key: "creator", label: "Audit", sortable: false, width: "120px" },
-          { key: "remarks", label: "Remarks", sortable: false, width: "180px" },
-          { key: "actions", label: "Actions", sortable: false, width: "90px" },
+          { key: "audit", label: "Audit", sortable: false, width: "120px" },
+          { key: "actions", label: "Actions", sortable: false, width: "120px" },
         ];
+      default:
+        return baseColumns;
+    }
+  };
+
+  const columns = getColumns();
 
   const getProcedureColor = (proc) => {
     const colors = {
@@ -1269,7 +784,6 @@ function DataTable({
       "beard transplant": "bg-amber-100 text-amber-700 border-amber-200",
       prp: "bg-emerald-100 text-emerald-700 border-emerald-200",
       gfc: "bg-cyan-100 text-cyan-700 border-cyan-200",
-      medicine: "bg-orange-100 text-orange-700 border-orange-200",
     };
     return (
       colors[proc?.toLowerCase()] || "bg-gray-100 text-gray-700 border-gray-200"
@@ -1309,9 +823,43 @@ function DataTable({
 
   const gridTemplateColumns = columns.map((col) => col.width).join(" ");
 
+  const getPatientName = (row) => {
+    if (row.patient && typeof row.patient === "object") {
+      return row.patient.personal?.name || "N/A";
+    }
+    return row.patientName || "Walk-in Customer";
+  };
+
+  const getPatientPhone = (row) => {
+    if (row.patient && typeof row.patient === "object") {
+      return row.patient.personal?.phone || "";
+    }
+    return row.patientPhone || "";
+  };
+
+  const getMedicineName = (row) => {
+    if (row.medicineId && typeof row.medicineId === "object") {
+      return row.medicineId.name || "N/A";
+    }
+    return "N/A";
+  };
+
+  const getExpenseGiverName = (row) => {
+    // ✅ Already correct - handles both VENDOR and MANUAL
+    if (row.expenseGiver?.type === "VENDOR") {
+      if (typeof row.expenseGiver.vendorId === "object") {
+        return (
+          row.expenseGiver.vendorId?.name || row.expenseGiver.name || "N/A"
+        );
+      }
+      return row.expenseGiver.name || "N/A";
+    }
+    return row.expenseGiver?.name || "N/A";
+  };
+
   return (
     <div className="flex flex-col h-full bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
-      {/* Desktop Table Header */}
+      {/* Desktop Header - Keep same */}
       <div
         className="hidden md:grid items-center bg-linear-to-r from-slate-50 to-slate-100 border-b border-slate-200 min-h-13 px-2"
         style={{ gridTemplateColumns }}
@@ -1334,12 +882,12 @@ function DataTable({
         ))}
       </div>
 
-      {/* Mobile Header */}
+      {/* Mobile Header - Keep same */}
       <div className="md:hidden bg-linear-to-r from-slate-50 to-slate-100 border-b border-slate-200 px-4 py-3">
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-sm font-bold text-slate-900">
-              {type === "revenue" ? "Revenue Records" : "Expense Records"}
+              {category} Records
             </h3>
             <p className="text-xs text-slate-600">
               Showing {rows.length} of {pagination.total}
@@ -1354,7 +902,6 @@ function DataTable({
         </div>
       </div>
 
-      {/* Table Body */}
       <div className="flex-1 overflow-auto">
         {rows.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 sm:py-16 px-4">
@@ -1366,7 +913,7 @@ function DataTable({
             </h3>
             <p className="text-sm text-slate-600 text-center max-w-md">
               Try adjusting your search filters or add a new{" "}
-              {type === "revenue" ? "revenue" : "expense"} record
+              {category.toLowerCase()} transaction
             </p>
           </div>
         ) : (
@@ -1374,43 +921,40 @@ function DataTable({
             {rows.map((row, i) => {
               const netAmount = calculateNetAmount(row);
               const hasDiscount = parseFloat(row.discount || 0) > 0;
-              const pendingAmount = row.patient?.payments?.pendingAmount || 0;
-              const totalPackage = row.patient?.payments?.totalAmount || 0;
-              const phoneNumber = getPatientNumber(row.patient);
               const isExpanded = expandedRow === row._id;
 
               return (
                 <div key={row._id || i}>
-                  {/* Main Row */}
                   <div
                     className={`group transition-all duration-200 ${
                       isExpanded ? "bg-indigo-50/50" : "hover:bg-indigo-50/30"
                     }`}
                   >
-                    {/* Desktop View - Grid Layout */}
+                    {/* Desktop View - Keep all same until actions column */}
                     <div
                       className="hidden md:grid items-center min-h-16 px-2"
                       style={{ gridTemplateColumns }}
                     >
-                      {type === "revenue" ? (
-                        <>
-                          <div className="px-2 py-3">
-                            <div className="text-sm font-medium text-slate-900">
-                              {formatDateForDisplay(row.date)}
-                            </div>
+                      <div className="px-2 py-3">
+                        <div className="flex flex-col gap-1">
+                          <div className="text-sm font-medium text-slate-900">
+                            {formatDateForDisplay(row.date)}
                           </div>
+                        </div>
+                      </div>
 
+                      {category === "TRANSPLANT" && (
+                        <>
                           <div className="px-2 py-3">
                             <div>
                               <div className="text-sm font-semibold text-slate-900 truncate">
-                                {getPatientName(row.patient)}
+                                {getPatientName(row)}
                               </div>
                               <div className="text-xs text-slate-600 font-medium">
-                                {phoneNumber || "No phone"}
+                                {getPatientPhone(row) || "No phone"}
                               </div>
                             </div>
                           </div>
-
                           <div className="px-2 py-3">
                             <span
                               className={`inline-flex px-2 py-1 rounded-lg text-xs font-semibold border ${getProcedureColor(row.procedure)}`}
@@ -1418,26 +962,14 @@ function DataTable({
                               {row.procedure}
                             </span>
                           </div>
-
                           <div className="px-2 py-3">
-                            <span
-                              className={`inline-flex px-2 py-1 rounded-lg text-xs font-semibold border ${getMethodColor(row.method)}`}
-                            >
-                              {row.method?.toUpperCase()}
+                            <span className="inline-flex px-2 py-1 rounded-lg text-xs font-semibold bg-blue-100 text-blue-700 border border-blue-200">
+                              {row.paymentType}
                             </span>
                           </div>
-
-                          <div className="px-2 py-3 text-center">
-                            <div className="text-sm font-bold text-indigo-700">
-                              {formatCurrency(totalPackage)}
-                            </div>
-                          </div>
-
                           <div className="px-2 py-3">
                             <div className="text-center">
-                              <div
-                                className={`text-sm font-bold ${hasDiscount ? "text-emerald-700" : "text-emerald-600"}`}
-                              >
+                              <div className="text-sm font-bold text-emerald-700">
                                 {formatCurrency(netAmount)}
                               </div>
                               {hasDiscount && (
@@ -1450,125 +982,6 @@ function DataTable({
                               )}
                             </div>
                           </div>
-
-                          <div className="px-2 py-3">
-                            {row.paymentId ? (
-                              <div className="bg-slate-100 px-2 py-1 rounded text-xs font-mono text-slate-700 truncate">
-                                {row.paymentId}
-                              </div>
-                            ) : (
-                              <span className="text-xs text-slate-400">-</span>
-                            )}
-                          </div>
-
-                          <div className="px-2 py-3 text-center">
-                            <span
-                              className={`text-sm font-semibold ${pendingAmount > 0 ? "text-orange-600" : "text-slate-400"}`}
-                            >
-                              {formatCurrency(pendingAmount)}
-                            </span>
-                          </div>
-
-                          <div className="px-2 py-3">
-                            <span className="inline-flex px-2 py-1 rounded-lg text-xs font-semibold bg-blue-100 text-blue-700 border border-blue-200">
-                              {row.branch}
-                            </span>
-                          </div>
-
-                          <div className="px-2 py-3">
-                            <button
-                              onClick={() => toggleExpanded(row._id)}
-                              className={`group/btn inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all duration-200 border-2 ${
-                                isExpanded
-                                  ? "bg-linear-to-r from-indigo-600 to-purple-600 text-white border-transparent shadow-md"
-                                  : "bg-white hover:bg-indigo-50 border-slate-200 hover:border-indigo-300 text-slate-700 hover:text-indigo-700"
-                              }`}
-                            >
-                              {row.totalEdits > 0 ? (
-                                <>
-                                  <div className="relative">
-                                    <Edit2 className="w-3.5 h-3.5" />
-                                    <span
-                                      className={`absolute -top-1 -right-1 w-3 h-3 text-[8px] font-bold rounded-full flex items-center justify-center ${
-                                        isExpanded
-                                          ? "bg-white text-indigo-700"
-                                          : "bg-indigo-600 text-white"
-                                      }`}
-                                    >
-                                      {row.totalEdits}
-                                    </span>
-                                  </div>
-                                  <span className="text-xs font-semibold">
-                                    {row.lastEditedBy?.name?.split(" ")[0] ||
-                                      "Edited"}
-                                  </span>
-                                </>
-                              ) : (
-                                <>
-                                  <UserCheck className="w-3.5 h-3.5" />
-                                  <span className="text-xs font-semibold">
-                                    {row.createdBy?.name?.split(" ")[0] ||
-                                      "Created"}
-                                  </span>
-                                </>
-                              )}
-                              {isExpanded ? (
-                                <ChevronUp className="w-3 h-3 ml-0.5" />
-                              ) : (
-                                <ChevronDown className="w-3 h-3 ml-0.5" />
-                              )}
-                            </button>
-                          </div>
-
-                          <div className="px-2 py-3">
-                            <p className="text-sm text-slate-600 truncate">
-                              {row.remarks || (
-                                <span className="text-slate-400">
-                                  No remarks
-                                </span>
-                              )}
-                            </p>
-                          </div>
-
-                          <div className="px-2 py-3">
-                            <div className="flex items-center gap-2">
-                              <button
-                                onClick={() => onEdit(row)}
-                                className="p-2 hover:bg-indigo-100 rounded-lg transition-colors text-indigo-600 hover:text-indigo-800"
-                                title="Edit record"
-                              >
-                                <Edit2 size={18} />
-                              </button>
-                              <button
-                                onClick={() => onDelete(row)}
-                                className="p-2 hover:bg-red-100 rounded-lg transition-colors text-red-600 hover:text-red-800"
-                                title="Delete record"
-                              >
-                                <Trash2 size={18} />
-                              </button>
-                            </div>
-                          </div>
-                        </>
-                      ) : (
-                        <>
-                          <div className="px-2 py-3">
-                            <div className="text-sm font-medium text-slate-900">
-                              {formatDateForDisplay(row.date)}
-                            </div>
-                          </div>
-
-                          <div className="px-2 py-3">
-                            <div className="text-sm font-semibold text-slate-900 truncate">
-                              {row.expense}
-                            </div>
-                          </div>
-
-                          <div className="px-2 py-3">
-                            <span className="inline-flex px-2 py-1 rounded-lg text-xs font-semibold bg-amber-100 text-amber-700 border border-amber-200">
-                              {row.expense}
-                            </span>
-                          </div>
-
                           <div className="px-2 py-3">
                             <span
                               className={`inline-flex px-2 py-1 rounded-lg text-xs font-semibold border ${getMethodColor(row.method)}`}
@@ -1576,13 +989,6 @@ function DataTable({
                               {row.method?.toUpperCase()}
                             </span>
                           </div>
-
-                          <div className="px-2 py-3 text-right">
-                            <div className="text-sm font-bold text-rose-600">
-                              {formatCurrency(row.amount)}
-                            </div>
-                          </div>
-
                           <div className="px-2 py-3">
                             {row.paymentId ? (
                               <div className="bg-slate-100 px-2 py-1 rounded text-xs font-mono text-slate-700 truncate">
@@ -1592,128 +998,355 @@ function DataTable({
                               <span className="text-xs text-slate-400">-</span>
                             )}
                           </div>
-
                           <div className="px-2 py-3">
-                            <span className="inline-flex px-2 py-1 rounded-lg text-xs font-semibold bg-blue-100 text-blue-700 border border-blue-200">
+                            <span className="inline-flex px-2 py-1 rounded-lg text-xs font-semibold bg-purple-100 text-purple-700 border border-purple-200">
                               {row.branch}
                             </span>
                           </div>
+                        </>
+                      )}
 
+                      {category === "SERVICE" && (
+                        <>
                           <div className="px-2 py-3">
-                            <button
-                              onClick={() => toggleExpanded(row._id)}
-                              className={`group/btn inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all duration-200 border-2 ${
-                                isExpanded
-                                  ? "bg-linear-to-r from-indigo-600 to-purple-600 text-white border-transparent shadow-md"
-                                  : "bg-white hover:bg-indigo-50 border-slate-200 hover:border-indigo-300 text-slate-700 hover:text-indigo-700"
-                              }`}
-                            >
-                              {row.totalEdits > 0 ? (
-                                <>
-                                  <div className="relative">
-                                    <Edit2 className="w-3.5 h-3.5" />
-                                    <span
-                                      className={`absolute -top-1 -right-1 w-3 h-3 text-[8px] font-bold rounded-full flex items-center justify-center ${
-                                        isExpanded
-                                          ? "bg-white text-indigo-700"
-                                          : "bg-indigo-600 text-white"
-                                      }`}
-                                    >
-                                      {row.totalEdits}
-                                    </span>
-                                  </div>
-                                  <span className="text-xs font-semibold">
-                                    {row.lastEditedBy?.name?.split(" ")[0] ||
-                                      "Edited"}
-                                  </span>
-                                </>
-                              ) : (
-                                <>
-                                  <UserCheck className="w-3.5 h-3.5" />
-                                  <span className="text-xs font-semibold">
-                                    {row.createdBy?.name?.split(" ")[0] ||
-                                      "Created"}
-                                  </span>
-                                </>
-                              )}
-                              {isExpanded ? (
-                                <ChevronUp className="w-3 h-3 ml-0.5" />
-                              ) : (
-                                <ChevronDown className="w-3 h-3 ml-0.5" />
-                              )}
-                            </button>
-                          </div>
-
-                          <div className="px-2 py-3">
-                            <p className="text-sm text-slate-600 truncate">
-                              {row.remarks || (
-                                <span className="text-slate-400">
-                                  No remarks
-                                </span>
-                              )}
-                            </p>
-                          </div>
-
-                          <div className="px-2 py-3">
-                            <div className="flex items-center gap-2">
-                              <button
-                                onClick={() => onEdit(row)}
-                                className="p-2 hover:bg-indigo-100 rounded-lg transition-colors text-indigo-600 hover:text-indigo-800"
-                                title="Edit record"
-                              >
-                                <Edit2 size={18} />
-                              </button>
-                              <button
-                                onClick={() => onDelete(row)}
-                                className="p-2 hover:bg-red-100 rounded-lg transition-colors text-red-600 hover:text-red-800"
-                                title="Delete record"
-                              >
-                                <Trash2 size={18} />
-                              </button>
+                            <div>
+                              <div className="text-sm font-semibold text-slate-900 truncate">
+                                {getPatientName(row)}
+                              </div>
+                              <div className="text-xs text-slate-600 font-medium">
+                                {getPatientPhone(row) || "No phone"}
+                              </div>
                             </div>
+                          </div>
+                          <div className="px-2 py-3">
+                            <span
+                              className={`inline-flex px-2 py-1 rounded-lg text-xs font-semibold border ${getProcedureColor(row.procedure)}`}
+                            >
+                              {row.procedure}
+                            </span>
+                          </div>
+                          <div className="px-2 py-3 text-center">
+                            <div className="text-sm font-bold text-indigo-700">
+                              {row.quantity || 1}
+                            </div>
+                          </div>
+                          <div className="px-2 py-3 text-center">
+                            <div className="text-sm font-medium text-slate-900">
+                              {formatCurrency(row.perSessionCost || 0)}
+                            </div>
+                          </div>
+                          <div className="px-2 py-3">
+                            <div className="text-center">
+                              <div className="text-sm font-bold text-emerald-700">
+                                {formatCurrency(netAmount)}
+                              </div>
+                              {hasDiscount && (
+                                <div className="flex items-center justify-center gap-1 mt-1">
+                                  <Tag className="w-3 h-3 text-amber-500" />
+                                  <span className="text-xs text-amber-600 font-medium">
+                                    -{formatCurrency(row.discount)}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          <div className="px-2 py-3">
+                            <span
+                              className={`inline-flex px-2 py-1 rounded-lg text-xs font-semibold border ${getMethodColor(row.method)}`}
+                            >
+                              {row.method?.toUpperCase()}
+                            </span>
+                          </div>
+                          <div className="px-2 py-3">
+                            {row.paymentId ? (
+                              <div className="bg-slate-100 px-2 py-1 rounded text-xs font-mono text-slate-700 truncate">
+                                {row.paymentId}
+                              </div>
+                            ) : (
+                              <span className="text-xs text-slate-400">-</span>
+                            )}
+                          </div>
+                          <div className="px-2 py-3">
+                            {row.batchId ? (
+                              <div className="flex items-center gap-1">
+                                <Package className="w-3 h-3 text-indigo-600" />
+                                <span className="text-xs font-mono text-indigo-700">
+                                  {row.batchId.slice(-8)}
+                                </span>
+                              </div>
+                            ) : (
+                              <span className="text-xs text-slate-400">-</span>
+                            )}
+                          </div>
+                          <div className="px-2 py-3">
+                            <span className="inline-flex px-2 py-1 rounded-lg text-xs font-semibold bg-purple-100 text-purple-700 border border-purple-200">
+                              {row.branch}
+                            </span>
                           </div>
                         </>
                       )}
+
+                      {category === "MEDICINE" && (
+                        <>
+                          <div className="px-2 py-3">
+                            <div>
+                              <div className="text-sm font-semibold text-slate-900 truncate">
+                                {getPatientName(row)}
+                              </div>
+                              <div className="text-xs text-slate-600 font-medium">
+                                {getPatientPhone(row) || "No phone"}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="px-2 py-3">
+                            <div className="text-sm font-semibold text-slate-900 truncate">
+                              {getMedicineName(row)}
+                            </div>
+                          </div>
+                          <div className="px-2 py-3 text-center">
+                            <div className="text-sm font-bold text-indigo-700">
+                              {row.quantity || 1}
+                            </div>
+                          </div>
+                          <div className="px-2 py-3 text-center">
+                            <div className="text-sm font-medium text-slate-900">
+                              {formatCurrency(row.perUnitCost || 0)}
+                            </div>
+                          </div>
+                          <div className="px-2 py-3">
+                            <div className="text-center">
+                              <div className="text-sm font-bold text-emerald-700">
+                                {formatCurrency(netAmount)}
+                              </div>
+                              {hasDiscount && (
+                                <div className="flex items-center justify-center gap-1 mt-1">
+                                  <Tag className="w-3 h-3 text-amber-500" />
+                                  <span className="text-xs text-amber-600 font-medium">
+                                    -{formatCurrency(row.discount)}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          <div className="px-2 py-3">
+                            <span
+                              className={`inline-flex px-2 py-1 rounded-lg text-xs font-semibold border ${getMethodColor(row.method)}`}
+                            >
+                              {row.method?.toUpperCase()}
+                            </span>
+                          </div>
+                          <div className="px-2 py-3">
+                            {row.paymentId ? (
+                              <div className="bg-slate-100 px-2 py-1 rounded text-xs font-mono text-slate-700 truncate">
+                                {row.paymentId}
+                              </div>
+                            ) : (
+                              <span className="text-xs text-slate-400">-</span>
+                            )}
+                          </div>
+                          <div className="px-2 py-3">
+                            {row.batchId ? (
+                              <div className="flex items-center gap-1">
+                                <Package className="w-3 h-3 text-indigo-600" />
+                                <span className="text-xs font-mono text-indigo-700">
+                                  {row.batchId.slice(-8)}
+                                </span>
+                              </div>
+                            ) : (
+                              <span className="text-xs text-slate-400">-</span>
+                            )}
+                          </div>
+                          <div className="px-2 py-3">
+                            <span className="inline-flex px-2 py-1 rounded-lg text-xs font-semibold bg-purple-100 text-purple-700 border border-purple-200">
+                              {row.branch}
+                            </span>
+                          </div>
+                        </>
+                      )}
+
+                      {category === "EXPENSE" && (
+                        <>
+                          <div className="px-2 py-3">
+                            <div className="text-sm font-semibold text-slate-900 truncate">
+                              {row.expense || row.expenseCategory || "N/A"}
+                            </div>
+                          </div>
+                          <div className="px-2 py-3">
+                            <div className="text-sm text-slate-900 truncate">
+                              {getExpenseGiverName(row)}
+                            </div>
+                          </div>
+                          <div className="px-2 py-3 text-right">
+                            <div className="text-sm font-bold text-rose-600">
+                              {formatCurrency(row.amount)}
+                            </div>
+                          </div>
+                          <div className="px-2 py-3">
+                            <span
+                              className={`inline-flex px-2 py-1 rounded-lg text-xs font-semibold border ${getMethodColor(row.method)}`}
+                            >
+                              {row.method?.toUpperCase()}
+                            </span>
+                          </div>
+                          <div className="px-2 py-3">
+                            {row.paymentId ? (
+                              <div className="bg-slate-100 px-2 py-1 rounded text-xs font-mono text-slate-700 truncate">
+                                {row.paymentId}
+                              </div>
+                            ) : (
+                              <span className="text-xs text-slate-400">-</span>
+                            )}
+                          </div>
+                          <div className="px-2 py-3">
+                            <span className="inline-flex px-2 py-1 rounded-lg text-xs font-semibold bg-purple-100 text-purple-700 border border-purple-200">
+                              {row.branch}
+                            </span>
+                          </div>
+                        </>
+                      )}
+
+                      {/* Audit Column */}
+                      <div className="px-2 py-3">
+                        <button
+                          onClick={() => toggleExpanded(row._id)}
+                          className={`group/btn inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all duration-200 border-2 ${
+                            isExpanded
+                              ? "bg-linear-to-r from-indigo-600 to-purple-600 text-white border-transparent shadow-md"
+                              : "bg-white hover:bg-indigo-50 border-slate-200 hover:border-indigo-300 text-slate-700 hover:text-indigo-700"
+                          }`}
+                        >
+                          {row.editors?.length > 0 ? (
+                            <>
+                              <div className="relative">
+                                <Edit2 className="w-3.5 h-3.5" />
+                                <span
+                                  className={`absolute -top-1 -right-1 w-3 h-3 text-[8px] font-bold rounded-full flex items-center justify-center ${
+                                    isExpanded
+                                      ? "bg-white text-indigo-700"
+                                      : "bg-indigo-600 text-white"
+                                  }`}
+                                >
+                                  {row.editors.length}
+                                </span>
+                              </div>
+                              <span className="text-xs font-semibold">
+                                {row.editors[
+                                  row.editors.length - 1
+                                ]?.name?.split(" ")[0] || "Edited"}
+                              </span>
+                            </>
+                          ) : (
+                            <>
+                              <UserCheck className="w-3.5 h-3.5" />
+                              <span className="text-xs font-semibold">
+                                {row.createdBy?.name?.split(" ")[0] ||
+                                  "Created"}
+                              </span>
+                            </>
+                          )}
+                          {isExpanded ? (
+                            <ChevronUp className="w-3 h-3 ml-0.5" />
+                          ) : (
+                            <ChevronDown className="w-3 h-3 ml-0.5" />
+                          )}
+                        </button>
+                      </div>
+
+                      {/* Actions Column */}
+                      <div className="px-2 py-3">
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => onGenerateBill(row)}
+                            className="p-2 hover:bg-emerald-100 rounded-lg transition-colors text-emerald-600 hover:text-emerald-800"
+                            title="Generate Bill"
+                          >
+                            <Bill size={18} />
+                          </button>
+                          <button
+                            onClick={() =>
+                              router.push(`/admin/transactions/edit/${row._id}`)
+                            }
+                            className="p-2 hover:bg-indigo-100 rounded-lg transition-colors text-indigo-600 hover:text-indigo-800"
+                            title="Edit record"
+                          >
+                            <Edit2 size={18} />
+                          </button>
+                          <button
+                            onClick={() => onDelete(row)}
+                            className="p-2 hover:bg-red-100 rounded-lg transition-colors text-red-600 hover:text-red-800"
+                            title="Delete record"
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        </div>
+                      </div>
                     </div>
 
-                    {/* Mobile Card View */}
+                    {/* Mobile View */}
                     <div className="md:hidden p-4">
                       <div className="space-y-4">
-                        {/* Header Row */}
                         <div className="flex items-start justify-between">
                           <div>
-                            <div className="flex items-center gap-2 mb-1">
+                            <div className="flex items-center gap-2 mb-1 flex-wrap">
                               <span
-                                className={`px-2 py-1 rounded text-xs font-semibold ${type === "revenue" ? getProcedureColor(row.procedure) : "bg-amber-100 text-amber-700"}`}
+                                className={`px-2 py-1 rounded text-xs font-semibold ${
+                                  category === "TRANSPLANT"
+                                    ? getProcedureColor(row.procedure)
+                                    : category === "SERVICE"
+                                      ? getProcedureColor(row.procedure)
+                                      : category === "MEDICINE"
+                                        ? "bg-emerald-100 text-emerald-700 border border-emerald-200"
+                                        : "bg-rose-100 text-rose-700 border border-rose-200"
+                                }`}
                               >
-                                {type === "revenue"
+                                {category === "TRANSPLANT" ||
+                                category === "SERVICE"
                                   ? row.procedure
-                                  : row.expense}
+                                  : category === "MEDICINE"
+                                    ? getMedicineName(row)
+                                    : row.expense ||
+                                      row.expenseCategory ||
+                                      "Expense"}
                               </span>
                               <span
                                 className={`px-2 py-1 rounded text-xs font-semibold ${getMethodColor(row.method)}`}
                               >
                                 {row.method?.toUpperCase()}
                               </span>
+                              {hasUndefinedCategory(row) && (
+                                <span className="inline-flex items-center gap-1 px-2 py-1 bg-amber-100 text-amber-700 rounded text-xs font-semibold border border-amber-200">
+                                  <AlertCircle className="w-3 h-3" />
+                                  Uncategorized
+                                </span>
+                              )}
                             </div>
                             <h4 className="text-base font-bold text-slate-900">
-                              {type === "revenue"
-                                ? getPatientName(row.patient)
-                                : row.expense}
+                              {category !== "EXPENSE"
+                                ? getPatientName(row)
+                                : getExpenseGiverName(row)}
                             </h4>
-                            {type === "revenue" && (
+                            {category !== "EXPENSE" && (
                               <p className="text-sm text-slate-600 font-medium">
-                                {phoneNumber}
+                                {getPatientPhone(row)}
+                              </p>
+                            )}
+                            {category === "EXPENSE" && (
+                              <p className="text-sm text-slate-600 font-medium">
+                                {row.expense ||
+                                  row.expenseCategory ||
+                                  "General Expense"}
                               </p>
                             )}
                           </div>
                           <div className="text-right">
                             <div
-                              className={`text-lg font-bold ${type === "revenue" ? "text-emerald-700" : "text-rose-600"}`}
+                              className={`text-lg font-bold ${
+                                category === "EXPENSE"
+                                  ? "text-rose-600"
+                                  : "text-emerald-700"
+                              }`}
                             >
-                              {formatCurrency(
-                                type === "revenue" ? netAmount : row.amount,
-                              )}
+                              {formatCurrency(netAmount)}
                             </div>
                             <p className="text-xs text-slate-500">
                               {formatDateForDisplay(row.date)}
@@ -1721,35 +1354,64 @@ function DataTable({
                           </div>
                         </div>
 
-                        {/* Details Grid */}
                         <div className="grid grid-cols-2 gap-3">
-                          {type === "revenue" && (
+                          {(category === "SERVICE" ||
+                            category === "MEDICINE") && (
                             <>
                               <div>
                                 <p className="text-xs text-slate-500 mb-1">
-                                  Total Package
+                                  {category === "SERVICE"
+                                    ? "Sessions"
+                                    : "Quantity"}
                                 </p>
                                 <p className="text-sm font-semibold text-indigo-700">
-                                  {formatCurrency(totalPackage)}
+                                  {row.quantity || 1}
                                 </p>
                               </div>
                               <div>
                                 <p className="text-xs text-slate-500 mb-1">
-                                  Pending
+                                  {category === "SERVICE"
+                                    ? "Per Session"
+                                    : "Per Unit"}
                                 </p>
-                                <p
-                                  className={`text-sm font-semibold ${pendingAmount > 0 ? "text-orange-600" : "text-slate-400"}`}
-                                >
-                                  {formatCurrency(pendingAmount)}
+                                <p className="text-sm font-semibold text-slate-700">
+                                  {formatCurrency(
+                                    category === "SERVICE"
+                                      ? row.perSessionCost
+                                      : row.perUnitCost,
+                                  )}
                                 </p>
                               </div>
                             </>
                           )}
+
+                          {category === "TRANSPLANT" && (
+                            <div>
+                              <p className="text-xs text-slate-500 mb-1">
+                                Payment Type
+                              </p>
+                              <p className="text-sm font-semibold text-blue-700">
+                                {row.paymentType || "N/A"}
+                              </p>
+                            </div>
+                          )}
+
+                          {category === "EXPENSE" && (
+                            <div>
+                              <p className="text-xs text-slate-500 mb-1">
+                                Expense Type
+                              </p>
+                              <p className="text-sm font-semibold text-rose-700">
+                                {row.expense || row.expenseCategory || "N/A"}
+                              </p>
+                            </div>
+                          )}
+
                           <div>
                             <p className="text-xs text-slate-500 mb-1">
                               Branch
                             </p>
-                            <p className="text-sm font-semibold text-blue-700">
+                            <p className="text-sm font-semibold text-purple-700">
                               {row.branch}
                             </p>
                           </div>
@@ -1761,9 +1423,18 @@ function DataTable({
                               {row.paymentId || "-"}
                             </p>
                           </div>
+                          {row.batchId && (
+                            <div className="col-span-2">
+                              <p className="text-xs text-slate-500 mb-1">
+                                Batch ID
+                              </p>
+                              <p className="text-sm font-mono text-indigo-700">
+                                {row.batchId.slice(-8)}
+                              </p>
+                            </div>
+                          )}
                         </div>
 
-                        {/* Remarks */}
                         {row.remarks && (
                           <div>
                             <p className="text-xs text-slate-500 mb-1">
@@ -1775,7 +1446,6 @@ function DataTable({
                           </div>
                         )}
 
-                        {/* Footer Actions */}
                         <div className="flex items-center justify-between pt-3 border-t border-slate-200">
                           <button
                             onClick={() => toggleExpanded(row._id)}
@@ -1785,10 +1455,10 @@ function DataTable({
                                 : "bg-indigo-50 text-indigo-700 hover:bg-indigo-100"
                             }`}
                           >
-                            {row.totalEdits > 0 ? (
+                            {row.editors?.length > 0 ? (
                               <>
                                 <Edit2 size={14} />
-                                <span>History ({row.totalEdits})</span>
+                                <span>History ({row.editors.length})</span>
                               </>
                             ) : (
                               <>
@@ -1802,9 +1472,22 @@ function DataTable({
                               <ChevronDown size={14} />
                             )}
                           </button>
+
                           <div className="flex items-center gap-2">
+                            {/* ✅ FIX 3: Pass entire row object, not just ID */}
                             <button
-                              onClick={() => onEdit(row)}
+                              onClick={() => onGenerateBill(row)}
+                              className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-lg text-sm font-medium hover:bg-emerald-100 transition-colors"
+                            >
+                              <Bill size={14} />
+                              Bill
+                            </button>
+                            <button
+                              onClick={() =>
+                                router.push(
+                                  `/admin/transactions/edit/${row._id}`,
+                                )
+                              }
                               className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 text-indigo-700 rounded-lg text-sm font-medium hover:bg-indigo-100 transition-colors"
                             >
                               <Edit2 size={14} />
@@ -1822,8 +1505,6 @@ function DataTable({
                       </div>
                     </div>
                   </div>
-
-                  {/* Expanded Row Details */}
                   <ExpandedRowDetails
                     transaction={row}
                     isExpanded={isExpanded}
@@ -1835,7 +1516,7 @@ function DataTable({
         )}
       </div>
 
-      {/* Enhanced Pagination */}
+      {/* Pagination - Keep same */}
       <div className="border-t border-slate-200 bg-white">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 sm:px-6 py-4">
           <div className="text-sm text-slate-600">
@@ -1850,7 +1531,6 @@ function DataTable({
           </div>
 
           <div className="flex items-center gap-4">
-            {/* Rows per page */}
             <div className="flex items-center gap-2">
               <span className="text-sm text-slate-600 hidden sm:inline">
                 Show
@@ -1874,17 +1554,14 @@ function DataTable({
               </span>
             </div>
 
-            {/* Page navigation */}
             <div className="flex items-center gap-1">
               <button
                 onClick={() => pagination.setPage((p) => Math.max(1, p - 1))}
                 disabled={pagination.page <= 1}
-                className="p-2 rounded-lg border border-slate-300 bg-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 hover:border-slate-400 transition-all disabled:hover:bg-white disabled:hover:border-slate-300"
-                aria-label="Previous page"
+                className="p-2 rounded-lg border border-slate-300 bg-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 hover:border-slate-400 transition-all"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
-
               <div className="flex items-center gap-1 mx-2">
                 {(() => {
                   const pages = [];
@@ -1930,14 +1607,12 @@ function DataTable({
                   );
                 })()}
               </div>
-
               <button
                 onClick={() =>
                   pagination.setPage((p) => Math.min(pagination.pages, p + 1))
                 }
                 disabled={pagination.page >= pagination.pages}
-                className="p-2 rounded-lg border border-slate-300 bg-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 hover:border-slate-400 transition-all disabled:hover:bg-white disabled:hover:border-slate-300"
-                aria-label="Next page"
+                className="p-2 rounded-lg border border-slate-300 bg-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 hover:border-slate-400 transition-all"
               >
                 <ChevronRight className="w-4 h-4" />
               </button>
@@ -1950,11 +1625,15 @@ function DataTable({
 }
 
 // ========== MAIN COMPONENT ==========
-export default function AmountDashboard() {
-  const [revenue, setRevenue] = useState([]);
-  const [expenses, setExpenses] = useState([]);
-  const [patients, setPatients] = useState([]);
-
+export default function AllTransactionsPage() {
+  const router = useRouter();
+  const [transactions, setTransactions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+  const [activeCategory, setActiveCategory] = useState("TRANSPLANT");
   const [filters, setFilters] = useState({
     branch: "",
     dateFrom: getTodayDate(),
@@ -1962,78 +1641,50 @@ export default function AmountDashboard() {
     paymentMethod: "",
     procedure: "",
   });
-
-  const [activeTab, setActiveTab] = useState("revenue");
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [showFilters, setShowFilters] = useState(false);
   const [tableSearch, setTableSearch] = useState("");
-  const [refreshing, setRefreshing] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [downloading, setDownloading] = useState(false);
-
-  const [showModal, setShowModal] = useState(false);
-  const [editingTransaction, setEditingTransaction] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deletingTransaction, setDeletingTransaction] = useState(null);
-
+  const [showBillGenerator, setShowBillGenerator] = useState(false);
+  const [selectedTransactionId, setSelectedTransactionId] = useState(null);
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
   const toast = useToast();
-
   const [sortConfig, setSortConfig] = useState({
     key: "date",
     direction: "desc",
   });
 
-  const [allRevenue, setAllRevenue] = useState([]);
-  const [allExpenses, setAllExpenses] = useState([]);
-
   useEffect(() => {
     fetchData();
-    fetchPatients();
   }, []);
 
   const fetchData = async () => {
     try {
       setLoading(true);
       setError(null);
-      const res = await fetch("/api/transactions/get-data");
-      if (!res.ok) throw new Error("Failed to fetch data");
+      const res = await fetch("/api/transactions/get-all");
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
+      }
       const data = await res.json();
-      if (data.success && data.data) {
-        setRevenue(data.data.Revenue || []);
-        setExpenses(data.data.Expenses || []);
-        setAllRevenue(data.data.Revenue || []);
-        setAllExpenses(data.data.Expenses || []);
+      if (data.success && data.transactions) {
+        setTransactions(data.transactions);
       } else {
-        throw new Error("Invalid data format");
+        throw new Error(data.message || data.error || "Invalid data format");
       }
     } catch (e) {
       setError(e.message);
-      toast.error("Error loading data");
+      toast?.error?.("Error loading data: " + e.message);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
   };
 
-  const fetchPatients = async () => {
-    try {
-      const res = await fetch("/api/patients/get-patient");
-      const data = await res.json();
-      if (data.success) {
-        setPatients(data.patients || []);
-      }
-    } catch (e) {
-      toast.error("Failed to fetch patients");
-    }
-  };
-
   const handleRefresh = async () => {
     setRefreshing(true);
     await fetchData();
-    await fetchPatients();
   };
 
   const filterByDateRange = (items, dateFrom, dateTo) => {
@@ -2041,126 +1692,160 @@ export default function AmountDashboard() {
 
     return items.filter((item) => {
       const itemDate = new Date(item.date);
-
       if (dateFrom) {
         const fromDate = new Date(dateFrom);
         fromDate.setHours(0, 0, 0, 0);
         if (itemDate < fromDate) return false;
       }
-
       if (dateTo) {
         const toDate = new Date(dateTo);
         toDate.setHours(23, 59, 59, 999);
         if (itemDate > toDate) return false;
       }
-
       return true;
     });
   };
 
-  const filteredRevenue = useMemo(() => {
-    let list = [...revenue];
-    if (filters.branch)
+  const filteredTransactions = useMemo(() => {
+    let list = transactions.filter((t) => {
+      const category = t.transactionCategory || t.category;
+      if (activeCategory === "TRANSPLANT") {
+        // ✅ Include undefined/empty categories in TRANSPLANT for backward compatibility
+        return category === "TRANSPLANT" || !category || category === "";
+      }
+      return category === activeCategory;
+    });
+
+    if (filters.branch) {
       list = list.filter(
-        (t) => t.branch.toLowerCase() === filters.branch.toLowerCase(),
+        (t) => t.branch?.toLowerCase() === filters.branch.toLowerCase(),
       );
-    if (filters.paymentMethod)
+    }
+
+    if (filters.paymentMethod) {
       list = list.filter(
-        (t) => t.method.toLowerCase() === filters.paymentMethod.toLowerCase(),
+        (t) => t.method?.toLowerCase() === filters.paymentMethod.toLowerCase(),
       );
-    if (filters.procedure)
+    }
+
+    if (
+      filters.procedure &&
+      (activeCategory === "TRANSPLANT" || activeCategory === "SERVICE")
+    ) {
       list = list.filter(
-        (t) => t.procedure.toLowerCase() === filters.procedure.toLowerCase(),
+        (t) => t.procedure?.toLowerCase() === filters.procedure.toLowerCase(),
       );
+    }
 
     list = filterByDateRange(list, filters.dateFrom, filters.dateTo);
+
     return list;
-  }, [revenue, filters]);
+  }, [transactions, activeCategory, filters]);
 
-  const filteredExpenses = useMemo(() => {
-    let list = [...expenses];
-    if (filters.branch)
-      list = list.filter(
-        (e) => e.branch.toLowerCase() === filters.branch.toLowerCase(),
+  // ✅ Calculate stats from ALL categories but with active filters applied
+  const categoryStats = useMemo(() => {
+    const stats = {
+      TRANSPLANT: { count: 0, total: 0 },
+      SERVICE: { count: 0, total: 0 },
+      MEDICINE: { count: 0, total: 0 },
+      EXPENSE: { count: 0, total: 0 },
+    };
+
+    // Apply filters but NOT category filter
+    let filteredList = transactions;
+
+    // Apply branch filter
+    if (filters.branch) {
+      filteredList = filteredList.filter(
+        (t) => t.branch?.toLowerCase() === filters.branch.toLowerCase(),
       );
-    if (filters.paymentMethod)
-      list = list.filter(
-        (e) => e.method.toLowerCase() === filters.paymentMethod.toLowerCase(),
+    }
+
+    // Apply payment method filter
+    if (filters.paymentMethod) {
+      filteredList = filteredList.filter(
+        (t) => t.method?.toLowerCase() === filters.paymentMethod.toLowerCase(),
       );
+    }
 
-    list = filterByDateRange(list, filters.dateFrom, filters.dateTo);
-    return list;
-  }, [expenses, filters]);
+    // Apply procedure filter (only for TRANSPLANT/SERVICE)
+    if (filters.procedure) {
+      filteredList = filteredList.filter(
+        (t) => t.procedure?.toLowerCase() === filters.procedure.toLowerCase(),
+      );
+    }
 
-  const totalIncome = useMemo(() => {
-    return filteredRevenue.reduce((sum, t) => sum + calculateNetAmount(t), 0);
-  }, [filteredRevenue]);
-
-  const totalExpense = useMemo(() => {
-    return filteredExpenses.reduce(
-      (sum, e) => sum + (parseFloat(e.amount) || 0),
-      0,
+    // Apply date range filter
+    filteredList = filterByDateRange(
+      filteredList,
+      filters.dateFrom,
+      filters.dateTo,
     );
-  }, [filteredExpenses]);
 
-  const totalDiscount = useMemo(() => {
-    return filteredRevenue.reduce(
-      (sum, t) => sum + (parseFloat(t.discount) || 0),
-      0,
-    );
-  }, [filteredRevenue]);
+    // Now calculate stats for each category from the filtered list
+    filteredList.forEach((t) => {
+      const category = t.transactionCategory || t.category;
+      const actualCategory = category || "TRANSPLANT";
+      if (stats[actualCategory]) {
+        stats[actualCategory].count++;
+        stats[actualCategory].total += calculateNetAmount(t);
+      }
+    });
 
-  const netBalance = totalIncome - totalExpense;
-  const totalTransactions = filteredRevenue.length;
-  const totalExpenseItems = filteredExpenses.length;
-
+    return stats;
+  }, [transactions, filters]); // Depend on transactions and filters
   const searchedRows = useMemo(() => {
-    const rowsToSearch = tableSearch
-      ? activeTab === "revenue"
-        ? allRevenue
-        : allExpenses
-      : activeTab === "revenue"
-        ? filteredRevenue
-        : filteredExpenses;
+    if (!tableSearch) return filteredTransactions;
 
-    if (!tableSearch) return rowsToSearch;
-
-    return rowsToSearch.filter((row) => {
+    return filteredTransactions.filter((row) => {
       const searchLower = tableSearch.toLowerCase();
-      if (activeTab === "revenue") {
-        const patientName = row.patient?.personal?.name || "Walk-in Customer";
-        const patientPhone = row.patient?.personal?.phone || "";
+      const commonMatch =
+        row.method?.toLowerCase().includes(searchLower) ||
+        row.branch?.toLowerCase().includes(searchLower) ||
+        row.remarks?.toLowerCase().includes(searchLower) ||
+        row.paymentId?.toLowerCase().includes(searchLower) ||
+        row.amount?.toString().includes(searchLower);
+
+      if (commonMatch) return true;
+
+      if (activeCategory === "TRANSPLANT" || activeCategory === "SERVICE") {
+        const patientName =
+          row.patient?.personal?.name || row.patientName || "";
+        const patientPhone =
+          row.patient?.personal?.phone || row.patientPhone || "";
         return (
           patientName.toLowerCase().includes(searchLower) ||
           patientPhone.includes(searchLower) ||
-          row.procedure?.toLowerCase().includes(searchLower) ||
-          row.method?.toLowerCase().includes(searchLower) ||
-          row.branch?.toLowerCase().includes(searchLower) ||
-          row.remarks?.toLowerCase().includes(searchLower) ||
-          row.paymentId?.toLowerCase().includes(searchLower) ||
-          row.amount.toString().includes(searchLower) ||
-          (row.discount && row.discount.toString().includes(searchLower)) ||
-          row.patient?.payments?.totalAmount?.toString().includes(searchLower)
-        );
-      } else {
-        return (
-          row.expense?.toLowerCase().includes(searchLower) ||
-          row.method?.toLowerCase().includes(searchLower) ||
-          row.branch?.toLowerCase().includes(searchLower) ||
-          row.remarks?.toLowerCase().includes(searchLower) ||
-          row.paymentId?.toLowerCase().includes(searchLower) ||
-          row.amount.toString().includes(searchLower)
+          row.procedure?.toLowerCase().includes(searchLower)
         );
       }
+
+      if (activeCategory === "MEDICINE") {
+        const patientName =
+          row.patient?.personal?.name || row.patientName || "";
+        const patientPhone =
+          row.patient?.personal?.phone || row.patientPhone || "";
+        const medicineName =
+          typeof row.medicineId === "object" ? row.medicineId?.name : "";
+        return (
+          patientName.toLowerCase().includes(searchLower) ||
+          patientPhone.includes(searchLower) ||
+          medicineName?.toLowerCase().includes(searchLower)
+        );
+      }
+
+      if (activeCategory === "EXPENSE") {
+        const expenseName = row.expense || row.expenseCategory || "";
+        const giverName = row.expenseGiver?.name || "";
+        return (
+          expenseName.toLowerCase().includes(searchLower) ||
+          giverName.toLowerCase().includes(searchLower)
+        );
+      }
+
+      return false;
     });
-  }, [
-    activeTab,
-    filteredRevenue,
-    filteredExpenses,
-    allRevenue,
-    allExpenses,
-    tableSearch,
-  ]);
+  }, [filteredTransactions, tableSearch, activeCategory]);
 
   const sortedRows = useMemo(() => {
     const sorted = [...searchedRows];
@@ -2169,14 +1854,11 @@ export default function AmountDashboard() {
         let aVal = a[sortConfig.key];
         let bVal = b[sortConfig.key];
 
-        if (sortConfig.key === "patient" && activeTab === "revenue") {
-          aVal = a.patient?.personal?.name || "Walk-in Customer";
-          bVal = b.patient?.personal?.name || "Walk-in Customer";
-        }
-
-        if (sortConfig.key === "amount" && activeTab === "revenue") {
-          aVal = calculateNetAmount(a);
-          bVal = calculateNetAmount(b);
+        if (sortConfig.key === "patient") {
+          aVal =
+            a.patient?.personal?.name || a.patientName || "Walk-in Customer";
+          bVal =
+            b.patient?.personal?.name || b.patientName || "Walk-in Customer";
         }
 
         if (sortConfig.key === "date") {
@@ -2190,7 +1872,7 @@ export default function AmountDashboard() {
       });
     }
     return sorted;
-  }, [searchedRows, sortConfig, activeTab]);
+  }, [searchedRows, sortConfig]);
 
   const handleSort = (key) => {
     setSortConfig((prev) => ({
@@ -2205,16 +1887,6 @@ export default function AmountDashboard() {
   const startIdx = (current - 1) * perPage;
   const endIdx = Math.min(startIdx + perPage, total);
   const paginatedRows = sortedRows.slice(startIdx, endIdx);
-
-  const getPatientName = (patient) => {
-    if (!patient) return "Walk-in Customer";
-    return patient.personal?.name || "N/A";
-  };
-
-  const getPatientNumber = (patient) => {
-    if (!patient) return "";
-    return patient.personal?.phone || "";
-  };
 
   const clearFilters = () => {
     setFilters({
@@ -2233,28 +1905,7 @@ export default function AmountDashboard() {
 
   useEffect(() => {
     setPage(1);
-  }, [filters, activeTab, tableSearch]);
-
-  const openCreateModal = () => {
-    setEditingTransaction(null);
-    setShowModal(true);
-  };
-
-  const openEditModal = (transaction) => {
-    setEditingTransaction(transaction);
-    setShowModal(true);
-  };
-
-  const closeModal = () => {
-    setShowModal(false);
-    setEditingTransaction(null);
-  };
-
-  const handleSuccess = () => {
-    fetchData();
-    fetchPatients();
-    closeModal();
-  };
+  }, [filters, activeCategory, tableSearch]);
 
   const openDeleteConfirm = (transaction) => {
     setDeletingTransaction(transaction);
@@ -2265,231 +1916,170 @@ export default function AmountDashboard() {
     if (!deletingTransaction) return;
 
     try {
-      const res = await fetch("/api/transactions/delete", {
+      const category =
+        deletingTransaction.transactionCategory ||
+        deletingTransaction.category ||
+        "TRANSPLANT";
+
+      const endpoint =
+        category === "TRANSPLANT"
+          ? "/api/transactions/transplant/delete"
+          : category === "SERVICE"
+            ? "/api/transactions/service/delete"
+            : category === "MEDICINE"
+              ? "/api/transactions/medicine/delete"
+              : "/api/transactions/expense/delete";
+
+      const res = await fetch(endpoint, {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ _id: deletingTransaction._id }),
+        body: JSON.stringify({ transactionId: deletingTransaction._id }),
       });
 
       const data = await res.json();
-
-      if (data.success) {
+      if (res.ok) {
         toast.success("Transaction deleted successfully");
         fetchData();
-        fetchPatients();
         setShowDeleteConfirm(false);
         setDeletingTransaction(null);
       } else {
-        toast.error(data.message || "Failed to delete transaction");
+        toast.error(data.error || "Failed to delete transaction");
       }
     } catch (err) {
       toast.error("An error occurred while deleting");
     }
   };
 
+  // ✅ FIX 2 & 6: Improved bill generator logic with proper null checks
+  const openBillGenerator = (data) => {
+    try {
+      // Check if this is a revenue transaction with a patient
+      const isRevenueTransaction = data.costType === "Revenue";
+      const hasCategory =
+        data.transactionCategory &&
+        data.transactionCategory !== "undefined" &&
+        data.transactionCategory !== "";
+
+      // For transplant transactions with populated patient, use patient ID
+      if (
+        isRevenueTransaction &&
+        (!hasCategory || data.transactionCategory === "TRANSPLANT") &&
+        data.patient
+      ) {
+        // Check if patient is populated object or just an ID
+        const patientId =
+          typeof data.patient === "object" ? data.patient._id : data.patient;
+
+        if (patientId) {
+          setSelectedTransactionId(patientId);
+        } else {
+          // Fallback to transaction ID if patient ID not available
+          setSelectedTransactionId(data._id);
+        }
+      } else {
+        // For all other transactions (SERVICE, MEDICINE, EXPENSE), use transaction ID
+        setSelectedTransactionId(data._id);
+      }
+
+      setShowBillGenerator(true);
+    } catch (error) {
+      console.error("Error opening bill generator:", error);
+      toast.error("Failed to open bill generator");
+    }
+  };
+
+  const closeBillGenerator = () => {
+    setShowBillGenerator(false);
+    setSelectedTransactionId(null);
+  };
+
   const downloadExcel = async () => {
     try {
       setDownloading(true);
-
       const { utils, writeFile } = await import("xlsx");
 
-      // Main transaction data
       const dataToExport = sortedRows.map((row) => {
-        if (activeTab === "revenue") {
-          const netAmount = calculateNetAmount(row);
-          const hasDiscount = parseFloat(row.discount || 0) > 0;
-          const patientData = row.patient;
+        const base = {
+          Date: formatDateForDisplay(row.date),
+          Category: row.transactionCategory || row.category || "Uncategorized",
+          Branch: row.branch || "",
+          "Payment Method": row.method?.toUpperCase() || "",
+          Amount: parseFloat(row.amount) || 0,
+          Discount: parseFloat(row.discount) || 0,
+          "Net Amount": calculateNetAmount(row),
+          "Trans ID": row.paymentId || "",
+          "Batch ID": row.batchId || "",
+          Remarks: row.remarks || "",
+          "Created By": row.createdBy?.name || "N/A",
+          "Created At": formatDateTime(row.createdBy?.date),
+          "Total Edits": row.editors?.length || 0,
+        };
 
+        if (activeCategory === "TRANSPLANT") {
           return {
-            Date: formatDateForDisplay(row.date),
-            "Patient Name": patientData?.personal?.name || "Walk-in Customer",
-            Phone: patientData?.personal?.phone || "N/A",
-            Branch: row.branch || "",
+            ...base,
+            "Patient Name":
+              row.patient?.personal?.name || row.patientName || "N/A",
+            "Patient Phone":
+              row.patient?.personal?.phone || row.patientPhone || "N/A",
             Procedure: row.procedure || "",
             "Payment Type": row.paymentType || "",
-            "Payment Method": row.method?.toUpperCase() || "",
-            "Original Amount": parseFloat(row.amount) || 0,
-            "TransID / CardNo": row.paymentId || "",
-            Discount: hasDiscount ? parseFloat(row.discount) || 0 : 0,
-            "Net Amount": netAmount,
-            "Pending Amount": patientData?.payments?.pendingAmount || 0,
-            "Total Package": patientData?.payments?.totalAmount || 0,
-            "Amount Received": patientData?.payments?.amountReceived || 0,
-            Remarks: row.remarks || "",
-            "Created By": row.createdBy?.name || "N/A",
-            "Created By Email": row.createdBy?.email || "N/A",
-            "Created By Branch": row.createdBy?.branch || "N/A",
-            "Created At": formatDateTime(row.createdBy?.date),
-            "Last Edited By": row.lastEditedBy?.name || "N/A",
-            "Last Edited By Email": row.lastEditedBy?.email || "N/A",
-            "Last Edited By Branch": row.lastEditedBy?.branch || "N/A",
-            "Last Edited At": formatDateTime(row.lastEditedBy?.date),
-            "Total Edits": row.totalEdits || 0,
           };
-        } else {
+        }
+
+        if (activeCategory === "SERVICE") {
           return {
-            Date: formatDateForDisplay(row.date),
-            Branch: row.branch || "",
-            "Expense Type": row.expense || "",
-            "Payment Method": row.method?.toUpperCase() || "",
-            Amount: parseFloat(row.amount) || 0,
-            "TransID / CardNo": row.paymentId || "",
-            "Given To": row.expenseGiver || "",
-            Remarks: row.remarks || "",
-            "Created By": row.createdBy?.name || "N/A",
-            "Created By Email": row.createdBy?.email || "N/A",
-            "Created By Branch": row.createdBy?.branch || "N/A",
-            "Created At": formatDateTime(row.createdBy?.date),
-            "Last Edited By": row.lastEditedBy?.name || "N/A",
-            "Last Edited By Email": row.lastEditedBy?.email || "N/A",
-            "Last Edited By Branch": row.lastEditedBy?.branch || "N/A",
-            "Last Edited At": formatDateTime(row.lastEditedBy?.date),
-            "Total Edits": row.totalEdits || 0,
+            ...base,
+            "Patient/Customer":
+              row.patient?.personal?.name || row.patientName || "Walk-in",
+            Phone: row.patient?.personal?.phone || row.patientPhone || "",
+            Service: row.procedure || "",
+            Sessions: row.quantity || 1,
+            "Per Session": row.perSessionCost || 0,
           };
         }
-      });
 
-      // Detailed edit history data
-      const editHistoryData = [];
-      sortedRows.forEach((row) => {
-        if (row.editors && row.editors.length > 0) {
-          row.editors.forEach((editor, editIndex) => {
-            const baseInfo = {
-              "Transaction Date": formatDateForDisplay(row.date),
-              "Transaction ID": row.paymentId || "N/A",
-            };
-
-            if (activeTab === "revenue") {
-              baseInfo["Patient Name"] =
-                row.patient?.personal?.name || "Walk-in Customer";
-              baseInfo["Patient Phone"] = row.patient?.personal?.phone || "N/A";
-              baseInfo["Procedure"] = row.procedure || "";
-            } else {
-              baseInfo["Expense Type"] = row.expense || "";
-            }
-
-            baseInfo["Edit Number"] =
-              `Edit #${editIndex + 1} of ${row.editors.length}`;
-            baseInfo["Editor Name"] = editor.name || "N/A";
-            baseInfo["Editor Email"] = editor.email || "N/A";
-            baseInfo["Editor Branch"] = editor.branch || "N/A";
-            baseInfo["Edit Date/Time"] = formatDateTime(editor.date);
-
-            // If there are field changes, create a row for each changed field
-            if (editor.updatedFields && editor.updatedFields.length > 0) {
-              editor.updatedFields.forEach((field) => {
-                editHistoryData.push({
-                  ...baseInfo,
-                  "Field Changed": formatFieldName(field.name),
-                  "Previous Value": field.previousValue || "(Empty)",
-                  "New Value": field.newValue || "(Empty)",
-                });
-              });
-            } else {
-              // If no specific fields recorded, just add the edit record
-              editHistoryData.push({
-                ...baseInfo,
-                "Field Changed": "No field details available",
-                "Previous Value": "-",
-                "New Value": "-",
-              });
-            }
-          });
+        if (activeCategory === "MEDICINE") {
+          return {
+            ...base,
+            "Patient/Customer":
+              row.patient?.personal?.name || row.patientName || "Walk-in",
+            Phone: row.patient?.personal?.phone || row.patientPhone || "",
+            Medicine:
+              typeof row.medicineId === "object" ? row.medicineId?.name : "N/A",
+            Quantity: row.quantity || 1,
+            "Per Unit": row.perUnitCost || 0,
+          };
         }
+
+        if (activeCategory === "EXPENSE") {
+          return {
+            ...base,
+            "Expense Type": row.expense || row.expenseCategory || "",
+            "Paid To": row.expenseGiver?.name || "N/A",
+          };
+        }
+
+        return base;
       });
 
-      // Create workbook
       const wb = utils.book_new();
-
-      // Add main transactions sheet
       const ws = utils.json_to_sheet(dataToExport);
+
       const maxWidth = 30;
       const colWidths = Object.keys(dataToExport[0] || {}).map((key) => ({
         wch: Math.min(Math.max(key.length, 10), maxWidth),
       }));
+
       ws["!cols"] = colWidths;
-      utils.book_append_sheet(
-        wb,
-        ws,
-        activeTab === "revenue" ? "Revenue" : "Expenses",
-      );
 
-      // Add detailed edit history sheet if there are edits
-      if (editHistoryData.length > 0) {
-        const wsHistory = utils.json_to_sheet(editHistoryData);
-        const historyColWidths = Object.keys(editHistoryData[0] || {}).map(
-          (key) => ({
-            wch: Math.min(Math.max(key.length, 15), maxWidth),
-          }),
-        );
-        wsHistory["!cols"] = historyColWidths;
-        utils.book_append_sheet(wb, wsHistory, "Edit History");
-      }
+      utils.book_append_sheet(wb, ws, activeCategory);
 
-      // Add summary sheet
-      const summaryData = [
-        {
-          "Report Details": "Report Type",
-          Value:
-            activeTab === "revenue"
-              ? "Revenue Transactions"
-              : "Expense Transactions",
-        },
-        { "Report Details": "Generated On", Value: formatDateTime(new Date()) },
-        { "Report Details": "Total Records", Value: sortedRows.length },
-        {
-          "Report Details": "Records with Edits",
-          Value: sortedRows.filter((r) => r.totalEdits > 0).length,
-        },
-        {
-          "Report Details": "Total Edit Actions",
-          Value: sortedRows.reduce((sum, r) => sum + (r.totalEdits || 0), 0),
-        },
-        { "Report Details": "", Value: "" },
-        { "Report Details": "Applied Filters:", Value: "" },
-        { "Report Details": "Branch", Value: filters.branch || "All Branches" },
-        {
-          "Report Details": "Date From",
-          Value: filters.dateFrom || "No limit",
-        },
-        { "Report Details": "Date To", Value: filters.dateTo || "No limit" },
-        {
-          "Report Details": "Payment Method",
-          Value: filters.paymentMethod || "All Methods",
-        },
-      ];
-
-      if (activeTab === "revenue") {
-        summaryData.push({
-          "Report Details": "Procedure",
-          Value: filters.procedure || "All Procedures",
-        });
-      }
-
-      const wsSummary = utils.json_to_sheet(summaryData);
-      wsSummary["!cols"] = [{ wch: 25 }, { wch: 40 }];
-      utils.book_append_sheet(wb, wsSummary, "Report Summary");
-
-      // Generate filename
-      const filterInfo = [];
-      if (filters.branch) filterInfo.push(filters.branch);
-      if (filters.dateFrom || filters.dateTo) {
-        const dateRange = `${filters.dateFrom || "Start"}_to_${
-          filters.dateTo || "End"
-        }`;
-        filterInfo.push(dateRange);
-      }
-
-      const filterSuffix =
-        filterInfo.length > 0 ? `_${filterInfo.join("_")}` : "";
-      const fileName = `${activeTab}_transactions_with_audit${filterSuffix}_${
-        new Date().toISOString().split("T")[0]
-      }.xlsx`;
-
+      const fileName = `${activeCategory}_transactions_${new Date().toISOString().split("T")[0]}.xlsx`;
       writeFile(wb, fileName);
 
       toast.success(
-        `✓ Downloaded ${sortedRows.length} ${activeTab} records with complete audit trail!`,
+        `Downloaded ${sortedRows.length} ${activeCategory} records!`,
       );
     } catch (error) {
       console.error("Download error:", error);
@@ -2536,7 +2126,7 @@ export default function AmountDashboard() {
       <div className="flex h-screen items-center justify-center bg-linear-to-br from-blue-50 via-indigo-50 to-purple-50">
         <div className="text-center">
           <Loader2 className="animate-spin h-16 w-16 text-indigo-500 mx-auto mb-4" />
-          <p className="text-gray-600 font-medium">Loading financial data...</p>
+          <p className="text-gray-600 font-medium">Loading transactions...</p>
         </div>
       </div>
     );
@@ -2592,13 +2182,14 @@ export default function AmountDashboard() {
               </button>
               <div>
                 <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">
-                  Financial Dashboard
+                  All Transactions
                 </h1>
                 <p className="text-gray-600 text-sm sm:text-base">
-                  Track revenue, expenses and transactions
+                  View and manage all transaction categories
                 </p>
               </div>
             </div>
+
             <div className="flex gap-2 sm:gap-3">
               <button
                 onClick={downloadExcel}
@@ -2622,6 +2213,7 @@ export default function AmountDashboard() {
                   </>
                 )}
               </button>
+
               <button
                 onClick={handleRefresh}
                 disabled={refreshing}
@@ -2634,62 +2226,57 @@ export default function AmountDashboard() {
                   }`}
                 />
               </button>
-              <button
-                onClick={openCreateModal}
+
+              {/* <button
+                onClick={() => router.push("/admin/transactions/create")}
                 className="bg-linear-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white px-3 sm:px-5 py-2 sm:py-3 rounded-xl flex items-center gap-1 sm:gap-2 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 text-sm sm:text-base shrink-0"
               >
                 <Plus size={18} strokeWidth={2.5} />
                 <span className="font-semibold hidden xs:inline">
                   Add Transaction
                 </span>
-                <span className="font-semibold xs:hidden">Add</span>
-              </button>
+                <span className="font-semibold xs:inline">Add</span>
+              </button> */}
             </div>
           </div>
         </div>
 
         <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-5 mb-4 sm:mb-6">
           <StatCard
-            title="Total Revenue"
-            value={formatCurrency(totalIncome)}
-            icon={TrendingUp}
-            linear="from-emerald-400 to-green-500"
-            count={`${totalTransactions} transactions`}
+            title="Transplants"
+            value={formatCurrency(categoryStats.TRANSPLANT.total)}
+            icon={Scissors}
+            gradient="from-indigo-400 to-purple-500"
+            count={`${categoryStats.TRANSPLANT.count} transactions`}
+            iconBg="bg-indigo-100"
+            iconColor="text-indigo-600"
+          />
+          <StatCard
+            title="Services"
+            value={formatCurrency(categoryStats.SERVICE.total)}
+            icon={Heart}
+            gradient="from-pink-400 to-rose-500"
+            count={`${categoryStats.SERVICE.count} transactions`}
+            iconBg="bg-pink-100"
+            iconColor="text-pink-600"
+          />
+          <StatCard
+            title="Medicines"
+            value={formatCurrency(categoryStats.MEDICINE.total)}
+            icon={Pill}
+            gradient="from-emerald-400 to-green-500"
+            count={`${categoryStats.MEDICINE.count} transactions`}
             iconBg="bg-emerald-100"
             iconColor="text-emerald-600"
           />
           <StatCard
-            title="Total Expenses"
-            value={formatCurrency(totalExpense)}
-            icon={TrendingDown}
-            linear="from-rose-400 to-red-500"
-            count={`${totalExpenseItems} transactions`}
+            title="Expenses"
+            value={formatCurrency(categoryStats.EXPENSE.total)}
+            icon={Receipt}
+            gradient="from-rose-400 to-red-500"
+            count={`${categoryStats.EXPENSE.count} transactions`}
             iconBg="bg-rose-100"
             iconColor="text-rose-600"
-          />
-          <StatCard
-            title="Net Balance"
-            value={formatCurrency(netBalance)}
-            icon={IndianRupee}
-            linear={
-              netBalance >= 0
-                ? "from-indigo-400 to-purple-500"
-                : "from-gray-400 to-gray-500"
-            }
-            count={netBalance >= 0 ? "Positive Balance" : "Negative Balance"}
-            iconBg={netBalance >= 0 ? "bg-indigo-100" : "bg-gray-100"}
-            iconColor={netBalance >= 0 ? "text-indigo-600" : "text-gray-600"}
-          />
-          <StatCard
-            title="Total Discount"
-            value={formatCurrency(totalDiscount)}
-            icon={Tag}
-            linear="from-amber-400 to-orange-500"
-            count={`On ${
-              filteredRevenue.filter((t) => (t.discount || 0) > 0).length
-            } transactions`}
-            iconBg="bg-amber-100"
-            iconColor="text-amber-600"
           />
         </div>
 
@@ -2697,26 +2284,19 @@ export default function AmountDashboard() {
           <div className="border-b border-gray-200">
             <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-3 sm:gap-4 p-4 sm:px-6 sm:py-4">
               <div className="flex gap-1 sm:gap-2 w-full lg:w-auto overflow-x-auto pb-2 lg:pb-0">
-                <button
-                  className={`px-4 sm:px-6 py-2 sm:py-2.5 rounded-xl font-semibold transition-all whitespace-nowrap shrink-0 ${
-                    activeTab === "revenue"
-                      ? "bg-linear-to-r from-emerald-500 to-green-600 text-white shadow-md"
-                      : "bg-gray-50 text-gray-600 hover:bg-gray-100"
-                  }`}
-                  onClick={() => setActiveTab("revenue")}
-                >
-                  Revenue ({totalTransactions})
-                </button>
-                <button
-                  className={`px-4 sm:px-6 py-2 sm:py-2.5 rounded-xl font-semibold transition-all whitespace-nowrap shrink-0 ${
-                    activeTab === "expenses"
-                      ? "bg-linear-to-r from-rose-500 to-red-600 text-white shadow-md"
-                      : "bg-gray-50 text-gray-600 hover:bg-gray-100"
-                  }`}
-                  onClick={() => setActiveTab("expenses")}
-                >
-                  Expenses ({totalExpenseItems})
-                </button>
+                {TRANSACTION_CATEGORIES.map((cat) => {
+                  const Icon = cat.icon;
+                  return (
+                    <button
+                      key={cat.value}
+                      className={`px-4 sm:px-6 py-2 sm:py-2.5 rounded-xl font-semibold transition-all whitespace-nowrap shrink-0 flex items-center gap-2 ${getCategoryGradientClass(cat.value, activeCategory === cat.value)}`}
+                      onClick={() => setActiveCategory(cat.value)}
+                    >
+                      <Icon size={18} />
+                      {cat.label} ({categoryStats[cat.value].count})
+                    </button>
+                  );
+                })}
               </div>
 
               <div className="flex gap-2 sm:gap-3 w-full lg:w-auto">
@@ -2730,6 +2310,7 @@ export default function AmountDashboard() {
                     className="pl-9 sm:pl-11 pr-4 py-2 sm:py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-100 focus:border-indigo-300 text-sm w-full lg:w-64 transition-all"
                   />
                 </div>
+
                 <button
                   onClick={() => setShowFilters(!showFilters)}
                   className={`p-2 sm:p-2.5 rounded-xl transition-all shrink-0 flex items-center gap-2 ${
@@ -2737,7 +2318,6 @@ export default function AmountDashboard() {
                       ? "bg-indigo-50 text-indigo-600 ring-2 ring-indigo-200"
                       : "bg-gray-50 hover:bg-gray-100 text-gray-600"
                   }`}
-                  title="Toggle filters"
                 >
                   <Filter className="w-4 h-4 sm:w-5 sm:h-5" />
                   {showFilters ? (
@@ -2746,6 +2326,7 @@ export default function AmountDashboard() {
                     <ChevronDown className="w-4 h-4 hidden sm:block" />
                   )}
                 </button>
+
                 {hasActiveFilters && (
                   <button
                     onClick={clearFilters}
@@ -2825,7 +2406,8 @@ export default function AmountDashboard() {
                     ]}
                     icon={CreditCard}
                   />
-                  {activeTab === "revenue" && (
+                  {(activeCategory === "TRANSPLANT" ||
+                    activeCategory === "SERVICE") && (
                     <Select
                       label="Procedure"
                       value={filters.procedure}
@@ -2834,7 +2416,10 @@ export default function AmountDashboard() {
                       }
                       options={[
                         { value: "", label: "All Procedures" },
-                        ...PROCEDURES.map((p) => ({ value: p, label: p })),
+                        ...(activeCategory === "TRANSPLANT"
+                          ? TRANSPLANT_PROCEDURES
+                          : SERVICE_PROCEDURES
+                        ).map((p) => ({ value: p, label: p })),
                       ]}
                     />
                   )}
@@ -2889,12 +2474,11 @@ export default function AmountDashboard() {
           </div>
 
           <DataTable
-            type={activeTab}
+            category={activeCategory}
             rows={paginatedRows}
-            getPatientName={getPatientName}
-            getPatientNumber={getPatientNumber}
-            onEdit={openEditModal}
+            onEdit={(row) => router.push(`/admin/transactions/edit/${row._id}`)}
             onDelete={openDeleteConfirm}
+            onGenerateBill={openBillGenerator}
             onSort={handleSort}
             sortConfig={sortConfig}
             pagination={{
@@ -2911,15 +2495,6 @@ export default function AmountDashboard() {
         </div>
       </main>
 
-      {showModal && (
-        <TransactionModal
-          transaction={editingTransaction}
-          patients={patients}
-          onClose={closeModal}
-          onSuccess={handleSuccess}
-        />
-      )}
-
       {showDeleteConfirm && (
         <DeleteConfirmModal
           transaction={deletingTransaction}
@@ -2928,6 +2503,13 @@ export default function AmountDashboard() {
             setDeletingTransaction(null);
           }}
           onConfirm={handleDelete}
+        />
+      )}
+
+      {showBillGenerator && selectedTransactionId && (
+        <BillGenerator
+          transactionId={selectedTransactionId}
+          onClose={closeBillGenerator}
         />
       )}
     </div>

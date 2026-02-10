@@ -121,7 +121,7 @@ export default function AdminDashboard() {
         break;
 
       case "Amount Received":
-        router.push(`/admin/amounts`);
+        router.push(`/admin/transactions`);
 
         filterParams.set("status", "CONSULTED");
         break;
