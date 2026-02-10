@@ -26,18 +26,6 @@ import {
   ArrowUpDown,
   Download,
   ChevronDown,
-  ChevronUp,
-  Clock,
-  Mail,
-  FileText,
-  ArrowRight,
-  MapPin,
-  History,
-  UserCheck,
-  Scissors,
-  Heart,
-  Pill,
-  Receipt,
   Package,
   FileText as Bill,
 } from "lucide-react";
@@ -65,18 +53,6 @@ const formatDateForDisplay = (date) => {
   });
 };
 
-const formatDateTime = (date) => {
-  if (!date) return "N/A";
-  return new Date(date).toLocaleString("en-IN", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: true,
-  });
-};
-
 const formatCurrency = (amount) => {
   const num = parseFloat(amount) || 0;
   return new Intl.NumberFormat("en-IN", {
@@ -87,16 +63,7 @@ const formatCurrency = (amount) => {
   }).format(num);
 };
 
-const formatFieldName = (fieldName) => {
-  if (!fieldName) return "";
-  return fieldName
-    .replace(/([A-Z])/g, " $1")
-    .replace(/^./, (str) => str.toUpperCase())
-    .trim();
-};
-
 const BRANCHES = ["Delhi", "Mumbai", "Hyderabad"];
-// ✅ FIX 1: Match schema - "Loan" with capital L
 const PAYMENT_METHODS = ["upi", "cash", "card", "banking", "Loan", "other"];
 const TRANSPLANT_PROCEDURES = [
   "Sapphire FUE",
@@ -106,13 +73,12 @@ const TRANSPLANT_PROCEDURES = [
 ];
 const SERVICE_PROCEDURES = ["PRP", "GFC"];
 const TRANSACTION_CATEGORIES = [
-  { value: "TRANSPLANT", label: "Transplant", icon: Scissors, color: "indigo" },
-  { value: "SERVICE", label: "Services", icon: Heart, color: "pink" },
-  { value: "MEDICINE", label: "Medicine", icon: Pill, color: "emerald" },
-  { value: "EXPENSE", label: "Expenses", icon: Receipt, color: "rose" },
+  { value: "TRANSPLANT", label: "Transplant", icon: User, color: "indigo" },
+  { value: "SERVICE", label: "Services", icon: User, color: "pink" },
+  { value: "MEDICINE", label: "Medicine", icon: User, color: "emerald" },
+  { value: "EXPENSE", label: "Expenses", icon: User, color: "rose" },
 ];
 
-// ✅ FIX 7: Hardcoded gradient classes for each category (Tailwind JIT compatibility)
 const getCategoryGradientClass = (categoryValue, isActive) => {
   if (!isActive) return "bg-gray-50 text-gray-600 hover:bg-gray-100";
 
@@ -127,8 +93,6 @@ const getCategoryGradientClass = (categoryValue, isActive) => {
 
   return gradients[categoryValue] || "bg-gray-50 text-gray-600";
 };
-
-// ... (StatCard, DeleteConfirmModal, Input, Select components remain the same)
 
 // ========== STAT CARD COMPONENT ==========
 function StatCard({
@@ -322,309 +286,7 @@ function Select({ label, value, onChange, options, required, icon: Icon }) {
   );
 }
 
-// ========== EXPANDED ROW DETAILS COMPONENT ==========
-// (Keep the same - no changes needed)
-function ExpandedRowDetails({ transaction, isExpanded }) {
-  const [activeTab, setActiveTab] = useState("summary");
-
-  if (!isExpanded) return null;
-
-  return (
-    <div className="bg-linear-to-br from-slate-50 via-indigo-50/30 to-purple-50/30 border-t-2 border-indigo-200 animate-in slide-in-from-top duration-300">
-      <div className="p-4 sm:p-6 lg:p-8">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-linear-to-br from-indigo-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
-              <History className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <h3 className="text-lg font-bold text-slate-900">
-                Complete Audit Trail
-              </h3>
-              <p className="text-sm text-slate-600">
-                Full transaction history and changes
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3 sm:gap-4 bg-white rounded-xl px-4 py-3 shadow-md border border-slate-200 w-full sm:w-auto">
-            <div className="text-center flex-1 sm:flex-initial">
-              <div className="text-2xl font-bold text-indigo-700">
-                {transaction.editors?.length || 0}
-              </div>
-              <div className="text-xs text-slate-600 font-medium">
-                Total Edits
-              </div>
-            </div>
-            <div className="h-10 w-px bg-slate-200" />
-            <div className="text-center flex-1 sm:flex-initial">
-              <div className="text-2xl font-bold text-emerald-700">1</div>
-              <div className="text-xs text-slate-600 font-medium">Creator</div>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex gap-2 mb-6 bg-white rounded-xl p-1.5 shadow-sm border border-slate-200 overflow-x-auto">
-          <button
-            onClick={() => setActiveTab("summary")}
-            className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all whitespace-nowrap ${
-              activeTab === "summary"
-                ? "bg-linear-to-r from-indigo-600 to-purple-600 text-white shadow-md"
-                : "text-slate-600 hover:text-slate-800 hover:bg-slate-50"
-            }`}
-          >
-            <div className="flex items-center justify-center gap-2">
-              <User className="w-4 h-4" />
-              <span>Summary</span>
-            </div>
-          </button>
-          <button
-            onClick={() => setActiveTab("history")}
-            className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all whitespace-nowrap ${
-              activeTab === "history"
-                ? "bg-linear-to-r from-indigo-600 to-purple-600 text-white shadow-md"
-                : "text-slate-600 hover:text-slate-800 hover:bg-slate-50"
-            }`}
-          >
-            <div className="flex items-center justify-center gap-2">
-              <FileText className="w-4 h-4" />
-              <span>Change History</span>
-            </div>
-          </button>
-        </div>
-
-        <div className="space-y-4">
-          {activeTab === "summary" ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="bg-white rounded-xl p-5 shadow-lg border border-slate-200 hover:shadow-xl transition-shadow">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-12 h-12 bg-linear-to-br from-emerald-400 to-green-600 rounded-xl flex items-center justify-center shadow-md">
-                    <UserCheck className="w-6 h-6 text-white" />
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-bold text-slate-900">
-                      Created By
-                    </h4>
-                    <p className="text-xs text-slate-600">
-                      Original entry creator
-                    </p>
-                  </div>
-                </div>
-                {transaction.createdBy ? (
-                  <div className="space-y-3">
-                    <p className="text-base font-bold text-slate-900">
-                      {transaction.createdBy.name}
-                    </p>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div className="flex items-center gap-2 text-sm">
-                        <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center shrink-0">
-                          <Mail className="w-4 h-4 text-blue-600" />
-                        </div>
-                        <span className="text-slate-700 truncate text-xs">
-                          {transaction.createdBy.email}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm">
-                        <div className="w-8 h-8 bg-purple-50 rounded-lg flex items-center justify-center shrink-0">
-                          <MapPin className="w-4 h-4 text-purple-600" />
-                        </div>
-                        <span className="text-slate-900 font-semibold text-xs">
-                          {transaction.createdBy.branch}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="pt-3 border-t border-slate-200">
-                      <div className="flex items-center gap-2 text-xs text-slate-600">
-                        <Clock className="w-4 h-4 text-slate-400" />
-                        <span>
-                          {formatDateTime(transaction.createdBy.date)}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <p className="text-sm text-slate-500 italic">
-                    No creator information available
-                  </p>
-                )}
-              </div>
-
-              {transaction.editors && transaction.editors.length > 0 && (
-                <div className="bg-white rounded-xl p-5 shadow-lg border border-slate-200 hover:shadow-xl transition-shadow">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-12 h-12 bg-linear-to-br from-indigo-400 to-purple-600 rounded-xl flex items-center justify-center shadow-md">
-                      <Edit2 className="w-6 h-6 text-white" />
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-bold text-slate-900">
-                        Last Edited By
-                      </h4>
-                      <p className="text-xs text-slate-600">
-                        Most recent modification
-                      </p>
-                    </div>
-                  </div>
-                  <div className="space-y-3">
-                    <p className="text-base font-bold text-slate-900">
-                      {transaction.editors[transaction.editors.length - 1].name}
-                    </p>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div className="flex items-center gap-2 text-sm">
-                        <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center shrink-0">
-                          <Mail className="w-4 h-4 text-blue-600" />
-                        </div>
-                        <span className="text-slate-700 truncate text-xs">
-                          {
-                            transaction.editors[transaction.editors.length - 1]
-                              .email
-                          }
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm">
-                        <div className="w-8 h-8 bg-purple-50 rounded-lg flex items-center justify-center shrink-0">
-                          <MapPin className="w-4 h-4 text-purple-600" />
-                        </div>
-                        <span className="text-slate-900 font-semibold text-xs">
-                          {
-                            transaction.editors[transaction.editors.length - 1]
-                              .branch
-                          }
-                        </span>
-                      </div>
-                    </div>
-                    <div className="pt-3 border-t border-slate-200">
-                      <div className="flex items-center gap-2 text-xs text-slate-600">
-                        <Clock className="w-4 h-4 text-slate-400" />
-                        <span>
-                          {formatDateTime(
-                            transaction.editors[transaction.editors.length - 1]
-                              .date,
-                          )}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {transaction.editors && transaction.editors.length > 0 ? (
-                transaction.editors
-                  .slice()
-                  .reverse()
-                  .map((editor, idx) => (
-                    <div
-                      key={idx}
-                      className="bg-white rounded-xl p-5 shadow-lg border-2 border-slate-200 hover:border-indigo-300 hover:shadow-xl transition-all"
-                    >
-                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4 pb-4 border-b border-slate-200">
-                        <div className="flex items-center gap-3">
-                          <div className="w-12 h-12 bg-linear-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-md">
-                            <span className="text-white font-bold text-lg">
-                              {editor.name?.charAt(0).toUpperCase()}
-                            </span>
-                          </div>
-                          <div>
-                            <p className="text-base font-bold text-slate-900">
-                              {editor.name}
-                            </p>
-                            <p className="text-xs text-slate-600">
-                              {editor.email}
-                            </p>
-                          </div>
-                        </div>
-                        <span className="px-3 py-1.5 bg-linear-to-r from-indigo-600 to-purple-600 text-white text-xs font-bold rounded-full shadow-md">
-                          Edit #{transaction.editors.length - idx}
-                        </span>
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
-                        <div className="flex items-center gap-2 text-sm">
-                          <div className="w-8 h-8 bg-purple-50 rounded-lg flex items-center justify-center">
-                            <MapPin className="w-4 h-4 text-purple-600" />
-                          </div>
-                          <span className="text-slate-700 font-medium">
-                            {editor.branch}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm">
-                          <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center">
-                            <Clock className="w-4 h-4 text-blue-600" />
-                          </div>
-                          <span className="text-slate-600">
-                            {formatDateTime(editor.date)}
-                          </span>
-                        </div>
-                      </div>
-
-                      {editor.updatedFields?.length > 0 && (
-                        <div className="space-y-3 pt-4 border-t border-slate-200">
-                          <p className="text-sm font-bold text-slate-700 flex items-center gap-2">
-                            <Tag className="w-4 h-4 text-indigo-600" />
-                            Changed {editor.updatedFields.length} field(s):
-                          </p>
-                          <div className="space-y-3">
-                            {editor.updatedFields.map((field, fieldIdx) => (
-                              <div
-                                key={fieldIdx}
-                                className="bg-linear-to-r from-slate-50 to-slate-100 rounded-lg p-4 border border-slate-200"
-                              >
-                                <div className="flex items-center gap-2 mb-3">
-                                  <div className="w-6 h-6 bg-indigo-600 rounded-md flex items-center justify-center">
-                                    <ArrowRight className="w-4 h-4 text-white" />
-                                  </div>
-                                  <span className="font-bold text-slate-900 text-sm">
-                                    {formatFieldName(field.name)}
-                                  </span>
-                                </div>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                  <div className="bg-red-50 rounded-lg p-3 border-2 border-red-200">
-                                    <span className="text-xs text-red-700 font-bold block mb-1">
-                                      Previous Value:
-                                    </span>
-                                    <p className="text-sm text-slate-900 font-medium wrap-break-words">
-                                      {field.previousValue || "(Empty)"}
-                                    </p>
-                                  </div>
-                                  <div className="bg-green-50 rounded-lg p-3 border-2 border-green-200">
-                                    <span className="text-xs text-green-700 font-bold block mb-1">
-                                      New Value:
-                                    </span>
-                                    <p className="text-sm text-slate-900 font-medium wrap-break-words">
-                                      {field.newValue || "(Empty)"}
-                                    </p>
-                                  </div>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ))
-              ) : (
-                <div className="text-center py-12 bg-white rounded-xl shadow-lg border border-slate-200">
-                  <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <FileText className="w-8 h-8 text-slate-400" />
-                  </div>
-                  <p className="text-base font-semibold text-slate-700 mb-1">
-                    No Edit History
-                  </p>
-                  <p className="text-sm text-slate-500">
-                    This record hasn't been modified since creation
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 // ========== DATA TABLE COMPONENT ==========
-// (Keep same - just fix mobile bill button around line 1450)
 function DataTable({
   category,
   rows,
@@ -636,7 +298,6 @@ function DataTable({
   onGenerateBill,
 }) {
   const router = useRouter();
-  const [expandedRow, setExpandedRow] = useState(null);
 
   const hasUndefinedCategory = (row) => {
     const category = row.transactionCategory || row.category;
@@ -674,7 +335,6 @@ function DataTable({
             width: "150px",
           },
           { key: "branch", label: "Branch", sortable: true, width: "110px" },
-          { key: "audit", label: "Audit", sortable: false, width: "120px" },
           { key: "actions", label: "Actions", sortable: false, width: "120px" },
         ];
       case "SERVICE":
@@ -709,7 +369,6 @@ function DataTable({
           },
           { key: "batchId", label: "Batch", sortable: false, width: "100px" },
           { key: "branch", label: "Branch", sortable: true, width: "110px" },
-          { key: "audit", label: "Audit", sortable: false, width: "120px" },
           { key: "actions", label: "Actions", sortable: false, width: "120px" },
         ];
       case "MEDICINE":
@@ -744,7 +403,6 @@ function DataTable({
           },
           { key: "batchId", label: "Batch", sortable: false, width: "100px" },
           { key: "branch", label: "Branch", sortable: true, width: "110px" },
-          { key: "audit", label: "Audit", sortable: false, width: "120px" },
           { key: "actions", label: "Actions", sortable: false, width: "120px" },
         ];
       case "EXPENSE":
@@ -766,7 +424,6 @@ function DataTable({
             width: "150px",
           },
           { key: "branch", label: "Branch", sortable: true, width: "110px" },
-          { key: "audit", label: "Audit", sortable: false, width: "120px" },
           { key: "actions", label: "Actions", sortable: false, width: "120px" },
         ];
       default:
@@ -817,10 +474,6 @@ function DataTable({
     );
   };
 
-  const toggleExpanded = (rowId) => {
-    setExpandedRow(expandedRow === rowId ? null : rowId);
-  };
-
   const gridTemplateColumns = columns.map((col) => col.width).join(" ");
 
   const getPatientName = (row) => {
@@ -845,7 +498,6 @@ function DataTable({
   };
 
   const getExpenseGiverName = (row) => {
-    // ✅ Already correct - handles both VENDOR and MANUAL
     if (row.expenseGiver?.type === "VENDOR") {
       if (typeof row.expenseGiver.vendorId === "object") {
         return (
@@ -859,7 +511,7 @@ function DataTable({
 
   return (
     <div className="flex flex-col h-full bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
-      {/* Desktop Header - Keep same */}
+      {/* Desktop Header */}
       <div
         className="hidden md:grid items-center bg-linear-to-r from-slate-50 to-slate-100 border-b border-slate-200 min-h-13 px-2"
         style={{ gridTemplateColumns }}
@@ -882,7 +534,7 @@ function DataTable({
         ))}
       </div>
 
-      {/* Mobile Header - Keep same */}
+      {/* Mobile Header */}
       <div className="md:hidden bg-linear-to-r from-slate-50 to-slate-100 border-b border-slate-200 px-4 py-3">
         <div className="flex items-center justify-between">
           <div>
@@ -921,16 +573,11 @@ function DataTable({
             {rows.map((row, i) => {
               const netAmount = calculateNetAmount(row);
               const hasDiscount = parseFloat(row.discount || 0) > 0;
-              const isExpanded = expandedRow === row._id;
 
               return (
                 <div key={row._id || i}>
-                  <div
-                    className={`group transition-all duration-200 ${
-                      isExpanded ? "bg-indigo-50/50" : "hover:bg-indigo-50/30"
-                    }`}
-                  >
-                    {/* Desktop View - Keep all same until actions column */}
+                  <div className="group transition-all duration-200 hover:bg-indigo-50/30">
+                    {/* Desktop View */}
                     <div
                       className="hidden md:grid items-center min-h-16 px-2"
                       style={{ gridTemplateColumns }}
@@ -1205,53 +852,6 @@ function DataTable({
                         </>
                       )}
 
-                      {/* Audit Column */}
-                      <div className="px-2 py-3">
-                        <button
-                          onClick={() => toggleExpanded(row._id)}
-                          className={`group/btn inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all duration-200 border-2 ${
-                            isExpanded
-                              ? "bg-linear-to-r from-indigo-600 to-purple-600 text-white border-transparent shadow-md"
-                              : "bg-white hover:bg-indigo-50 border-slate-200 hover:border-indigo-300 text-slate-700 hover:text-indigo-700"
-                          }`}
-                        >
-                          {row.editors?.length > 0 ? (
-                            <>
-                              <div className="relative">
-                                <Edit2 className="w-3.5 h-3.5" />
-                                <span
-                                  className={`absolute -top-1 -right-1 w-3 h-3 text-[8px] font-bold rounded-full flex items-center justify-center ${
-                                    isExpanded
-                                      ? "bg-white text-indigo-700"
-                                      : "bg-indigo-600 text-white"
-                                  }`}
-                                >
-                                  {row.editors.length}
-                                </span>
-                              </div>
-                              <span className="text-xs font-semibold">
-                                {row.editors[
-                                  row.editors.length - 1
-                                ]?.name?.split(" ")[0] || "Edited"}
-                              </span>
-                            </>
-                          ) : (
-                            <>
-                              <UserCheck className="w-3.5 h-3.5" />
-                              <span className="text-xs font-semibold">
-                                {row.createdBy?.name?.split(" ")[0] ||
-                                  "Created"}
-                              </span>
-                            </>
-                          )}
-                          {isExpanded ? (
-                            <ChevronUp className="w-3 h-3 ml-0.5" />
-                          ) : (
-                            <ChevronDown className="w-3 h-3 ml-0.5" />
-                          )}
-                        </button>
-                      </div>
-
                       {/* Actions Column */}
                       <div className="px-2 py-3">
                         <div className="flex items-center gap-2">
@@ -1446,35 +1046,8 @@ function DataTable({
                           </div>
                         )}
 
-                        <div className="flex items-center justify-between pt-3 border-t border-slate-200">
-                          <button
-                            onClick={() => toggleExpanded(row._id)}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                              isExpanded
-                                ? "bg-linear-to-r from-indigo-600 to-purple-600 text-white shadow-md"
-                                : "bg-indigo-50 text-indigo-700 hover:bg-indigo-100"
-                            }`}
-                          >
-                            {row.editors?.length > 0 ? (
-                              <>
-                                <Edit2 size={14} />
-                                <span>History ({row.editors.length})</span>
-                              </>
-                            ) : (
-                              <>
-                                <UserCheck size={14} />
-                                <span>Audit Trail</span>
-                              </>
-                            )}
-                            {isExpanded ? (
-                              <ChevronUp size={14} />
-                            ) : (
-                              <ChevronDown size={14} />
-                            )}
-                          </button>
-
+                        <div className="flex items-center justify-end pt-3 border-t border-slate-200">
                           <div className="flex items-center gap-2">
-                            {/* ✅ FIX 3: Pass entire row object, not just ID */}
                             <button
                               onClick={() => onGenerateBill(row)}
                               className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-lg text-sm font-medium hover:bg-emerald-100 transition-colors"
@@ -1505,10 +1078,6 @@ function DataTable({
                       </div>
                     </div>
                   </div>
-                  <ExpandedRowDetails
-                    transaction={row}
-                    isExpanded={isExpanded}
-                  />
                 </div>
               );
             })}
@@ -1516,7 +1085,7 @@ function DataTable({
         )}
       </div>
 
-      {/* Pagination - Keep same */}
+      {/* Pagination */}
       <div className="border-t border-slate-200 bg-white">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 sm:px-6 py-4">
           <div className="text-sm text-slate-600">
@@ -1710,7 +1279,6 @@ export default function AllTransactionsPage() {
     let list = transactions.filter((t) => {
       const category = t.transactionCategory || t.category;
       if (activeCategory === "TRANSPLANT") {
-        // ✅ Include undefined/empty categories in TRANSPLANT for backward compatibility
         return category === "TRANSPLANT" || !category || category === "";
       }
       return category === activeCategory;
@@ -1742,7 +1310,6 @@ export default function AllTransactionsPage() {
     return list;
   }, [transactions, activeCategory, filters]);
 
-  // ✅ Calculate stats from ALL categories but with active filters applied
   const categoryStats = useMemo(() => {
     const stats = {
       TRANSPLANT: { count: 0, total: 0 },
@@ -1751,38 +1318,32 @@ export default function AllTransactionsPage() {
       EXPENSE: { count: 0, total: 0 },
     };
 
-    // Apply filters but NOT category filter
     let filteredList = transactions;
 
-    // Apply branch filter
     if (filters.branch) {
       filteredList = filteredList.filter(
         (t) => t.branch?.toLowerCase() === filters.branch.toLowerCase(),
       );
     }
 
-    // Apply payment method filter
     if (filters.paymentMethod) {
       filteredList = filteredList.filter(
         (t) => t.method?.toLowerCase() === filters.paymentMethod.toLowerCase(),
       );
     }
 
-    // Apply procedure filter (only for TRANSPLANT/SERVICE)
     if (filters.procedure) {
       filteredList = filteredList.filter(
         (t) => t.procedure?.toLowerCase() === filters.procedure.toLowerCase(),
       );
     }
 
-    // Apply date range filter
     filteredList = filterByDateRange(
       filteredList,
       filters.dateFrom,
       filters.dateTo,
     );
 
-    // Now calculate stats for each category from the filtered list
     filteredList.forEach((t) => {
       const category = t.transactionCategory || t.category;
       const actualCategory = category || "TRANSPLANT";
@@ -1793,7 +1354,8 @@ export default function AllTransactionsPage() {
     });
 
     return stats;
-  }, [transactions, filters]); // Depend on transactions and filters
+  }, [transactions, filters]);
+
   const searchedRows = useMemo(() => {
     if (!tableSearch) return filteredTransactions;
 
@@ -1950,34 +1512,28 @@ export default function AllTransactionsPage() {
     }
   };
 
-  // ✅ FIX 2 & 6: Improved bill generator logic with proper null checks
   const openBillGenerator = (data) => {
     try {
-      // Check if this is a revenue transaction with a patient
       const isRevenueTransaction = data.costType === "Revenue";
       const hasCategory =
         data.transactionCategory &&
         data.transactionCategory !== "undefined" &&
         data.transactionCategory !== "";
 
-      // For transplant transactions with populated patient, use patient ID
       if (
         isRevenueTransaction &&
         (!hasCategory || data.transactionCategory === "TRANSPLANT") &&
         data.patient
       ) {
-        // Check if patient is populated object or just an ID
         const patientId =
           typeof data.patient === "object" ? data.patient._id : data.patient;
 
         if (patientId) {
           setSelectedTransactionId(patientId);
         } else {
-          // Fallback to transaction ID if patient ID not available
           setSelectedTransactionId(data._id);
         }
       } else {
-        // For all other transactions (SERVICE, MEDICINE, EXPENSE), use transaction ID
         setSelectedTransactionId(data._id);
       }
 
@@ -2010,9 +1566,6 @@ export default function AllTransactionsPage() {
           "Trans ID": row.paymentId || "",
           "Batch ID": row.batchId || "",
           Remarks: row.remarks || "",
-          "Created By": row.createdBy?.name || "N/A",
-          "Created At": formatDateTime(row.createdBy?.date),
-          "Total Edits": row.editors?.length || 0,
         };
 
         if (activeCategory === "TRANSPLANT") {
@@ -2245,7 +1798,7 @@ export default function AllTransactionsPage() {
           <StatCard
             title="Transplants"
             value={formatCurrency(categoryStats.TRANSPLANT.total)}
-            icon={Scissors}
+            icon={User}
             gradient="from-indigo-400 to-purple-500"
             count={`${categoryStats.TRANSPLANT.count} transactions`}
             iconBg="bg-indigo-100"
@@ -2254,7 +1807,7 @@ export default function AllTransactionsPage() {
           <StatCard
             title="Services"
             value={formatCurrency(categoryStats.SERVICE.total)}
-            icon={Heart}
+            icon={User}
             gradient="from-pink-400 to-rose-500"
             count={`${categoryStats.SERVICE.count} transactions`}
             iconBg="bg-pink-100"
@@ -2263,7 +1816,7 @@ export default function AllTransactionsPage() {
           <StatCard
             title="Medicines"
             value={formatCurrency(categoryStats.MEDICINE.total)}
-            icon={Pill}
+            icon={User}
             gradient="from-emerald-400 to-green-500"
             count={`${categoryStats.MEDICINE.count} transactions`}
             iconBg="bg-emerald-100"
@@ -2272,7 +1825,7 @@ export default function AllTransactionsPage() {
           <StatCard
             title="Expenses"
             value={formatCurrency(categoryStats.EXPENSE.total)}
-            icon={Receipt}
+            icon={User}
             gradient="from-rose-400 to-red-500"
             count={`${categoryStats.EXPENSE.count} transactions`}
             iconBg="bg-rose-100"
@@ -2321,7 +1874,7 @@ export default function AllTransactionsPage() {
                 >
                   <Filter className="w-4 h-4 sm:w-5 sm:h-5" />
                   {showFilters ? (
-                    <ChevronUp className="w-4 h-4 hidden sm:block" />
+                    <ChevronDown className="w-4 h-4 hidden sm:block rotate-180" />
                   ) : (
                     <ChevronDown className="w-4 h-4 hidden sm:block" />
                   )}
