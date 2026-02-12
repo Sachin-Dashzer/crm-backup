@@ -2,9 +2,32 @@
 import { NextResponse } from "next/server";
 import { withDB } from "@/lib/withDB";
 import Transactions from "@/models/Transactions";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+
 
 const handler = async (req) => {
-  const transactions = await Transactions.find({})
+  const session = await getServerSession(authOptions);
+
+  if (!session || !session.user) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Unauthorized. Please login.",
+      },
+      { status: 401 },
+    );
+  }
+
+  const userBranch = session.user.branch;
+
+  let query = {};
+
+  if (userBranch && userBranch !== "All") {
+    query["personal.branch"] = userBranch;
+  }
+
+  const transactions = await Transactions.find(query)
     .populate({
       path: "patient",
       select:

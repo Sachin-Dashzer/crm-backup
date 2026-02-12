@@ -1,7 +1,8 @@
 "use client";
 
 import { Menu, Calendar, Check, X } from "lucide-react";
-import { useState } from "react";
+import { useState , useEffect } from "react";
+import { useSession } from "next-auth/react";
 
 export default function Topbar({
   title,
@@ -14,8 +15,18 @@ export default function Topbar({
   setCustomDates,
 }) {
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [user, setUser] = useState("");
   const branches = ["All", "Delhi", "Mumbai", "Hyderabad"];
   const timeRanges = ["Today", "Yesterday", "Last 7 Days", "Custom"];
+
+  const { data: session } = useSession();
+
+  useEffect(() => {
+    if (session) {
+      // Set username
+      setUser(session.user?.role || "");
+    }
+  }, [session]);
 
   const handleCustomDateChange = (field, value) => {
     setCustomDates((prev) => ({
@@ -64,20 +75,21 @@ export default function Topbar({
           {/* Right side - Filters */}
           <div className="flex flex-col sm:flex-row gap-3">
             {/* Branch Filter */}
-            <div className="flex items-center gap-2">
-              <select
-                value={branch}
-                onChange={(e) => setBranch(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
-              >
-                {branches.map((b) => (
-                  <option key={b} value={b}>
-                    {b === "All" ? "All Branches" : b}
-                  </option>
-                ))}
-              </select>
-            </div>
-
+            {user !== "reception" ? (
+              <div className="flex items-center gap-2">
+                <select
+                  value={branch}
+                  onChange={(e) => setBranch(e.target.value)}
+                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
+                >
+                  {branches.map((b) => (
+                    <option key={b} value={b}>
+                      {b === "All" ? "All Branches" : b}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : null}
             {/* Date Range Filter */}
             <div className="flex items-center gap-2 relative">
               <select

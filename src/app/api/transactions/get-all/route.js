@@ -4,35 +4,46 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import connectDB from "@/lib/db";
 import Transactions from "@/models/Transactions";
-import Vendor from "@/models/Vendor"; 
+import Vendor from "@/models/Vendor";
 import Stock from "@/models/Stock";
 import Employee from "@/models/Employee";
 
 export async function GET() {
   try {
-    console.log("🔍 Fetching all transactions...");
-
     const session = await getServerSession(authOptions);
-    // if (!session) {
-    //   return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    // }
 
+    if (!session || !session.user) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Unauthorized. Please login.",
+        },
+        { status: 401 },
+      );
+    }
+
+    const userBranch = session.user.branch;
+
+    let query = {};
+
+    if (userBranch && userBranch !== "All") {
+      query.branch = userBranch;
+    }
     await connectDB();
 
-    const transactions = await Transactions.find()
+    const transactions = await Transactions.find(query)
       .populate({
         path: "patient",
         select: "personal payments counselling.counsellor",
         populate: {
           path: "counselling.counsellor",
-          select: "name", 
+          select: "name",
         },
       })
       .populate("medicineId", "name")
       .populate("expenseGiver.vendorId", "name contact")
       .sort({ date: -1 })
       .lean();
-
 
     console.log(`✅ Found ${transactions.length} transactions`);
 

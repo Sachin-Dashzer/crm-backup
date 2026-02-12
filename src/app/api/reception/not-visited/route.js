@@ -4,6 +4,7 @@ import Patient from "@/models/Patient";
 
 const handler = async (req) => {
   try {
+
     // Find patients who don't have a counsellor assigned (not visited)
     const patients = await Patient.find({
       $or: [

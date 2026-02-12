@@ -1255,14 +1255,14 @@ export default function PatientEditDetails() {
                     placeholder="Enter full name"
                   />
 
-                  <InputField
+                  {/* <InputField
                     label="Phone Number"
                     type="tel"
                     required
                     value={formData.personal.phone}
                     onChange={createChangeHandler("personal", "phone")}
                     placeholder="Enter phone number"
-                  />
+                  /> */}
 
                   <InputField
                     label="Email Address"
@@ -1319,7 +1319,7 @@ export default function PatientEditDetails() {
                     onChange={createChangeHandler("personal", "visitDate")}
                   />
 
-                  <InputField
+                  {/* <InputField
                     label="Reference Source (Agent)"
                     type="select"
                     value={formData.personal.reference}
@@ -1328,7 +1328,7 @@ export default function PatientEditDetails() {
                       value: emp._id,
                       label: emp.name,
                     }))}
-                  />
+                  /> */}
 
                   <InputField
                     label="Package Quoted (₹)"

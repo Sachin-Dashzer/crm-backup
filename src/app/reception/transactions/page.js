@@ -24,7 +24,6 @@ import {
   Menu,
   Tag,
   ArrowUpDown,
-  Download,
   ChevronDown,
   Package,
   FileText as Bill,
@@ -564,8 +563,7 @@ function DataTable({
               No records found
             </h3>
             <p className="text-sm text-slate-600 text-center max-w-md">
-              Try adjusting your search filters or add a new{" "}
-              {category.toLowerCase()} transaction
+              Try adjusting your search filters or add a new transaction
             </p>
           </div>
         ) : (
@@ -573,6 +571,7 @@ function DataTable({
             {rows.map((row, i) => {
               const netAmount = calculateNetAmount(row);
               const hasDiscount = parseFloat(row.discount || 0) > 0;
+              const rowCategory = row.transactionCategory || row.category || "TRANSPLANT";
 
               return (
                 <div key={row._id || i}>
@@ -590,7 +589,7 @@ function DataTable({
                         </div>
                       </div>
 
-                      {category === "TRANSPLANT" && (
+                      {rowCategory === "TRANSPLANT" && (
                         <>
                           <div className="px-2 py-3">
                             <div>
@@ -653,7 +652,7 @@ function DataTable({
                         </>
                       )}
 
-                      {category === "SERVICE" && (
+                      {rowCategory === "SERVICE" && (
                         <>
                           <div className="px-2 py-3">
                             <div>
@@ -733,7 +732,7 @@ function DataTable({
                         </>
                       )}
 
-                      {category === "MEDICINE" && (
+                      {rowCategory === "MEDICINE" && (
                         <>
                           <div className="px-2 py-3">
                             <div>
@@ -811,7 +810,7 @@ function DataTable({
                         </>
                       )}
 
-                      {category === "EXPENSE" && (
+                      {rowCategory === "EXPENSE" && (
                         <>
                           <div className="px-2 py-3">
                             <div className="text-sm font-semibold text-slate-900 truncate">
@@ -882,7 +881,7 @@ function DataTable({
                       </div>
                     </div>
 
-                    {/* Mobile View */}
+                    {/* Mobile View - Similar changes for rowCategory */}
                     <div className="md:hidden p-4">
                       <div className="space-y-4">
                         <div className="flex items-start justify-between">
@@ -890,19 +889,19 @@ function DataTable({
                             <div className="flex items-center gap-2 mb-1 flex-wrap">
                               <span
                                 className={`px-2 py-1 rounded text-xs font-semibold ${
-                                  category === "TRANSPLANT"
+                                  rowCategory === "TRANSPLANT"
                                     ? getProcedureColor(row.procedure)
-                                    : category === "SERVICE"
+                                    : rowCategory === "SERVICE"
                                       ? getProcedureColor(row.procedure)
-                                      : category === "MEDICINE"
+                                      : rowCategory === "MEDICINE"
                                         ? "bg-emerald-100 text-emerald-700 border border-emerald-200"
                                         : "bg-rose-100 text-rose-700 border border-rose-200"
                                 }`}
                               >
-                                {category === "TRANSPLANT" ||
-                                category === "SERVICE"
+                                {rowCategory === "TRANSPLANT" ||
+                                rowCategory === "SERVICE"
                                   ? row.procedure
-                                  : category === "MEDICINE"
+                                  : rowCategory === "MEDICINE"
                                     ? getMedicineName(row)
                                     : row.expense ||
                                       row.expenseCategory ||
@@ -921,16 +920,16 @@ function DataTable({
                               )}
                             </div>
                             <h4 className="text-base font-bold text-slate-900">
-                              {category !== "EXPENSE"
+                              {rowCategory !== "EXPENSE"
                                 ? getPatientName(row)
                                 : getExpenseGiverName(row)}
                             </h4>
-                            {category !== "EXPENSE" && (
+                            {rowCategory !== "EXPENSE" && (
                               <p className="text-sm text-slate-600 font-medium">
                                 {getPatientPhone(row)}
                               </p>
                             )}
-                            {category === "EXPENSE" && (
+                            {rowCategory === "EXPENSE" && (
                               <p className="text-sm text-slate-600 font-medium">
                                 {row.expense ||
                                   row.expenseCategory ||
@@ -941,7 +940,7 @@ function DataTable({
                           <div className="text-right">
                             <div
                               className={`text-lg font-bold ${
-                                category === "EXPENSE"
+                                rowCategory === "EXPENSE"
                                   ? "text-rose-600"
                                   : "text-emerald-700"
                               }`}
@@ -955,12 +954,12 @@ function DataTable({
                         </div>
 
                         <div className="grid grid-cols-2 gap-3">
-                          {(category === "SERVICE" ||
-                            category === "MEDICINE") && (
+                          {(rowCategory === "SERVICE" ||
+                            rowCategory === "MEDICINE") && (
                             <>
                               <div>
                                 <p className="text-xs text-slate-500 mb-1">
-                                  {category === "SERVICE"
+                                  {rowCategory === "SERVICE"
                                     ? "Sessions"
                                     : "Quantity"}
                                 </p>
@@ -970,13 +969,13 @@ function DataTable({
                               </div>
                               <div>
                                 <p className="text-xs text-slate-500 mb-1">
-                                  {category === "SERVICE"
+                                  {rowCategory === "SERVICE"
                                     ? "Per Session"
                                     : "Per Unit"}
                                 </p>
                                 <p className="text-sm font-semibold text-slate-700">
                                   {formatCurrency(
-                                    category === "SERVICE"
+                                    rowCategory === "SERVICE"
                                       ? row.perSessionCost
                                       : row.perUnitCost,
                                   )}
@@ -985,7 +984,7 @@ function DataTable({
                             </>
                           )}
 
-                          {category === "TRANSPLANT" && (
+                          {rowCategory === "TRANSPLANT" && (
                             <div>
                               <p className="text-xs text-slate-500 mb-1">
                                 Payment Type
@@ -996,7 +995,7 @@ function DataTable({
                             </div>
                           )}
 
-                          {category === "EXPENSE" && (
+                          {rowCategory === "EXPENSE" && (
                             <div>
                               <p className="text-xs text-slate-500 mb-1">
                                 Expense Type
@@ -1201,7 +1200,6 @@ export default function AllTransactionsPage() {
   const [error, setError] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [downloading, setDownloading] = useState(false);
   const [activeCategory, setActiveCategory] = useState("TRANSPLANT");
   const [filters, setFilters] = useState({
     branch: "",
@@ -1275,15 +1273,78 @@ export default function AllTransactionsPage() {
     });
   };
 
-  const filteredTransactions = useMemo(() => {
-    let list = transactions.filter((t) => {
-      const category = t.transactionCategory || t.category;
-      if (activeCategory === "TRANSPLANT") {
-        return category === "TRANSPLANT" || !category || category === "";
-      }
-      return category === activeCategory;
-    });
+  // Helper function to check if row matches search
+  const matchesSearch = (row, searchLower) => {
+    // Common fields
+    const commonMatch =
+      row.method?.toLowerCase().includes(searchLower) ||
+      row.branch?.toLowerCase().includes(searchLower) ||
+      row.remarks?.toLowerCase().includes(searchLower) ||
+      row.paymentId?.toLowerCase().includes(searchLower) ||
+      row.amount?.toString().includes(searchLower);
 
+    if (commonMatch) return true;
+
+    // Get category for this row
+    const rowCategory = row.transactionCategory || row.category || "TRANSPLANT";
+
+    // Category-specific fields
+    if (rowCategory === "TRANSPLANT" || rowCategory === "SERVICE") {
+      const patientName = row.patient?.personal?.name || row.patientName || "";
+      const patientPhone = row.patient?.personal?.phone || row.patientPhone || "";
+      return (
+        patientName.toLowerCase().includes(searchLower) ||
+        patientPhone.includes(searchLower) ||
+        row.procedure?.toLowerCase().includes(searchLower)
+      );
+    }
+
+    if (rowCategory === "MEDICINE") {
+      const patientName = row.patient?.personal?.name || row.patientName || "";
+      const patientPhone = row.patient?.personal?.phone || row.patientPhone || "";
+      const medicineName =
+        typeof row.medicineId === "object" ? row.medicineId?.name : "";
+      return (
+        patientName.toLowerCase().includes(searchLower) ||
+        patientPhone.includes(searchLower) ||
+        medicineName?.toLowerCase().includes(searchLower)
+      );
+    }
+
+    if (rowCategory === "EXPENSE") {
+      const expenseName = row.expense || row.expenseCategory || "";
+      const giverName = row.expenseGiver?.name || "";
+      return (
+        expenseName.toLowerCase().includes(searchLower) ||
+        giverName.toLowerCase().includes(searchLower)
+      );
+    }
+
+    return false;
+  };
+
+  // Apply search FIRST on all transactions, then apply other filters
+  const filteredTransactions = useMemo(() => {
+    let list = transactions;
+
+    // Apply search first (searches across ALL transactions)
+    if (tableSearch) {
+      const searchLower = tableSearch.toLowerCase();
+      list = list.filter((row) => matchesSearch(row, searchLower));
+    }
+
+    // If there's no search term, apply category filter
+    if (!tableSearch) {
+      list = list.filter((t) => {
+        const category = t.transactionCategory || t.category;
+        if (activeCategory === "TRANSPLANT") {
+          return category === "TRANSPLANT" || !category || category === "";
+        }
+        return category === activeCategory;
+      });
+    }
+
+    // Apply other filters
     if (filters.branch) {
       list = list.filter(
         (t) => t.branch?.toLowerCase() === filters.branch.toLowerCase(),
@@ -1296,10 +1357,7 @@ export default function AllTransactionsPage() {
       );
     }
 
-    if (
-      filters.procedure &&
-      (activeCategory === "TRANSPLANT" || activeCategory === "SERVICE")
-    ) {
+    if (filters.procedure) {
       list = list.filter(
         (t) => t.procedure?.toLowerCase() === filters.procedure.toLowerCase(),
       );
@@ -1308,7 +1366,7 @@ export default function AllTransactionsPage() {
     list = filterByDateRange(list, filters.dateFrom, filters.dateTo);
 
     return list;
-  }, [transactions, activeCategory, filters]);
+  }, [transactions, activeCategory, filters, tableSearch]);
 
   const categoryStats = useMemo(() => {
     const stats = {
@@ -1356,61 +1414,8 @@ export default function AllTransactionsPage() {
     return stats;
   }, [transactions, filters]);
 
-  const searchedRows = useMemo(() => {
-    if (!tableSearch) return filteredTransactions;
-
-    return filteredTransactions.filter((row) => {
-      const searchLower = tableSearch.toLowerCase();
-      const commonMatch =
-        row.method?.toLowerCase().includes(searchLower) ||
-        row.branch?.toLowerCase().includes(searchLower) ||
-        row.remarks?.toLowerCase().includes(searchLower) ||
-        row.paymentId?.toLowerCase().includes(searchLower) ||
-        row.amount?.toString().includes(searchLower);
-
-      if (commonMatch) return true;
-
-      if (activeCategory === "TRANSPLANT" || activeCategory === "SERVICE") {
-        const patientName =
-          row.patient?.personal?.name || row.patientName || "";
-        const patientPhone =
-          row.patient?.personal?.phone || row.patientPhone || "";
-        return (
-          patientName.toLowerCase().includes(searchLower) ||
-          patientPhone.includes(searchLower) ||
-          row.procedure?.toLowerCase().includes(searchLower)
-        );
-      }
-
-      if (activeCategory === "MEDICINE") {
-        const patientName =
-          row.patient?.personal?.name || row.patientName || "";
-        const patientPhone =
-          row.patient?.personal?.phone || row.patientPhone || "";
-        const medicineName =
-          typeof row.medicineId === "object" ? row.medicineId?.name : "";
-        return (
-          patientName.toLowerCase().includes(searchLower) ||
-          patientPhone.includes(searchLower) ||
-          medicineName?.toLowerCase().includes(searchLower)
-        );
-      }
-
-      if (activeCategory === "EXPENSE") {
-        const expenseName = row.expense || row.expenseCategory || "";
-        const giverName = row.expenseGiver?.name || "";
-        return (
-          expenseName.toLowerCase().includes(searchLower) ||
-          giverName.toLowerCase().includes(searchLower)
-        );
-      }
-
-      return false;
-    });
-  }, [filteredTransactions, tableSearch, activeCategory]);
-
   const sortedRows = useMemo(() => {
-    const sorted = [...searchedRows];
+    const sorted = [...filteredTransactions];
     if (sortConfig.key) {
       sorted.sort((a, b) => {
         let aVal = a[sortConfig.key];
@@ -1434,7 +1439,7 @@ export default function AllTransactionsPage() {
       });
     }
     return sorted;
-  }, [searchedRows, sortConfig]);
+  }, [filteredTransactions, sortConfig]);
 
   const handleSort = (key) => {
     setSortConfig((prev) => ({
@@ -1549,99 +1554,6 @@ export default function AllTransactionsPage() {
     setSelectedTransactionId(null);
   };
 
-  const downloadExcel = async () => {
-    try {
-      setDownloading(true);
-      const { utils, writeFile } = await import("xlsx");
-
-      const dataToExport = sortedRows.map((row) => {
-        const base = {
-          Date: formatDateForDisplay(row.date),
-          Category: row.transactionCategory || row.category || "Uncategorized",
-          Branch: row.branch || "",
-          "Payment Method": row.method?.toUpperCase() || "",
-          Amount: parseFloat(row.amount) || 0,
-          Discount: parseFloat(row.discount) || 0,
-          "Net Amount": calculateNetAmount(row),
-          "Trans ID": row.paymentId || "",
-          "Batch ID": row.batchId || "",
-          Remarks: row.remarks || "",
-        };
-
-        if (activeCategory === "TRANSPLANT") {
-          return {
-            ...base,
-            "Patient Name":
-              row.patient?.personal?.name || row.patientName || "N/A",
-            "Patient Phone":
-              row.patient?.personal?.phone || row.patientPhone || "N/A",
-            Procedure: row.procedure || "",
-            "Payment Type": row.paymentType || "",
-          };
-        }
-
-        if (activeCategory === "SERVICE") {
-          return {
-            ...base,
-            "Patient/Customer":
-              row.patient?.personal?.name || row.patientName || "Walk-in",
-            Phone: row.patient?.personal?.phone || row.patientPhone || "",
-            Service: row.procedure || "",
-            Sessions: row.quantity || 1,
-            "Per Session": row.perSessionCost || 0,
-          };
-        }
-
-        if (activeCategory === "MEDICINE") {
-          return {
-            ...base,
-            "Patient/Customer":
-              row.patient?.personal?.name || row.patientName || "Walk-in",
-            Phone: row.patient?.personal?.phone || row.patientPhone || "",
-            Medicine:
-              typeof row.medicineId === "object" ? row.medicineId?.name : "N/A",
-            Quantity: row.quantity || 1,
-            "Per Unit": row.perUnitCost || 0,
-          };
-        }
-
-        if (activeCategory === "EXPENSE") {
-          return {
-            ...base,
-            "Expense Type": row.expense || row.expenseCategory || "",
-            "Paid To": row.expenseGiver?.name || "N/A",
-          };
-        }
-
-        return base;
-      });
-
-      const wb = utils.book_new();
-      const ws = utils.json_to_sheet(dataToExport);
-
-      const maxWidth = 30;
-      const colWidths = Object.keys(dataToExport[0] || {}).map((key) => ({
-        wch: Math.min(Math.max(key.length, 10), maxWidth),
-      }));
-
-      ws["!cols"] = colWidths;
-
-      utils.book_append_sheet(wb, ws, activeCategory);
-
-      const fileName = `${activeCategory}_transactions_${new Date().toISOString().split("T")[0]}.xlsx`;
-      writeFile(wb, fileName);
-
-      toast.success(
-        `Downloaded ${sortedRows.length} ${activeCategory} records!`,
-      );
-    } catch (error) {
-      console.error("Download error:", error);
-      toast.error("Failed to download Excel file");
-    } finally {
-      setDownloading(false);
-    }
-  };
-
   const applyQuickFilter = (preset) => {
     const today = getTodayDate();
     const date = new Date();
@@ -1745,29 +1657,6 @@ export default function AllTransactionsPage() {
 
             <div className="flex gap-2 sm:gap-3">
               <button
-                onClick={downloadExcel}
-                disabled={downloading || sortedRows.length === 0}
-                className="bg-linear-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white px-3 sm:px-5 py-2 sm:py-3 rounded-xl flex items-center gap-1 sm:gap-2 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 text-sm sm:text-base shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {downloading ? (
-                  <>
-                    <Loader2 size={18} className="animate-spin" />
-                    <span className="font-semibold hidden xs:inline">
-                      Downloading...
-                    </span>
-                  </>
-                ) : (
-                  <>
-                    <Download size={18} strokeWidth={2.5} />
-                    <span className="font-semibold hidden xs:inline">
-                      Export Excel
-                    </span>
-                    <span className="font-semibold xs:hidden">Excel</span>
-                  </>
-                )}
-              </button>
-
-              <button
                 onClick={handleRefresh}
                 disabled={refreshing}
                 className="p-2 sm:p-3 bg-white border-2 border-gray-200 rounded-xl hover:bg-gray-50 transition-all shadow-sm disabled:opacity-50 shrink-0"
@@ -1857,7 +1746,7 @@ export default function AllTransactionsPage() {
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 sm:w-5 sm:h-5" />
                   <input
                     type="text"
-                    placeholder="Search transactions..."
+                    placeholder="Search all transactions..."
                     value={tableSearch}
                     onChange={(e) => setTableSearch(e.target.value)}
                     className="pl-9 sm:pl-11 pr-4 py-2 sm:py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-100 focus:border-indigo-300 text-sm w-full lg:w-64 transition-all"

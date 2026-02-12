@@ -16,7 +16,7 @@ import {
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-
+ 
 import LogoutButton from "../LogoutButton";
 
 const NavItem = ({ item, href, isActive, onClick, icon: Icon, badge }) => (

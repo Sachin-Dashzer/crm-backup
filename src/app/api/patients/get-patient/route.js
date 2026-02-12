@@ -7,28 +7,28 @@ import Employee from "@/models/Employee";
 
 const handler = async (req) => {
   try {
-    // const session = await getServerSession(authOptions);
+    const session = await getServerSession(authOptions);
 
-    // if (!session || !session.user) {
-    //   return NextResponse.json(
-    //     {
-    //       success: false,
-    //       error: "Unauthorized. Please login.",
-    //     },
-    //     { status: 401 }
-    //   );
-    // }
+    if (!session || !session.user) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Unauthorized. Please login.",
+        },
+        { status: 401 }
+      );
+    }
 
-    // const userBranch = session.user.branch;
+    const userBranch = session.user.branch;
 
-    // let query = {};
+    let query = {};
 
-    // if (userBranch && userBranch !== 'All') {
-    //   query['personal.branch'] = userBranch;
-    // }
+    if (userBranch && userBranch !== 'All') {
+      query['personal.branch'] = userBranch;
+    }
 
     // Fetch patients with branch filter
-    const patients = await Patient.find({})
+    const patients = await Patient.find(query)
       .populate({
         path: "personal.reference",
         select: "name",

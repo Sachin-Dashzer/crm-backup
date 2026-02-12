@@ -6,7 +6,19 @@ import { NextResponse } from "next/server";
 // import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
 const handler = async (req) => {
-  // const session = await getServerSession(authOptions);
+  const session = await getServerSession(authOptions);
+
+  // if (!session || !session.user) {
+  //   return NextResponse.json(
+  //     {
+  //       success: false,
+  //       error: "Unauthorized. Please login.",
+  //     },
+  //     { status: 401 }
+  //   );
+  // }
+
+  const userBranch = session.user.branch;
 
   const {
     personal,
@@ -76,7 +88,7 @@ const handler = async (req) => {
         email: personal.email?.trim() || "",
         age: personal.age || null,
         gender: personal.gender || "MALE",
-        branch: personal.branch || "",
+        branch: personal.branch || userBranch || "",
         address: personal.address || "",
         profession: personal.profession || "",
         visitDate: personal.visitDate || new Date(),

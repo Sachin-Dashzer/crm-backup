@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { withDB } from "@/lib/withDB";
 import Patient from "@/models/Patient";
 import Transactions from "@/models/Transactions";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+
 
 const VALID_BRANCHES = ["All", "Delhi", "Mumbai", "Hyderabad"];
 
@@ -44,10 +47,35 @@ const formatISTDate = (date) => {
 
 const handler = async (req) => {
   try {
+
+    const session = await getServerSession(authOptions);
+
+    if (!session || !session.user) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Unauthorized. Please login.",
+        },
+        { status: 401 }
+      );
+    }
+
+    const userBranch = session.user.branch;
+    const isAdmin = userBranch === "All";
+
     
     const data = await req.json();
-    const { branch = "All", from, to } = data;
+    const { branch: requestedBranch = "All", from, to } = data;
 
+    // ✅ SECURITY CHECK: Only admin can filter by different branches
+    let branch;
+    if (isAdmin) {
+      // Admin can use any branch filter
+      branch = requestedBranch;
+    } else {
+      // Non-admin users are restricted to their own branch (city)
+      branch = userBranch;
+    }
 
     // Validate branch
     if (!VALID_BRANCHES.includes(branch)) {
@@ -89,7 +117,7 @@ const handler = async (req) => {
     comparisonStart.setHours(0, 0, 0, 0);
 
     
-    // Branch filter
+    // Branch filter (using the enforced branch)
     const branchFilter = branch === "All" ? {} : { "personal.branch": branch };
 
     // Get patient statistics
@@ -335,6 +363,9 @@ const handler = async (req) => {
           visits: visitsGrowth,
           revenue: revenueGrowth,
         },
+        // ✅ Return the actual branch being used and admin status
+        activeBranch: branch,
+        isAdmin: isAdmin,
         // Include debug info for Vercel
         _debug: process.env.NODE_ENV === 'development' ? {
           dateRanges: {
@@ -349,7 +380,10 @@ const handler = async (req) => {
             comparisonAppointments,
             comparisonVisited,
             comparisonRevenue
-          }
+          },
+          requestedBranch,
+          enforcedBranch: branch,
+          userBranch
         } : undefined
       },
     };
