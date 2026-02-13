@@ -1,8 +1,8 @@
 // app/api/transactions/service/delete/route.js
 
 import { NextResponse } from "next/server";
-import connectDB from "@/lib/mongodb";
-import Transaction from "@/models/Transaction";
+import connectDB from "@/lib/db";
+import Transactions from "@/models/Transactions";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
@@ -31,7 +31,7 @@ export async function DELETE(req) {
     }
 
     // Find the transaction to delete
-    const transaction = await Transaction.findById(transactionId);
+    const transaction = await Transactions.findById(transactionId);
 
     if (!transaction) {
       return NextResponse.json(
@@ -60,7 +60,7 @@ export async function DELETE(req) {
     };
 
     // Delete the transaction
-    await Transaction.findByIdAndDelete(transactionId);
+    await Transactions.findByIdAndDelete(transactionId);
 
     return NextResponse.json({
       success: true,
