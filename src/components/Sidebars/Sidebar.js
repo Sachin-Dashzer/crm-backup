@@ -75,7 +75,6 @@ export default function AdminSidebar() {
   
   return (
     <>
-      {/* Mobile Menu Button */}
       <button
         onClick={() => setSidebarOpen(true)}
         className="lg:hidden fixed top-4 left-4 z-40 p-2 bg-white rounded-lg shadow-lg hover:shadow-xl transition-shadow"
