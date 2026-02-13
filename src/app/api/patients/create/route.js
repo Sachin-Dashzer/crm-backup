@@ -43,15 +43,15 @@ const handler = async (req) => {
 
   const phone = personal.phone.trim();
 
-  if (!/^\d{10}$/.test(phone)) {
-    return NextResponse.json(
-      {
-        success: false,
-        error: "Phone number must be exactly 10 digits",
-      },
-      { status: 400 },
-    );
-  }
+  // if (!/^\d{10}$/.test(phone)) {
+  //   return NextResponse.json(
+  //     {
+  //       success: false,
+  //       error: "Phone number must be exactly 10 digits",
+  //     },
+  //     { status: 400 },
+  //   );
+  // }
 
   const existingPatient = await Patient.findOne({
     "personal.phone": personal.phone,
