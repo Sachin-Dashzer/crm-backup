@@ -1030,6 +1030,10 @@ export default function AllTransactionsPage() {
                                 >
                                   <option value="PRP">PRP</option>
                                   <option value="GFC">GFC</option>
+                                  <option value="Alopecia">ALOPECIA</option>
+                                  <option value="Canacot">CANACOT</option>
+                                  <option value="Headwash">HEADWASH</option>
+                                  <option value="Other">OTHER</option>
                                 </select>
                               </td>
                               <td className="py-3 px-2">

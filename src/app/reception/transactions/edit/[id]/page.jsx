@@ -112,7 +112,7 @@ export default function EditTransactionPage() {
     try {
       // Fetch transaction details
       const transRes = await fetch(
-        `/api/transactions/get-by-id?id=${transactionId}`
+        `/api/transactions/get-by-id?id=${transactionId}`,
       );
       if (transRes.ok) {
         const data = await transRes.json();
@@ -177,17 +177,25 @@ export default function EditTransactionPage() {
 
     // Determine transaction category
     let category = trans.transactionCategory;
-    
+
     if (!category) {
       if (trans.costType === "Revenue") {
-        if (["Sapphire FUE", "DHI", "Turkish DHI", "Beard Transplant"].includes(trans.procedure)) {
+        if (
+          ["Sapphire FUE", "DHI", "Turkish DHI", "Beard Transplant"].includes(
+            trans.procedure,
+          )
+        ) {
           category = "TRANSPLANT";
-        } else if (["PRP", "GFC"].includes(trans.procedure)) {
+        } else if (["PRP", "GFC" , "ALOPECIA" , "CANACOT" , "HEADWASH"].includes(trans.procedure)) {
           category = "SERVICE";
         } else if (trans.procedure === "Medicine" || trans.medicineId) {
           category = "MEDICINE";
         }
-      } else if (trans.costType === "Expense" || trans.costType === "Expenses") {
+
+      } else if (
+        trans.costType === "Expense" ||
+        trans.costType === "Expenses"
+      ) {
         category = "EXPENSE";
       }
     }
@@ -642,8 +650,8 @@ export default function EditTransactionPage() {
               toast.type === "success"
                 ? "bg-green-50 border-green-200 text-green-800"
                 : toast.type === "error"
-                ? "bg-red-50 border-red-200 text-red-800"
-                : "bg-blue-50 border-blue-200 text-blue-800"
+                  ? "bg-red-50 border-red-200 text-red-800"
+                  : "bg-blue-50 border-blue-200 text-blue-800"
             }`}
           >
             {toast.type === "success" && <CheckCircle className="w-5 h-5" />}
@@ -750,9 +758,12 @@ export default function EditTransactionPage() {
             {/* DEBUG INFO - Remove after testing */}
             <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
               <p className="text-xs font-mono">
-                <strong>Debug:</strong> Active Tab: {activeTab} | Transaction Category: {transaction?.transactionCategory} | 
-                Service Data: Qty={serviceData.quantity}, Cost={serviceData.perSessionCost}, Procedure={serviceData.procedure} |
-                Medicine Data: MedID={medicineData.medicineId}, Qty={medicineData.quantity}, Cost={medicineData.perUnitCost}
+                <strong>Debug:</strong> Active Tab: {activeTab} | Transaction
+                Category: {transaction?.transactionCategory} | Service Data:
+                Qty={serviceData.quantity}, Cost={serviceData.perSessionCost},
+                Procedure={serviceData.procedure} | Medicine Data: MedID=
+                {medicineData.medicineId}, Qty={medicineData.quantity}, Cost=
+                {medicineData.perUnitCost}
               </p>
             </div>
 
@@ -1127,6 +1138,10 @@ export default function EditTransactionPage() {
                         >
                           <option value="PRP">PRP</option>
                           <option value="GFC">GFC</option>
+                          <option value="Alopecia">ALOPECIA</option>
+                          <option value="Canacot">CANACOT</option>
+                          <option value="Headwash">HEADWASH</option>
+                          <option value="Other">OTHER</option>
                         </select>
                       </div>
                       <div>
@@ -1288,7 +1303,7 @@ export default function EditTransactionPage() {
                         <span className="font-semibold">
                           {formatCurrency(
                             serviceData.quantity *
-                              (parseFloat(serviceData.perSessionCost) || 0)
+                              (parseFloat(serviceData.perSessionCost) || 0),
                           )}
                         </span>
                       </div>
@@ -1424,7 +1439,8 @@ export default function EditTransactionPage() {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div className="md:col-span-3">
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Select Medicine <span className="text-red-500">*</span>
+                          Select Medicine{" "}
+                          <span className="text-red-500">*</span>
                         </label>
                         <SearchableSelect
                           options={medicines}
@@ -1594,7 +1610,7 @@ export default function EditTransactionPage() {
                         <span className="font-semibold">
                           {formatCurrency(
                             medicineData.quantity *
-                              (parseFloat(medicineData.perUnitCost) || 0)
+                              (parseFloat(medicineData.perUnitCost) || 0),
                           )}
                         </span>
                       </div>
@@ -1642,7 +1658,9 @@ export default function EditTransactionPage() {
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* ... expense tab content from your original code ... */}
                 <div className="text-center p-8">
-                  <p className="text-gray-600">Expense tab content (keep your original code here)</p>
+                  <p className="text-gray-600">
+                    Expense tab content (keep your original code here)
+                  </p>
                 </div>
               </div>
             )}
