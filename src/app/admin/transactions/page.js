@@ -1998,88 +1998,155 @@ export default function AllTransactionsPage() {
       setDownloading(true);
       const { utils, writeFile } = await import("xlsx");
 
+      // Main transaction data with patient properties first
       const dataToExport = sortedRows.map((row) => {
         const base = {
-          Date: formatDateForDisplay(row.date),
-          Category: row.transactionCategory || row.category || "Uncategorized",
-          Branch: row.branch || "",
-          "Payment Method": row.method?.toUpperCase() || "",
-          Amount: parseFloat(row.amount) || 0,
-          Discount: parseFloat(row.discount) || 0,
-          "Net Amount": calculateNetAmount(row),
-          "Trans ID": row.paymentId || "",
-          "Batch ID": row.batchId || "",
           Remarks: row.remarks || "",
+          Category: row.transactionCategory || row.category || "Uncategorized",
           "Created By": row.createdBy?.name || "N/A",
+          "Created By Branch": row.createdBy?.branch || "N/A",
+          "Created By Email": row.createdBy?.email || "N/A",
           "Created At": formatDateTime(row.createdBy?.date),
           "Total Edits": row.editors?.length || 0,
         };
 
         if (activeCategory === "TRANSPLANT") {
           return {
-            ...base,
+            Date: formatDateForDisplay(row.date),
             "Patient Name":
               row.patient?.personal?.name || row.patientName || "N/A",
             "Patient Phone":
               row.patient?.personal?.phone || row.patientPhone || "N/A",
+            Branch: row.branch || "",
             Procedure: row.procedure || "",
             "Payment Type": row.paymentType || "",
+            "Payment Method": row.method?.toUpperCase() || "",
+            "Original Amount": parseFloat(row.amount) || 0,
+            "Trans ID": row.paymentId || "",
+            Discount: parseFloat(row.discount) || 0,
+            "Batch ID": row.batchId || "",
+            "Total Amount": row.patient?.payments?.totalAmount || 0,
+            "Pending Amount": row.patient?.payments?.pendingAmount || 0,
+            "Received Amount": row.patient?.payments?.amountReceived || 0,
+            ...base,
           };
         }
 
         if (activeCategory === "SERVICE") {
           return {
-            ...base,
+            Date: formatDateForDisplay(row.date),
             "Patient/Customer":
               row.patient?.personal?.name || row.patientName || "Walk-in",
             Phone: row.patient?.personal?.phone || row.patientPhone || "",
+            Email: row.patient?.personal?.email || "",
+            Branch: row.branch || "",
             Service: row.procedure || "",
             Sessions: row.quantity || 1,
             "Per Session": row.perSessionCost || 0,
+            "Payment Method": row.method?.toUpperCase() || "",
+            Amount: parseFloat(row.amount) || 0,
+            "Trans ID": row.paymentId || "",
+            Discount: parseFloat(row.discount) || 0,
+            "Batch ID": row.batchId || "",
+            ...base,
           };
         }
 
         if (activeCategory === "MEDICINE") {
           return {
-            ...base,
+            Date: formatDateForDisplay(row.date),
             "Patient/Customer":
               row.patient?.personal?.name || row.patientName || "Walk-in",
             Phone: row.patient?.personal?.phone || row.patientPhone || "",
+            Email: row.patient?.personal?.email || "",
+            Branch: row.branch || "",
             Medicine:
               typeof row.medicineId === "object" ? row.medicineId?.name : "N/A",
             Quantity: row.quantity || 1,
             "Per Unit": row.perUnitCost || 0,
+            "Payment Method": row.method?.toUpperCase() || "",
+            Amount: parseFloat(row.amount) || 0,
+            "Trans ID": row.paymentId || "",
+            Discount: parseFloat(row.discount) || 0,
+            "Batch ID": row.batchId || "",
+            ...base,
           };
         }
 
         if (activeCategory === "EXPENSE") {
           return {
-            ...base,
+            Date: formatDateForDisplay(row.date),
+            Branch: row.branch || "",
             "Expense Type": row.expense || row.expenseCategory || "",
             "Paid To": row.expenseGiver?.name || "N/A",
+            "Payment Method": row.method?.toUpperCase() || "",
+            Amount: parseFloat(row.amount) || 0,
+            "Trans ID": row.paymentId || "",
+            Discount: parseFloat(row.discount) || 0,
+            "Batch ID": row.batchId || "",
+            ...base,
           };
         }
 
         return base;
       });
 
-      const wb = utils.book_new();
-      const ws = utils.json_to_sheet(dataToExport);
+      // Edit History data for separate sheet
+      const editHistoryData = sortedRows.flatMap((row) => {
+        if (!row.editors || row.editors.length === 0) return [];
 
+        return row.editors.map((editor, index) => ({
+          "Trans ID": row.paymentId || "",
+          "Transaction Date": formatDateForDisplay(row.date),
+          "Patient Name":
+            row.patient?.personal?.name || row.patientName || "N/A",
+          "Patient Phone":
+            row.patient?.personal?.phone || row.patientPhone || "",
+          Branch: row.branch || "",
+          Category: row.transactionCategory || row.category || "Uncategorized",
+          Amount: parseFloat(row.amount) || 0,
+          "Edit Number": index + 1,
+          "Edited By": editor.name || "N/A",
+          "Editor Email": editor.email || "N/A",
+          "Editor Branch": editor.branch || "N/A",
+          "Edited At": formatDateTime(editor.date),
+          "Field Changed": editor.field || "N/A",
+          "Old Value": editor.oldValue || "",
+          "New Value": editor.newValue || "",
+        }));
+      });
+
+      // Create workbook
+      const wb = utils.book_new();
+
+      // Add main transactions sheet with column widths
+      const ws1 = utils.json_to_sheet(dataToExport);
       const maxWidth = 30;
-      const colWidths = Object.keys(dataToExport[0] || {}).map((key) => ({
+      const colWidths1 = Object.keys(dataToExport[0] || {}).map((key) => ({
         wch: Math.min(Math.max(key.length, 10), maxWidth),
       }));
+      ws1["!cols"] = colWidths1;
+      utils.book_append_sheet(wb, ws1, `${activeCategory} Transactions`);
 
-      ws["!cols"] = colWidths;
+      // Add edit history sheet (only if there's edit history)
+      if (editHistoryData.length > 0) {
+        const ws2 = utils.json_to_sheet(editHistoryData);
+        const colWidths2 = Object.keys(editHistoryData[0] || {}).map((key) => ({
+          wch: Math.min(Math.max(key.length, 10), maxWidth),
+        }));
+        ws2["!cols"] = colWidths2;
+        utils.book_append_sheet(wb, ws2, "Edit History");
+      }
 
-      utils.book_append_sheet(wb, ws, activeCategory);
+      // Generate filename
+      const fileName = `${activeCategory}_Transactions_${new Date().toISOString().split("T")[0]}.xlsx`;
 
-      const fileName = `${activeCategory}_transactions_${new Date().toISOString().split("T")[0]}.xlsx`;
+      // Save file
       writeFile(wb, fileName);
 
+      const totalSheets = editHistoryData.length > 0 ? 2 : 1;
       toast.success(
-        `Downloaded ${sortedRows.length} ${activeCategory} records!`,
+        `Downloaded ${sortedRows.length} ${activeCategory} records with ${editHistoryData.length} edit entries! (${totalSheets} sheets)`,
       );
     } catch (error) {
       console.error("Download error:", error);
