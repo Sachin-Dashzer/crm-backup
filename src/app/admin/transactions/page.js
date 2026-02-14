@@ -2091,29 +2091,59 @@ export default function AllTransactionsPage() {
         return base;
       });
 
-      // Edit History data for separate sheet
+      // Edit History data - properly extracting from updatedFields
       const editHistoryData = sortedRows.flatMap((row) => {
         if (!row.editors || row.editors.length === 0) return [];
 
-        return row.editors.map((editor, index) => ({
-          "Trans ID": row.paymentId || "",
-          "Transaction Date": formatDateForDisplay(row.date),
-          "Patient Name":
-            row.patient?.personal?.name || row.patientName || "N/A",
-          "Patient Phone":
-            row.patient?.personal?.phone || row.patientPhone || "",
-          Branch: row.branch || "",
-          Category: row.transactionCategory || row.category || "Uncategorized",
-          Amount: parseFloat(row.amount) || 0,
-          "Edit Number": index + 1,
-          "Edited By": editor.name || "N/A",
-          "Editor Email": editor.email || "N/A",
-          "Editor Branch": editor.branch || "N/A",
-          "Edited At": formatDateTime(editor.date),
-          "Field Changed": editor.field || "N/A",
-          "Old Value": editor.oldValue || "",
-          "New Value": editor.newValue || "",
-        }));
+        return row.editors.flatMap((editor, editorIndex) => {
+          // If no updatedFields or empty, show just the edit event
+          if (!editor.updatedFields || editor.updatedFields.length === 0) {
+            return [
+              {
+                "Trans ID": row.paymentId || "",
+                "Transaction Date": formatDateForDisplay(row.date),
+                "Patient Name":
+                  row.patient?.personal?.name || row.patientName || "N/A",
+                "Patient Phone":
+                  row.patient?.personal?.phone || row.patientPhone || "",
+                Branch: row.branch || "",
+                Category:
+                  row.transactionCategory || row.category || "Uncategorized",
+                "Transaction Amount": parseFloat(row.amount) || 0,
+                "Edit Number": editorIndex + 1,
+                "Edited By": editor.name || "N/A",
+                "Editor Email": editor.email || "N/A",
+                "Editor Branch": editor.branch || "N/A",
+                "Edited At": formatDateTime(editor.date),
+                "Field Changed": "General Edit",
+                "Previous Value": "",
+                "New Value": "",
+              },
+            ];
+          }
+
+          // Show each field change as a separate row
+          return editor.updatedFields.map((field, fieldIndex) => ({
+            "Trans ID": row.paymentId || "",
+            "Transaction Date": formatDateForDisplay(row.date),
+            "Patient Name":
+              row.patient?.personal?.name || row.patientName || "N/A",
+            "Patient Phone":
+              row.patient?.personal?.phone || row.patientPhone || "",
+            Branch: row.branch || "",
+            Category:
+              row.transactionCategory || row.category || "Uncategorized",
+            "Transaction Amount": parseFloat(row.amount) || 0,
+            "Edit Number": `${editorIndex + 1}.${fieldIndex + 1}`,
+            "Edited By": editor.name || "N/A",
+            "Editor Email": editor.email || "N/A",
+            "Editor Branch": editor.branch || "N/A",
+            "Edited At": formatDateTime(editor.date),
+            "Field Changed": field.name || "N/A",
+            "Previous Value": field.previousValue || "",
+            "New Value": field.newValue || "",
+          }));
+        });
       });
 
       // Create workbook
@@ -2145,8 +2175,12 @@ export default function AllTransactionsPage() {
       writeFile(wb, fileName);
 
       const totalSheets = editHistoryData.length > 0 ? 2 : 1;
+      const totalFieldChanges = editHistoryData.filter(
+        (row) => row["Field Changed"] !== "General Edit",
+      ).length;
+
       toast.success(
-        `Downloaded ${sortedRows.length} ${activeCategory} records with ${editHistoryData.length} edit entries! (${totalSheets} sheets)`,
+        `Downloaded ${sortedRows.length} ${activeCategory} records with ${totalFieldChanges} field changes! (${totalSheets} sheets)`,
       );
     } catch (error) {
       console.error("Download error:", error);
