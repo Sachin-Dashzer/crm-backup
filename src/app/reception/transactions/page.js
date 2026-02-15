@@ -70,7 +70,7 @@ const TRANSPLANT_PROCEDURES = [
   "Turkish DHI",
   "Beard Transplant",
 ];
-const SERVICE_PROCEDURES = ["PRP", "GFC"];
+const SERVICE_PROCEDURES = ["PRP", "GFC", "Alopecia", "Headwash", "Canacot"];
 const TRANSACTION_CATEGORIES = [
   { value: "TRANSPLANT", label: "Transplant", icon: User, color: "indigo" },
   { value: "SERVICE", label: "Services", icon: User, color: "pink" },
@@ -440,7 +440,12 @@ function DataTable({
       "beard transplant": "bg-amber-100 text-amber-700 border-amber-200",
       prp: "bg-emerald-100 text-emerald-700 border-emerald-200",
       gfc: "bg-cyan-100 text-cyan-700 border-cyan-200",
+
+      alopecia: "bg-rose-100 text-rose-700 border-rose-200",
+      headwash: "bg-sky-100 text-sky-700 border-sky-200",
+      canacot: "bg-lime-100 text-lime-700 border-lime-200",
     };
+
     return (
       colors[proc?.toLowerCase()] || "bg-gray-100 text-gray-700 border-gray-200"
     );
@@ -571,7 +576,8 @@ function DataTable({
             {rows.map((row, i) => {
               const netAmount = calculateNetAmount(row);
               const hasDiscount = parseFloat(row.discount || 0) > 0;
-              const rowCategory = row.transactionCategory || row.category || "TRANSPLANT";
+              const rowCategory =
+                row.transactionCategory || row.category || "TRANSPLANT";
 
               return (
                 <div key={row._id || i}>
@@ -863,7 +869,9 @@ function DataTable({
                           </button>
                           <button
                             onClick={() =>
-                              router.push(`/reception/transactions/edit/${row._id}`)
+                              router.push(
+                                `/reception/transactions/edit/${row._id}`,
+                              )
                             }
                             className="p-2 hover:bg-indigo-100 rounded-lg transition-colors text-indigo-600 hover:text-indigo-800"
                             title="Edit record"
@@ -1291,7 +1299,8 @@ export default function AllTransactionsPage() {
     // Category-specific fields
     if (rowCategory === "TRANSPLANT" || rowCategory === "SERVICE") {
       const patientName = row.patient?.personal?.name || row.patientName || "";
-      const patientPhone = row.patient?.personal?.phone || row.patientPhone || "";
+      const patientPhone =
+        row.patient?.personal?.phone || row.patientPhone || "";
       return (
         patientName.toLowerCase().includes(searchLower) ||
         patientPhone.includes(searchLower) ||
@@ -1301,7 +1310,8 @@ export default function AllTransactionsPage() {
 
     if (rowCategory === "MEDICINE") {
       const patientName = row.patient?.personal?.name || row.patientName || "";
-      const patientPhone = row.patient?.personal?.phone || row.patientPhone || "";
+      const patientPhone =
+        row.patient?.personal?.phone || row.patientPhone || "";
       const medicineName =
         typeof row.medicineId === "object" ? row.medicineId?.name : "";
       return (
@@ -1918,7 +1928,9 @@ export default function AllTransactionsPage() {
           <DataTable
             category={activeCategory}
             rows={paginatedRows}
-            onEdit={(row) => router.push(`/reception/transactions/edit/${row._id}`)}
+            onEdit={(row) =>
+              router.push(`/reception/transactions/edit/${row._id}`)
+            }
             onDelete={openDeleteConfirm}
             onGenerateBill={openBillGenerator}
             onSort={handleSort}
