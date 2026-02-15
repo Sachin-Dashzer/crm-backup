@@ -70,6 +70,9 @@ const transactionSchema = new mongoose.Schema(
         "Turkish DHI",
         "Beard Transplant",
         "PRP",
+        "Alopecia",
+        "Headwash",
+        "Canacot",
         "GFC",
         "Medicine",
         "Other",
@@ -160,7 +163,7 @@ transactionSchema.pre("save", function (next) {
         )
       ) {
         this.transactionCategory = "TRANSPLANT";
-      } else if (["PRP", "GFC"].includes(this.procedure)) {
+      } else if (["PRP", "GFC" , "Alopecia", "Headwash", "Canacot",].includes(this.procedure)) {
         this.transactionCategory = "SERVICE";
       } else if (this.procedure === "Medicine") {
         this.transactionCategory = "MEDICINE";
