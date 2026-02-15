@@ -754,7 +754,7 @@ export default function AllTransactionsPage() {
                           <option value="cash">Cash</option>
                           <option value="card">Card</option>
                           <option value="upi">UPI</option>
-                          <option value="loan">Loan</option>
+                          <option value="Loan">Loan</option>
 
                           <option value="banking">Bank Transfer</option>
                         </select>
@@ -1131,7 +1131,7 @@ export default function AllTransactionsPage() {
                           <option value="cash">Cash</option>
                           <option value="card">Card</option>
                           <option value="upi">UPI</option>
-                          <option value="loan">Loan</option>
+                          <option value="Loan">Loan</option>
                           <option value="banking">Bank Transfer</option>
                         </select>
                       </div>
@@ -1516,7 +1516,7 @@ export default function AllTransactionsPage() {
                           <option value="cash">Cash</option>
                           <option value="card">Card</option>
                           <option value="upi">UPI</option>
-                          <option value="loan">Loan</option>
+                          <option value="Loan">Loan</option>
                           <option value="banking">Bank Transfer</option>
                         </select>
                       </div>
@@ -1804,7 +1804,7 @@ export default function AllTransactionsPage() {
                           <option value="cash">Cash</option>
                           <option value="card">Card</option>
                           <option value="upi">UPI</option>
-                          <option value="loan">Loan</option>
+                          <option value="Loan">Loan</option>
 
                           <option value="banking">Bank Transfer</option>
                         </select>
