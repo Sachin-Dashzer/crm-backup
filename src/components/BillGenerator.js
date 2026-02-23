@@ -15,7 +15,7 @@ import {
 const CLINIC_BRANCHES = {
   Delhi: {
     img: Logo,
-    name: "RYAN CLINIC",
+    name: "LearCRM",
     address: "CD 163, Block CD, Dakshini Pitampura",
     city: "Pitampura, Delhi, 110034",
     phone: "8828202830",
@@ -33,7 +33,7 @@ const CLINIC_BRANCHES = {
   },
   Hyderabad: {
     img: Logo,
-    name: "RYAN CLINIC",
+    name: "LearCRM",
     address:
       "2nd Floor, 8-2, 316/A/6/A, Road No. 14, above SBI bank, beside Asha hospital",
     city: "GS Nagar, Nandi Nagar, Banjara Hills, Hyderabad, Telangana 500034",

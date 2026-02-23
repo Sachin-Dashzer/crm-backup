@@ -238,7 +238,7 @@ export default function EmployeeRegistration() {
                     <span>Employee Registration</span>
                   </h1>
                   <p className="text-blue-100 mt-1">
-                    Add a new team member to Ryan Clinic
+                    Add a new team member to LearCRM
                   </p>
                 </div>
                 <div className="text-right hidden md:block">

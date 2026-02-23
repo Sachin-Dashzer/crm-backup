@@ -94,7 +94,7 @@ export default function ReceptionSidebar() {
               <Building2 className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h1 className="font-bold text-lg text-gray-900">Ryan Clinic</h1>
+              <h1 className="font-bold text-lg text-gray-900">LearCRM</h1>
               <p className="text-xs text-gray-500">Reception Panel</p>
             </div>
           </Link>

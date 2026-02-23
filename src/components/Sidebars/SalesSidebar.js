@@ -94,7 +94,7 @@ export default function SalesSidebar() {
             </div>
             <div>
               <h1 className="font-bold text-lg text-gray-900">
-                Ryan Clinic
+                LearCRM
               </h1>
               <p className="text-xs text-gray-500">Sales Panel</p>
             </div>

@@ -104,7 +104,7 @@ export default function AdminSidebar() {
             </div>
             <div>
               <h1 className="font-bold text-xl bg-linear-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                Ryan Clinic
+                LearCRM
               </h1>
               <p className="text-xs text-gray-500 font-medium">
                 Admin Control Center

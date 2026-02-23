@@ -141,7 +141,7 @@ export default function Homepage() {
               <Stethoscope className="text-white" size={20} />
             </div>
             <h1 className="text-xl font-bold bg-linear-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-              Ryan Clinic CRM
+              LearCRM
             </h1>
           </div>
           <div className="flex items-center gap-4">
@@ -315,7 +315,7 @@ export default function Homepage() {
               Multi-Branch Management
             </h2>
             <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              Seamlessly manage operations across all Ryan Clinic locations
+              Seamlessly manage operations across all LearCRM locations
             </p>
           </div>
 
@@ -352,7 +352,7 @@ export default function Homepage() {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-bold mb-4">
-              Why Choose Ryan Clinic CRM?
+              Why Choose LearCRM?
             </h2>
             <p className="text-xl opacity-90 max-w-2xl mx-auto">
               Built specifically for hair transplant clinics with industry
@@ -404,7 +404,7 @@ export default function Homepage() {
             Ready to Transform Your Clinic?
           </h2>
           <p className="text-xl text-gray-600 mb-8">
-            Join Ryan Clinic in revolutionizing hair transplant patient
+            Join LearCRM in revolutionizing hair transplant patient
             management
           </p>
           <Link
@@ -427,7 +427,7 @@ export default function Homepage() {
                   <Stethoscope className="text-white" size={24} />
                 </div>
                 <h3 className="text-xl font-bold text-gray-900">
-                  Ryan Clinic CRM
+                  LearCRM
                 </h3>
               </div>
               <p className="text-gray-600 mb-4">
@@ -465,7 +465,7 @@ export default function Homepage() {
 
           <div className="border-t border-gray-200 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
             <p className="text-gray-600 text-sm">
-              © {new Date().getFullYear()} Ryan Clinic CRM. All rights reserved.
+              © {new Date().getFullYear()} LearCRM. All rights reserved.
             </p>
             <p className="text-gray-600 text-sm">
               Built with Next.js, MongoDB & TailwindCSS
