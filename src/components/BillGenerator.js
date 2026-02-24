@@ -15,7 +15,7 @@ import {
 const CLINIC_BRANCHES = {
   Delhi: {
     img: Logo,
-    name: "LearCRM",
+    name: "RYAN CLINIC",
     address: "CD 163, Block CD, Dakshini Pitampura",
     city: "Pitampura, Delhi, 110034",
     phone: "8828202830",
@@ -33,7 +33,7 @@ const CLINIC_BRANCHES = {
   },
   Hyderabad: {
     img: Logo,
-    name: "LearCRM",
+    name: "RYAN CLINIC",
     address:
       "2nd Floor, 8-2, 316/A/6/A, Road No. 14, above SBI bank, beside Asha hospital",
     city: "GS Nagar, Nandi Nagar, Banjara Hills, Hyderabad, Telangana 500034",
@@ -82,6 +82,9 @@ function ServiceInvoice({ transaction, patient, consultant, branch }) {
   const discount = parseFloat(transaction.discount) || 0;
   const netAmount = grossAmount - discount;
   const invoiceNo = `#INV${transaction._id.slice(-5).toUpperCase()}`;
+
+  // console.log(patient);
+
 
   return (
     <div className="max-w-4xl mx-auto bg-white p-8" style={{ fontFamily: "Arial, sans-serif" }}>
@@ -315,6 +318,7 @@ function TransplantInvoice({
   const totalPaid = transactions.reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0);
   const pending = amountAfterDiscount - totalPaid;
 
+
   return (
     <div className="max-w-4xl mx-auto bg-white p-8" style={{ fontFamily: "Arial, sans-serif" }}>
       {/* Header */}
@@ -439,6 +443,7 @@ export default function BillGenerator({ transactionId, onClose }) {
         throw new Error(result.error || "Failed to fetch invoice data");
       }
 
+
       setInvoiceData(result.data);
     } catch (error) {
       console.error("Error fetching transaction:", error);
@@ -550,7 +555,7 @@ export default function BillGenerator({ transactionId, onClose }) {
         </div>
 
         {/* Bill Preview */}
-        <div className="p-6 max-h-[600px] overflow-y-auto">
+        <div className="p-6 max-h-150 overflow-y-auto">
           <div id="bill-content" className="bg-white">
             {category === "TRANSPLANT" ? (
               <TransplantInvoice

@@ -3,13 +3,13 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/db";
 import Transactions from "@/models/Transactions";
+import Patient from "@/models/Patient";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
 export async function DELETE(req) {
   let session;
   try {
-    // Check authentication
     session = await getServerSession(authOptions);
     if (!session) {
       return NextResponse.json(
@@ -20,7 +20,6 @@ export async function DELETE(req) {
 
     await connectDB();
 
-    // Get transaction ID from request body
     const { transactionId } = await req.json();
 
     if (!transactionId) {
@@ -30,7 +29,6 @@ export async function DELETE(req) {
       );
     }
 
-    // Find the transaction to delete
     const transaction = await Transactions.findById(transactionId);
 
     if (!transaction) {
@@ -40,7 +38,6 @@ export async function DELETE(req) {
       );
     }
 
-    // Verify it's a SERVICE transaction
     const category = transaction.transactionCategory || transaction.category;
     if (category !== "SERVICE") {
       return NextResponse.json(
@@ -49,23 +46,81 @@ export async function DELETE(req) {
       );
     }
 
-    // Store transaction details for response
     const deletedData = {
       transactionId: transaction._id,
       procedure: transaction.procedure,
       amount: transaction.amount,
+      discount: transaction.discount,
       quantity: transaction.quantity,
       batchId: transaction.batchId,
       date: transaction.date,
     };
 
-    // Delete the transaction
+    // Delete the transaction first
     await Transactions.findByIdAndDelete(transactionId);
+
+    // ── Reverse patient payment update (only if linked to a registered patient) ──
+    let updatedPatient = null;
+
+    if (transaction.patient) {
+      const patient = await Patient.findById(transaction.patient);
+
+      if (patient && patient.payments) {
+        // Remove this transaction's ID from the patient's transactions array
+        patient.payments.transactions = patient.payments.transactions.filter(
+          (id) => id.toString() !== transactionId.toString()
+        );
+
+        // Subtract the deleted transaction's amount from amountReceived
+        patient.payments.amountReceived = Math.max(
+          0,
+          patient.payments.amountReceived - (transaction.amount || 0)
+        );
+
+        // Recalculate discount from remaining revenue transactions
+        const remainingTransactions = await Transactions.find({
+          _id: { $in: patient.payments.transactions },
+          costType: "Revenue",
+        });
+        patient.payments.discount = remainingTransactions.reduce(
+          (sum, t) => sum + (t.discount || 0),
+          0
+        );
+
+        // Recalculate pending amount
+        const adjustedTotal = Math.max(
+          0,
+          patient.payments.totalAmount - patient.payments.discount
+        );
+        patient.payments.pendingAmount = Math.max(
+          0,
+          adjustedTotal - patient.payments.amountReceived
+        );
+
+        // Audit trail
+        patient.editors = patient.editors || [];
+        patient.editors.push({
+          name: session.user.name,
+          email: session.user.email,
+          branch: session.user.branch,
+          date: new Date(),
+        });
+
+        await patient.save();
+
+        updatedPatient = {
+          _id: patient._id,
+          payments: patient.payments,
+        };
+      }
+    }
+    // ─────────────────────────────────────────────────────────────────────────────
 
     return NextResponse.json({
       success: true,
       message: "Service transaction deleted successfully",
       data: deletedData,
+      updatedPatient,
     });
   } catch (error) {
     console.error("Error deleting service transaction:", error);

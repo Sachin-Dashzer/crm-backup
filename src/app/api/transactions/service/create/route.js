@@ -28,7 +28,6 @@ export async function POST(req) {
       remarks,
     } = body;
 
-    // Check if it's multiple services or single service
     const services = body.services || [
       {
         procedure: body.procedure,
@@ -37,7 +36,6 @@ export async function POST(req) {
       },
     ];
 
-    // Validation
     if (!services || services.length === 0) {
       return NextResponse.json(
         { error: "At least one service is required" },
@@ -45,7 +43,6 @@ export async function POST(req) {
       );
     }
 
-    // Validate patient (either registered or walk-in)
     if (!patientId && (!patientName || !patientPhone)) {
       return NextResponse.json(
         { error: "Either select a patient or provide walk-in details" },
@@ -53,7 +50,6 @@ export async function POST(req) {
       );
     }
 
-    // If patientId provided, verify it exists
     if (patientId) {
       const patient = await Patient.findById(patientId);
       if (!patient) {
@@ -64,7 +60,6 @@ export async function POST(req) {
       }
     }
 
-    // Validate all services
     for (const item of services) {
       if (!item.procedure || !item.quantity || !item.perSessionCost) {
         return NextResponse.json(
@@ -74,12 +69,10 @@ export async function POST(req) {
       }
     }
 
-    // Generate batch ID
     const batchId = `BATCH-${Date.now()}-${Math.random()
       .toString(36)
       .substr(2, 9)}`;
 
-    // Calculate total amount
     const subtotal = services.reduce(
       (sum, item) => sum + item.quantity * parseFloat(item.perSessionCost),
       0
@@ -87,13 +80,10 @@ export async function POST(req) {
     const totalDiscount = discount || 0;
     const finalTotal = subtotal - totalDiscount;
 
-    // Create transactions
     const transactions = [];
 
     for (const item of services) {
       const itemSubtotal = item.quantity * parseFloat(item.perSessionCost);
-
-      // Calculate proportional discount
       const itemDiscount =
         subtotal > 0 ? (itemSubtotal / subtotal) * totalDiscount : 0;
       const itemFinalAmount = itemSubtotal - itemDiscount;
@@ -126,8 +116,70 @@ export async function POST(req) {
       transactions.push(transaction);
     }
 
-    // Save all transactions
     const savedTransactions = await Transactions.insertMany(transactions);
+
+    // ── Patient payment update (only if a registered patient is linked) ──
+    let updatedPatient = null;
+
+    if (patientId) {
+      const patient = await Patient.findById(patientId);
+
+      if (patient) {
+        // Ensure payments object is initialised
+        patient.payments = patient.payments || {
+          amountReceived: 0,
+          pendingAmount: 0,
+          medicineAmount: 0,
+          discount: 0,
+          totalAmount: 0,
+          transactions: [],
+        };
+
+        // Push all new transaction IDs
+        const newIds = savedTransactions.map((t) => t._id);
+        patient.payments.transactions.push(...newIds);
+
+        // Add finalTotal (amount actually paid) to amountReceived
+        patient.payments.amountReceived += finalTotal;
+
+        // Recalculate total discount from ALL revenue transactions on this patient
+        const allTransactions = await Transactions.find({
+          _id: { $in: patient.payments.transactions },
+          costType: "Revenue",
+        });
+        patient.payments.discount = allTransactions.reduce(
+          (sum, t) => sum + (t.discount || 0),
+          0
+        );
+
+        // Recalculate pending amount
+        const adjustedTotal = Math.max(
+          0,
+          patient.payments.totalAmount - patient.payments.discount
+        );
+        patient.payments.pendingAmount = Math.max(
+          0,
+          adjustedTotal - patient.payments.amountReceived
+        );
+
+        // Audit trail
+        patient.editors = patient.editors || [];
+        patient.editors.push({
+          name: session.user.name,
+          email: session.user.email,
+          branch: session.user.branch,
+          date: new Date(),
+        });
+
+        await patient.save();
+
+        updatedPatient = {
+          _id: patient._id,
+          payments: patient.payments,
+        };
+      }
+    }
+    // ────────────────────────────────────────────────────────────────────
 
     return NextResponse.json(
       {
@@ -140,6 +192,7 @@ export async function POST(req) {
           discount: totalDiscount,
           finalTotal,
         },
+        updatedPatient,
       },
       { status: 201 }
     );

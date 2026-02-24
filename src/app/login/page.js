@@ -63,7 +63,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-indigo-600 to-purple-600 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-[#9a6f2a] to-purple-600 px-4">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl p-8">
         {/* Header */}
         <div className="text-center mb-8">
