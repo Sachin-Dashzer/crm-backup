@@ -444,6 +444,7 @@ export default function BillGenerator({ transactionId, onClose }) {
       }
 
 
+
       setInvoiceData(result.data);
     } catch (error) {
       console.error("Error fetching transaction:", error);

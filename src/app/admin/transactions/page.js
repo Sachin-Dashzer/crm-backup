@@ -96,7 +96,6 @@ const formatFieldName = (fieldName) => {
 };
 
 const BRANCHES = ["Delhi", "Mumbai", "Hyderabad"];
-// ✅ FIX 1: Match schema - "Loan" with capital L
 const PAYMENT_METHODS = ["upi", "cash", "card", "banking", "Loan", "other"];
 const TRANSPLANT_PROCEDURES = [
   "Sapphire FUE",
@@ -112,7 +111,6 @@ const TRANSACTION_CATEGORIES = [
   { value: "EXPENSE", label: "Expenses", icon: Receipt, color: "rose" },
 ];
 
-// ✅ FIX 7: Hardcoded gradient classes for each category (Tailwind JIT compatibility)
 const getCategoryGradientClass = (categoryValue, isActive) => {
   if (!isActive) return "bg-gray-50 text-gray-600 hover:bg-gray-100";
 
@@ -128,7 +126,6 @@ const getCategoryGradientClass = (categoryValue, isActive) => {
   return gradients[categoryValue] || "bg-gray-50 text-gray-600";
 };
 
-// ... (StatCard, DeleteConfirmModal, Input, Select components remain the same)
 
 // ========== STAT CARD COMPONENT ==========
 function StatCard({
@@ -323,7 +320,6 @@ function Select({ label, value, onChange, options, required, icon: Icon }) {
 }
 
 // ========== EXPANDED ROW DETAILS COMPONENT ==========
-// (Keep the same - no changes needed)
 function ExpandedRowDetails({ transaction, isExpanded }) {
   const [activeTab, setActiveTab] = useState("summary");
 
@@ -624,7 +620,6 @@ function ExpandedRowDetails({ transaction, isExpanded }) {
 }
 
 // ========== DATA TABLE COMPONENT ==========
-// (Keep same - just fix mobile bill button around line 1450)
 function DataTable({
   category,
   rows,
@@ -1954,7 +1949,6 @@ export default function AllTransactionsPage() {
     }
   };
 
-  // ✅ FIX 2 & 6: Improved bill generator logic with proper null checks
   const openBillGenerator = (data) => {
     try {
       // Check if this is a revenue transaction with a patient
@@ -1964,7 +1958,7 @@ export default function AllTransactionsPage() {
         data.transactionCategory !== "undefined" &&
         data.transactionCategory !== "";
 
-      // For transplant transactions with populated patient, use patient ID
+
       if (
         isRevenueTransaction &&
         (!hasCategory || data.transactionCategory === "TRANSPLANT") &&

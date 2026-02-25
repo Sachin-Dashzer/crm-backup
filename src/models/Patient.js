@@ -131,7 +131,14 @@ const patientSchema = new mongoose.Schema(
         { type: mongoose.Schema.Types.ObjectId, ref: "Transactions" },
       ],
     },
-
+    products: [{
+      stocks : {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Stock"
+      },
+      quantity: number,
+      amount: number,
+    }],
     documents: {
       images: [String],
       consentForm: [String],

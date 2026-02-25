@@ -6,9 +6,9 @@ import Patient from "@/models/Patient";
 const handler = async (req) => {
   try {
     const { searchParams } = new URL(req.url);
-    const transactionId = searchParams.get("id");
+    const newId = searchParams.get("id");
 
-    if (!transactionId) {
+    if (!newId) {
       return NextResponse.json(
         { error: "Transaction ID is required" },
         { status: 400 },
@@ -16,7 +16,7 @@ const handler = async (req) => {
     }
 
     // Try to find as Patient first (for TRANSPLANT invoices)
-    let patient = await Patient.findById(transactionId)
+    let patient = await Patient.findById(newId)
       .select("personal counselling payments")
       .populate({
         path: "payments.transactions",
@@ -68,7 +68,7 @@ const handler = async (req) => {
     }
 
     // Try to find as Transaction (for SERVICE/MEDICINE/EXPENSE)
-    const transaction = await Transactions.findById(transactionId)
+    const transaction = await Transactions.findById(newId)
       .populate({
         path: "patient",
         select: "personal counselling",
