@@ -136,8 +136,8 @@ const patientSchema = new mongoose.Schema(
         type: mongoose.Schema.Types.ObjectId,
         ref: "Stock"
       },
-      quantity: number,
-      amount: number,
+      quantity: Number,
+      amount: Number,
     }],
     documents: {
       images: [String],

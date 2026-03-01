@@ -15,6 +15,13 @@ import {
   Receipt,
 } from "lucide-react";
 
+const getPaymentIdConfig = (method) => {
+  if (method === "card") return { placeholder: "Please enter card last no.", required: true };
+  if (method?.toLowerCase() === "loan") return { placeholder: "Please add the reference id", required: true };
+  if (method === "cash") return { placeholder: "Please add transaction id", required: false };
+  return { placeholder: "Please add transaction id", required: true };
+};
+
 export default function AllTransactionsPage() {
   const router = useRouter();
   const { data: session } = useSession();
@@ -184,6 +191,10 @@ export default function AllTransactionsPage() {
       alert("Please enter amount");
       return;
     }
+    if (transplantData.method !== "cash" && !transplantData.paymentId) {
+      alert(transplantData.method === "card" ? "Please enter card last no." : transplantData.method?.toLowerCase() === "loan" ? "Please add the reference id" : "Please add transaction id");
+      return;
+    }
 
     setLoading(true);
     try {
@@ -291,6 +302,10 @@ export default function AllTransactionsPage() {
         alert("Please enter valid per session cost for all services");
         return;
       }
+    }
+    if (serviceData.method !== "cash" && !serviceData.paymentId) {
+      alert(serviceData.method === "card" ? "Please enter card last no." : serviceData.method?.toLowerCase() === "loan" ? "Please add the reference id" : "Please add transaction id");
+      return;
     }
 
     setLoading(true);
@@ -418,6 +433,10 @@ export default function AllTransactionsPage() {
         return;
       }
     }
+    if (medicineData.method !== "cash" && !medicineData.paymentId) {
+      alert(medicineData.method === "card" ? "Please enter card last no." : medicineData.method?.toLowerCase() === "loan" ? "Please add the reference id" : "Please add transaction id");
+      return;
+    }
 
     setLoading(true);
     try {
@@ -478,6 +497,10 @@ export default function AllTransactionsPage() {
     }
     if (!expenseData.amount) {
       alert("Please enter amount");
+      return;
+    }
+    if (expenseData.method !== "cash" && !expenseData.paymentId) {
+      alert(expenseData.method === "card" ? "Please enter card last no." : expenseData.method?.toLowerCase() === "loan" ? "Please add the reference id" : "Please add transaction id");
       return;
     }
 
@@ -761,7 +784,7 @@ export default function AllTransactionsPage() {
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Transaction ID
+                          Transaction ID{getPaymentIdConfig(transplantData.method).required && <span className="text-red-500 ml-1">*</span>}
                         </label>
                         <input
                           type="text"
@@ -773,7 +796,7 @@ export default function AllTransactionsPage() {
                             })
                           }
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                          placeholder="UPI Ref, Card No, etc."
+                          placeholder={getPaymentIdConfig(transplantData.method).placeholder}
                         />
                       </div>
                       <div>
@@ -1137,7 +1160,7 @@ export default function AllTransactionsPage() {
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Transaction ID
+                          Transaction ID{getPaymentIdConfig(serviceData.method).required && <span className="text-red-500 ml-1">*</span>}
                         </label>
                         <input
                           type="text"
@@ -1149,6 +1172,7 @@ export default function AllTransactionsPage() {
                             })
                           }
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                          placeholder={getPaymentIdConfig(serviceData.method).placeholder}
                         />
                       </div>
                       <div>
@@ -1522,7 +1546,7 @@ export default function AllTransactionsPage() {
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Transaction ID
+                          Transaction ID{getPaymentIdConfig(medicineData.method).required && <span className="text-red-500 ml-1">*</span>}
                         </label>
                         <input
                           type="text"
@@ -1534,6 +1558,7 @@ export default function AllTransactionsPage() {
                             })
                           }
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                          placeholder={getPaymentIdConfig(medicineData.method).placeholder}
                         />
                       </div>
                       <div>
@@ -1811,7 +1836,7 @@ export default function AllTransactionsPage() {
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Transaction ID
+                          Transaction ID{getPaymentIdConfig(expenseData.method).required && <span className="text-red-500 ml-1">*</span>}
                         </label>
                         <input
                           type="text"
@@ -1823,6 +1848,7 @@ export default function AllTransactionsPage() {
                             })
                           }
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                          placeholder={getPaymentIdConfig(expenseData.method).placeholder}
                         />
                       </div>
                       <div>

@@ -16,6 +16,13 @@ import {
   CheckCircle,
 } from "lucide-react";
 
+const getPaymentIdConfig = (method) => {
+  if (method === "card") return { placeholder: "Please enter card last no.", required: true };
+  if (method?.toLowerCase() === "loan") return { placeholder: "Please add the reference id", required: true };
+  if (method === "cash") return { placeholder: "Please add transaction id", required: false };
+  return { placeholder: "Please add transaction id", required: true };
+};
+
 export default function EditTransactionPage() {
   const router = useRouter();
   const params = useParams();
@@ -372,6 +379,10 @@ export default function EditTransactionPage() {
       showToast("Please enter amount", "error");
       return;
     }
+    if (transplantData.method !== "cash" && !transplantData.paymentId) {
+      showToast(transplantData.method === "card" ? "Please enter card last no." : transplantData.method?.toLowerCase() === "loan" ? "Please add the reference id" : "Please add transaction id", "error");
+      return;
+    }
 
     setLoading(true);
     try {
@@ -429,6 +440,10 @@ export default function EditTransactionPage() {
     }
     if (!serviceData.perSessionCost) {
       showToast("Please enter per session cost", "error");
+      return;
+    }
+    if (serviceData.method !== "cash" && !serviceData.paymentId) {
+      showToast(serviceData.method === "card" ? "Please enter card last no." : serviceData.method?.toLowerCase() === "loan" ? "Please add the reference id" : "Please add transaction id", "error");
       return;
     }
 
@@ -504,6 +519,10 @@ export default function EditTransactionPage() {
       showToast("Please enter customer name and phone", "error");
       return;
     }
+    if (medicineData.method !== "cash" && !medicineData.paymentId) {
+      showToast(medicineData.method === "card" ? "Please enter card last no." : medicineData.method?.toLowerCase() === "loan" ? "Please add the reference id" : "Please add transaction id", "error");
+      return;
+    }
 
     setLoading(true);
     try {
@@ -562,6 +581,10 @@ export default function EditTransactionPage() {
     }
     if (!expenseData.amount) {
       showToast("Please enter amount", "error");
+      return;
+    }
+    if (expenseData.method !== "cash" && !expenseData.paymentId) {
+      showToast(expenseData.method === "card" ? "Please enter card last no." : expenseData.method?.toLowerCase() === "loan" ? "Please add the reference id" : "Please add transaction id", "error");
       return;
     }
 
@@ -908,7 +931,7 @@ export default function EditTransactionPage() {
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Transaction ID
+                          Transaction ID{getPaymentIdConfig(transplantData.method).required && <span className="text-red-500 ml-1">*</span>}
                         </label>
                         <input
                           type="text"
@@ -920,7 +943,7 @@ export default function EditTransactionPage() {
                             })
                           }
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                          placeholder="UPI Ref, Card No, etc."
+                          placeholder={getPaymentIdConfig(transplantData.method).placeholder}
                         />
                       </div>
                       <div>
@@ -1225,7 +1248,7 @@ export default function EditTransactionPage() {
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Transaction ID
+                          Transaction ID{getPaymentIdConfig(serviceData.method).required && <span className="text-red-500 ml-1">*</span>}
                         </label>
                         <input
                           type="text"
@@ -1237,6 +1260,7 @@ export default function EditTransactionPage() {
                             })
                           }
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                          placeholder={getPaymentIdConfig(serviceData.method).placeholder}
                         />
                       </div>
                       <div>
@@ -1534,7 +1558,7 @@ export default function EditTransactionPage() {
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Transaction ID
+                          Transaction ID{getPaymentIdConfig(medicineData.method).required && <span className="text-red-500 ml-1">*</span>}
                         </label>
                         <input
                           type="text"
@@ -1546,6 +1570,7 @@ export default function EditTransactionPage() {
                             })
                           }
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                          placeholder={getPaymentIdConfig(medicineData.method).placeholder}
                         />
                       </div>
                       <div>
