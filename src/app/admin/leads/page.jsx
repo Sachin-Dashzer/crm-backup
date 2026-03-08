@@ -3,19 +3,85 @@
 import { useEffect, useRef, useState } from "react";
 import Sidebar from "@/components/Sidebars/Sidebar";
 import {
-  Search, Filter, X, Download,
-  ChevronLeft, ChevronRight, Users, Tag,
+  Search,
+  Filter,
+  X,
+  Download,
+  ChevronLeft,
+  ChevronRight,
+  Users,
+  Tag,
 } from "lucide-react";
 
 /* ─────────────────────────────────────────────
    Constants
 ───────────────────────────────────────────── */
-const TAG_OPTIONS = ["Google Leads", "Meta Leads", "Form Leads", "Collab Leads"];
+const TAG_OPTIONS = [
+  "Google Leads",
+  "Meta Leads",
+  "Form Leads",
+  "Collab Leads",
+];
+
+const LOCATION_OPTIONS = [
+  "Agra",
+  "Ahmedabad",
+  "Amritsar",
+  "Aurangabad",
+  "Bengaluru",
+  "Bhopal",
+  "Bhubaneswar",
+  "Chandigarh",
+  "Chennai",
+  "Coimbatore",
+  "Dehradun",
+  "Delhi",
+  "Faridabad",
+  "Ghaziabad",
+  "Gurgaon",
+  "Guwahati",
+  "Gwalior",
+  "Hyderabad",
+  "India",
+  "Indore",
+  "Jabalpur",
+  "Jaipur",
+  "Jammu",
+  "Jodhpur",
+  "Kanpur",
+  "Kochi",
+  "Kolkata",
+  "Kolhapur",
+  "Kota",
+  "Lucknow",
+  "Ludhiana",
+  "Mangalore",
+  "Mumbai",
+  "Mysuru",
+  "Nagpur",
+  "Nashik",
+  "Noida",
+  "Patna",
+  "Pune",
+  "Raipur",
+  "Rajkot",
+  "Ranchi",
+  "Shimla",
+  "Solapur",
+  "Srinagar",
+  "Surat",
+  "Thiruvananthapuram",
+  "Udaipur",
+  "Vadodara",
+  "Varanasi",
+  "Vijayawada",
+  "Visakhapatnam",
+];
 
 const TAG_STYLES = {
   "Google Leads": "bg-blue-100 text-blue-700 border-blue-200",
-  "Meta Leads":   "bg-indigo-100 text-indigo-700 border-indigo-200",
-  "Form Leads":   "bg-green-100 text-green-700 border-green-200",
+  "Meta Leads": "bg-indigo-100 text-indigo-700 border-indigo-200",
+  "Form Leads": "bg-green-100 text-green-700 border-green-200",
   "Collab Leads": "bg-purple-100 text-purple-700 border-purple-200",
 };
 
@@ -27,16 +93,26 @@ const PER_PAGE_OPTIONS = [10, 25, 50, 100];
 function fmt(date, includeTime = false) {
   if (!date) return "—";
   const d = new Date(date);
-  const datePart = d.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+  const datePart = d.toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
   if (!includeTime) return datePart;
-  const timePart = d.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true });
+  const timePart = d.toLocaleTimeString("en-IN", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  });
   return `${datePart}, ${timePart}`;
 }
 
 function TagBadge({ tag }) {
   if (!tag) return <span className="text-gray-400">—</span>;
   return (
-    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${TAG_STYLES[tag] || "bg-gray-100 text-gray-600 border-gray-200"}`}>
+    <span
+      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${TAG_STYLES[tag] || "bg-gray-100 text-gray-600 border-gray-200"}`}
+    >
       {tag}
     </span>
   );
@@ -44,16 +120,34 @@ function TagBadge({ tag }) {
 
 function downloadCSV(leads) {
   if (!leads.length) return;
-  const headers = ["Name","Phone","Email","Location","Visit Plan","Visit Date","Tag","Remarks","Created At"];
+  const headers = [
+    "Name",
+    "Phone",
+    "Email",
+    "Location",
+    "Visit Plan",
+    "Visit Date",
+    "Tag",
+    "Remarks",
+    "Created At",
+  ];
   const rows = leads.map((l) => [
-    l.name || "", l.phone || "", l.email || "", l.location || "",
-    l.visitPlan || "", l.visitDate ? fmt(l.visitDate) : "",
-    l.tag || "", l.remarks || "", l.createdAt ? fmt(l.createdAt) : "",
+    l.name || "",
+    l.phone || "",
+    l.email || "",
+    l.location || "",
+    l.visitPlan || "",
+    l.visitDate ? fmt(l.visitDate) : "",
+    l.tag || "",
+    l.remarks || "",
+    l.createdAt ? fmt(l.createdAt) : "",
   ]);
   const csv = [headers, ...rows]
     .map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(","))
     .join("\n");
-  const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8;" }));
+  const url = URL.createObjectURL(
+    new Blob([csv], { type: "text/csv;charset=utf-8;" }),
+  );
   const a = document.createElement("a");
   a.href = url;
   a.download = `leads_${new Date().toISOString().slice(0, 10)}.csv`;
@@ -66,19 +160,25 @@ function downloadCSV(leads) {
 ───────────────────────────────────────────── */
 export default function LeadsPage() {
   // Data
-  const [leads, setLeads]         = useState([]);
-  const [total, setTotal]         = useState(0);
+  const [leads, setLeads] = useState([]);
+  const [total, setTotal] = useState(0);
   const [tagCounts, setTagCounts] = useState({});
-  const [loading, setLoading]     = useState(true);
+  const [loading, setLoading] = useState(true);
 
   // Filters
-  const [searchInput, setSearchInput] = useState("");  // raw input value
-  const [search, setSearch]           = useState("");  // debounced value sent to API
-  const [filters, setFilters]         = useState({ location: "", visitPlan: "", tag: "", from: "", to: "" });
-  const [drawerOpen, setDrawerOpen]   = useState(false);
+  const [searchInput, setSearchInput] = useState(""); // raw input value
+  const [search, setSearch] = useState(""); // debounced value sent to API
+  const [filters, setFilters] = useState({
+    location: "",
+    visitPlan: "",
+    tag: "",
+    from: "",
+    to: "",
+  });
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   // Pagination (server-side)
-  const [page, setPage]     = useState(1);
+  const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(50);
 
   // Debounce search — 400 ms
@@ -99,14 +199,14 @@ export default function LeadsPage() {
       setLoading(true);
       try {
         const params = new URLSearchParams({ page, limit: perPage });
-        if (search)           params.set("search", search);
+        if (search) params.set("search", search);
         if (filters.location) params.set("location", filters.location);
-        if (filters.visitPlan)params.set("visitPlan", filters.visitPlan);
-        if (filters.tag)      params.set("tag", filters.tag);
-        if (filters.from)     params.set("from", filters.from);
-        if (filters.to)       params.set("to", filters.to);
+        if (filters.visitPlan) params.set("visitPlan", filters.visitPlan);
+        if (filters.tag) params.set("tag", filters.tag);
+        if (filters.from) params.set("from", filters.from);
+        if (filters.to) params.set("to", filters.to);
 
-        const res  = await fetch(`/api/leads/get?${params.toString()}`);
+        const res = await fetch(`/api/leads/get?${params.toString()}`);
         const data = await res.json();
         if (cancelled) return;
         setLeads(data.leads || []);
@@ -119,7 +219,9 @@ export default function LeadsPage() {
       }
     };
     fetchLeads();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [page, perPage, search, filters]);
 
   // Reset to page 1 when filters change
@@ -133,16 +235,19 @@ export default function LeadsPage() {
   };
 
   /* ── Pagination ── */
-  const pages   = Math.max(1, Math.ceil(total / perPage));
+  const pages = Math.max(1, Math.ceil(total / perPage));
   const startIdx = (page - 1) * perPage;
 
   /* ── Active filter chips ── */
   const chips = [];
-  if (filters.location)  chips.push({ k: "location",  label: `Location: ${filters.location}` });
-  if (filters.visitPlan) chips.push({ k: "visitPlan", label: `Visit Plan: ${filters.visitPlan}` });
-  if (filters.tag)       chips.push({ k: "tag",       label: `Tag: ${filters.tag}` });
-  if (filters.from)      chips.push({ k: "from",      label: `From: ${fmt(filters.from)}` });
-  if (filters.to)        chips.push({ k: "to",        label: `To: ${fmt(filters.to)}` });
+  if (filters.location)
+    chips.push({ k: "location", label: `Location: ${filters.location}` });
+  if (filters.visitPlan)
+    chips.push({ k: "visitPlan", label: `Visit Plan: ${filters.visitPlan}` });
+  if (filters.tag) chips.push({ k: "tag", label: `Tag: ${filters.tag}` });
+  if (filters.from)
+    chips.push({ k: "from", label: `From: ${fmt(filters.from)}` });
+  if (filters.to) chips.push({ k: "to", label: `To: ${fmt(filters.to)}` });
 
   /* ─────────────────────────────────────────────
      Render
@@ -151,13 +256,14 @@ export default function LeadsPage() {
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
       <main className="flex-1 flex flex-col">
-
         {/* ── Header ── */}
         <header className="bg-white shadow-sm sticky top-0 z-10">
           <div className="px-6 py-4 flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-semibold text-gray-900">Leads</h1>
-              <p className="text-sm text-gray-500">All incoming leads before conversion to patients</p>
+              <p className="text-sm text-gray-500">
+                All incoming leads before conversion to patients
+              </p>
             </div>
             <div className="flex items-center gap-3">
               <button
@@ -185,12 +291,20 @@ export default function LeadsPage() {
           {chips.length > 0 && (
             <div className="px-6 pb-3 flex flex-wrap gap-2">
               {chips.map((c) => (
-                <span key={c.k} className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-50 text-indigo-700 text-sm font-medium border border-indigo-200">
+                <span
+                  key={c.k}
+                  className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-50 text-indigo-700 text-sm font-medium border border-indigo-200"
+                >
                   {c.label}
-                  <button onClick={() => applyFilter(c.k, "")}><X className="w-3 h-3" /></button>
+                  <button onClick={() => applyFilter(c.k, "")}>
+                    <X className="w-3 h-3" />
+                  </button>
                 </span>
               ))}
-              <button onClick={clearFilters} className="text-sm text-gray-600 hover:text-gray-900 underline">
+              <button
+                onClick={clearFilters}
+                className="text-sm text-gray-600 hover:text-gray-900 underline"
+              >
                 Clear all
               </button>
             </div>
@@ -199,10 +313,30 @@ export default function LeadsPage() {
 
         {/* ── Summary Cards ── */}
         <div className="px-6 pt-6 grid grid-cols-1 sm:grid-cols-4 gap-4">
-          <SummaryCard icon={<Tag className="w-5 h-5" />}   title="Google Leads" value={tagCounts["Google Leads"] || 0} color="blue" />
-          <SummaryCard icon={<Tag className="w-5 h-5" />}   title="Meta Leads"   value={tagCounts["Meta Leads"]   || 0} color="indigo" />
-          <SummaryCard icon={<Tag className="w-5 h-5" />}   title="Form Leads"   value={tagCounts["Form Leads"]   || 0} color="green" />
-          <SummaryCard icon={<Users className="w-5 h-5" />} title="Total Leads"  value={tagCounts._total          || 0} color="orange" />
+          <SummaryCard
+            icon={<Tag className="w-5 h-5" />}
+            title="Google Leads"
+            value={tagCounts["Google Leads"] || 0}
+            color="blue"
+          />
+          <SummaryCard
+            icon={<Tag className="w-5 h-5" />}
+            title="Meta Leads"
+            value={tagCounts["Meta Leads"] || 0}
+            color="indigo"
+          />
+          <SummaryCard
+            icon={<Tag className="w-5 h-5" />}
+            title="Form Leads"
+            value={tagCounts["Form Leads"] || 0}
+            color="green"
+          />
+          <SummaryCard
+            icon={<Users className="w-5 h-5" />}
+            title="Total Leads"
+            value={tagCounts._total || 0}
+            color="orange"
+          />
         </div>
 
         {/* ── Search ── */}
@@ -231,32 +365,78 @@ export default function LeadsPage() {
                 <table className="min-w-full text-sm">
                   <thead className="bg-gray-50 text-gray-700 text-xs uppercase">
                     <tr>
-                      {["#","Name","Phone","Location", "Tag","Visit Plan","Visit Date","Remarks","Created At"].map((h) => (
-                        <th key={h} className="px-4 py-3 text-left font-medium whitespace-nowrap">{h}</th>
+                      {[
+                        "#",
+                        "Name",
+                        "Phone",
+                        "Location",
+                        "Tag",
+                        "Visit Plan",
+                        "Visit Date",
+                        "Remarks",
+                        "Created At",
+                      ].map((h) => (
+                        <th
+                          key={h}
+                          className="px-4 py-3 text-left font-medium whitespace-nowrap"
+                        >
+                          {h}
+                        </th>
                       ))}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
                     {leads.length === 0 ? (
                       <tr>
-                        <td colSpan={10} className="py-16 text-center text-gray-400">
+                        <td
+                          colSpan={10}
+                          className="py-16 text-center text-gray-400"
+                        >
                           <Search className="w-10 h-10 mx-auto mb-3 text-gray-300" />
-                          <p className="text-base font-medium text-gray-600">No leads found</p>
-                          <p className="text-sm">Try adjusting your search or filters</p>
+                          <p className="text-base font-medium text-gray-600">
+                            No leads found
+                          </p>
+                          <p className="text-sm">
+                            Try adjusting your search or filters
+                          </p>
                         </td>
                       </tr>
                     ) : (
                       leads.map((lead, idx) => (
-                        <tr key={lead._id} className="hover:bg-gray-50 transition-colors">
-                          <td className="px-4 py-3 text-gray-400">{startIdx + idx + 1}</td>
-                          <td className="px-4 py-3 font-medium text-gray-900">{lead.name}</td>
-                          <td className="px-4 py-3 text-gray-700">{lead.phone}</td>                          
-                          <td className="px-4 py-3 text-gray-600">{lead.location || "—"}</td>
-                          <td className="px-4 py-3"><TagBadge tag={lead.tag} /></td>
-                          <td className="px-4 py-3 text-gray-600">{lead.visitPlan || "—"}</td>
-                          <td className="px-4 py-3 text-gray-600 whitespace-nowrap">{fmt(lead.visitDate)}</td>
-                          <td className="px-4 py-3 text-gray-500 max-w-45 truncate" title={lead.remarks}>{lead.remarks || "—"}</td>
-                          <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{fmt(lead.createdAt, true)}</td>
+                        <tr
+                          key={lead._id}
+                          className="hover:bg-gray-50 transition-colors"
+                        >
+                          <td className="px-4 py-3 text-gray-400">
+                            {startIdx + idx + 1}
+                          </td>
+                          <td className="px-4 py-3 font-medium text-gray-900">
+                            {lead.name}
+                          </td>
+                          <td className="px-4 py-3 text-gray-700">
+                            {lead.phone}
+                          </td>
+                          <td className="px-4 py-3 text-gray-600">
+                            {lead.location || "—"}
+                          </td>
+                          <td className="px-4 py-3">
+                            <TagBadge tag={lead.tag} />
+                          </td>
+                          <td className="px-4 py-3 text-gray-600">
+                            {lead.visitPlan || "—"}
+                          </td>
+                          <td className="px-4 py-3 text-gray-600 whitespace-nowrap">
+                            {fmt(lead.visitDate)}
+                          </td>
+                          <td
+                            className="px-4 py-3 text-gray-500 max-w-45 truncate"
+                            title={lead.remarks}
+                          >
+                            {lead.remarks || "—"}
+                          </td>
+                          <td className="px-4 py-3 text-gray-500 whitespace-nowrap">
+                            {fmt(lead.createdAt, true)}
+                          </td>
                         </tr>
                       ))
                     )}
@@ -269,15 +449,24 @@ export default function LeadsPage() {
             {!loading && total > 0 && (
               <div className="flex flex-col md:flex-row items-center justify-between gap-3 px-6 py-4 border-t bg-gray-50">
                 <p className="text-sm text-gray-600">
-                  Showing <b>{startIdx + 1}</b>–<b>{Math.min(startIdx + perPage, total)}</b> of <b>{total}</b> leads
+                  Showing <b>{startIdx + 1}</b>–
+                  <b>{Math.min(startIdx + perPage, total)}</b> of <b>{total}</b>{" "}
+                  leads
                 </p>
                 <div className="flex items-center gap-3">
                   <select
                     className="text-sm border border-gray-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-indigo-200"
                     value={perPage}
-                    onChange={(e) => { setPerPage(Number(e.target.value)); setPage(1); }}
+                    onChange={(e) => {
+                      setPerPage(Number(e.target.value));
+                      setPage(1);
+                    }}
                   >
-                    {PER_PAGE_OPTIONS.map((n) => <option key={n} value={n}>{n} / page</option>)}
+                    {PER_PAGE_OPTIONS.map((n) => (
+                      <option key={n} value={n}>
+                        {n} / page
+                      </option>
+                    ))}
                   </select>
                   <div className="flex items-center gap-1">
                     <button
@@ -287,7 +476,9 @@ export default function LeadsPage() {
                     >
                       <ChevronLeft className="w-4 h-4" />
                     </button>
-                    <span className="text-sm text-gray-600 w-16 text-center">{page} / {pages}</span>
+                    <span className="text-sm text-gray-600 w-16 text-center">
+                      {page} / {pages}
+                    </span>
                     <button
                       onClick={() => setPage((p) => Math.min(pages, p + 1))}
                       disabled={page >= pages}
@@ -305,29 +496,44 @@ export default function LeadsPage() {
         {/* ── Filter Drawer ── */}
         {drawerOpen && (
           <div className="fixed inset-0 z-50">
-            <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setDrawerOpen(false)} />
+            <div
+              className="absolute inset-0 bg-black/30 backdrop-blur-sm"
+              onClick={() => setDrawerOpen(false)}
+            />
             <div className="absolute right-0 top-0 h-full w-full max-w-sm bg-white shadow-xl flex flex-col">
               <div className="px-6 py-4 border-b flex items-center justify-between">
                 <h3 className="text-lg font-semibold text-gray-900">Filters</h3>
-                <button onClick={() => setDrawerOpen(false)} className="p-2 rounded-lg hover:bg-gray-100">
+                <button
+                  onClick={() => setDrawerOpen(false)}
+                  className="p-2 rounded-lg hover:bg-gray-100"
+                >
                   <X className="w-5 h-5 text-gray-500" />
                 </button>
               </div>
 
               <div className="flex-1 overflow-y-auto p-6 space-y-5">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Delhi"
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Location
+                  </label>
+                  <select
                     value={filters.location}
                     onChange={(e) => applyFilter("location", e.target.value)}
                     className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500"
-                  />
+                  >
+                    <option value="">All Locations</option>
+                    {LOCATION_OPTIONS.map((loc) => (
+                      <option key={loc} value={loc}>
+                        {loc}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Visit Plan</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Visit Plan
+                  </label>
                   <input
                     type="text"
                     placeholder="e.g. Next Week"
@@ -338,12 +544,16 @@ export default function LeadsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Tag</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Tag
+                  </label>
                   <div className="flex flex-wrap gap-2">
                     <button
                       onClick={() => applyFilter("tag", "")}
                       className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
-                        filters.tag === "" ? "bg-indigo-600 text-white border-indigo-600" : "bg-white text-gray-600 border-gray-300 hover:bg-gray-50"
+                        filters.tag === ""
+                          ? "bg-indigo-600 text-white border-indigo-600"
+                          : "bg-white text-gray-600 border-gray-300 hover:bg-gray-50"
                       }`}
                     >
                       All
@@ -351,9 +561,14 @@ export default function LeadsPage() {
                     {TAG_OPTIONS.map((t) => (
                       <button
                         key={t}
-                        onClick={() => applyFilter("tag", filters.tag === t ? "" : t)}
+                        onClick={() =>
+                          applyFilter("tag", filters.tag === t ? "" : t)
+                        }
                         className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
-                          filters.tag === t ? TAG_STYLES[t] + " ring-2 ring-offset-1 ring-current" : "bg-white text-gray-600 border-gray-300 hover:bg-gray-50"
+                          filters.tag === t
+                            ? TAG_STYLES[t] +
+                              " ring-2 ring-offset-1 ring-current"
+                            : "bg-white text-gray-600 border-gray-300 hover:bg-gray-50"
                         }`}
                       >
                         {t}
@@ -363,7 +578,9 @@ export default function LeadsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Created From</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Created From
+                  </label>
                   <input
                     type="date"
                     value={filters.from}
@@ -373,7 +590,9 @@ export default function LeadsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Created To</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Created To
+                  </label>
                   <input
                     type="date"
                     value={filters.to}
@@ -385,7 +604,10 @@ export default function LeadsPage() {
 
               <div className="px-6 py-4 border-t bg-gray-50 flex gap-3">
                 <button
-                  onClick={() => { clearFilters(); setDrawerOpen(false); }}
+                  onClick={() => {
+                    clearFilters();
+                    setDrawerOpen(false);
+                  }}
                   className="flex-1 px-4 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 font-medium"
                 >
                   Reset
@@ -408,9 +630,9 @@ export default function LeadsPage() {
 function SummaryCard({ icon, title, value, color }) {
   const colors = {
     indigo: "bg-indigo-50 text-indigo-600",
-    green:  "bg-green-50 text-green-600",
+    green: "bg-green-50 text-green-600",
     orange: "bg-orange-50 text-orange-600",
-    blue:   "bg-blue-50 text-blue-600",
+    blue: "bg-blue-50 text-blue-600",
   };
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm flex items-center justify-between">
