@@ -79,7 +79,7 @@ export default function LeadsPage() {
 
   // Pagination (server-side)
   const [page, setPage]     = useState(1);
-  const [perPage, setPerPage] = useState(10);
+  const [perPage, setPerPage] = useState(50);
 
   // Debounce search — 400 ms
   const debounceRef = useRef(null);
