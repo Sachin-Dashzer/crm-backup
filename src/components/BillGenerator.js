@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Image from "next/image";
 import Logo from "@/../public/logo-2.png";
 import Logo2 from "@/../public/logo.png";
 import {
@@ -45,8 +44,7 @@ const CLINIC_BRANCHES = {
 
 const formatDateForDisplay = (date) => {
   if (!date) return "N/A";
-  const dateObj = new Date(date);
-  return dateObj.toLocaleDateString("en-IN", {
+  return new Date(date).toLocaleDateString("en-IN", {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
@@ -75,7 +73,84 @@ const formatCurrency = (amount) => {
   }).format(num);
 };
 
-// ========== SERVICE INVOICE (Image 1) ==========
+// ─── Shared inline styles ───────────────────────────────────────────────────
+const s = {
+  page: {
+    maxWidth: "800px",
+    margin: "0 auto",
+    backgroundColor: "#ffffff",
+    padding: "32px",
+    fontFamily: "Arial, sans-serif",
+    fontSize: "14px",
+    color: "#111111",
+  },
+  header: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: "24px",
+    paddingBottom: "16px",
+    borderBottom: "2px solid #d1d5db",
+  },
+  clinicName: {
+    fontSize: "22px",
+    fontWeight: "bold",
+    marginBottom: "8px",
+    margin: "0 0 8px 0",
+  },
+  smallText: { fontSize: "13px", color: "#374151", margin: "2px 0" },
+  twoCol: {
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr",
+    gap: "16px",
+    marginBottom: "24px",
+  },
+  patientName: {
+    fontSize: "17px",
+    fontWeight: "bold",
+    margin: "0 0 8px 0",
+  },
+  textRight: { textAlign: "right" },
+  sectionTitle: {
+    textAlign: "center",
+    fontSize: "18px",
+    fontWeight: "bold",
+    marginBottom: "16px",
+  },
+  subTitle: {
+    fontSize: "15px",
+    fontWeight: "bold",
+    marginBottom: "8px",
+  },
+  table: {
+    width: "100%",
+    borderCollapse: "collapse",
+    marginBottom: "24px",
+  },
+  th: {
+    border: "1px solid #9ca3af",
+    padding: "8px 12px",
+    backgroundColor: "#f3f4f6",
+    fontWeight: "bold",
+    fontSize: "13px",
+  },
+  td: {
+    border: "1px solid #9ca3af",
+    padding: "8px 12px",
+    fontSize: "13px",
+  },
+  footer: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "flex-end",
+    marginTop: "8px",
+  },
+  footerRow: { margin: "4px 0", fontSize: "13px" },
+  bold: { fontWeight: "bold" },
+  red: { color: "#dc2626", fontWeight: "bold" },
+};
+
+// ========== SERVICE INVOICE ==========
 function ServiceInvoice({ transaction, patient, consultant, branch }) {
   const clinic = CLINIC_BRANCHES[branch] || CLINIC_BRANCHES.Delhi;
   const grossAmount = parseFloat(transaction.amount) || 0;
@@ -83,232 +158,210 @@ function ServiceInvoice({ transaction, patient, consultant, branch }) {
   const netAmount = grossAmount - discount;
   const invoiceNo = `#INV${transaction._id.slice(-5).toUpperCase()}`;
 
-  // console.log(patient);
-
-
   return (
-    <div className="max-w-4xl mx-auto bg-white p-8" style={{ fontFamily: "Arial, sans-serif" }}>
+    <div style={s.page}>
       {/* Header */}
-      <div className="flex justify-between items-start mb-6 pb-4 border-b-2 border-gray-300">
+      <div style={s.header}>
         <div>
-          <h1 className="text-2xl font-bold mb-2">{clinic.name}</h1>
-          <p className="text-sm text-gray-700">{clinic.address}</p>
-          {clinic.city && <p className="text-sm text-gray-700">{clinic.city}</p>}
-          <p className="text-sm"><strong>Phone:</strong> {clinic.phone}</p>
-          <p className="text-sm"><strong>Website:</strong> {clinic.website}</p>
-          <p className="text-sm"><strong>GST No:</strong> {clinic.gstin}</p>
+          <h1 style={s.clinicName}>{clinic.name}</h1>
+          <p style={s.smallText}>{clinic.address}</p>
+          {clinic.city && <p style={s.smallText}>{clinic.city}</p>}
+          <p style={s.smallText}><strong>Phone:</strong> {clinic.phone}</p>
+          <p style={s.smallText}><strong>Website:</strong> {clinic.website}</p>
+          <p style={s.smallText}><strong>GST No:</strong> {clinic.gstin}</p>
         </div>
-        <div className="text-right bg-black scale-125">
-          <Image src={clinic.img} alt="Logo" width={120} height={120} />
+        <div style={s.textRight}>
+          <img src={clinic.img.src} alt="Logo" width={120} height={120} />
         </div>
       </div>
 
       {/* Customer & Invoice Details */}
-      <div className="grid grid-cols-2 gap-4 mb-6">
+      <div style={s.twoCol}>
         <div>
-          <h2 className="font-bold text-lg mb-2">{patient.name}</h2>
-          <p className="text-sm">{patient.gender}, {patient.age} Years</p>
-          <p className="text-sm">📞 {patient.phone}</p>
+          <h2 style={s.patientName}>{patient.name}</h2>
+          <p style={s.smallText}>{patient.gender}, {patient.age} Years</p>
+          <p style={s.smallText}>📞 {patient.phone}</p>
         </div>
-        <div className="text-right">
-          <p className="text-sm"><strong>Date:</strong> {formatDateTime(transaction.date)}</p>
-          <p className="text-sm"><strong>Invoice No:</strong> {invoiceNo}</p>
+        <div style={s.textRight}>
+          <p style={s.smallText}><strong>Date:</strong> {formatDateTime(transaction.date)}</p>
+          <p style={s.smallText}><strong>Invoice No:</strong> {invoiceNo}</p>
         </div>
       </div>
 
-      {/* Invoice Title */}
-      <h3 className="text-center text-xl font-bold mb-4">Invoice</h3>
+      <h3 style={s.sectionTitle}>Invoice</h3>
 
       {/* Services Table */}
-      <table className="w-full border-collapse border border-gray-400 mb-6">
+      <table style={s.table}>
         <thead>
-          <tr className="bg-gray-100">
-            <th className="border border-gray-400 px-4 py-2 text-left">S No.</th>
-            <th className="border border-gray-400 px-4 py-2 text-left">Services & Products</th>
-            <th className="border border-gray-400 px-4 py-2 text-left">Consultant</th>
-            <th className="border border-gray-400 px-4 py-2 text-center">Qty</th>
-            <th className="border border-gray-400 px-4 py-2 text-right">Unit Cost (INR)</th>
-            <th className="border border-gray-400 px-4 py-2 text-right">Discount (INR)</th>
-            <th className="border border-gray-400 px-4 py-2 text-right">Total Amount</th>
+          <tr>
+            <th style={{ ...s.th, textAlign: "left" }}>S No.</th>
+            <th style={{ ...s.th, textAlign: "left" }}>Services & Products</th>
+            <th style={{ ...s.th, textAlign: "left" }}>Consultant</th>
+            <th style={{ ...s.th, textAlign: "center" }}>Qty</th>
+            <th style={{ ...s.th, textAlign: "right" }}>Unit Cost (INR)</th>
+            <th style={{ ...s.th, textAlign: "right" }}>Discount (INR)</th>
+            <th style={{ ...s.th, textAlign: "right" }}>Total Amount</th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <td className="border border-gray-400 px-4 py-2">1</td>
-            <td className="border border-gray-400 px-4 py-2">Service {transaction.procedure}</td>
-            <td className="border border-gray-400 px-4 py-2">{consultant}</td>
-            <td className="border border-gray-400 px-4 py-2 text-center">{transaction.quantity || 1}</td>
-            <td className="border border-gray-400 px-4 py-2 text-right">{grossAmount.toFixed(2)}</td>
-            <td className="border border-gray-400 px-4 py-2 text-right">{discount.toFixed(2)}</td>
-            <td className="border border-gray-400 px-4 py-2 text-right font-bold">{netAmount.toFixed(2)}</td>
+            <td style={s.td}>1</td>
+            <td style={s.td}>Service {transaction.procedure}</td>
+            <td style={s.td}>{consultant}</td>
+            <td style={{ ...s.td, textAlign: "center" }}>{transaction.quantity || 1}</td>
+            <td style={{ ...s.td, textAlign: "right" }}>{grossAmount.toFixed(2)}</td>
+            <td style={{ ...s.td, textAlign: "right" }}>{discount.toFixed(2)}</td>
+            <td style={{ ...s.td, textAlign: "right", fontWeight: "bold" }}>{netAmount.toFixed(2)}</td>
           </tr>
         </tbody>
       </table>
 
-      {/* Payment History */}
-      <h4 className="font-bold text-lg mb-2">Paid Amounts:</h4>
-      <table className="w-full border-collapse border border-gray-400 mb-6">
+      <h4 style={s.subTitle}>Paid Amounts:</h4>
+      <table style={s.table}>
         <thead>
-          <tr className="bg-gray-100">
-            <th className="border border-gray-400 px-4 py-2 text-left">Date</th>
-            <th className="border border-gray-400 px-4 py-2 text-left">Payment Mode</th>
-            <th className="border border-gray-400 px-4 py-2 text-right">Amount Paid (INR)</th>
+          <tr>
+            <th style={{ ...s.th, textAlign: "left" }}>Date</th>
+            <th style={{ ...s.th, textAlign: "left" }}>Payment Mode</th>
+            <th style={{ ...s.th, textAlign: "right" }}>Amount Paid (INR)</th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <td className="border border-gray-400 px-4 py-2">{formatDateForDisplay(transaction.date)}</td>
-            <td className="border border-gray-400 px-4 py-2 capitalize">{transaction.method}</td>
-            <td className="border border-gray-400 px-4 py-2 text-right font-bold">{netAmount.toFixed(2)}</td>
+            <td style={s.td}>{formatDateForDisplay(transaction.date)}</td>
+            <td style={{ ...s.td, textTransform: "capitalize" }}>{transaction.method}</td>
+            <td style={{ ...s.td, textAlign: "right", fontWeight: "bold" }}>{netAmount.toFixed(2)}</td>
           </tr>
         </tbody>
       </table>
 
       {/* Footer */}
-      <div className="flex justify-between items-end">
+      <div style={s.footer}>
         <div>
-          <p className="font-bold mb-2">Authorized Signatory</p>
-          <div className="mt-8 text-sm text-gray-500">Print &nbsp; Back</div>
+          <p style={{ ...s.footerRow, fontWeight: "bold" }}>Authorized Signatory</p>
+          <p style={{ ...s.footerRow, marginTop: "32px", color: "#6b7280", fontSize: "12px" }}>Print &nbsp; Back</p>
         </div>
-        <div className="text-right">
-          <p className="mb-1"><strong>Total:</strong> <span className="ml-4">{formatCurrency(netAmount)}</span></p>
-          <p className="mb-1"><strong>Tax:</strong> <span className="ml-4">0</span></p>
-          <p className="mb-1"><strong>Amount Paid:</strong> <span className="ml-4">{formatCurrency(netAmount)}</span></p>
-          <p className="mb-1 font-bold"><strong>Balance:</strong> <span className="ml-4">₹0.00</span></p>
+        <div style={s.textRight}>
+          <p style={s.footerRow}><strong>Total:</strong> <span style={{ marginLeft: "16px" }}>{formatCurrency(netAmount)}</span></p>
+          <p style={s.footerRow}><strong>Tax:</strong> <span style={{ marginLeft: "16px" }}>0</span></p>
+          <p style={s.footerRow}><strong>Amount Paid:</strong> <span style={{ marginLeft: "16px" }}>{formatCurrency(netAmount)}</span></p>
+          <p style={{ ...s.footerRow, fontWeight: "bold" }}><strong>Balance:</strong> <span style={{ marginLeft: "16px" }}>₹0.00</span></p>
         </div>
       </div>
     </div>
   );
 }
 
-// ========== MEDICINE INVOICE (Image 2) ==========
+// ========== MEDICINE INVOICE ==========
 function MedicineInvoice({ transactions, patient, consultant, branch }) {
   const clinic = CLINIC_BRANCHES[branch] || CLINIC_BRANCHES.Delhi;
   const firstTransaction = transactions[0];
   const invoiceNo = `#INV${firstTransaction._id.slice(-5).toUpperCase()}`;
 
-  // Calculate totals
-  // Note: t.amount is already the post-discount final amount stored in DB
   let netTotal = 0;
-  let discountTotal = 0;
-  transactions.forEach((t) => {
-    netTotal += parseFloat(t.amount) || 0;
-    discountTotal += parseFloat(t.discount) || 0;
-  });
-  const grossTotal = netTotal + discountTotal;
+  transactions.forEach((t) => { netTotal += parseFloat(t.amount) || 0; });
 
   return (
-    <div className="max-w-4xl mx-auto bg-white p-8" style={{ fontFamily: "Arial, sans-serif" }}>
+    <div style={s.page}>
       {/* Header */}
-      <div className="flex justify-between items-start mb-6 pb-4 border-b-2 border-gray-300">
+      <div style={s.header}>
         <div>
-          <h1 className="text-2xl font-bold mb-2">{clinic.name}</h1>
-          <p className="text-sm text-gray-700">{clinic.address}</p>
-          {clinic.city && <p className="text-sm text-gray-700">{clinic.city}</p>}
-          <p className="text-sm"><strong>Phone:</strong> {clinic.phone}</p>
-          <p className="text-sm"><strong>Website:</strong> {clinic.website}</p>
-          <p className="text-sm"><strong>GST No:</strong> {clinic.gstin}</p>
+          <h1 style={s.clinicName}>{clinic.name}</h1>
+          <p style={s.smallText}>{clinic.address}</p>
+          {clinic.city && <p style={s.smallText}>{clinic.city}</p>}
+          <p style={s.smallText}><strong>Phone:</strong> {clinic.phone}</p>
+          <p style={s.smallText}><strong>Website:</strong> {clinic.website}</p>
+          <p style={s.smallText}><strong>GST No:</strong> {clinic.gstin}</p>
         </div>
-        <div className="text-right bg-black scale-125">
-          <Image src={clinic.img} alt="Logo" width={120} height={120} />
+        <div style={s.textRight}>
+          <img src={clinic.img.src} alt="Logo" width={120} height={120} />
         </div>
       </div>
 
       {/* Customer & Invoice Details */}
-      <div className="grid grid-cols-2 gap-4 mb-6">
+      <div style={s.twoCol}>
         <div>
-          <h2 className="font-bold text-lg mb-2">{patient.name}</h2>
-          <p className="text-sm">{patient.gender},</p>
-          <p className="text-sm">📞 {patient.phone}</p>
+          <h2 style={s.patientName}>{patient.name}</h2>
+          <p style={s.smallText}>{patient.gender},</p>
+          <p style={s.smallText}>📞 {patient.phone}</p>
         </div>
-        <div className="text-right">
-          <p className="text-sm"><strong>Date:</strong> {formatDateTime(firstTransaction.date)}</p>
-          <p className="text-sm"><strong>Invoice No:</strong> {invoiceNo}</p>
+        <div style={s.textRight}>
+          <p style={s.smallText}><strong>Date:</strong> {formatDateTime(firstTransaction.date)}</p>
+          <p style={s.smallText}><strong>Invoice No:</strong> {invoiceNo}</p>
         </div>
       </div>
 
-      {/* Invoice Title */}
-      <h3 className="text-center text-xl font-bold mb-4">Invoice</h3>
+      <h3 style={s.sectionTitle}>Invoice</h3>
 
       {/* Products Table */}
-      <table className="w-full border-collapse border border-gray-400 mb-6">
+      <table style={s.table}>
         <thead>
-          <tr className="bg-gray-100">
-            <th className="border border-gray-400 px-4 py-2 text-left">S No.</th>
-            <th className="border border-gray-400 px-4 py-2 text-left">Services & Products</th>
-            <th className="border border-gray-400 px-4 py-2 text-left">Consultant</th>
-            <th className="border border-gray-400 px-4 py-2 text-center">Qty</th>
-            <th className="border border-gray-400 px-4 py-2 text-right">Unit Cost (INR)</th>
-            <th className="border border-gray-400 px-4 py-2 text-right">Discount (INR)</th>
-            <th className="border border-gray-400 px-4 py-2 text-right">Total Amount</th>
+          <tr>
+            <th style={{ ...s.th, textAlign: "left" }}>S No.</th>
+            <th style={{ ...s.th, textAlign: "left" }}>Services & Products</th>
+            <th style={{ ...s.th, textAlign: "left" }}>Consultant</th>
+            <th style={{ ...s.th, textAlign: "center" }}>Qty</th>
+            <th style={{ ...s.th, textAlign: "right" }}>Unit Cost (INR)</th>
+            <th style={{ ...s.th, textAlign: "right" }}>Discount (INR)</th>
+            <th style={{ ...s.th, textAlign: "right" }}>Total Amount</th>
           </tr>
         </thead>
         <tbody>
           {transactions.map((t, idx) => {
-            // t.amount is already the final (post-discount) amount
             const net = parseFloat(t.amount) || 0;
             const disc = parseFloat(t.discount) || 0;
             const gross = net + disc;
             return (
               <tr key={idx}>
-                <td className="border border-gray-400 px-4 py-2">{idx + 1}</td>
-                <td className="border border-gray-400 px-4 py-2">Product {t.medicineName}</td>
-                <td className="border border-gray-400 px-4 py-2">{consultant}</td>
-                <td className="border border-gray-400 px-4 py-2 text-center">{t.quantity || 1}</td>
-                <td className="border border-gray-400 px-4 py-2 text-right">{gross.toFixed(2)}</td>
-                <td className="border border-gray-400 px-4 py-2 text-right">{disc.toFixed(2)}</td>
-                <td className="border border-gray-400 px-4 py-2 text-right font-bold">{net.toFixed(2)}</td>
+                <td style={s.td}>{idx + 1}</td>
+                <td style={s.td}>Product {t.medicineName}</td>
+                <td style={s.td}>{consultant}</td>
+                <td style={{ ...s.td, textAlign: "center" }}>{t.quantity || 1}</td>
+                <td style={{ ...s.td, textAlign: "right" }}>{gross.toFixed(2)}</td>
+                <td style={{ ...s.td, textAlign: "right" }}>{disc.toFixed(2)}</td>
+                <td style={{ ...s.td, textAlign: "right", fontWeight: "bold" }}>{net.toFixed(2)}</td>
               </tr>
             );
           })}
         </tbody>
       </table>
 
-      {/* Payment History */}
-      <h4 className="font-bold text-lg mb-2">Paid Amounts:</h4>
-      <table className="w-full border-collapse border border-gray-400 mb-6">
+      <h4 style={s.subTitle}>Paid Amounts:</h4>
+      <table style={s.table}>
         <thead>
-          <tr className="bg-gray-100">
-            <th className="border border-gray-400 px-4 py-2 text-left">Date</th>
-            <th className="border border-gray-400 px-4 py-2 text-left">Payment Mode</th>
-            <th className="border border-gray-400 px-4 py-2 text-right">Amount Paid (INR)</th>
+          <tr>
+            <th style={{ ...s.th, textAlign: "left" }}>Date</th>
+            <th style={{ ...s.th, textAlign: "left" }}>Payment Mode</th>
+            <th style={{ ...s.th, textAlign: "right" }}>Amount Paid (INR)</th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <td className="border border-gray-400 px-4 py-2">{formatDateForDisplay(firstTransaction.date)}</td>
-            <td className="border border-gray-400 px-4 py-2 capitalize">{firstTransaction.method}</td>
-            <td className="border border-gray-400 px-4 py-2 text-right font-bold">{netTotal.toFixed(2)}</td>
+            <td style={s.td}>{formatDateForDisplay(firstTransaction.date)}</td>
+            <td style={{ ...s.td, textTransform: "capitalize" }}>{firstTransaction.method}</td>
+            <td style={{ ...s.td, textAlign: "right", fontWeight: "bold" }}>{netTotal.toFixed(2)}</td>
           </tr>
         </tbody>
       </table>
 
       {/* Footer */}
-      <div className="flex justify-between items-end">
+      <div style={s.footer}>
         <div>
-          <p className="font-bold mb-2">Authorized Signatory</p>
-          <div className="mt-8 text-sm text-gray-500">Print &nbsp; Back</div>
+          <p style={{ ...s.footerRow, fontWeight: "bold" }}>Authorized Signatory</p>
+          <p style={{ ...s.footerRow, marginTop: "32px", color: "#6b7280", fontSize: "12px" }}>Print &nbsp; Back</p>
         </div>
-        <div className="text-right">
-          <p className="mb-1"><strong>Total:</strong> <span className="ml-4">{formatCurrency(netTotal)}</span></p>
-          <p className="mb-1"><strong>Tax:</strong> <span className="ml-4">0</span></p>
-          <p className="mb-1"><strong>Amount Paid:</strong> <span className="ml-4">{formatCurrency(netTotal)}</span></p>
-          <p className="mb-1 font-bold"><strong>Balance:</strong> <span className="ml-4">₹0.00</span></p>
+        <div style={s.textRight}>
+          <p style={s.footerRow}><strong>Total:</strong> <span style={{ marginLeft: "16px" }}>{formatCurrency(netTotal)}</span></p>
+          <p style={s.footerRow}><strong>Tax:</strong> <span style={{ marginLeft: "16px" }}>0</span></p>
+          <p style={s.footerRow}><strong>Amount Paid:</strong> <span style={{ marginLeft: "16px" }}>{formatCurrency(netTotal)}</span></p>
+          <p style={{ ...s.footerRow, fontWeight: "bold" }}><strong>Balance:</strong> <span style={{ marginLeft: "16px" }}>₹0.00</span></p>
         </div>
       </div>
     </div>
   );
 }
 
-// ========== TRANSPLANT INVOICE (Image 3) ==========
-function TransplantInvoice({
-  transactions,
-  patient,
-  consultant,
-  branch,
-  packageAmount,
-  packageDiscount,
-}) {
+// ========== TRANSPLANT INVOICE ==========
+function TransplantInvoice({ transactions, patient, consultant, branch, packageAmount, packageDiscount }) {
   const clinic = CLINIC_BRANCHES[branch] || CLINIC_BRANCHES.Delhi;
   const firstTransaction = transactions[0] || {};
   const invoiceNo = `#INV${firstTransaction._id?.slice(-5).toUpperCase() || "00000"}`;
@@ -316,102 +369,98 @@ function TransplantInvoice({
   const packageTotal = parseFloat(packageAmount) || 0;
   const discountOnPackage = parseFloat(packageDiscount) || 0;
   const amountAfterDiscount = packageTotal - discountOnPackage;
-  
   const totalPaid = transactions.reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0);
   const pending = amountAfterDiscount - totalPaid;
 
-
   return (
-    <div className="max-w-4xl mx-auto bg-white p-8" style={{ fontFamily: "Arial, sans-serif" }}>
+    <div style={s.page}>
       {/* Header */}
-      <div className="flex justify-between items-start mb-6 pb-4 border-b-2 border-gray-300">
+      <div style={s.header}>
         <div>
-          <h1 className="text-2xl font-bold mb-2">{clinic.name}</h1>
-          <p className="text-sm text-gray-700">{clinic.address}</p>
-          {clinic.city && <p className="text-sm text-gray-700">{clinic.city}</p>}
-          <p className="text-sm"><strong>Phone:</strong> {clinic.phone}</p>
-          <p className="text-sm"><strong>Website:</strong> {clinic.website}</p>
-          <p className="text-sm"><strong>GST No:</strong> {clinic.gstin}</p>
+          <h1 style={s.clinicName}>{clinic.name}</h1>
+          <p style={s.smallText}>{clinic.address}</p>
+          {clinic.city && <p style={s.smallText}>{clinic.city}</p>}
+          <p style={s.smallText}><strong>Phone:</strong> {clinic.phone}</p>
+          <p style={s.smallText}><strong>Website:</strong> {clinic.website}</p>
+          <p style={s.smallText}><strong>GST No:</strong> {clinic.gstin}</p>
         </div>
-        <div className="text-right bg-black scale-125">
-          <Image src={clinic.img} alt="Logo" width={120} height={120} />
+        <div style={s.textRight}>
+          <img src={clinic.img.src} alt="Logo" width={120} height={120} />
         </div>
       </div>
 
       {/* Customer & Invoice Details */}
-      <div className="grid grid-cols-2 gap-4 mb-6">
+      <div style={s.twoCol}>
         <div>
-          <h2 className="font-bold text-lg mb-2">{patient.name}</h2>
-          <p className="text-sm">{patient.gender},</p>
-          <p className="text-sm"><strong>Phone:</strong> {patient.phone}</p>
-          <p className="text-sm"><strong>Branch:</strong> {branch}</p>
+          <h2 style={s.patientName}>{patient.name}</h2>
+          <p style={s.smallText}>{patient.gender},</p>
+          <p style={s.smallText}><strong>Phone:</strong> {patient.phone}</p>
+          <p style={s.smallText}><strong>Branch:</strong> {branch}</p>
         </div>
-        <div className="text-right">
-          <p className="text-sm"><strong>Date:</strong> {formatDateTime(firstTransaction.date)}</p>
-          <p className="text-sm"><strong>Invoice No:</strong> {invoiceNo}</p>
+        <div style={s.textRight}>
+          <p style={s.smallText}><strong>Date:</strong> {formatDateTime(firstTransaction.date)}</p>
+          <p style={s.smallText}><strong>Invoice No:</strong> {invoiceNo}</p>
         </div>
       </div>
 
-      {/* Invoice Title */}
-      <h3 className="text-center text-xl font-bold mb-4">Invoice</h3>
+      <h3 style={s.sectionTitle}>Invoice</h3>
 
       {/* Package Table */}
-      <table className="w-full border-collapse border border-gray-400 mb-6">
+      <table style={s.table}>
         <thead>
-          <tr className="bg-gray-100">
-            <th className="border border-gray-400 px-4 py-2 text-left">S No.</th>
-            <th className="border border-gray-400 px-4 py-2 text-left">Services & Products</th>
-            <th className="border border-gray-400 px-4 py-2 text-left">Consultant</th>
-            <th className="border border-gray-400 px-4 py-2 text-center">Qty</th>
-            <th className="border border-gray-400 px-4 py-2 text-right">Package Cost (INR)</th>
-            <th className="border border-gray-400 px-4 py-2 text-right">Discount (INR)</th>
-            <th className="border border-gray-400 px-4 py-2 text-right">After Discount</th>
+          <tr>
+            <th style={{ ...s.th, textAlign: "left" }}>S No.</th>
+            <th style={{ ...s.th, textAlign: "left" }}>Services & Products</th>
+            <th style={{ ...s.th, textAlign: "left" }}>Consultant</th>
+            <th style={{ ...s.th, textAlign: "center" }}>Qty</th>
+            <th style={{ ...s.th, textAlign: "right" }}>Package Cost (INR)</th>
+            <th style={{ ...s.th, textAlign: "right" }}>Discount (INR)</th>
+            <th style={{ ...s.th, textAlign: "right" }}>After Discount</th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <td className="border border-gray-400 px-4 py-2">1</td>
-            <td className="border border-gray-400 px-4 py-2">Service {firstTransaction.procedure || "Hair Transplant"}</td>
-            <td className="border border-gray-400 px-4 py-2">{consultant}</td>
-            <td className="border border-gray-400 px-4 py-2 text-center">1</td>
-            <td className="border border-gray-400 px-4 py-2 text-right">{packageTotal.toFixed(2)}</td>
-            <td className="border border-gray-400 px-4 py-2 text-right">{discountOnPackage.toFixed(2)}</td>
-            <td className="border border-gray-400 px-4 py-2 text-right font-bold">{amountAfterDiscount.toFixed(2)}</td>
+            <td style={s.td}>1</td>
+            <td style={s.td}>Service {firstTransaction.procedure || "Hair Transplant"}</td>
+            <td style={s.td}>{consultant}</td>
+            <td style={{ ...s.td, textAlign: "center" }}>1</td>
+            <td style={{ ...s.td, textAlign: "right" }}>{packageTotal.toFixed(2)}</td>
+            <td style={{ ...s.td, textAlign: "right" }}>{discountOnPackage.toFixed(2)}</td>
+            <td style={{ ...s.td, textAlign: "right", fontWeight: "bold" }}>{amountAfterDiscount.toFixed(2)}</td>
           </tr>
         </tbody>
       </table>
 
-      {/* Payment History */}
-      <h4 className="font-bold text-lg mb-2">Paid Amounts:</h4>
-      <table className="w-full border-collapse border border-gray-400 mb-6">
+      <h4 style={s.subTitle}>Paid Amounts:</h4>
+      <table style={s.table}>
         <thead>
-          <tr className="bg-gray-100">
-            <th className="border border-gray-400 px-4 py-2 text-left">Date</th>
-            <th className="border border-gray-400 px-4 py-2 text-left">Payment Mode</th>
-            <th className="border border-gray-400 px-4 py-2 text-right">Amount Paid (INR)</th>
+          <tr>
+            <th style={{ ...s.th, textAlign: "left" }}>Date</th>
+            <th style={{ ...s.th, textAlign: "left" }}>Payment Mode</th>
+            <th style={{ ...s.th, textAlign: "right" }}>Amount Paid (INR)</th>
           </tr>
         </thead>
         <tbody>
           {transactions.map((t, idx) => (
             <tr key={idx}>
-              <td className="border border-gray-400 px-4 py-2">{formatDateForDisplay(t.date)}</td>
-              <td className="border border-gray-400 px-4 py-2 capitalize">{t.method}</td>
-              <td className="border border-gray-400 px-4 py-2 text-right">{parseFloat(t.amount || 0).toFixed(2)}</td>
+              <td style={s.td}>{formatDateForDisplay(t.date)}</td>
+              <td style={{ ...s.td, textTransform: "capitalize" }}>{t.method}</td>
+              <td style={{ ...s.td, textAlign: "right" }}>{parseFloat(t.amount || 0).toFixed(2)}</td>
             </tr>
           ))}
         </tbody>
       </table>
 
       {/* Footer */}
-      <div className="flex justify-between items-end">
+      <div style={s.footer}>
         <div>
-          <p className="font-bold mb-2">Authorized Signatory</p>
+          <p style={{ ...s.footerRow, fontWeight: "bold" }}>Authorized Signatory</p>
         </div>
-        <div className="text-right">
-          <p className="mb-1 font-bold"><strong>Total Amount:</strong> <span className="ml-4">{formatCurrency(amountAfterDiscount)}</span></p>
-          <p className="mb-1"><strong>Received:</strong> <span className="ml-4">{formatCurrency(totalPaid)}</span></p>
-          <p className="mb-1 font-bold text-red-600"><strong>Pending:</strong> <span className="ml-4">{formatCurrency(pending)}</span></p>
-          <p className="mb-1"><strong>Tax:</strong> <span className="ml-4">0</span></p>
+        <div style={s.textRight}>
+          <p style={{ ...s.footerRow, fontWeight: "bold" }}><strong>Total Amount:</strong> <span style={{ marginLeft: "16px" }}>{formatCurrency(amountAfterDiscount)}</span></p>
+          <p style={s.footerRow}><strong>Received:</strong> <span style={{ marginLeft: "16px" }}>{formatCurrency(totalPaid)}</span></p>
+          <p style={{ ...s.footerRow, color: "#dc2626", fontWeight: "bold" }}><strong>Pending:</strong> <span style={{ marginLeft: "16px" }}>{formatCurrency(pending)}</span></p>
+          <p style={s.footerRow}><strong>Tax:</strong> <span style={{ marginLeft: "16px" }}>0</span></p>
         </div>
       </div>
     </div>
@@ -426,27 +475,16 @@ export default function BillGenerator({ transactionId, onClose }) {
   const [invoiceData, setInvoiceData] = useState(null);
 
   useEffect(() => {
-    if (transactionId) {
-      fetchTransactionData();
-    }
+    if (transactionId) fetchTransactionData();
   }, [transactionId]);
 
   const fetchTransactionData = async () => {
     try {
       setLoading(true);
       setError(null);
-
-      const res = await fetch(
-        `/api/transactions/invoice-data?id=${transactionId}`,
-      );
+      const res = await fetch(`/api/transactions/invoice-data?id=${transactionId}`);
       const result = await res.json();
-
-      if (!result.success) {
-        throw new Error(result.error || "Failed to fetch invoice data");
-      }
-
-
-
+      if (!result.success) throw new Error(result.error || "Failed to fetch invoice data");
       setInvoiceData(result.data);
     } catch (error) {
       console.error("Error fetching transaction:", error);
@@ -456,24 +494,44 @@ export default function BillGenerator({ transactionId, onClose }) {
     }
   };
 
-  const handlePrint = () => {
-    window.print();
-  };
+  const handlePrint = () => window.print();
 
   const handleDownloadPDF = async () => {
     try {
       setGenerating(true);
       const element = document.getElementById("bill-content");
+
+      // Expand scroll container so full height is captured
+      const scrollContainer = element.parentElement;
+      const prevMaxH = scrollContainer.style.maxHeight;
+      const prevOverflow = scrollContainer.style.overflow;
+      scrollContainer.style.maxHeight = "none";
+      scrollContainer.style.overflow = "visible";
+
       const opt = {
         margin: [10, 10, 10, 10],
         filename: `Invoice_${transactionId}.pdf`,
         image: { type: "jpeg", quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, logging: false },
+        html2canvas: {
+          scale: 2,
+          useCORS: true,
+          allowTaint: true,
+          logging: false,
+          onclone: (clonedDoc) => {
+            // The invoice components use only inline styles — no Tailwind classes.
+            // Stripping stylesheets is safe and eliminates the oklch() error entirely.
+            clonedDoc.querySelectorAll('link[rel="stylesheet"]').forEach((el) => el.remove());
+            clonedDoc.querySelectorAll("style").forEach((el) => el.remove());
+          },
+        },
         jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
       };
 
       const html2pdf = (await import("html2pdf.js")).default;
       await html2pdf().set(opt).from(element).save();
+
+      scrollContainer.style.maxHeight = prevMaxH;
+      scrollContainer.style.overflow = prevOverflow;
     } catch (error) {
       console.error("PDF generation error:", error);
       alert("Failed to generate PDF. Please try printing instead.");
@@ -501,16 +559,9 @@ export default function BillGenerator({ transactionId, onClose }) {
             <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
               <CloseIcon className="w-8 h-8 text-red-500" />
             </div>
-            <h3 className="text-xl font-bold text-gray-900 mb-2">
-              Error Loading Invoice
-            </h3>
-            <p className="text-gray-600 mb-4">
-              {error || "Transaction not found"}
-            </p>
-            <button
-              onClick={onClose}
-              className="px-6 py-2.5 bg-indigo-500 text-white rounded-xl hover:bg-indigo-600 transition-all font-medium"
-            >
+            <h3 className="text-xl font-bold text-gray-900 mb-2">Error Loading Invoice</h3>
+            <p className="text-gray-600 mb-4">{error || "Transaction not found"}</p>
+            <button onClick={onClose} className="px-6 py-2.5 bg-indigo-500 text-white rounded-xl hover:bg-indigo-600 transition-all font-medium">
               Close
             </button>
           </div>
@@ -532,13 +583,7 @@ export default function BillGenerator({ transactionId, onClose }) {
             </div>
             <div>
               <h2 className="text-xl font-bold text-white">
-                {category === "TRANSPLANT"
-                  ? "Transplant Invoice"
-                  : category === "SERVICE"
-                    ? "Service Invoice"
-                    : category === "MEDICINE"
-                      ? "Medicine Invoice"
-                      : "Invoice"}
+                {category === "TRANSPLANT" ? "Transplant Invoice" : category === "SERVICE" ? "Service Invoice" : category === "MEDICINE" ? "Medicine Invoice" : "Invoice"}
               </h2>
               <p className="text-white/80 text-sm">
                 {isBatch && category === "MEDICINE"
@@ -549,81 +594,40 @@ export default function BillGenerator({ transactionId, onClose }) {
               </p>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-          >
+          <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-lg transition-colors">
             <CloseIcon className="w-5 h-5 text-white" />
           </button>
         </div>
 
         {/* Bill Preview */}
         <div className="p-6 max-h-150 overflow-y-auto">
-          <div id="bill-content" className="bg-white">
+          <div id="bill-content" style={{ backgroundColor: "#ffffff" }}>
             {category === "TRANSPLANT" ? (
-              <TransplantInvoice
-                transactions={transactions}
-                patient={patient}
-                consultant={consultant}
-                branch={branch}
-                packageAmount={packageAmount}
-                packageDiscount={packageDiscount}
-              />
+              <TransplantInvoice transactions={transactions} patient={patient} consultant={consultant} branch={branch} packageAmount={packageAmount} packageDiscount={packageDiscount} />
             ) : category === "SERVICE" ? (
-              <ServiceInvoice
-                transaction={transactions[0]}
-                patient={patient}
-                consultant={consultant}
-                branch={branch}
-              />
+              <ServiceInvoice transaction={transactions[0]} patient={patient} consultant={consultant} branch={branch} />
             ) : category === "MEDICINE" ? (
-              <MedicineInvoice
-                transactions={transactions}
-                patient={patient}
-                consultant={consultant}
-                branch={branch}
-              />
+              <MedicineInvoice transactions={transactions} patient={patient} consultant={consultant} branch={branch} />
             ) : (
-              <ServiceInvoice
-                transaction={transactions[0]}
-                patient={patient}
-                consultant={consultant}
-                branch={branch}
-              />
+              <ServiceInvoice transaction={transactions[0]} patient={patient} consultant={consultant} branch={branch} />
             )}
           </div>
         </div>
 
         {/* Actions */}
         <div className="px-6 py-4 bg-gray-50 rounded-b-2xl flex gap-3 no-print">
-          <button
-            onClick={handlePrint}
-            className="flex-1 px-6 py-3 bg-linear-to-r from-indigo-500 to-purple-600 text-white rounded-xl hover:from-indigo-600 hover:to-purple-700 transition-all font-semibold flex items-center justify-center gap-2"
-          >
+          <button onClick={handlePrint} className="flex-1 px-6 py-3 bg-linear-to-r from-indigo-500 to-purple-600 text-white rounded-xl hover:from-indigo-600 hover:to-purple-700 transition-all font-semibold flex items-center justify-center gap-2">
             <Printer className="w-5 h-5" />
             Print Invoice
           </button>
-          <button
-            onClick={handleDownloadPDF}
-            disabled={generating}
-            className="flex-1 px-6 py-3 bg-linear-to-r from-emerald-500 to-green-600 text-white rounded-xl hover:from-emerald-600 hover:to-green-700 transition-all font-semibold flex items-center justify-center gap-2 disabled:opacity-50"
-          >
+          <button onClick={handleDownloadPDF} disabled={generating} className="flex-1 px-6 py-3 bg-linear-to-r from-emerald-500 to-green-600 text-white rounded-xl hover:from-emerald-600 hover:to-green-700 transition-all font-semibold flex items-center justify-center gap-2 disabled:opacity-50">
             {generating ? (
-              <>
-                <Loader2 className="w-5 h-5 animate-spin" />
-                Generating...
-              </>
+              <><Loader2 className="w-5 h-5 animate-spin" />Generating...</>
             ) : (
-              <>
-                <Download className="w-5 h-5" />
-                Download PDF
-              </>
+              <><Download className="w-5 h-5" />Download PDF</>
             )}
           </button>
-          <button
-            onClick={onClose}
-            className="px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-gray-100 transition-all font-semibold"
-          >
+          <button onClick={onClose} className="px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-gray-100 transition-all font-semibold">
             Close
           </button>
         </div>
@@ -631,29 +635,21 @@ export default function BillGenerator({ transactionId, onClose }) {
 
       <style jsx global>{`
         @media print {
-          body * {
-            visibility: hidden;
-          }
-          .no-print,
-          .no-print * {
-            display: none !important;
-          }
-          #bill-content,
-          #bill-content * {
-            visibility: visible !important;
-          }
+          html, body { height: auto !important; overflow: visible !important; }
+          body * { visibility: hidden !important; }
+          #bill-content, #bill-content * { visibility: visible !important; }
           #bill-content {
-            position: absolute !important;
-            left: 0 !important;
-            top: 0 !important;
+            position: fixed !important;
+            left: 0 !important; top: 0 !important;
             width: 100% !important;
-            padding: 20px !important;
+            max-height: none !important;
+            overflow: visible !important;
+            padding: 10mm !important;
             margin: 0 !important;
+            background: white !important;
+            box-shadow: none !important;
           }
-          @page {
-            margin: 0.5cm;
-            size: A4;
-          }
+          @page { margin: 0.5cm; size: A4; }
         }
       `}</style>
     </div>
