@@ -12,6 +12,8 @@ export default function SearchableSelect({
   valueKey = "value",
   formatOption,
   disabled = false,
+  onSearch,       // optional: called with search term → parent updates options (server-side search)
+  searching = false, // optional: show loading indicator while parent fetches
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -22,6 +24,7 @@ export default function SearchableSelect({
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setIsOpen(false);
+        setSearchTerm("");
       }
     };
 
@@ -29,42 +32,55 @@ export default function SearchableSelect({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Filter options based on search term
-  const filteredOptions = options.filter((option) => {
-    const searchString = formatOption
-      ? formatOption(option).toLowerCase()
-      : String(option[displayKey] || "").toLowerCase();
-    return searchString.includes(searchTerm.toLowerCase());
-  });
+  // When onSearch is provided, skip local filtering — parent provides filtered options
+  const filteredOptions = onSearch
+    ? options
+    : options.filter((option) => {
+        const searchString = formatOption
+          ? formatOption(option).toLowerCase()
+          : String(option[displayKey] || "").toLowerCase();
+        return searchString.includes(searchTerm.toLowerCase());
+      });
 
-  // Get selected option
-  const selectedOption = options.find(
-    (option) => option[valueKey] === value
-  );
+  // Get selected option — search in options first, fallback handled by parent via cache
+  const selectedOption = options.find((option) => option[valueKey] === value);
+
+  const handleSearchChange = (val) => {
+    setSearchTerm(val);
+    if (onSearch) onSearch(val);
+  };
 
   const handleSelect = (option) => {
-    onChange(option[valueKey]);
+    onChange(option[valueKey], option);
     setSearchTerm("");
     setIsOpen(false);
   };
 
   const handleClear = (e) => {
     e.stopPropagation();
-    onChange("");
+    onChange("", null);
     setSearchTerm("");
+    if (onSearch) onSearch("");
+  };
+
+  const handleToggle = () => {
+    if (disabled) return;
+    const opening = !isOpen;
+    setIsOpen(opening);
+    if (opening && onSearch) onSearch(searchTerm);
   };
 
   return (
     <div ref={dropdownRef} className="relative w-full">
-      {/* Search Input */}
+      {/* Trigger */}
       <div
-        onClick={() => !disabled && setIsOpen(!isOpen)}
+        onClick={handleToggle}
         className={`w-full px-3 py-2 border border-gray-300 rounded-lg bg-white cursor-pointer flex items-center justify-between ${
           disabled ? "opacity-50 cursor-not-allowed" : "hover:border-gray-400"
         }`}
       >
         <div className="flex items-center gap-2 flex-1 min-w-0">
-          <Search className="w-4 h-4 text-gray-400 flex-shrink-0" />
+          <Search className="w-4 h-4 text-gray-400 shrink-0" />
           {selectedOption ? (
             <span className="text-sm truncate">
               {formatOption
@@ -75,7 +91,7 @@ export default function SearchableSelect({
             <span className="text-sm text-gray-400">{placeholder}</span>
           )}
         </div>
-        <div className="flex items-center gap-1 flex-shrink-0">
+        <div className="flex items-center gap-1 shrink-0">
           {selectedOption && !disabled && (
             <button
               onClick={handleClear}
@@ -100,7 +116,7 @@ export default function SearchableSelect({
             <input
               type="text"
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => handleSearchChange(e.target.value)}
               placeholder="Type to search..."
               className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-indigo-200 focus:outline-none"
               onClick={(e) => e.stopPropagation()}
@@ -110,7 +126,11 @@ export default function SearchableSelect({
 
           {/* Options List */}
           <div className="overflow-y-auto max-h-52">
-            {filteredOptions.length > 0 ? (
+            {searching ? (
+              <div className="px-3 py-4 text-sm text-gray-500 text-center">
+                Searching…
+              </div>
+            ) : filteredOptions.length > 0 ? (
               filteredOptions.map((option, index) => (
                 <div
                   key={option[valueKey] || index}

@@ -16,7 +16,7 @@ const handler = async (req) => {
 
     /* ── Pagination & Sort ── */
     const page    = Math.max(1, parseInt(searchParams.get("page"))  || 1);
-    const limit   = Math.min(100, parseInt(searchParams.get("limit")) || 50);
+    const limit   = Math.min(200, parseInt(searchParams.get("limit")) || 50);
     const skip    = (page - 1) * limit;
     const sortKey = searchParams.get("sortKey") || "personal.visitDate";
     const sortDir = searchParams.get("sortDir") === "asc" ? 1 : -1;

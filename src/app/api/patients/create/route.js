@@ -112,7 +112,7 @@ const handler = async (req) => {
     const savedPatient = await newPatient.save();
 
     // If this phone exists in Leads, remove that lead
-    await Leads.findOneAndDelete({ phone: phone });
+    // await Leads.findOneAndDelete({ phone: phone });
 
     const employeeUpdatePromises = [];
 
