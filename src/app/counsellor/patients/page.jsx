@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, Suspense } from "react";
+import { useEffect, useRef, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -14,25 +14,32 @@ import {
   LogOut,
 } from "lucide-react";
 
-/* -------------------- Constants -------------------- */
+/* ─────────────────────────────────────────────
+   Constants
+───────────────────────────────────────────── */
 const STATUS_OPTIONS = [
   "NEW",
-  "NOT-VISITED",
+  "NOT_VISITED",
   "CONSULTED",
+  "NOT_CONVERTED",
   "SURGERY_BOOKED",
   "CLOSED",
 ];
+
 const STATUS_COLORS = {
   NEW: "bg-blue-100 text-blue-800",
   NOT_VISITED: "bg-amber-100 text-amber-800",
   CONSULTED: "bg-purple-100 text-purple-800",
+  NOT_CONVERTED: "bg-red-100 text-red-800",
   SURGERY_BOOKED: "bg-green-100 text-green-800",
   CLOSED: "bg-gray-100 text-gray-800",
 };
 
 const LOCATION_OPTIONS = ["Delhi", "Mumbai", "Hyderabad"];
 
-/* -------------------- Helpers -------------------- */
+/* ─────────────────────────────────────────────
+   Helpers
+───────────────────────────────────────────── */
 const formatDate = (date) =>
   date
     ? new Date(date).toLocaleDateString("en-IN", {
@@ -42,304 +49,174 @@ const formatDate = (date) =>
       })
     : "N/A";
 
-const getInitialFiltersFromURL = (sp) => ({
-  search: "",
-  status: sp.get("status") || "",
-  location: sp.get("branch") === "All" ? "" : sp.get("branch") || "",
-  counsellor: sp.get("counsellor") || "",
-  dateFrom: sp.get("dateFrom") || "",
-  dateTo: sp.get("dateTo") || "",
-  agent: "",
-  doctor: "",
-  seniorTech: "",
-  implanter: "",
-  technique: "",
-  surgeryDate: sp.get("surgeryDate") || "",
-  visited: sp.get("visited") === "true",
-  readyForSurgery: sp.get("readyForSurgery") === "true",
-});
-
-// Create a wrapper component that uses useSearchParams
+/* ─────────────────────────────────────────────
+   Inner component (uses useSearchParams)
+───────────────────────────────────────────── */
 function PatientDashboardContent() {
   const searchParams = useSearchParams();
-
-  /* ------------ State ------------ */
-  const [patients, setPatients] = useState([]);
   const router = useRouter();
-  const [filters, setFilters] = useState(() =>
-    getInitialFiltersFromURL(searchParams)
-  );
-  const [drawerOpen, setDrawerOpen] = useState(false);
+
+  /* ── State ── */
+  const [patients, setPatients] = useState([]);
+  const [total, setTotal] = useState(0);
+  const [filterOptions, setFilterOptions] = useState({
+    counsellors: [],
+    agents: [],
+    techniques: [],
+  });
+  const optionsLoaded = useRef(false);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
+  // Search: separate input value vs debounced API value
+  const [searchInput, setSearchInput] = useState("");
+  const [search, setSearch] = useState("");
+  const debounceRef = useRef(null);
+
+  const [filters, setFilters] = useState({
+    status: searchParams.get("status") || "",
+    branch: searchParams.get("branch") === "All" ? "" : searchParams.get("branch") || "",
+    counsellor: searchParams.get("counsellor") || "",
+    agent: "",
+    technique: "",
+    surgeryDate: searchParams.get("surgeryDate") || "",
+    dateFrom: searchParams.get("dateFrom") || "",
+    dateTo: searchParams.get("dateTo") || "",
+    visited: searchParams.get("visited") === "true",
+    readyForSurgery: searchParams.get("readyForSurgery") === "true",
+  });
 
   const [sort, setSort] = useState({ key: "personal.visitDate", dir: "desc" });
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
 
-  /* ------------ Data Fetch ------------ */
+  /* ── Debounce search ── */
+  const handleSearchInput = (val) => {
+    setSearchInput(val);
+    clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      setSearch(val);
+      setPage(1);
+    }, 400);
+  };
+
+  /* ── Fetch ── */
   useEffect(() => {
+    let cancelled = false;
     const fetchData = async () => {
+      setLoading(true);
+      setError(null);
       try {
-        setLoading(true);
-        const res = await fetch("/api/patients/get-patient");
+        const params = new URLSearchParams({
+          page,
+          limit: perPage,
+          sortKey: sort.key,
+          sortDir: sort.dir,
+        });
+        if (search)               params.set("search",          search);
+        if (filters.status)       params.set("status",          filters.status);
+        if (filters.branch)       params.set("branch",          filters.branch);
+        if (filters.counsellor)   params.set("counsellor",      filters.counsellor);
+        if (filters.agent)        params.set("agent",           filters.agent);
+        if (filters.technique)    params.set("technique",       filters.technique);
+        if (filters.surgeryDate)  params.set("surgeryDate",     filters.surgeryDate);
+        if (filters.dateFrom)     params.set("dateFrom",        filters.dateFrom);
+        if (filters.dateTo)       params.set("dateTo",          filters.dateTo);
+        if (filters.visited)      params.set("visited",         "true");
+        if (filters.readyForSurgery) params.set("readyForSurgery", "true");
+
+        const res = await fetch(`/api/patients/get-patient?${params.toString()}`);
         if (!res.ok) throw new Error("Failed to fetch patient data");
         const data = await res.json();
+        if (cancelled) return;
+
         setPatients(data.patients || []);
+        setTotal(data.total || 0);
+
+        // Load filter options only once
+        if (!optionsLoaded.current && data.filterOptions) {
+          setFilterOptions(data.filterOptions);
+          optionsLoaded.current = true;
+        }
       } catch (e) {
-        setError(e.message || "Error");
+        if (!cancelled) setError(e.message || "Error");
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
     fetchData();
-  }, []);
+    return () => { cancelled = true; };
+  }, [page, perPage, sort, search, filters]);
 
-  /* ------------ Dynamic options ------------ */
-  const counsellorOptions = useMemo(
-    () =>
-      [
-        ...new Set(patients.map((p) => p?.counselling?.counsellor?.name)),
-      ].filter(Boolean),
-    [patients]
-  );
-
-  const doctorOptions = useMemo(
-    () =>
-      [...new Set(patients.map((p) => p?.surgery?.doctor?.name))].filter(
-        Boolean
-      ),
-    [patients]
-  );
-
-  const seniorTechOptions = useMemo(
-    () =>
-      [...new Set(patients.map((p) => p?.surgery?.seniorTech?.name))].filter(
-        Boolean
-      ),
-    [patients]
-  );
-
-  const implanterOptions = useMemo(
-    () =>
-      [
-        ...new Set([
-          ...patients.map((p) => p?.surgery?.implanterRight?.name),
-          ...patients.map((p) => p?.surgery?.implanterLeft?.name),
-        ]),
-      ].filter(Boolean),
-    [patients]
-  );
-
-  const techniqueOptions = useMemo(
-    () =>
-      [
-        ...new Set([
-          ...patients.map((p) => p?.counselling?.techniqueSuggested),
-          ...patients.map((p) => p?.surgery?.technique),
-          ...patients.map((p) => p?.personal?.techniqueQuoted),
-        ]),
-      ].filter(Boolean),
-    [patients]
-  );
-
-  const agentOptions = useMemo(
-    () =>
-      [...new Set(patients.map((p) => p?.personal?.reference?.name))].filter(
-        Boolean
-      ),
-    [patients]
-  );
-
-  /* ------------ Filtering + Sorting ------------ */
-  const filtered = useMemo(() => {
-    let list = [...patients];
-
-    const includesCI = (a = "", b = "") =>
-      a.toString().toLowerCase().includes(b.toString().toLowerCase());
-
-    if (filters.search) {
-      const q = filters.search.toLowerCase();
-      list = list.filter(
-        (p) =>
-          includesCI(p?.personal?.name, q) ||
-          includesCI(p?.personal?.phone, q) ||
-          includesCI(p?.personal?.email, q)
-      );
-    }
-
-    if (filters.status)
-      list = list.filter((p) => p?.ops?.status === filters.status);
-
-    if (filters.location)
-      list = list.filter((p) => p?.personal?.branch === filters.location);
-
-    if (filters.counsellor)
-      list = list.filter(
-        (p) => p?.counselling?.counsellor?.name === filters.counsellor
-      );
-
-    if (filters.visited) {
-      list = list.filter((p) => Boolean(p?.counselling?.counsellor));
-    }
-
-    if (filters.readyForSurgery) {
-      list = list.filter((p) => p?.counselling?.readyForSurgery === true);
-    }
-
-    if (filters.agent)
-      list = list.filter((p) => p?.personal?.reference?.name === filters.agent);
-
-    if (filters.doctor)
-      list = list.filter((p) => p?.surgery?.doctor?.name === filters.doctor);
-
-    if (filters.seniorTech)
-      list = list.filter(
-        (p) => p?.surgery?.seniorTech?.name === filters.seniorTech
-      );
-
-    if (filters.implanter) {
-      list = list.filter(
-        (p) =>
-          p?.surgery?.implanterRight?.name === filters.implanter ||
-          p?.surgery?.implanterLeft?.name === filters.implanter
-      );
-    }
-
-    if (filters.technique) {
-      list = list.filter(
-        (p) =>
-          p?.counselling?.techniqueSuggested === filters.technique ||
-          p?.surgery?.technique === filters.technique ||
-          p?.personal?.techniqueQuoted === filters.technique
-      );
-    }
-
-    if (filters.surgeryDate) {
-      const sd = new Date(filters.surgeryDate);
-      const start = new Date(sd);
-      start.setHours(0, 0, 0, 0);
-      const end = new Date(sd);
-      end.setHours(23, 59, 59, 999);
-      list = list.filter((p) => {
-        const d = p?.surgery?.surgeryDate
-          ? new Date(p.surgery.surgeryDate)
-          : null;
-        return d && d >= start && d <= end;
-      });
-    }
-
-    if (filters.dateFrom) {
-      const from = new Date(filters.dateFrom);
-      list = list.filter((p) => new Date(p?.personal?.visitDate) >= from);
-    }
-
-    if (filters.dateTo) {
-      const to = new Date(filters.dateTo);
-      to.setHours(23, 59, 59, 999);
-      list = list.filter((p) => new Date(p?.personal?.visitDate) <= to);
-    }
-
-    // sort
-    const getVal = (obj, key) =>
-      key.split(".").reduce((o, k) => (o ? o[k] : undefined), obj);
-    list.sort((a, b) => {
-      const av = getVal(a, sort.key);
-      const bv = getVal(b, sort.key);
-      if (av == null && bv == null) return 0;
-      if (av == null) return sort.dir === "asc" ? -1 : 1;
-      if (bv == null) return sort.dir === "asc" ? 1 : -1;
-      if (av < bv) return sort.dir === "asc" ? -1 : 1;
-      if (av > bv) return sort.dir === "asc" ? 1 : -1;
-      return 0;
-    });
-
-    return list;
-  }, [patients, filters, sort]);
-
-  /* ------------ Pagination ------------ */
-  const total = filtered.length;
+  /* ── Pagination ── */
   const pages = Math.max(1, Math.ceil(total / perPage));
-  const current = Math.min(page, pages);
-  const startIdx = (current - 1) * perPage;
+  const startIdx = (page - 1) * perPage;
   const endIdx = Math.min(startIdx + perPage, total);
-  const rows = filtered.slice(startIdx, endIdx);
 
-  useEffect(() => setPage(1), [filters, perPage]);
+  /* ── Helpers ── */
+  const applyFilter = (key, val) => {
+    setFilters((f) => ({ ...f, [key]: val }));
+    setPage(1);
+  };
 
-  /* ------------ UI Actions ------------ */
-  const clearFilters = () =>
-    setFilters(getInitialFiltersFromURL(new URLSearchParams()));
-  const toggleSort = (key) =>
+  const clearFilters = () => {
+    setFilters({
+      status: "",
+      branch: "",
+      counsellor: "",
+      agent: "",
+      technique: "",
+      surgeryDate: "",
+      dateFrom: "",
+      dateTo: "",
+      visited: false,
+      readyForSurgery: false,
+    });
+    setPage(1);
+  };
+
+  const toggleSort = (key) => {
     setSort((s) =>
       s.key === key
         ? { key, dir: s.dir === "asc" ? "desc" : "asc" }
         : { key, dir: "asc" }
     );
+    setPage(1);
+  };
 
-  const activeFilterChips = useMemo(() => {
-    const chips = [];
-    if (filters.status)
-      chips.push({ k: "status", label: `Status: ${filters.status}` });
-    if (filters.location)
-      chips.push({ k: "location", label: `Branch: ${filters.location}` });
-    if (filters.counsellor)
-      chips.push({
-        k: "counsellor",
-        label: `Counsellor: ${filters.counsellor}`,
-      });
-    if (filters.agent)
-      chips.push({ k: "agent", label: `Reference: ${filters.agent}` });
-    if (filters.technique)
-      chips.push({ k: "technique", label: `Technique: ${filters.technique}` });
-    if (filters.doctor)
-      chips.push({ k: "doctor", label: `Doctor: ${filters.doctor}` });
-    if (filters.seniorTech)
-      chips.push({
-        k: "seniorTech",
-        label: `Senior Tech: ${filters.seniorTech}`,
-      });
-    if (filters.implanter)
-      chips.push({ k: "implanter", label: `Implanter: ${filters.implanter}` });
-    if (filters.surgeryDate)
-      chips.push({
-        k: "surgeryDate",
-        label: `Surgery: ${formatDate(filters.surgeryDate)}`,
-      });
-    if (filters.visited)
-      chips.push({ k: "visited", label: "Visited Patients" });
-    if (filters.readyForSurgery)
-      chips.push({ k: "readyForSurgery", label: "Ready for Surgery" });
+  /* ── Active filter chips ── */
+  const activeFilterChips = [];
+  if (filters.status)          activeFilterChips.push({ k: "status",          label: `Status: ${filters.status}` });
+  if (filters.branch)          activeFilterChips.push({ k: "branch",          label: `Branch: ${filters.branch}` });
+  if (filters.counsellor)      activeFilterChips.push({ k: "counsellor",      label: `Counsellor: ${filters.counsellor}` });
+  if (filters.agent)           activeFilterChips.push({ k: "agent",           label: `Reference: ${filters.agent}` });
+  if (filters.technique)       activeFilterChips.push({ k: "technique",       label: `Technique: ${filters.technique}` });
+  if (filters.surgeryDate)     activeFilterChips.push({ k: "surgeryDate",     label: `Surgery: ${formatDate(filters.surgeryDate)}` });
+  if (filters.dateFrom)        activeFilterChips.push({ k: "dateFrom",        label: `From: ${formatDate(filters.dateFrom)}` });
+  if (filters.dateTo)          activeFilterChips.push({ k: "dateTo",          label: `To: ${formatDate(filters.dateTo)}` });
+  if (filters.visited)         activeFilterChips.push({ k: "visited",         label: "Visited Patients" });
+  if (filters.readyForSurgery) activeFilterChips.push({ k: "readyForSurgery", label: "Ready for Surgery" });
 
-    if (filters.dateFrom)
-      chips.push({
-        k: "dateFrom",
-        label: `From: ${formatDate(filters.dateFrom)}`,
-      });
-    if (filters.dateTo)
-      chips.push({ k: "dateTo", label: `To: ${formatDate(filters.dateTo)}` });
-    return chips;
-  }, [filters]);
+  const removeChip = (k) => {
+    if (k === "visited" || k === "readyForSurgery") applyFilter(k, false);
+    else applyFilter(k, "");
+  };
 
+  /* ── Logout ── */
   const handleLogout = async () => {
     try {
       await fetch("/api/auth/logout", { method: "POST" });
       router.push("/login");
-    } catch (error) {
-      console.error("Logout error:", error);
+    } catch (err) {
+      console.error("Logout error:", err);
     }
   };
 
-  const removeChip = (k) => setFilters((f) => ({ ...f, [k]: "" }));
-
-  /* ------------ Render ------------ */
-  if (loading)
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <div className="animate-spin h-10 w-10 border-4 border-indigo-200 border-t-indigo-600 rounded-full" />
-      </div>
-    );
+  /* ─────────────────────────────────────────────
+     Render
+  ───────────────────────────────────────────── */
   if (error)
     return (
       <div className="flex h-screen items-center justify-center text-red-600">
@@ -351,7 +228,7 @@ function PatientDashboardContent() {
     <div className="">
       <main className="flex-1 flex flex-col px-24">
         {/* Header */}
-        <header className=" bg-white sticky top-0 z-10">
+        <header className="bg-white sticky top-0 z-10">
           <div className="py-3 mt-4">
             <h1 className="text-3xl underline pl-6 font-semibold">
               All Patients Data
@@ -366,10 +243,8 @@ function PatientDashboardContent() {
                   type="text"
                   placeholder="Search patients by name, phone, or email…"
                   className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-gray-300 shadow-sm focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 transition-colors"
-                  value={filters.search}
-                  onChange={(e) =>
-                    setFilters({ ...filters, search: e.target.value })
-                  }
+                  value={searchInput}
+                  onChange={(e) => handleSearchInput(e.target.value)}
                 />
               </div>
             </div>
@@ -427,106 +302,112 @@ function PatientDashboardContent() {
         {/* Table */}
         <section className="p-6">
           <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200">
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-sm">
-                <thead className="bg-gray-50 text-gray-700 text-xs uppercase">
-                  <tr>
-                    <Th label="Patient" />
-                    <Th label="Contact" />
-                    <Th label="Branch" />
-                    <Th
-                      label="Visit Date"
-                      sortKey="personal.visitDate"
-                      sort={sort}
-                      onSort={toggleSort}
-                    />
-                    <Th label="Status" />
-                    <Th label="Package" />
-                    <Th label="Actions" />
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {rows.length === 0 ? (
+            {loading ? (
+              <div className="flex items-center justify-center py-20">
+                <div className="animate-spin h-10 w-10 border-4 border-indigo-200 border-t-indigo-600 rounded-full" />
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="min-w-full text-sm">
+                  <thead className="bg-gray-50 text-gray-700 text-xs uppercase">
                     <tr>
-                      <td
-                        colSpan={7}
-                        className="py-12 text-center text-gray-500"
-                      >
-                        <div className="flex flex-col items-center justify-center">
-                          <Search className="w-12 h-12 text-gray-300 mb-4" />
-                          <p className="text-lg font-medium text-gray-900 mb-2">
-                            No patients found
-                          </p>
-                          <p className="text-gray-500">
-                            Try adjusting your search or filters
-                          </p>
-                        </div>
-                      </td>
+                      <Th label="Patient" />
+                      <Th label="Contact" />
+                      <Th label="Branch" />
+                      <Th
+                        label="Visit Date"
+                        sortKey="personal.visitDate"
+                        sort={sort}
+                        onSort={toggleSort}
+                      />
+                      <Th label="Status" />
+                      <Th label="Package" />
+                      <Th label="Actions" />
                     </tr>
-                  ) : (
-                    rows.map((p) => (
-                      <tr
-                        key={p._id}
-                        className="hover:bg-gray-50 transition-colors"
-                      >
-                        <td className="px-6 py-4 font-medium text-gray-900">
-                          {p.personal?.name}
-                        </td>
-                        <td className="px-6 py-4 text-gray-700">
-                          {p.personal?.phone}
-                        </td>
-                        <td className="px-6 py-4 text-gray-700">
-                          {p.personal?.branch}
-                        </td>
-                        <td className="px-6 py-4 text-gray-700">
-                          {formatDate(p.personal?.visitDate)}
-                        </td>
-                        <td className="px-6 py-4">
-                          <span
-                            className={`px-2.5 py-1 rounded-full text-xs font-medium ${
-                              STATUS_COLORS[p?.ops?.status] ||
-                              "bg-gray-100 text-gray-700"
-                            }`}
-                          >
-                            {p?.ops?.status?.replace("_", " ")}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 text-gray-700">
-                          {p.personal?.packageQuoted}
-                        </td>
-
-                        {/* Actions column */}
-                        <td className="px-6 py-4">
-                          <div className=" space-x-2">
-                            <Link
-                              href={`/counsellor/patients/edit/${p._id}`}
-                              className="p-2 rounded-lg flex hover:bg-blue-50 text-blue-600 transition-colors"
-                              title="Edit patient"
-                              target="_blank"
-                            >
-                              Update &nbsp;
-                              <Edit className="w-6 h-6" />
-                            </Link>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {patients.length === 0 ? (
+                      <tr>
+                        <td
+                          colSpan={7}
+                          className="py-12 text-center text-gray-500"
+                        >
+                          <div className="flex flex-col items-center justify-center">
+                            <Search className="w-12 h-12 text-gray-300 mb-4" />
+                            <p className="text-lg font-medium text-gray-900 mb-2">
+                              No patients found
+                            </p>
+                            <p className="text-gray-500">
+                              Try adjusting your search or filters
+                            </p>
                           </div>
                         </td>
                       </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
+                    ) : (
+                      patients.map((p) => (
+                        <tr
+                          key={p._id}
+                          className="hover:bg-gray-50 transition-colors"
+                        >
+                          <td className="px-6 py-4 font-medium text-gray-900">
+                            {p.personal?.name}
+                          </td>
+                          <td className="px-6 py-4 text-gray-700">
+                            {p.personal?.phone}
+                          </td>
+                          <td className="px-6 py-4 text-gray-700">
+                            {p.personal?.branch}
+                          </td>
+                          <td className="px-6 py-4 text-gray-700">
+                            {formatDate(p.personal?.visitDate)}
+                          </td>
+                          <td className="px-6 py-4">
+                            <span
+                              className={`px-2.5 py-1 rounded-full text-xs font-medium ${
+                                STATUS_COLORS[p?.ops?.status] ||
+                                "bg-gray-100 text-gray-700"
+                              }`}
+                            >
+                              {p?.ops?.status?.replace("_", " ")}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 text-gray-700">
+                            {p.personal?.packageQuoted}
+                          </td>
+
+                          {/* Actions column */}
+                          <td className="px-6 py-4">
+                            <div className="space-x-2">
+                              <Link
+                                href={`/counsellor/patients/edit/${p._id}`}
+                                className="p-2 rounded-lg flex hover:bg-blue-50 text-blue-600 transition-colors"
+                                title="Edit patient"
+                                target="_blank"
+                              >
+                                Update &nbsp;
+                                <Edit className="w-6 h-6" />
+                              </Link>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
 
             {/* Footer / Pagination */}
             <div className="flex flex-col md:flex-row items-center justify-between gap-3 px-6 py-4 border-t bg-gray-50">
               <p className="text-sm text-gray-600">
-                Showing <b>{startIdx + 1}</b>–<b>{endIdx}</b> of <b>{total}</b>{" "}
-                patients
+                Showing <b>{total === 0 ? 0 : startIdx + 1}</b>–<b>{endIdx}</b>{" "}
+                of <b>{total}</b> patients
               </p>
               <div className="flex items-center gap-3">
                 <select
                   className="text-sm border border-gray-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 transition-colors"
                   value={perPage}
-                  onChange={(e) => setPerPage(Number(e.target.value))}
+                  onChange={(e) => { setPerPage(Number(e.target.value)); setPage(1); }}
                 >
                   {[10, 25, 50].map((n) => (
                     <option key={n} value={n}>
@@ -537,17 +418,17 @@ function PatientDashboardContent() {
                 <div className="flex items-center gap-1">
                   <button
                     onClick={() => setPage((p) => Math.max(1, p - 1))}
-                    disabled={current <= 1}
+                    disabled={page <= 1}
                     className="p-2 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                   >
                     <ChevronLeft className="w-4 h-4" />
                   </button>
                   <span className="text-sm text-gray-600 w-16 text-center">
-                    {current} / {pages}
+                    {page} / {pages}
                   </span>
                   <button
                     onClick={() => setPage((p) => Math.min(pages, p + 1))}
-                    disabled={current >= pages}
+                    disabled={page >= pages}
                     className="p-2 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                   >
                     <ChevronRight className="w-4 h-4" />
@@ -595,13 +476,11 @@ function PatientDashboardContent() {
                     <Field label="Status">
                       <Select
                         value={filters.status}
-                        onChange={(v) =>
-                          setFilters((f) => ({ ...f, status: v }))
-                        }
+                        onChange={(v) => applyFilter("status", v)}
                         options={[
                           { label: "All Status", value: "" },
                           ...STATUS_OPTIONS.map((s) => ({
-                            label: s.replace("_", " "),
+                            label: s.replace(/_/g, " "),
                             value: s,
                           })),
                         ]}
@@ -609,10 +488,8 @@ function PatientDashboardContent() {
                     </Field>
                     <Field label="Branch">
                       <Select
-                        value={filters.location}
-                        onChange={(v) =>
-                          setFilters((f) => ({ ...f, location: v }))
-                        }
+                        value={filters.branch}
+                        onChange={(v) => applyFilter("branch", v)}
                         options={[
                           { label: "All Branches", value: "" },
                           ...LOCATION_OPTIONS.map((l) => ({
@@ -630,9 +507,7 @@ function PatientDashboardContent() {
                           <Input
                             type="date"
                             value={filters.dateFrom}
-                            onChange={(v) =>
-                              setFilters((f) => ({ ...f, dateFrom: v }))
-                            }
+                            onChange={(v) => applyFilter("dateFrom", v)}
                             className="pl-10"
                           />
                         </div>
@@ -643,9 +518,7 @@ function PatientDashboardContent() {
                           <Input
                             type="date"
                             value={filters.dateTo}
-                            onChange={(v) =>
-                              setFilters((f) => ({ ...f, dateTo: v }))
-                            }
+                            onChange={(v) => applyFilter("dateTo", v)}
                             className="pl-10"
                           />
                         </div>
@@ -661,12 +534,10 @@ function PatientDashboardContent() {
                     <Field label="Counsellor">
                       <Select
                         value={filters.counsellor}
-                        onChange={(v) =>
-                          setFilters((f) => ({ ...f, counsellor: v }))
-                        }
+                        onChange={(v) => applyFilter("counsellor", v)}
                         options={[
                           { label: "All Counsellors", value: "" },
-                          ...counsellorOptions.map((c) => ({
+                          ...filterOptions.counsellors.map((c) => ({
                             label: c,
                             value: c,
                           })),
@@ -676,63 +547,12 @@ function PatientDashboardContent() {
                     <Field label="Reference">
                       <Select
                         value={filters.agent}
-                        onChange={(v) =>
-                          setFilters((f) => ({ ...f, agent: v }))
-                        }
+                        onChange={(v) => applyFilter("agent", v)}
                         options={[
                           { label: "All References", value: "" },
-                          ...agentOptions.map((a) => ({
+                          ...filterOptions.agents.map((a) => ({
                             label: a,
                             value: a,
-                          })),
-                        ]}
-                      />
-                    </Field>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <Field label="Doctor">
-                        <Select
-                          value={filters.doctor}
-                          onChange={(v) =>
-                            setFilters((f) => ({ ...f, doctor: v }))
-                          }
-                          options={[
-                            { label: "All Doctors", value: "" },
-                            ...doctorOptions.map((t) => ({
-                              label: t,
-                              value: t,
-                            })),
-                          ]}
-                        />
-                      </Field>
-                      <Field label="Senior Tech">
-                        <Select
-                          value={filters.seniorTech}
-                          onChange={(v) =>
-                            setFilters((f) => ({ ...f, seniorTech: v }))
-                          }
-                          options={[
-                            { label: "All Techs", value: "" },
-                            ...seniorTechOptions.map((t) => ({
-                              label: t,
-                              value: t,
-                            })),
-                          ]}
-                        />
-                      </Field>
-                    </div>
-
-                    <Field label="Implanter">
-                      <Select
-                        value={filters.implanter}
-                        onChange={(v) =>
-                          setFilters((f) => ({ ...f, implanter: v }))
-                        }
-                        options={[
-                          { label: "All Implanters", value: "" },
-                          ...implanterOptions.map((t) => ({
-                            label: t,
-                            value: t,
                           })),
                         ]}
                       />
@@ -747,12 +567,10 @@ function PatientDashboardContent() {
                     <Field label="Technique">
                       <Select
                         value={filters.technique}
-                        onChange={(v) =>
-                          setFilters((f) => ({ ...f, technique: v }))
-                        }
+                        onChange={(v) => applyFilter("technique", v)}
                         options={[
                           { label: "All Techniques", value: "" },
-                          ...techniqueOptions.map((t) => ({
+                          ...filterOptions.techniques.map((t) => ({
                             label: t,
                             value: t,
                           })),
@@ -766,9 +584,7 @@ function PatientDashboardContent() {
                         <Input
                           type="date"
                           value={filters.surgeryDate}
-                          onChange={(v) =>
-                            setFilters((f) => ({ ...f, surgeryDate: v }))
-                          }
+                          onChange={(v) => applyFilter("surgeryDate", v)}
                           className="pl-10"
                         />
                       </div>
@@ -781,10 +597,7 @@ function PatientDashboardContent() {
                             type="checkbox"
                             checked={filters.visited}
                             onChange={(e) =>
-                              setFilters((f) => ({
-                                ...f,
-                                visited: e.target.checked,
-                              }))
+                              applyFilter("visited", e.target.checked)
                             }
                             className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                           />
@@ -799,10 +612,7 @@ function PatientDashboardContent() {
                             type="checkbox"
                             checked={filters.readyForSurgery}
                             onChange={(e) =>
-                              setFilters((f) => ({
-                                ...f,
-                                readyForSurgery: e.target.checked,
-                              }))
+                              applyFilter("readyForSurgery", e.target.checked)
                             }
                             className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                           />
@@ -819,7 +629,7 @@ function PatientDashboardContent() {
               {/* Footer */}
               <div className="px-6 py-4 border-t bg-gray-50 flex items-center justify-between gap-3">
                 <button
-                  onClick={clearFilters}
+                  onClick={() => { clearFilters(); setDrawerOpen(false); }}
                   className="flex-1 px-4 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 transition-colors font-medium"
                 >
                   Reset All
@@ -858,7 +668,9 @@ export default function PatientDashboard() {
   );
 }
 
-/* -------------------- Small UI atoms -------------------- */
+/* ─────────────────────────────────────────────
+   UI atoms
+───────────────────────────────────────────── */
 function Th({ label, sortKey, sort, onSort }) {
   const isSortable = !!sortKey;
   const active = isSortable && sort?.key === sortKey;
@@ -906,13 +718,7 @@ function Field({ label, children }) {
   );
 }
 
-function Input({
-  type = "text",
-  value,
-  onChange,
-  placeholder,
-  className = "",
-}) {
+function Input({ type = "text", value, onChange, placeholder, className = "" }) {
   return (
     <input
       type={type}
@@ -940,45 +746,9 @@ function Select({ value, onChange, options }) {
   );
 }
 
-// Add missing icon components
-const Plus = ({ className }) => (
-  <svg
-    className={className}
-    fill="none"
-    stroke="currentColor"
-    viewBox="0 0 24 24"
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth={2}
-      d="M12 4v16m8-8H4"
-    />
-  </svg>
-);
-
-const Eye = ({ className }) => (
-  <svg
-    className={className}
-    fill="none"
-    stroke="currentColor"
-    viewBox="0 0 24 24"
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth={2}
-      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-    />
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth={2}
-      d="M2.458 12C3.732 7.943 7.522 5 12 5s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7s-8.268-2.943-9.542-7z"
-    />
-  </svg>
-);
-
+/* ─────────────────────────────────────────────
+   Inline SVG icon components (preserved)
+───────────────────────────────────────────── */
 const Edit = ({ className }) => (
   <svg
     className={className}

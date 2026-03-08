@@ -24,11 +24,13 @@ const PER_PAGE_OPTIONS = [10, 25, 50, 100];
 /* ─────────────────────────────────────────────
    Helpers
 ───────────────────────────────────────────── */
-function fmt(date) {
+function fmt(date, includeTime = false) {
   if (!date) return "—";
-  return new Date(date).toLocaleDateString("en-IN", {
-    day: "2-digit", month: "short", year: "numeric",
-  });
+  const d = new Date(date);
+  const datePart = d.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+  if (!includeTime) return datePart;
+  const timePart = d.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true });
+  return `${datePart}, ${timePart}`;
 }
 
 function TagBadge({ tag }) {
@@ -229,7 +231,7 @@ export default function LeadsPage() {
                 <table className="min-w-full text-sm">
                   <thead className="bg-gray-50 text-gray-700 text-xs uppercase">
                     <tr>
-                      {["#","Name","Phone","Email","Location","Visit Plan","Visit Date","Tag","Remarks","Created At"].map((h) => (
+                      {["#","Name","Phone","Location", "Tag","Visit Plan","Visit Date","Remarks","Created At"].map((h) => (
                         <th key={h} className="px-4 py-3 text-left font-medium whitespace-nowrap">{h}</th>
                       ))}
                     </tr>
@@ -248,14 +250,13 @@ export default function LeadsPage() {
                         <tr key={lead._id} className="hover:bg-gray-50 transition-colors">
                           <td className="px-4 py-3 text-gray-400">{startIdx + idx + 1}</td>
                           <td className="px-4 py-3 font-medium text-gray-900">{lead.name}</td>
-                          <td className="px-4 py-3 text-gray-700">{lead.phone}</td>
-                          <td className="px-4 py-3 text-gray-600">{lead.email || "—"}</td>
+                          <td className="px-4 py-3 text-gray-700">{lead.phone}</td>                          
                           <td className="px-4 py-3 text-gray-600">{lead.location || "—"}</td>
+                          <td className="px-4 py-3"><TagBadge tag={lead.tag} /></td>
                           <td className="px-4 py-3 text-gray-600">{lead.visitPlan || "—"}</td>
                           <td className="px-4 py-3 text-gray-600 whitespace-nowrap">{fmt(lead.visitDate)}</td>
-                          <td className="px-4 py-3"><TagBadge tag={lead.tag} /></td>
                           <td className="px-4 py-3 text-gray-500 max-w-45 truncate" title={lead.remarks}>{lead.remarks || "—"}</td>
-                          <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{fmt(lead.createdAt)}</td>
+                          <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{fmt(lead.createdAt, true)}</td>
                         </tr>
                       ))
                     )}

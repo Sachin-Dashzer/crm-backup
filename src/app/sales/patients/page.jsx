@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, Suspense } from "react";
+import { useEffect, useRef, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import SalesSidebar from "@/components/Sidebars/SalesSidebar";
 import {
@@ -11,15 +11,19 @@ import {
   X,
   Calendar,
   User,
+  Eye,
 } from "lucide-react";
 
+/* ─────────────────────────────────────────────
+   Constants
+───────────────────────────────────────────── */
 const STATUS_COLORS = {
-  NEW: "bg-blue-100 text-blue-800",
-  NOT_VISITED: "bg-amber-100 text-amber-800",
-  CONSULTED: "bg-purple-100 text-purple-800",
-  NOT_CONVERTED: "bg-red-100 text-red-800",
+  NEW:            "bg-blue-100 text-blue-800",
+  NOT_VISITED:    "bg-amber-100 text-amber-800",
+  CONSULTED:      "bg-purple-100 text-purple-800",
+  NOT_CONVERTED:  "bg-red-100 text-red-800",
   SURGERY_BOOKED: "bg-green-100 text-green-800",
-  CLOSED: "bg-gray-100 text-gray-800",
+  CLOSED:         "bg-gray-100 text-gray-800",
 };
 
 const STATUS_OPTIONS = [
@@ -49,257 +53,133 @@ const formatCurrency = (amount) =>
     maximumFractionDigits: 0,
   }).format(amount || 0);
 
-const getInitialFiltersFromURL = (sp) => ({
-  search: sp.get("search") || "",
-  status: sp.get("status") || "",
-  location: sp.get("branch") === "All" ? "" : sp.get("branch") || "",
-  counsellor: sp.get("counsellor") || "",
-  reference: sp.get("reference") || "",
-  technique: sp.get("technique") || "",
-  dateFrom: sp.get("dateFrom") || "",
-  dateTo: sp.get("dateTo") || "",
-  minPackage: sp.get("minPackage") || "",
-  maxPackage: sp.get("maxPackage") || "",
-  purpose: sp.get("purpose") || "",
-});
-
-function Th({ label }) {
-  return (
-    <th className="px-6 py-4 text-left font-semibold">
-      <div className="inline-flex items-center gap-1">{label}</div>
-    </th>
-  );
-}
-
+/* ─────────────────────────────────────────────
+   Inner component (uses useSearchParams)
+───────────────────────────────────────────── */
 function SalesPatientDashboardContent() {
   const searchParams = useSearchParams();
 
-  const [patients, setPatients] = useState([]);
-  const [filters, setFilters] = useState(() =>
-    getInitialFiltersFromURL(searchParams),
-  );
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  /* ── State ── */
+  const [patients, setPatients]             = useState([]);
+  const [total, setTotal]                   = useState(0);
+  const [filterOptions, setFilterOptions]   = useState({ counsellors: [], agents: [], techniques: [] });
+  const optionsLoaded = useRef(false);
+
+  const [loading, setLoading]     = useState(true);
+  const [error, setError]         = useState(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
 
-  const [page, setPage] = useState(1);
+  // Search: separate input value vs debounced API value
+  const [searchInput, setSearchInput] = useState("");
+  const [search, setSearch]           = useState("");
+  const debounceRef = useRef(null);
+
+  const [filters, setFilters] = useState({
+    status:    searchParams.get("status")  || "",
+    branch:    searchParams.get("branch") === "All" ? "" : searchParams.get("branch") || "",
+    counsellor: "",
+    agent:     "",
+    technique: "",
+    dateFrom:  searchParams.get("dateFrom") || "",
+    dateTo:    searchParams.get("dateTo")   || "",
+  });
+
+  const [page, setPage]       = useState(1);
   const [perPage, setPerPage] = useState(20);
 
+  /* ── Debounce search ── */
+  const handleSearchInput = (val) => {
+    setSearchInput(val);
+    clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      setSearch(val);
+      setPage(1);
+    }, 400);
+  };
+
+  /* ── Fetch ── */
   useEffect(() => {
+    let cancelled = false;
     const fetchData = async () => {
+      setLoading(true);
+      setError(null);
       try {
-        const res = await fetch("/api/sales/get-patients");
+        const params = new URLSearchParams({
+          page,
+          limit:   perPage,
+          sortKey: "personal.visitDate",
+          sortDir: "desc",
+        });
+        if (search)           params.set("search",     search);
+        if (filters.status)   params.set("status",     filters.status);
+        if (filters.branch)   params.set("branch",     filters.branch);
+        if (filters.counsellor) params.set("counsellor", filters.counsellor);
+        if (filters.agent)    params.set("agent",      filters.agent);
+        if (filters.technique) params.set("technique", filters.technique);
+        if (filters.dateFrom) params.set("dateFrom",   filters.dateFrom);
+        if (filters.dateTo)   params.set("dateTo",     filters.dateTo);
+
+        const res = await fetch(`/api/patients/get-patient?${params.toString()}`);
         if (!res.ok) throw new Error("Failed to fetch patient data");
         const data = await res.json();
+        if (cancelled) return;
+
         setPatients(data.patients || []);
+        setTotal(data.total || 0);
+
+        // Load filter options only once
+        if (!optionsLoaded.current && data.filterOptions) {
+          setFilterOptions(data.filterOptions);
+          optionsLoaded.current = true;
+        }
       } catch (e) {
-        setError(e.message);
+        if (!cancelled) setError(e.message || "Error");
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
     fetchData();
-  }, []);
+    return () => { cancelled = true; };
+  }, [page, perPage, search, filters]);
 
-  const counsellorOptions = useMemo(
-    () =>
-      [
-        ...new Set(patients.map((p) => p?.counselling?.counsellor?.name)),
-      ].filter(Boolean),
-    [patients],
-  );
-
-  const techniqueOptions = useMemo(
-    () =>
-      [
-        ...new Set([
-          ...patients.map((p) => p?.counselling?.techniqueSuggested),
-          ...patients.map((p) => p?.personal?.techniqueQuoted),
-        ]),
-      ].filter(Boolean),
-    [patients],
-  );
-
-  const referenceOptions = useMemo(
-    () =>
-      [...new Set(patients.map((p) => p?.personal?.reference?.name))].filter(
-        Boolean,
-      ),
-    [patients],
-  );
-
-  const purposeOptions = useMemo(
-    () =>
-      [...new Set(patients.map((p) => p?.personal?.purpose))].filter(Boolean),
-    [patients],
-  );
-
-  const filtered = useMemo(() => {
-    let list = [...patients];
-    const includesCI = (a = "", b = "") =>
-      a.toLowerCase().includes(b.toLowerCase());
-
-    if (filters.search) {
-      list = list.filter(
-        (p) =>
-          includesCI(p.personal?.name, filters.search) ||
-          includesCI(p.personal?.phone, filters.search) ||
-          includesCI(p.personal?.email, filters.search),
-      );
-    }
-
-    if (filters.status) {
-      list = list.filter((p) => p.ops?.status === filters.status);
-    }
-
-    if (filters.location) {
-      list = list.filter((p) => p.personal?.branch === filters.location);
-    }
-
-    if (filters.counsellor) {
-      list = list.filter(
-        (p) => p.counselling?.counsellor?.name === filters.counsellor,
-      );
-    }
-
-    if (filters.reference) {
-      list = list.filter(
-        (p) => p.personal?.reference?.name === filters.reference,
-      );
-    }
-
-    if (filters.technique) {
-      list = list.filter(
-        (p) =>
-          includesCI(p.counselling?.techniqueSuggested, filters.technique) ||
-          includesCI(p.personal?.techniqueQuoted, filters.technique),
-      );
-    }
-
-    if (filters.purpose) {
-      list = list.filter((p) => p.personal?.purpose === filters.purpose);
-    }
-
-    if (filters.dateFrom) {
-      const fromDate = new Date(filters.dateFrom);
-      fromDate.setHours(0, 0, 0, 0);
-      list = list.filter((p) => {
-        const visitDate = p.personal?.visitDate
-          ? new Date(p.personal.visitDate)
-          : null;
-        return visitDate && visitDate >= fromDate;
-      });
-    }
-
-    if (filters.dateTo) {
-      const toDate = new Date(filters.dateTo);
-      toDate.setHours(23, 59, 59, 999);
-      list = list.filter((p) => {
-        const visitDate = p.personal?.visitDate
-          ? new Date(p.personal.visitDate)
-          : null;
-        return visitDate && visitDate <= toDate;
-      });
-    }
-
-    if (filters.minPackage) {
-      const min = Number(filters.minPackage);
-      list = list.filter(
-        (p) =>
-          (p.counselling?.finlpackage || 0) >= min ||
-          (p.personal?.packageQuoted || 0) >= min,
-      );
-    }
-
-    if (filters.maxPackage) {
-      const max = Number(filters.maxPackage);
-      list = list.filter(
-        (p) =>
-          (p.counselling?.finlpackage || 0) <= max ||
-          (p.personal?.packageQuoted || 0) <= max,
-      );
-    }
-
-    // Sort by visit date - most recent first
-    list.sort((a, b) => {
-      const dateA = a.personal?.visitDate ? new Date(a.personal.visitDate) : new Date(0);
-      const dateB = b.personal?.visitDate ? new Date(b.personal.visitDate) : new Date(0);
-      return dateB - dateA; // Descending order (newest first)
-    });
-
-    return list;
-  }, [patients, filters]);
-
-  const total = filtered.length;
-  const pages = Math.max(1, Math.ceil(total / perPage));
+  /* ── Pagination ── */
+  const pages   = Math.max(1, Math.ceil(total / perPage));
   const startIdx = (page - 1) * perPage;
-  const endIdx = Math.min(startIdx + perPage, total);
-  const rows = filtered.slice(startIdx, startIdx + perPage);
-  const current = page;
+  const endIdx   = Math.min(startIdx + perPage, total);
 
-  useEffect(() => setPage(1), [filters, perPage]);
+  /* ── Helpers ── */
+  const applyFilter = (key, val) => {
+    setFilters((f) => ({ ...f, [key]: val }));
+    setPage(1);
+  };
 
   const clearFilters = () => {
-    setFilters({
-      search: "",
-      status: "",
-      location: "",
-      counsellor: "",
-      reference: "",
-      technique: "",
-      dateFrom: "",
-      dateTo: "",
-      minPackage: "",
-      maxPackage: "",
-      purpose: "",
-    });
+    setFilters({ status: "", branch: "", counsellor: "", agent: "", technique: "", dateFrom: "", dateTo: "" });
+    setPage(1);
   };
 
-  const activeFilterChips = useMemo(() => {
-    const chips = [];
-    if (filters.status)
-      chips.push({ k: "status", label: `Status: ${filters.status}` });
-    if (filters.location)
-      chips.push({ k: "location", label: `Branch: ${filters.location}` });
-    if (filters.counsellor)
-      chips.push({
-        k: "counsellor",
-        label: `Counsellor: ${filters.counsellor}`,
-      });
-    if (filters.reference)
-      chips.push({ k: "reference", label: `Reference: ${filters.reference}` });
-    if (filters.technique)
-      chips.push({ k: "technique", label: `Technique: ${filters.technique}` });
-    if (filters.purpose)
-      chips.push({ k: "purpose", label: `Purpose: ${filters.purpose}` });
-    if (filters.dateFrom)
-      chips.push({
-        k: "dateFrom",
-        label: `From: ${formatDate(filters.dateFrom)}`,
-      });
-    if (filters.dateTo)
-      chips.push({ k: "dateTo", label: `To: ${formatDate(filters.dateTo)}` });
-    if (filters.minPackage)
-      chips.push({ k: "minPackage", label: `Min: ₹${filters.minPackage}` });
-    if (filters.maxPackage)
-      chips.push({ k: "maxPackage", label: `Max: ₹${filters.maxPackage}` });
-    return chips;
-  }, [filters]);
+  /* ── Active filter chips ── */
+  const activeFilterChips = [];
+  if (filters.status)    activeFilterChips.push({ k: "status",    label: `Status: ${filters.status}` });
+  if (filters.branch)    activeFilterChips.push({ k: "branch",    label: `Branch: ${filters.branch}` });
+  if (filters.counsellor) activeFilterChips.push({ k: "counsellor", label: `Counsellor: ${filters.counsellor}` });
+  if (filters.agent)     activeFilterChips.push({ k: "agent",     label: `Reference: ${filters.agent}` });
+  if (filters.technique) activeFilterChips.push({ k: "technique", label: `Technique: ${filters.technique}` });
+  if (filters.dateFrom)  activeFilterChips.push({ k: "dateFrom",  label: `From: ${formatDate(filters.dateFrom)}` });
+  if (filters.dateTo)    activeFilterChips.push({ k: "dateTo",    label: `To: ${formatDate(filters.dateTo)}` });
 
-  const removeChip = (k) => {
-    setFilters((f) => ({ ...f, [k]: "" }));
-  };
+  const removeChip = (k) => applyFilter(k, "");
 
   const hasActiveFilters = activeFilterChips.length > 0;
 
-  if (loading)
-    return (
-      <div className="flex h-screen items-center justify-center">Loading…</div>
-    );
-
+  /* ─────────────────────────────────────────────
+     Render
+  ───────────────────────────────────────────── */
   if (error)
     return (
-      <div className="flex h-screen items-center justify-center">{error}</div>
+      <div className="flex h-screen items-center justify-center text-red-600">
+        {error}
+      </div>
     );
 
   return (
@@ -307,6 +187,7 @@ function SalesPatientDashboardContent() {
       <SalesSidebar />
 
       <main className="flex-1 p-6">
+        {/* ── Header ── */}
         <div className="flex justify-between align-middle mt-3 mb-10">
           <h1 className="text-3xl ml-2 underline font-bold">All Patients data</h1>
 
@@ -316,10 +197,8 @@ function SalesPatientDashboardContent() {
               <input
                 className="pl-10 w-full border rounded-lg py-2"
                 placeholder="Search name, phone, or email"
-                value={filters.search}
-                onChange={(e) =>
-                  setFilters({ ...filters, search: e.target.value })
-                }
+                value={searchInput}
+                onChange={(e) => handleSearchInput(e.target.value)}
               />
             </div>
 
@@ -342,7 +221,8 @@ function SalesPatientDashboardContent() {
           </div>
         </div>
 
-        {activeFilterChips.length > 0 && (
+        {/* ── Active filter chips ── */}
+        {hasActiveFilters && (
           <div className="mb-4 flex flex-wrap items-center gap-2">
             {activeFilterChips.map((chip) => (
               <button
@@ -364,124 +244,119 @@ function SalesPatientDashboardContent() {
           </div>
         )}
 
+        {/* ── Table ── */}
         <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200">
-          <div className="overflow-x-auto">
-            <table className="min-w-full text-sm">
-              <thead className="bg-gray-50 text-gray-700 text-xs uppercase">
-                <tr>
-                  <Th label="Patient" />
-                  <Th label="Contact" />
-                  <Th label="Reference" />
-                  <Th label="Branch" />
-                  <Th label="Purpose" />
-                  <Th label="Visit Date" />
-                  <Th label="Status" />
-                  <Th label="Package" />
-                  <Th label="Final" />
-                  <Th label="Received" />
-                  <Th label="Details" />
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {rows.length === 0 ? (
+          {loading ? (
+            <div className="flex items-center justify-center py-20">
+              <div className="animate-spin h-12 w-12 border-4 border-indigo-200 border-t-indigo-600 rounded-full" />
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-sm">
+                <thead className="bg-gray-50 text-gray-700 text-xs uppercase">
                   <tr>
-                    <td
-                      colSpan={11}
-                      className="py-12 text-center text-gray-500"
-                    >
-                      <div className="flex flex-col items-center justify-center">
-                        <Search className="w-12 h-12 text-gray-300 mb-4" />
-                        <p className="text-lg font-medium text-gray-900 mb-2">
-                          No patients found
-                        </p>
-                        <p className="text-gray-500">
-                          Try adjusting your search or filters
-                        </p>
-                      </div>
-                    </td>
+                    <Th label="Name" />
+                    <Th label="Phone" />
+                    <Th label="Branch" />
+                    <Th label="Visit Date" />
+                    <Th label="Status" />
+                    <Th label="Counsellor" />
+                    <Th label="Technique" />
+                    <Th label="Package" />
+                    <Th label="Received" />
+                    <Th label="Pending" />
+                    <Th label="Actions" />
                   </tr>
-                ) : (
-                  rows.map((p) => (
-                    <tr
-                      key={p._id}
-                      className="hover:bg-gray-50 transition-colors"
-                    >
-                      <td className="px-6 py-4 font-medium text-gray-900">
-                        {p.personal?.name}
-                      </td>
-                      <td className="px-6 py-4 text-gray-700">
-                        <div className="text-sm">
-                          <div>{p.personal?.phone}</div>
-                          {p.personal?.email && (
-                            <div className="text-gray-500 text-xs">
-                              {p.personal?.email}
-                            </div>
-                          )}
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {patients.length === 0 ? (
+                    <tr>
+                      <td colSpan={11} className="py-12 text-center text-gray-500">
+                        <div className="flex flex-col items-center justify-center">
+                          <Search className="w-12 h-12 text-gray-300 mb-4" />
+                          <p className="text-lg font-medium text-gray-900 mb-2">
+                            No patients found
+                          </p>
+                          <p className="text-gray-500">
+                            Try adjusting your search or filters
+                          </p>
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-gray-700">
-                        {p.personal?.reference?.name || "N/A"}
-                      </td>
-                      <td className="px-6 py-4 text-gray-700">
-                        {p.personal?.branch}
-                      </td>
-                      <td className="px-6 py-4 text-gray-700">
-                        {p.personal?.purpose || "N/A"}
-                      </td>
-                      <td className="px-6 py-4 text-gray-700">
-                        {formatDate(p.personal?.visitDate)}
-                      </td>
-                      <td className="px-6 py-4">
-                        <span
-                          className={`px-2.5 py-1 rounded-full text-xs font-medium ${
-                            STATUS_COLORS[p?.ops?.status] ||
-                            "bg-gray-100 text-gray-700"
-                          }`}
-                        >
-                          {p?.ops?.status?.replace("_", " ") || "N/A"}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-gray-900 font-medium">
-                        {formatCurrency(p.personal?.packageQuoted)}
-                      </td>
-                      <td className="px-6 py-4 text-orange-600 font-medium">
-                        {formatCurrency(p.counselling?.finlpackage)}
-                      </td>
-                      <td className="px-6 py-4 text-green-600 font-medium">
-                        {formatCurrency(p.payments?.amountReceived)}
-                      </td>
-                      <td className="px-6 py-4 text-green-600 font-medium">
-                        <button
-                          onClick={() =>
-                            window.open(
-                              `/sales/patients/${p._id}`,
-                              "_blank",
-                              "noopener,noreferrer",
-                            )
-                          }
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium text-indigo-700 bg-indigo-50 hover:bg-indigo-100 transition-colors"
-                        >
-                          View
-                        </button>
-                      </td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+                  ) : (
+                    patients.map((p) => (
+                      <tr key={p._id} className="hover:bg-gray-50 transition-colors">
+                        <td className="px-6 py-4 font-medium text-gray-900">
+                          {p.personal?.name || "Unknown"}
+                        </td>
+                        <td className="px-6 py-4 text-gray-700">
+                          {p.personal?.phone}
+                        </td>
+                        <td className="px-6 py-4 text-gray-700">
+                          {p.personal?.branch}
+                        </td>
+                        <td className="px-6 py-4 text-gray-700">
+                          {formatDate(p.personal?.visitDate)}
+                        </td>
+                        <td className="px-6 py-4">
+                          <span
+                            className={`px-2.5 py-1 rounded-full text-xs font-medium ${
+                              STATUS_COLORS[p?.ops?.status] || "bg-gray-100 text-gray-700"
+                            }`}
+                          >
+                            {p?.ops?.status?.replace("_", " ") || "NEW"}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-gray-700">
+                          {p.counselling?.counsellor?.name || "N/A"}
+                        </td>
+                        <td className="px-6 py-4 text-gray-700">
+                          {p.counselling?.techniqueSuggested || p.personal?.techniqueQuoted || "N/A"}
+                        </td>
+                        <td className="px-6 py-4 text-gray-900 font-medium">
+                          {formatCurrency(p.counselling?.finlpackage || p.personal?.packageQuoted)}
+                        </td>
+                        <td className="px-6 py-4 text-green-600 font-medium">
+                          {formatCurrency(p.payments?.amountReceived)}
+                        </td>
+                        <td className="px-6 py-4 text-orange-600 font-medium">
+                          {formatCurrency(p.payments?.pendingAmount)}
+                        </td>
+                        <td className="px-6 py-4">
+                          <button
+                            onClick={() =>
+                              window.open(
+                                `/sales/patients/${p._id}`,
+                                "_blank",
+                                "noopener,noreferrer",
+                              )
+                            }
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium text-indigo-700 bg-indigo-50 hover:bg-indigo-100 transition-colors"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                            View
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
 
+          {/* ── Pagination ── */}
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-6 py-4 border-t bg-gray-50">
             <p className="text-sm text-gray-600">
-              Showing <b>{startIdx + 1}</b>–<b>{endIdx}</b> of <b>{total}</b>{" "}
-              patients
+              Showing <b>{total === 0 ? 0 : startIdx + 1}</b>–<b>{endIdx}</b> of{" "}
+              <b>{total}</b> patients
             </p>
 
             <div className="flex items-center gap-3">
               <select
                 className="text-sm border rounded-lg px-3 py-1.5"
                 value={perPage}
-                onChange={(e) => setPerPage(Number(e.target.value))}
+                onChange={(e) => { setPerPage(Number(e.target.value)); setPage(1); }}
               >
                 {[20, 50, 100, 200].map((n) => (
                   <option key={n} value={n}>
@@ -493,19 +368,19 @@ function SalesPatientDashboardContent() {
               <div className="flex items-center gap-1">
                 <button
                   onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  disabled={current <= 1}
+                  disabled={page <= 1}
                   className="p-2 border rounded-lg disabled:opacity-40"
                 >
                   <ChevronLeft className="w-4 h-4" />
                 </button>
 
                 <span className="text-sm w-16 text-center">
-                  {current} / {pages}
+                  {page} / {pages}
                 </span>
 
                 <button
                   onClick={() => setPage((p) => Math.min(pages, p + 1))}
-                  disabled={current >= pages}
+                  disabled={page >= pages}
                   className="p-2 border rounded-lg disabled:opacity-40"
                 >
                   <ChevronRight className="w-4 h-4" />
@@ -516,6 +391,7 @@ function SalesPatientDashboardContent() {
         </div>
       </main>
 
+      {/* ── Filter Drawer ── */}
       {drawerOpen && (
         <div className="fixed inset-0 z-50">
           <div
@@ -542,18 +418,16 @@ function SalesPatientDashboardContent() {
 
             <div className="flex-1 overflow-y-auto">
               <div className="p-6 space-y-6">
-                <Section
-                  title="Basic Filters"
-                  icon={<Filter className="w-4 h-4" />}
-                >
+                {/* Basic Filters */}
+                <Section title="Basic Filters" icon={<Filter className="w-4 h-4" />}>
                   <Field label="Status">
                     <Select
                       value={filters.status}
-                      onChange={(v) => setFilters((f) => ({ ...f, status: v }))}
+                      onChange={(v) => applyFilter("status", v)}
                       options={[
                         { label: "All Status", value: "" },
                         ...STATUS_OPTIONS.map((s) => ({
-                          label: s.replace("_", " "),
+                          label: s.replace(/_/g, " "),
                           value: s,
                         })),
                       ]}
@@ -561,20 +435,14 @@ function SalesPatientDashboardContent() {
                   </Field>
                   <Field label="Branch">
                     <Select
-                      value={filters.location}
-                      onChange={(v) =>
-                        setFilters((f) => ({ ...f, location: v }))
-                      }
+                      value={filters.branch}
+                      onChange={(v) => applyFilter("branch", v)}
                       options={[
                         { label: "All Branches", value: "" },
-                        ...LOCATION_OPTIONS.map((l) => ({
-                          label: l,
-                          value: l,
-                        })),
+                        ...LOCATION_OPTIONS.map((l) => ({ label: l, value: l })),
                       ]}
                     />
                   </Field>
-
                   <div className="grid grid-cols-2 gap-4">
                     <Field label="Date From">
                       <div className="relative">
@@ -582,9 +450,7 @@ function SalesPatientDashboardContent() {
                         <Input
                           type="date"
                           value={filters.dateFrom}
-                          onChange={(v) =>
-                            setFilters((f) => ({ ...f, dateFrom: v }))
-                          }
+                          onChange={(v) => applyFilter("dateFrom", v)}
                           className="pl-10"
                         />
                       </div>
@@ -595,9 +461,7 @@ function SalesPatientDashboardContent() {
                         <Input
                           type="date"
                           value={filters.dateTo}
-                          onChange={(v) =>
-                            setFilters((f) => ({ ...f, dateTo: v }))
-                          }
+                          onChange={(v) => applyFilter("dateTo", v)}
                           className="pl-10"
                         />
                       </div>
@@ -605,103 +469,49 @@ function SalesPatientDashboardContent() {
                   </div>
                 </Section>
 
-                <Section
-                  title="Staff & Team"
-                  icon={<User className="w-4 h-4" />}
-                >
+                {/* Staff & Team */}
+                <Section title="Staff & Team" icon={<User className="w-4 h-4" />}>
                   <Field label="Counsellor">
                     <Select
                       value={filters.counsellor}
-                      onChange={(v) =>
-                        setFilters((f) => ({ ...f, counsellor: v }))
-                      }
+                      onChange={(v) => applyFilter("counsellor", v)}
                       options={[
                         { label: "All Counsellors", value: "" },
-                        ...counsellorOptions.map((c) => ({
-                          label: c,
-                          value: c,
-                        })),
+                        ...filterOptions.counsellors.map((c) => ({ label: c, value: c })),
                       ]}
                     />
                   </Field>
-                  <Field label="Reference">
+                  <Field label="Reference (Agent)">
                     <Select
-                      value={filters.reference}
-                      onChange={(v) =>
-                        setFilters((f) => ({ ...f, reference: v }))
-                      }
+                      value={filters.agent}
+                      onChange={(v) => applyFilter("agent", v)}
                       options={[
                         { label: "All References", value: "" },
-                        ...referenceOptions.map((a) => ({
-                          label: a,
-                          value: a,
-                        })),
+                        ...filterOptions.agents.map((a) => ({ label: a, value: a })),
                       ]}
                     />
                   </Field>
                 </Section>
 
-                <Section
-                  title="Treatment & Package"
-                  icon={<Filter className="w-4 h-4" />}
-                >
-                  <Field label="Purpose">
-                    <Select
-                      value={filters.purpose}
-                      onChange={(v) =>
-                        setFilters((f) => ({ ...f, purpose: v }))
-                      }
-                      options={[
-                        { label: "All Purposes", value: "" },
-                        ...purposeOptions.map((p) => ({ label: p, value: p })),
-                      ]}
-                    />
-                  </Field>
+                {/* Technique */}
+                <Section title="Treatment" icon={<Filter className="w-4 h-4" />}>
                   <Field label="Technique">
                     <Select
                       value={filters.technique}
-                      onChange={(v) =>
-                        setFilters((f) => ({ ...f, technique: v }))
-                      }
+                      onChange={(v) => applyFilter("technique", v)}
                       options={[
                         { label: "All Techniques", value: "" },
-                        ...techniqueOptions.map((t) => ({
-                          label: t,
-                          value: t,
-                        })),
+                        ...filterOptions.techniques.map((t) => ({ label: t, value: t })),
                       ]}
                     />
                   </Field>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <Field label="Min Package (₹)">
-                      <Input
-                        type="number"
-                        value={filters.minPackage}
-                        onChange={(v) =>
-                          setFilters((f) => ({ ...f, minPackage: v }))
-                        }
-                        placeholder="0"
-                      />
-                    </Field>
-                    <Field label="Max Package (₹)">
-                      <Input
-                        type="number"
-                        value={filters.maxPackage}
-                        onChange={(v) =>
-                          setFilters((f) => ({ ...f, maxPackage: v }))
-                        }
-                        placeholder="999999"
-                      />
-                    </Field>
-                  </div>
                 </Section>
               </div>
             </div>
 
             <div className="px-6 py-4 border-t bg-gray-50 flex items-center gap-3">
               <button
-                onClick={clearFilters}
+                onClick={() => { clearFilters(); setDrawerOpen(false); }}
                 className="flex-1 px-4 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 transition-colors font-medium text-sm"
               >
                 Reset All
@@ -720,11 +530,34 @@ function SalesPatientDashboardContent() {
   );
 }
 
+/* ─────────────────────────────────────────────
+   Default export with Suspense boundary
+───────────────────────────────────────────── */
 export default function SalesPatientDashboard() {
   return (
-    <Suspense fallback={<div>Loading…</div>}>
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen bg-gray-50">
+          <SalesSidebar />
+          <main className="flex-1 flex items-center justify-center">
+            <div className="animate-spin h-12 w-12 border-4 border-indigo-200 border-t-indigo-600 rounded-full" />
+          </main>
+        </div>
+      }
+    >
       <SalesPatientDashboardContent />
     </Suspense>
+  );
+}
+
+/* ─────────────────────────────────────────────
+   UI atoms
+───────────────────────────────────────────── */
+function Th({ label }) {
+  return (
+    <th className="px-6 py-4 text-left font-semibold">
+      <div className="inline-flex items-center gap-1">{label}</div>
+    </th>
   );
 }
 
@@ -753,13 +586,7 @@ function Field({ label, children }) {
   );
 }
 
-function Input({
-  type = "text",
-  value,
-  onChange,
-  placeholder,
-  className = "",
-}) {
+function Input({ type = "text", value, onChange, placeholder, className = "" }) {
   return (
     <input
       type={type}
