@@ -12,6 +12,7 @@ import {
   UserPlus,
   X,
   Menu,
+  ClipboardList,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -150,6 +151,13 @@ export default function AdminSidebar() {
               isActive={pathname === "/admin/add-patient"}
               onClick={() => setSidebarOpen(false)}
             /> */}
+            <NavItem
+              item="Leads"
+              href="/admin/leads"
+              icon={ClipboardList}
+              isActive={pathname === "/admin/leads"}
+              onClick={() => setSidebarOpen(false)}
+            />
             <NavItem
               item="Employees"
               href="/admin/employees"

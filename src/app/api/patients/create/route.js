@@ -1,5 +1,6 @@
 import Patient from "@/models/Patient";
 import Employee from "@/models/Employee";
+import Leads from "@/models/Leads";
 import { withDB } from "@/lib/withDB";
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
@@ -109,6 +110,9 @@ const handler = async (req) => {
     });
 
     const savedPatient = await newPatient.save();
+
+    // If this phone exists in Leads, remove that lead
+    await Leads.findOneAndDelete({ phone: phone });
 
     const employeeUpdatePromises = [];
 
