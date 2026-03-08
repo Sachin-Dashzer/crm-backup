@@ -188,13 +188,14 @@ function MedicineInvoice({ transactions, patient, consultant, branch }) {
   const invoiceNo = `#INV${firstTransaction._id.slice(-5).toUpperCase()}`;
 
   // Calculate totals
-  let grossTotal = 0;
+  // Note: t.amount is already the post-discount final amount stored in DB
+  let netTotal = 0;
   let discountTotal = 0;
   transactions.forEach((t) => {
-    grossTotal += parseFloat(t.amount) || 0;
+    netTotal += parseFloat(t.amount) || 0;
     discountTotal += parseFloat(t.discount) || 0;
   });
-  const netTotal = grossTotal - discountTotal;
+  const grossTotal = netTotal + discountTotal;
 
   return (
     <div className="max-w-4xl mx-auto bg-white p-8" style={{ fontFamily: "Arial, sans-serif" }}>
@@ -244,9 +245,10 @@ function MedicineInvoice({ transactions, patient, consultant, branch }) {
         </thead>
         <tbody>
           {transactions.map((t, idx) => {
-            const gross = parseFloat(t.amount) || 0;
+            // t.amount is already the final (post-discount) amount
+            const net = parseFloat(t.amount) || 0;
             const disc = parseFloat(t.discount) || 0;
-            const net = gross - disc;
+            const gross = net + disc;
             return (
               <tr key={idx}>
                 <td className="border border-gray-400 px-4 py-2">{idx + 1}</td>
