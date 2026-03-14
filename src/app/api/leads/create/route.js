@@ -2,7 +2,15 @@ import { NextResponse } from "next/server";
 import { withDB } from "@/lib/withDB";
 import Leads from "@/models/Leads";
 
-const handler = async (req) => {
+const handler = async (req, { user }) => {
+  // Only super-admin can create leads
+  if (!user || user.role !== 'super-admin') {
+    return NextResponse.json(
+      { success: false, message: "Unauthorized. Super-admin access required." },
+      { status: 403 }
+    );
+  }
+
   const { name, phone, email, location, visitPlan, visitDate, remarks, tag } =
     await req.json();
 

@@ -1,18 +1,16 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { 
-  Building2, 
+import {
+  Building2,
   LayoutDashboard,
   UserPlus,
-  Users,
-  Edit,
-  IndianRupee,
-  FileText,
-  UserX,
-  BarChart3,
+  HeartPulse,
+  ClipboardList,
+  Receipt,
+  UserMinus,
+  FileBarChart,
   TrendingUp,
-  LogOut,
   X,
   Menu
 } from "lucide-react";
@@ -24,15 +22,15 @@ const NavItem = ({ item, href, isActive, onClick, icon: Icon }) => (
   <Link href={href} className="block w-full">
     <button
       onClick={onClick}
-      className={`w-full text-left px-4 py-3 rounded-lg transition-all duration-300 flex items-center gap-3 ${
+      className={`w-full text-left px-4 py-2.5 rounded-xl transition-all duration-200 flex items-center gap-3 group hover:scale-[1.01] ${
         isActive
-          ? "bg-indigo-100 text-indigo-700 font-semibold shadow-sm"
-          : "text-gray-600 hover:bg-gray-100 font-medium"
+          ? "bg-indigo-100 text-indigo-700 font-semibold shadow-sm border border-indigo-200"
+          : "text-gray-600 hover:bg-gray-50 hover:shadow-sm font-medium"
       }`}
     >
-      <Icon className="w-5 h-5" />
+      <Icon className={`w-4.5 h-4.5 shrink-0 transition-all duration-200 ${isActive ? "text-indigo-600 scale-110" : "text-gray-400 group-hover:text-indigo-500 group-hover:scale-110"}`} />
       <span className="grow">{item}</span>
-      {isActive && <div className="w-1 h-6 bg-indigo-600 rounded-full"></div>}
+      {isActive && <div className="w-2 h-2 rounded-full bg-indigo-500 nav-dot-pulse"></div>}
     </button>
   </Link>
 );
@@ -52,14 +50,14 @@ export default function ReceptionSidebar() {
   }, []);
 
   const navItems = [
-    { name: "Dashboard", path: "/reception/dashboard", icon: LayoutDashboard },
-    { name: "Patients", path: "/reception/patients", icon: Users },
-    { name: "Consult Form", path: "/reception/book-consult", icon: Users },
-    { name: "Add Patient", path: "/reception/add-patient", icon: UserPlus },
-    { name: "Not Visited", path: "/reception/not-visited", icon: UserX },
-    { name: "Transactions", path: "/reception/transactions", icon: IndianRupee },
-    { name: "Reports", path: "/reception/reports", icon: BarChart3 },
-    { name: "Performance", path: "/reception/performance", icon: TrendingUp },
+    { name: "Dashboard",    path: "/reception/dashboard",   icon: LayoutDashboard },
+    { name: "Patients",     path: "/reception/patients",    icon: HeartPulse },
+    { name: "Consult Form", path: "/reception/book-consult",icon: ClipboardList },
+    { name: "Add Patient",  path: "/reception/add-patient", icon: UserPlus },
+    { name: "Not Visited",  path: "/reception/not-visited", icon: UserMinus },
+    { name: "Transactions", path: "/reception/transactions",icon: Receipt },
+    { name: "Reports",      path: "/reception/reports",     icon: FileBarChart },
+    { name: "Performance",  path: "/reception/performance", icon: TrendingUp },
   ];
 
 
@@ -90,7 +88,7 @@ export default function ReceptionSidebar() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <Link href="/reception/dashboard" className="flex items-center gap-2">
-            <div className="w-10 h-10 bg-linear-to-r from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center">
+            <div className="w-10 h-10 bg-linear-to-r from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center brand-glow">
               <Building2 className="w-6 h-6 text-white" />
             </div>
             <div>

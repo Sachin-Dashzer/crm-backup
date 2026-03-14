@@ -75,6 +75,19 @@ export async function POST(req) {
       );
     }
 
+    // Branch restriction: non-admin users can only purchase for their own branch
+    const isAdmin = ["admin", "super-admin"].includes(session.user.role);
+    const userBranch = session.user.branch;
+    if (!isAdmin && userBranch) {
+      const wrongBranch = stocks.find((s) => s.location !== userBranch);
+      if (wrongBranch) {
+        return NextResponse.json(
+          { success: false, message: `Stock item "${wrongBranch.name}" does not belong to your branch (${userBranch})` },
+          { status: 403 }
+        );
+      }
+    }
+
     // Process each item - update stock only
     const updatedStocks = [];
 

@@ -1,17 +1,18 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { 
-  Package,
+import {
+  Boxes,
   LayoutDashboard,
-  Users,
-  Edit,
-  ShoppingCart,
-  FileCheck,
-  LogOut,
+  Package,
+  PackagePlus,
+  PackageCheck,
+  ArrowLeftRight,
+  FilePlus2,
+  Store,
+  UserPlus,
   X,
   Menu,
-  Building2
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -21,15 +22,15 @@ const NavItem = ({ item, href, isActive, onClick, icon: Icon }) => (
   <Link href={href} className="block w-full">
     <button
       onClick={onClick}
-      className={`w-full text-left px-4 py-3 rounded-lg transition-all duration-300 flex items-center gap-3 ${
+      className={`w-full text-left px-4 py-2.5 rounded-xl transition-all duration-200 flex items-center gap-3 group hover:scale-[1.01] ${
         isActive
-          ? "bg-emerald-100 text-emerald-700 font-semibold shadow-sm"
-          : "text-gray-600 hover:bg-gray-100 font-medium"
+          ? "bg-emerald-100 text-emerald-700 font-semibold shadow-sm border border-emerald-200"
+          : "text-gray-600 hover:bg-gray-50 hover:shadow-sm font-medium"
       }`}
     >
-      <Icon className="w-5 h-5" />
+      <Icon className={`w-4.5 h-4.5 shrink-0 transition-all duration-200 ${isActive ? "text-emerald-600 scale-110" : "text-gray-400 group-hover:text-emerald-500 group-hover:scale-110"}`} />
       <span className="grow">{item}</span>
-      {isActive && <div className="w-1 h-6 bg-emerald-600 rounded-full"></div>}
+      {isActive && <div className="w-2 h-2 rounded-full bg-emerald-500 nav-dot-pulse-emerald"></div>}
     </button>
   </Link>
 );
@@ -48,13 +49,13 @@ export default function StockSidebar({ sidebarOpen, setSidebarOpen }) {
   }, []);
 
   const navItems = [
-    { name: "Dashboard", path: "/stocks/dashboard", icon: LayoutDashboard },
-    { name: "Create Stock", path: "/stocks/create", icon: Building2 },
-    { name: "Add Stock", path: "/stocks/addStock", icon: ShoppingCart },
-    { name: "All Transaction", path: "/stocks/transactions", icon: Building2 },
-    { name: "Create Transaction", path: "/stocks/transactions/create", icon: FileCheck },
-    { name: "Vendors", path: "/stocks/vendors", icon: Users },
-    { name: "Add Vendor", path: "/stocks/vendors/create", icon: Users },
+    { name: "Dashboard",          path: "/stocks/dashboard",            icon: LayoutDashboard },
+    { name: "Create Stock",       path: "/stocks/create",               icon: PackagePlus },
+    { name: "Add Stock",          path: "/stocks/addStock",             icon: PackageCheck },
+    { name: "All Transactions",   path: "/stocks/transactions",         icon: ArrowLeftRight },
+    { name: "New Transaction",    path: "/stocks/transactions/create",  icon: FilePlus2 },
+    { name: "Vendors",            path: "/stocks/vendors",              icon: Store },
+    { name: "Add Vendor",         path: "/stocks/vendors/create",       icon: UserPlus },
   ];
 
   return (
@@ -84,8 +85,8 @@ export default function StockSidebar({ sidebarOpen, setSidebarOpen }) {
         {/* Header */}
         <div className="flex items-center my-3 justify-between">
           <Link href="/stocks" className="flex items-center gap-2">
-            <div className="w-10 h-10 bg-linear-to-r from-emerald-600 to-teal-600 rounded-lg flex items-center justify-center">
-              <Package className="w-6 h-6 text-white" />
+            <div className="w-10 h-10 bg-linear-to-r from-emerald-600 to-teal-600 rounded-lg flex items-center justify-center brand-glow">
+              <Boxes className="w-6 h-6 text-white" />
             </div>
             <div>
               <h1 className="font-bold text-lg text-gray-900">LearCRM</h1>

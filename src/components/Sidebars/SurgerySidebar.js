@@ -1,17 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { 
-  Building2, 
+import {
   LayoutDashboard,
-  Calendar,
-  Users,
-  Edit,
-  BarChart3,
+  HeartPulse,
+  CheckCircle2,
+  FileBarChart,
   Stethoscope,
   Clock,
-  FileCheck,
-  LogOut,
   X,
   Menu
 } from "lucide-react";
@@ -23,15 +19,15 @@ const NavItem = ({ item, href, isActive, onClick, icon: Icon }) => (
   <Link href={href} className="block w-full">
     <button
       onClick={onClick}
-      className={`w-full text-left px-4 py-3 rounded-lg transition-all duration-300 flex items-center gap-3 ${
+      className={`w-full text-left px-4 py-2.5 rounded-xl transition-all duration-200 flex items-center gap-3 group hover:scale-[1.01] ${
         isActive
-          ? "bg-green-100 text-green-700 font-semibold shadow-sm"
-          : "text-gray-600 hover:bg-gray-100 font-medium"
+          ? "bg-green-100 text-green-700 font-semibold shadow-sm border border-green-200"
+          : "text-gray-600 hover:bg-gray-50 hover:shadow-sm font-medium"
       }`}
     >
-      <Icon className="w-5 h-5" />
+      <Icon className={`w-4.5 h-4.5 shrink-0 transition-all duration-200 ${isActive ? "text-green-600 scale-110" : "text-gray-400 group-hover:text-green-500 group-hover:scale-110"}`} />
       <span className="grow">{item}</span>
-      {isActive && <div className="w-1 h-6 bg-green-600 rounded-full"></div>}
+      {isActive && <div className="w-2 h-2 rounded-full bg-green-500 nav-dot-pulse-green"></div>}
     </button>
   </Link>
 );
@@ -51,11 +47,11 @@ export default function SurgerySidebar() {
   }, []);
 
   const navItems = [
-    { name: "Dashboard", path: "/surgery/dashboard", icon: LayoutDashboard },
-    { name: "Patients", path: "/surgery/patients", icon: Users },
-    { name: "Visited Patients", path: "/surgery/visited", icon: FileCheck },
-    { name: "Not Visited", path: "/surgery/not-visited", icon: Clock },
-    { name: "Reports", path: "/surgery/reports", icon: BarChart3 },
+    { name: "Dashboard",       path: "/surgery/dashboard",   icon: LayoutDashboard },
+    { name: "Patients",        path: "/surgery/patients",    icon: HeartPulse },
+    { name: "Visited Patients",path: "/surgery/visited",     icon: CheckCircle2 },
+    { name: "Not Visited",     path: "/surgery/not-visited", icon: Clock },
+    { name: "Reports",         path: "/surgery/reports",     icon: FileBarChart },
   ];
 
   
@@ -87,7 +83,7 @@ export default function SurgerySidebar() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <Link href="/surgery/dashboard" className="flex items-center gap-2">
-            <div className="w-10 h-10 bg-linear-to-r from-green-600 to-emerald-600 rounded-lg flex items-center justify-center">
+            <div className="w-10 h-10 bg-linear-to-r from-green-600 to-emerald-600 rounded-lg flex items-center justify-center brand-glow">
               <Stethoscope className="w-6 h-6 text-white" />
             </div>
             <div>

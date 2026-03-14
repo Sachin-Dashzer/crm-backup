@@ -9,10 +9,11 @@ export async function POST(req) {
   try {
     const session = await getServerSession(authOptions);
 
-    // Check if user is admin
-    if (!session || session.user.role !== 'admin') {
+    // Only super-admin can manage users
+    const callerRole = session?.user?.role;
+    if (!session || callerRole !== 'super-admin') {
       return NextResponse.json(
-        { success: false, message: "Unauthorized. Admin access required." },
+        { success: false, message: "Unauthorized. Super-admin access required." },
         { status: 403 }
       );
     }
@@ -38,15 +39,21 @@ export async function POST(req) {
       );
     }
 
-    // Prevent deleting admin accounts
-    if (user.role === 'admin') {
+    // Admin cannot delete admin/super-admin accounts; super-admin can delete admin but not other super-admins
+    if (callerRole === 'admin' && ['admin', 'super-admin'].includes(user.role)) {
       return NextResponse.json(
-        { success: false, message: "Cannot delete admin accounts through this interface" },
-        { status: 400 }
+        { success: false, message: "Admins cannot delete admin or super-admin accounts" },
+        { status: 403 }
+      );
+    }
+    if (callerRole === 'super-admin' && user.role === 'super-admin') {
+      return NextResponse.json(
+        { success: false, message: "Cannot delete another super-admin account" },
+        { status: 403 }
       );
     }
 
-    // Prevent admin from deleting themselves
+    // Prevent deleting themselves
     if (user._id.toString() === session.user.id) {
       return NextResponse.json(
         { success: false, message: "You cannot delete your own account" },

@@ -18,6 +18,7 @@ import {
   ArrowLeft,
   ShoppingCart,
   IndianRupee,
+  MapPin,
 } from "lucide-react";
 
 export default function StockPurchasePage() {
@@ -298,33 +299,30 @@ export default function StockPurchasePage() {
             <span className="font-medium">Back</span>
           </button>
 
-          <div className="flex items-center gap-3">
-            <div className="p-3 bg-linear-to-br from-indigo-500 to-purple-600 rounded-2xl shadow-lg">
-              <ShoppingCart className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
-                Stock Purchase
-              </h1>
-              <p className="text-gray-600 text-sm mt-1">
-                Add multiple stock items from vendor
-              </p>
-            </div>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Stock Purchase</h1>
+            <p className="text-sm text-gray-500 mt-1">
+              Record a new stock purchase from a vendor
+              {session?.user?.branch && !["admin", "super-admin"].includes(session?.user?.role) && (
+                <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 text-xs font-medium">
+                  <MapPin className="w-3 h-3" /> {session.user.branch}
+                </span>
+              )}
+            </p>
           </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Purchase Details Card */}
-          <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
-            <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-              <Building2 className="w-5 h-5 text-indigo-600" />
-              Purchase Details
-            </h2>
-
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
+            <div className="px-6 py-4 border-b border-gray-100">
+              <h2 className="text-base font-semibold text-gray-900">Purchase Details</h2>
+            </div>
+            <div className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Vendor Selection */}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
                   Vendor <span className="text-red-500">*</span>
                 </label>
                 <SearchableSelect
@@ -343,181 +341,126 @@ export default function StockPurchasePage() {
 
               {/* Payment Method */}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
                   Payment Method <span className="text-red-500">*</span>
                 </label>
-                <div className="relative">
-                  <CreditCard className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                  <select
-                    value={purchaseData.paymentMethod}
-                    onChange={(e) =>
-                      setPurchaseData({
-                        ...purchaseData,
-                        paymentMethod: e.target.value,
-                      })
-                    }
-                    className="w-full pl-11 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-100 focus:border-indigo-300 bg-white transition-all"
-                    required
-                  >
-                    <option value="cash">Cash</option>
-                    <option value="upi">UPI</option>
-                    <option value="card">Card</option>
-                    <option value="banking">Net Banking</option>
-                    <option value="loan">Loan</option>
-                    <option value="other">Other</option>
-                  </select>
-                </div>
+                <select
+                  value={purchaseData.paymentMethod}
+                  onChange={(e) => setPurchaseData({ ...purchaseData, paymentMethod: e.target.value })}
+                  className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white"
+                  required
+                >
+                  <option value="cash">Cash</option>
+                  <option value="upi">UPI</option>
+                  <option value="card">Card</option>
+                  <option value="banking">Net Banking</option>
+                  <option value="loan">Loan</option>
+                  <option value="other">Other</option>
+                </select>
               </div>
 
               {/* Purchase Date */}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
                   Purchase Date <span className="text-red-500">*</span>
                 </label>
-                <div className="relative">
-                  <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                  <input
-                    type="date"
-                    value={purchaseData.purchaseDate}
-                    onChange={(e) =>
-                      setPurchaseData({
-                        ...purchaseData,
-                        purchaseDate: e.target.value,
-                      })
-                    }
-                    className="w-full pl-11 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-100 focus:border-indigo-300 transition-all"
-                    required
-                  />
-                </div>
+                <input
+                  type="date"
+                  value={purchaseData.purchaseDate}
+                  onChange={(e) => setPurchaseData({ ...purchaseData, purchaseDate: e.target.value })}
+                  className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  required
+                />
               </div>
 
               {/* Remarks */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Remarks
-                </label>
-                <div className="relative">
-                  <FileText className="absolute left-3 top-3 text-gray-400 w-5 h-5" />
-                  <textarea
-                    value={purchaseData.remarks}
-                    onChange={(e) =>
-                      setPurchaseData({
-                        ...purchaseData,
-                        remarks: e.target.value,
-                      })
-                    }
-                    placeholder="Additional notes..."
-                    rows="3"
-                    className="w-full pl-11 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-100 focus:border-indigo-300 transition-all resize-none"
-                  />
-                </div>
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Remarks</label>
+                <textarea
+                  value={purchaseData.remarks}
+                  onChange={(e) => setPurchaseData({ ...purchaseData, remarks: e.target.value })}
+                  placeholder="Additional notes..."
+                  rows="2"
+                  className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
+                />
               </div>
+            </div>
             </div>
           </div>
 
           {/* Items Card */}
-          <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                <Package className="w-5 h-5 text-indigo-600" />
-                Stock Items
-              </h2>
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
+            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+              <h2 className="text-base font-semibold text-gray-900">Stock Items</h2>
               <button
                 type="button"
                 onClick={addItem}
-                className="flex items-center gap-2 px-4 py-2 bg-linear-to-r from-indigo-500 to-purple-600 text-white rounded-xl hover:from-indigo-600 hover:to-purple-700 transition-all shadow-md"
+                className="flex items-center gap-1.5 px-3 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700"
               >
-                <Plus size={18} />
-                <span className="font-semibold">Add Item</span>
+                <Plus size={16} />
+                Add Item
               </button>
             </div>
+            <div className="p-6">
 
             {/* Items Table */}
             <div className="overflow-x-auto">
-              <table className="w-full">
+              <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-gray-200">
-                    <th className="text-left py-3 px-2 text-sm font-semibold text-gray-700">
-                      #
-                    </th>
-                    <th className="text-left py-3 px-2 text-sm font-semibold text-gray-700 min-w-50">
-                      Stock Item
-                    </th>
-                    <th className="text-left py-3 px-2 text-sm font-semibold text-gray-700">
-                      Quantity
-                    </th>
-                    <th className="text-left py-3 px-2 text-sm font-semibold text-gray-700">
-                      Purchase Price
-                    </th>
-                    <th className="text-left py-3 px-2 text-sm font-semibold text-gray-700">
-                      Total
-                    </th>
-                    <th className="text-center py-3 px-2 text-sm font-semibold text-gray-700">
-                      Action
-                    </th>
+                  <tr className="border-b border-gray-100 bg-gray-50">
+                    <th className="text-left py-2.5 px-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">#</th>
+                    <th className="text-left py-2.5 px-3 text-xs font-semibold text-gray-500 uppercase tracking-wide min-w-48">Stock Item</th>
+                    <th className="text-left py-2.5 px-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Quantity</th>
+                    <th className="text-left py-2.5 px-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Purchase Price</th>
+                    <th className="text-left py-2.5 px-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Total</th>
+                    <th className="py-2.5 px-3"></th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="divide-y divide-gray-100">
                   {purchaseItems.map((item, index) => (
-                    <tr key={item.id} className="border-b border-gray-100">
-                      <td className="py-3 px-2 text-sm text-gray-600">
-                        {index + 1}
-                      </td>
-                      <td className="py-3 px-2">
+                    <tr key={item.id}>
+                      <td className="py-3 px-3 text-gray-400 text-xs">{index + 1}</td>
+                      <td className="py-3 px-3">
                         <SearchableSelect
                           options={stocks.map((s) => ({
                             value: s._id,
-                            label: `${s.name} (Stock: ${s.totalQuantity || 0})`,
+                            label: `${s.name} (Qty: ${s.totalQuantity || 0})`,
                           }))}
                           value={item.stockId}
-                          onChange={(value) =>
-                            updateItem(item.id, "stockId", value)
-                          }
+                          onChange={(value) => updateItem(item.id, "stockId", value)}
                           placeholder="Select stock"
                           className="w-full"
                         />
                       </td>
-                      <td className="py-3 px-2">
+                      <td className="py-3 px-3">
                         <input
-                          type="number"
-                          step="0.01"
-                          min="0"
+                          type="number" step="0.01" min="0"
                           value={item.quantity}
-                          onChange={(e) =>
-                            updateItem(item.id, "quantity", e.target.value)
-                          }
+                          onChange={(e) => updateItem(item.id, "quantity", e.target.value)}
                           placeholder="Qty"
-                          className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 focus:border-indigo-300 text-sm"
+                          className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
                           required
                         />
                       </td>
-                      <td className="py-3 px-2">
+                      <td className="py-3 px-3">
                         <input
-                          type="number"
-                          step="0.01"
-                          min="0"
+                          type="number" step="0.01" min="0"
                           value={item.purchasePrice}
-                          onChange={(e) =>
-                            updateItem(item.id, "purchasePrice", e.target.value)
-                          }
-                          placeholder="Price"
-                          className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 focus:border-indigo-300 text-sm"
+                          onChange={(e) => updateItem(item.id, "purchasePrice", e.target.value)}
+                          placeholder="₹"
+                          className="w-28 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
                           required
                         />
                       </td>
-                      <td className="py-3 px-2">
-                        <div className="font-semibold text-indigo-600">
-                          {formatCurrency(item.totalAmount)}
-                        </div>
-                      </td>
-                      <td className="py-3 px-2 text-center">
+                      <td className="py-3 px-3 font-semibold text-gray-900">{formatCurrency(item.totalAmount)}</td>
+                      <td className="py-3 px-3">
                         <button
                           type="button"
                           onClick={() => removeItem(item.id)}
                           disabled={purchaseItems.length === 1}
-                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                         >
-                          <Trash2 size={18} />
+                          <Trash2 size={16} />
                         </button>
                       </td>
                     </tr>
@@ -527,66 +470,53 @@ export default function StockPurchasePage() {
             </div>
 
             {/* Grand Total */}
-            <div className="mt-6 flex justify-end">
-              <div className="bg-linear-to-br from-indigo-50 to-purple-50 rounded-xl p-4 min-w-75">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-gray-600">
-                    Total Items:
-                  </span>
-                  <span className="text-sm font-bold text-gray-900">
-                    {purchaseItems.length}
+            <div className="mt-4 pt-4 border-t border-gray-100 flex justify-end">
+              <div className="bg-gray-50 rounded-lg px-5 py-3 min-w-56 border border-gray-200">
+                <div className="flex justify-between text-sm text-gray-600 mb-1">
+                  <span>Items:</span>
+                  <span className="font-medium text-gray-900">{purchaseItems.length}</span>
+                </div>
+                <div className="flex justify-between text-sm text-gray-600 mb-2">
+                  <span>Total Qty:</span>
+                  <span className="font-medium text-gray-900">
+                    {purchaseItems.reduce((sum, item) => sum + (parseFloat(item.quantity) || 0), 0)}
                   </span>
                 </div>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-gray-600">
-                    Total Quantity:
-                  </span>
-                  <span className="text-sm font-bold text-gray-900">
-                    {purchaseItems.reduce(
-                      (sum, item) => sum + (parseFloat(item.quantity) || 0),
-                      0
-                    )}
-                  </span>
-                </div>
-                <div className="border-t border-gray-300 my-2"></div>
-                <div className="flex items-center justify-between">
-                  <span className="text-lg font-bold text-gray-900">
-                    Grand Total:
-                  </span>
-                  <span className="text-2xl font-bold text-indigo-600">
-                    {formatCurrency(calculateGrandTotal())}
-                  </span>
+                <div className="flex justify-between items-center pt-2 border-t border-gray-200">
+                  <span className="text-sm font-semibold text-gray-700">Grand Total</span>
+                  <span className="text-lg font-bold text-indigo-600">{formatCurrency(calculateGrandTotal())}</span>
                 </div>
               </div>
+            </div>
             </div>
           </div>
 
           {/* Action Buttons */}
-          <div className="flex gap-3 justify-end">
-            <button
-              type="button"
-              onClick={() => router.back()}
-              className="px-6 py-3 bg-white border-2 border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition-all font-semibold"
-              disabled={loading}
-            >
-              Cancel
-            </button>
+          <div className="flex gap-3">
             <button
               type="submit"
               disabled={loading}
-              className="px-8 py-3 bg-linear-to-r from-indigo-500 to-purple-600 text-white rounded-xl hover:from-indigo-600 hover:to-purple-700 transition-all shadow-lg font-semibold flex items-center gap-2 disabled:opacity-50"
+              className="px-5 py-2.5 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-50 flex items-center gap-2"
             >
               {loading ? (
                 <>
-                  <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white"></div>
-                  <span>Processing...</span>
+                  <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  Processing...
                 </>
               ) : (
-                <>
-                  <Save size={20} />
-                  <span>Complete Purchase</span>
-                </>
+                "Complete Purchase"
               )}
+            </button>
+            <button
+              type="button"
+              onClick={() => router.back()}
+              disabled={loading}
+              className="px-5 py-2.5 bg-white text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+            >
+              Cancel
             </button>
           </div>
         </form>

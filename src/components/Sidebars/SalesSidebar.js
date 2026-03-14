@@ -3,11 +3,11 @@
 import { useState, useEffect } from "react";
 import {
   LayoutDashboard,
-  Users,
-  Calendar,
-  UserCog,
-  IndianRupee,
-  BarChart3,
+  HeartPulse,
+  CalendarPlus,
+  Handshake,
+  Receipt,
+  FileBarChart,
   Target,
   X,
   Menu,
@@ -20,17 +20,15 @@ const NavItem = ({ item, href, isActive, onClick, icon: Icon }) => (
   <Link href={href} className="block w-full">
     <button
       onClick={onClick}
-      className={`w-full text-left px-4 py-3 rounded-lg transition-all duration-300 flex items-center gap-3 ${
+      className={`w-full text-left px-4 py-2.5 rounded-xl transition-all duration-200 flex items-center gap-3 group hover:scale-[1.01] ${
         isActive
-          ? "bg-purple-100 text-purple-700 font-semibold shadow-sm"
-          : "text-gray-600 hover:bg-gray-100 font-medium"
+          ? "bg-purple-100 text-purple-700 font-semibold shadow-sm border border-purple-200"
+          : "text-gray-600 hover:bg-gray-50 hover:shadow-sm font-medium"
       }`}
     >
-      <Icon className="w-5 h-5" />
+      <Icon className={`w-4.5 h-4.5 shrink-0 transition-all duration-200 ${isActive ? "text-purple-600 scale-110" : "text-gray-400 group-hover:text-purple-500 group-hover:scale-110"}`} />
       <span className="grow">{item}</span>
-      {isActive && (
-        <div className="w-1 h-6 bg-purple-600 rounded-full"></div>
-      )}
+      {isActive && <div className="w-2 h-2 rounded-full bg-purple-500 nav-dot-pulse-purple"></div>}
     </button>
   </Link>
 );
@@ -50,16 +48,12 @@ export default function SalesSidebar() {
   }, []);
 
   const navItems = [
-    { name: "Dashboard", path: "/sales/dashboard", icon: LayoutDashboard },
-    { name: "Patients", path: "/sales/patients", icon: Users },
-    {
-      name: "Book Appointment",
-      path: "/sales/book-appointment",
-      icon: Calendar,
-    },
-    { name: "Agents", path: "/sales/agents", icon: UserCog },
-    { name: "Transactions", path: "/sales/transactions", icon: IndianRupee },
-    { name: "Reports", path: "/sales/reports", icon: BarChart3 },
+    { name: "Dashboard",        path: "/sales/dashboard",        icon: LayoutDashboard },
+    { name: "Patients",         path: "/sales/patients",         icon: HeartPulse },
+    { name: "Book Appointment", path: "/sales/book-appointment", icon: CalendarPlus },
+    { name: "Agents",           path: "/sales/agents",           icon: Handshake },
+    { name: "Transactions",     path: "/sales/transactions",     icon: Receipt },
+    { name: "Reports",          path: "/sales/reports",          icon: FileBarChart },
   ];
 
   return (
@@ -89,7 +83,7 @@ export default function SalesSidebar() {
         {/* Header */}
         <div className="flex items-center mb-10 justify-between">
           <Link href="/sales/dashboard" className="flex items-center gap-2">
-            <div className="w-10 h-10 bg-linear-to-r from-purple-600 to-pink-600 rounded-lg flex items-center justify-center">
+            <div className="w-10 h-10 bg-linear-to-r from-purple-600 to-pink-600 rounded-lg flex items-center justify-center brand-glow">
               <Target className="w-6 h-6 text-white" />
             </div>
             <div>

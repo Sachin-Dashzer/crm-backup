@@ -42,6 +42,7 @@ import {
   FileText as Bill,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 
 // ========== UTILITY FUNCTIONS ==========
 const calculateNetAmount = (transaction) => {
@@ -131,37 +132,16 @@ const getCategoryGradientClass = (categoryValue, isActive) => {
 // ... (StatCard, DeleteConfirmModal, Input, Select components remain the same)
 
 // ========== STAT CARD COMPONENT ==========
-function StatCard({
-  title,
-  value,
-  icon: Icon,
-  gradient,
-  count,
-  iconBg,
-  iconColor,
-}) {
+function StatCard({ title, value, icon: Icon, count, iconBg, iconColor }) {
   return (
-    <div
-      className={`bg-linear-to-br ${gradient} p-4 sm:p-6 rounded-2xl shadow-lg text-white relative overflow-hidden transform hover:scale-105 transition-transform duration-300`}
-    >
-      <div className="absolute top-0 right-0 w-24 h-24 sm:w-32 sm:h-32 bg-white/10 rounded-full -mr-12 -mt-12 sm:-mr-16 sm:-mt-16" />
-      <div className="relative">
-        <div className="flex justify-between items-start mb-3 sm:mb-4">
-          <div className="flex-1 min-w-0">
-            <p className="text-white/90 text-xs sm:text-sm font-medium mb-1 truncate">
-              {title}
-            </p>
-            <h3 className="text-xl sm:text-2xl lg:text-3xl font-bold truncate">
-              {value}
-            </h3>
-          </div>
-          <div className={`${iconBg} p-2 sm:p-3 rounded-xl shrink-0 ml-2`}>
-            <Icon className={`w-4 h-4 sm:w-6 sm:h-6 ${iconColor}`} />
-          </div>
-        </div>
-        <p className="text-white/80 text-xs sm:text-sm font-medium truncate">
-          {count}
-        </p>
+    <div className="bg-white rounded-xl border border-gray-200 shadow-sm px-4 sm:px-5 py-4 flex items-center gap-4">
+      <div className={`${iconBg} w-10 h-10 rounded-lg flex items-center justify-center shrink-0`}>
+        <Icon className={`w-5 h-5 ${iconColor}`} />
+      </div>
+      <div className="min-w-0">
+        <p className="text-lg sm:text-xl font-bold text-gray-900 truncate">{value}</p>
+        <p className="text-xs text-gray-500 truncate">{title}</p>
+        <p className="text-xs text-gray-400 truncate">{count}</p>
       </div>
     </div>
   );
@@ -330,12 +310,12 @@ function ExpandedRowDetails({ transaction, isExpanded }) {
   if (!isExpanded) return null;
 
   return (
-    <div className="bg-linear-to-br from-slate-50 via-indigo-50/30 to-purple-50/30 border-t-2 border-indigo-200 animate-in slide-in-from-top duration-300">
+    <div className="bg-gray-50 border-t border-gray-200 animate-in slide-in-from-top duration-300">
       <div className="p-4 sm:p-6 lg:p-8">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-linear-to-br from-indigo-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
-              <History className="w-6 h-6 text-white" />
+            <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
+              <History className="w-5 h-5 text-indigo-600" />
             </div>
             <div>
               <h3 className="text-lg font-bold text-slate-900">
@@ -368,7 +348,7 @@ function ExpandedRowDetails({ transaction, isExpanded }) {
             onClick={() => setActiveTab("summary")}
             className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all whitespace-nowrap ${
               activeTab === "summary"
-                ? "bg-linear-to-r from-indigo-600 to-purple-600 text-white shadow-md"
+                ? "bg-indigo-600 text-white"
                 : "text-slate-600 hover:text-slate-800 hover:bg-slate-50"
             }`}
           >
@@ -381,7 +361,7 @@ function ExpandedRowDetails({ transaction, isExpanded }) {
             onClick={() => setActiveTab("history")}
             className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all whitespace-nowrap ${
               activeTab === "history"
-                ? "bg-linear-to-r from-indigo-600 to-purple-600 text-white shadow-md"
+                ? "bg-indigo-600 text-white"
                 : "text-slate-600 hover:text-slate-800 hover:bg-slate-50"
             }`}
           >
@@ -397,8 +377,8 @@ function ExpandedRowDetails({ transaction, isExpanded }) {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="bg-white rounded-xl p-5 shadow-lg border border-slate-200 hover:shadow-xl transition-shadow">
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="w-12 h-12 bg-linear-to-br from-emerald-400 to-green-600 rounded-xl flex items-center justify-center shadow-md">
-                    <UserCheck className="w-6 h-6 text-white" />
+                  <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center">
+                    <UserCheck className="w-5 h-5 text-emerald-600" />
                   </div>
                   <div>
                     <h4 className="text-sm font-bold text-slate-900">
@@ -451,8 +431,8 @@ function ExpandedRowDetails({ transaction, isExpanded }) {
               {transaction.editors && transaction.editors.length > 0 && (
                 <div className="bg-white rounded-xl p-5 shadow-lg border border-slate-200 hover:shadow-xl transition-shadow">
                   <div className="flex items-center gap-3 mb-4">
-                    <div className="w-12 h-12 bg-linear-to-br from-indigo-400 to-purple-600 rounded-xl flex items-center justify-center shadow-md">
-                      <Edit2 className="w-6 h-6 text-white" />
+                    <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
+                      <Edit2 className="w-5 h-5 text-indigo-600" />
                     </div>
                     <div>
                       <h4 className="text-sm font-bold text-slate-900">
@@ -519,8 +499,8 @@ function ExpandedRowDetails({ transaction, isExpanded }) {
                     >
                       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4 pb-4 border-b border-slate-200">
                         <div className="flex items-center gap-3">
-                          <div className="w-12 h-12 bg-linear-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-md">
-                            <span className="text-white font-bold text-lg">
+                          <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
+                            <span className="text-indigo-700 font-bold text-base">
                               {editor.name?.charAt(0).toUpperCase()}
                             </span>
                           </div>
@@ -533,7 +513,7 @@ function ExpandedRowDetails({ transaction, isExpanded }) {
                             </p>
                           </div>
                         </div>
-                        <span className="px-3 py-1.5 bg-linear-to-r from-indigo-600 to-purple-600 text-white text-xs font-bold rounded-full shadow-md">
+                        <span className="px-2.5 py-1 bg-indigo-600 text-white text-xs font-semibold rounded-full">
                           Edit #{transaction.editors.length - idx}
                         </span>
                       </div>
@@ -567,7 +547,7 @@ function ExpandedRowDetails({ transaction, isExpanded }) {
                             {editor.updatedFields.map((field, fieldIdx) => (
                               <div
                                 key={fieldIdx}
-                                className="bg-linear-to-r from-slate-50 to-slate-100 rounded-lg p-4 border border-slate-200"
+                                className="bg-gray-50 rounded-lg p-4 border border-gray-200"
                               >
                                 <div className="flex items-center gap-2 mb-3">
                                   <div className="w-6 h-6 bg-indigo-600 rounded-md flex items-center justify-center">
@@ -861,7 +841,7 @@ function DataTable({
     <div className="flex flex-col h-full bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
       {/* Desktop Header - Keep same */}
       <div
-        className="hidden md:grid items-center bg-linear-to-r from-slate-50 to-slate-100 border-b border-slate-200 min-h-13 px-2"
+        className="hidden md:grid items-center bg-gray-50 border-b border-gray-200 min-h-13 px-2"
         style={{ gridTemplateColumns }}
       >
         {columns.map((col) => (
@@ -883,7 +863,7 @@ function DataTable({
       </div>
 
       {/* Mobile Header - Keep same */}
-      <div className="md:hidden bg-linear-to-r from-slate-50 to-slate-100 border-b border-slate-200 px-4 py-3">
+      <div className="md:hidden bg-gray-50 border-b border-gray-200 px-4 py-3">
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-sm font-bold text-slate-900">
@@ -1211,7 +1191,7 @@ function DataTable({
                           onClick={() => toggleExpanded(row._id)}
                           className={`group/btn inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all duration-200 border-2 ${
                             isExpanded
-                              ? "bg-linear-to-r from-indigo-600 to-purple-600 text-white border-transparent shadow-md"
+                              ? "bg-indigo-600 text-white border-transparent"
                               : "bg-white hover:bg-indigo-50 border-slate-200 hover:border-indigo-300 text-slate-700 hover:text-indigo-700"
                           }`}
                         >
@@ -1451,7 +1431,7 @@ function DataTable({
                             onClick={() => toggleExpanded(row._id)}
                             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
                               isExpanded
-                                ? "bg-linear-to-r from-indigo-600 to-purple-600 text-white shadow-md"
+                                ? "bg-indigo-600 text-white"
                                 : "bg-indigo-50 text-indigo-700 hover:bg-indigo-100"
                             }`}
                           >
@@ -1627,6 +1607,11 @@ function DataTable({
 // ========== MAIN COMPONENT ==========
 export default function AllTransactionsPage() {
   const router = useRouter();
+  const { data: session } = useSession();
+  const isAdmin = ["admin", "super-admin"].includes(session?.user?.role);
+  const userBranch = session?.user?.branch;
+  const branchRestricted = !isAdmin && !!userBranch;
+
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -1658,6 +1643,13 @@ export default function AllTransactionsPage() {
   useEffect(() => {
     fetchData();
   }, []);
+
+  // Auto-lock branch filter for branch-restricted users
+  useEffect(() => {
+    if (branchRestricted && userBranch) {
+      setFilters((prev) => ({ ...prev, branch: userBranch }));
+    }
+  }, [branchRestricted, userBranch]);
 
   const fetchData = async () => {
     try {
@@ -1890,7 +1882,7 @@ export default function AllTransactionsPage() {
 
   const clearFilters = () => {
     setFilters({
-      branch: "",
+      branch: branchRestricted ? userBranch : "",
       dateFrom: getTodayDate(),
       dateTo: getTodayDate(),
       paymentMethod: "",
@@ -2123,18 +2115,18 @@ export default function AllTransactionsPage() {
 
   if (loading)
     return (
-      <div className="flex h-screen items-center justify-center bg-linear-to-br from-blue-50 via-indigo-50 to-purple-50">
+      <div className="flex h-screen items-center justify-center bg-gray-50">
         <div className="text-center">
-          <Loader2 className="animate-spin h-16 w-16 text-indigo-500 mx-auto mb-4" />
-          <p className="text-gray-600 font-medium">Loading transactions...</p>
+          <div className="w-8 h-8 border-2 border-gray-200 border-t-indigo-600 rounded-full animate-spin mx-auto" />
+          <p className="mt-3 text-sm text-gray-500">Loading transactions...</p>
         </div>
       </div>
     );
 
   if (error)
     return (
-      <div className="flex h-screen items-center justify-center bg-linear-to-br from-blue-50 via-indigo-50 to-purple-50">
-        <div className="text-center bg-white p-8 rounded-3xl shadow-xl border border-red-100">
+      <div className="flex h-screen items-center justify-center bg-gray-50">
+        <div className="text-center bg-white p-8 rounded-xl shadow-sm border border-red-100">
           <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
             <AlertCircle className="w-8 h-8 text-red-500" />
           </div>
@@ -2153,7 +2145,7 @@ export default function AllTransactionsPage() {
     );
 
   return (
-    <div className="flex min-h-screen bg-linear-to-br from-blue-50 via-indigo-50 to-purple-50">
+    <div className="flex min-h-screen bg-gray-50">
       {sidebarOpen && (
         <div
           className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
@@ -2194,7 +2186,7 @@ export default function AllTransactionsPage() {
               <button
                 onClick={downloadExcel}
                 disabled={downloading || sortedRows.length === 0}
-                className="bg-linear-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white px-3 sm:px-5 py-2 sm:py-3 rounded-xl flex items-center gap-1 sm:gap-2 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 text-sm sm:text-base shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg flex items-center gap-1 sm:gap-2 text-sm font-medium shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {downloading ? (
                   <>
@@ -2229,7 +2221,7 @@ export default function AllTransactionsPage() {
 
               <button
                 onClick={() => router.push("/stocks/transactions/create")}
-                className="bg-linear-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white px-3 sm:px-5 py-2 sm:py-3 rounded-xl flex items-center gap-1 sm:gap-2 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 text-sm sm:text-base shrink-0"
+                className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg flex items-center gap-1 sm:gap-2 text-sm font-medium shrink-0"
               >
                 <Plus size={18} strokeWidth={2.5} />
                 <span className="font-semibold hidden xs:inline">
@@ -2246,7 +2238,6 @@ export default function AllTransactionsPage() {
             title="Transplants"
             value={formatCurrency(categoryStats.TRANSPLANT.total)}
             icon={Scissors}
-            gradient="from-indigo-400 to-purple-500"
             count={`${categoryStats.TRANSPLANT.count} transactions`}
             iconBg="bg-indigo-100"
             iconColor="text-indigo-600"
@@ -2255,7 +2246,6 @@ export default function AllTransactionsPage() {
             title="Services"
             value={formatCurrency(categoryStats.SERVICE.total)}
             icon={Heart}
-            gradient="from-pink-400 to-rose-500"
             count={`${categoryStats.SERVICE.count} transactions`}
             iconBg="bg-pink-100"
             iconColor="text-pink-600"
@@ -2264,7 +2254,6 @@ export default function AllTransactionsPage() {
             title="Medicines"
             value={formatCurrency(categoryStats.MEDICINE.total)}
             icon={Pill}
-            gradient="from-emerald-400 to-green-500"
             count={`${categoryStats.MEDICINE.count} transactions`}
             iconBg="bg-emerald-100"
             iconColor="text-emerald-600"
@@ -2273,7 +2262,6 @@ export default function AllTransactionsPage() {
             title="Expenses"
             value={formatCurrency(categoryStats.EXPENSE.total)}
             icon={Receipt}
-            gradient="from-rose-400 to-red-500"
             count={`${categoryStats.EXPENSE.count} transactions`}
             iconBg="bg-rose-100"
             iconColor="text-rose-600"
@@ -2340,7 +2328,7 @@ export default function AllTransactionsPage() {
             </div>
 
             {showFilters && (
-              <div className="px-4 sm:px-6 pb-4 sm:pb-5 border-t border-gray-100 pt-4 sm:pt-5 bg-linear-to-b from-indigo-50/30 to-white">
+              <div className="px-4 sm:px-6 pb-4 sm:pb-5 border-t border-gray-100 pt-4 sm:pt-5">
                 <div className="mb-4">
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
                     Quick Filters
@@ -2365,16 +2353,27 @@ export default function AllTransactionsPage() {
                 </div>
 
                 <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-4">
-                  <Select
-                    label="Branch"
-                    value={filters.branch}
-                    onChange={(val) => setFilters({ ...filters, branch: val })}
-                    options={[
-                      { value: "", label: "All Branches" },
-                      ...BRANCHES.map((b) => ({ value: b, label: b })),
-                    ]}
-                    icon={Building2}
-                  />
+                  {branchRestricted ? (
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wide">Branch</label>
+                      <div className="flex items-center gap-2 px-3 py-2.5 border-2 border-indigo-200 rounded-lg bg-indigo-50 text-indigo-700 text-sm font-semibold">
+                        <Building2 className="w-4 h-4 shrink-0" />
+                        {userBranch}
+                        <span className="ml-auto text-xs text-indigo-500 font-normal">(locked)</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <Select
+                      label="Branch"
+                      value={filters.branch}
+                      onChange={(val) => setFilters({ ...filters, branch: val })}
+                      options={[
+                        { value: "", label: "All Branches" },
+                        ...BRANCHES.map((b) => ({ value: b, label: b })),
+                      ]}
+                      icon={Building2}
+                    />
+                  )}
                   <Input
                     label="From Date"
                     type="date"

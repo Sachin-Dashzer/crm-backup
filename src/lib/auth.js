@@ -28,6 +28,11 @@ export async function getSession() {
 
 // Role-based permissions
 export const ROLE_PERMISSIONS = {
+  'super-admin': {
+    routes: ['/super-admin', '/admin', '/sales', '/reception', '/surgery', '/counsellor', '/stocks', '/hr'],
+    permissions: ['all'],
+    canAccessAllBranches: true,
+  },
   admin: {
     routes: ['/admin'],
     permissions: ['all'],
@@ -53,6 +58,11 @@ export const ROLE_PERMISSIONS = {
     permissions: ['patients'],
     canAccessAllBranches: false,
   },
+  hr: {
+    routes: ['/hr'],
+    permissions: ['candidates', 'interviews'],
+    canAccessAllBranches: true,
+  },
 };
 
 export function hasPermission(userRole, permission) {
@@ -65,7 +75,7 @@ export function hasPermission(userRole, permission) {
 export function canAccessRoute(userRole, pathname) {
   const rolePermissions = ROLE_PERMISSIONS[userRole];
   if (!rolePermissions) return false;
-  if (userRole === 'admin') return true;
+  if (userRole === 'super-admin') return true; // super-admin can access everything
   return rolePermissions.routes.some(route => pathname.startsWith(route));
 }
 

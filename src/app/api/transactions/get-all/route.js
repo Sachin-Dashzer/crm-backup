@@ -34,48 +34,29 @@ export async function GET() {
     const transactions = await Transactions.find(query)
       .populate({
         path: "patient",
-        select: "personal payments counselling.counsellor",
-        populate: {
-          path: "counselling.counsellor",
-          select: "name",
-        },
+        select: "personal.name personal.phone payments counselling.counsellor",
+        populate: { path: "counselling.counsellor", select: "name" },
       })
       .populate("medicineId", "name")
       .populate("expenseGiver.vendorId", "name contact")
       .sort({ date: -1 })
       .lean();
 
-    console.log(`✅ Found ${transactions.length} transactions`);
-
-    // Map transactions to ensure consistent field names
     const mappedTransactions = transactions.map((transaction) => ({
       ...transaction,
-      // Map 'category' to 'transactionCategory' if it exists
-      transactionCategory:
-        transaction.transactionCategory || transaction.category,
+      transactionCategory: transaction.transactionCategory || transaction.category,
     }));
-
-    console.log(
-      "Sample mapped transaction:",
-      mappedTransactions[0]
-        ? {
-            _id: mappedTransactions[0]._id,
-            transactionCategory: mappedTransactions[0].transactionCategory,
-            category: mappedTransactions[0].category,
-            date: mappedTransactions[0].date,
-            amount: mappedTransactions[0].amount,
-          }
-        : "No transactions found",
-    );
 
     return NextResponse.json(
       {
         success: true,
         transactions: mappedTransactions,
         count: mappedTransactions.length,
-        message: `Successfully fetched ${mappedTransactions.length} transactions`,
       },
-      { status: 200 },
+      {
+        status: 200,
+        headers: { "Cache-Control": "private, max-age=30, stale-while-revalidate=60" },
+      },
     );
   } catch (error) {
     console.error("❌ Error fetching all transactions:", error);

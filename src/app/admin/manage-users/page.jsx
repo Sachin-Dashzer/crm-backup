@@ -2,11 +2,13 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import UserFormModal from "@/components/UserFormModal";
-import Sidebar from "@/components/Sidebars/Sidebar";
+import SuperAdminSidebar from "@/components/Sidebars/SuperAdminSidebar";
 
 export default function ManageUsersPage() {
   const router = useRouter();
+  const { data: session, status } = useSession();
   const [users, setUsers] = useState([]);
   const [filteredUsers, setFilteredUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -41,8 +43,12 @@ export default function ManageUsersPage() {
   };
 
   useEffect(() => {
-    fetchUsers();
-  }, []);
+    if (status === "authenticated" && session?.user?.role !== "super-admin") {
+      router.replace("/super-admin/dashboard");
+      return;
+    }
+    if (status === "authenticated") fetchUsers();
+  }, [status, session]);
 
   // Apply filters
   useEffect(() => {
@@ -140,7 +146,7 @@ export default function ManageUsersPage() {
 
   return (
     <section className="flex min-h-screen">
-      <Sidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
+      <SuperAdminSidebar />
 
       <main className="flex-1 px-4 md:px-12 py-4">
         {/* Header */}
@@ -252,7 +258,6 @@ export default function ManageUsersPage() {
                 <option value="Delhi">Delhi</option>
                 <option value="Mumbai">Mumbai</option>
                 <option value="Hyderabad">Hyderabad</option>
-                <option value="All">All Branches</option>
               </select>
             </div>
           </div>

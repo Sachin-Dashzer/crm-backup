@@ -8,17 +8,17 @@ export async function GET(req) {
   try {
     const session = await getServerSession(authOptions);
 
-    // Check if user is admin
-    if (!session || session.user.role !== 'admin') {
+    // Only super-admin can access user management
+    if (!session || session?.user?.role !== 'super-admin') {
       return NextResponse.json(
-        { success: false, message: "Unauthorized. Admin access required." },
+        { success: false, message: "Unauthorized. Super-admin access required." },
         { status: 403 }
       );
     }
 
     await connectDB();
 
-    // Fetch all non-admin users
+    // Fetch all users
     const users = await User.find({})
       .select('name email role branch createdAt lastLogin')
       .sort({ createdAt: -1 })

@@ -17,7 +17,7 @@ export async function PUT(req) {
     }
 
     const body = await req.json();
-    const { id, name, gstNo, weight, unit, mrp, expiry, purchaseAmt , soldAmt , updatedFields } = body;
+    const { id, name, location, gstNo, weight, unit, mrp, expiry, purchaseAmt , soldAmt , updatedFields } = body;
 
     // Validation
     if (!id) {
@@ -43,9 +43,23 @@ export async function PUT(req) {
       );
     }
 
+    // Non-admin users can only edit stock belonging to their branch
+    const isAdmin = ["admin", "super-admin"].includes(session.user.role);
+    const userBranch = session.user.branch;
+    if (!isAdmin && userBranch && existingStock.location !== userBranch) {
+      return NextResponse.json(
+        { success: false, message: "You can only edit stock items for your branch" },
+        { status: 403 }
+      );
+    }
+
+    // Non-admin users cannot change the location
+    const effectiveLocation = !isAdmin && userBranch ? userBranch : location;
+
     // Prepare update data
     const updateData = {
       name,
+      location: effectiveLocation,
       mrp,
       gstNo,
       weight,

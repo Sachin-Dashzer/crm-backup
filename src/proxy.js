@@ -6,20 +6,22 @@ export default withAuth(
     const token = req.nextauth.token;
     const pathname = req.nextUrl.pathname;
 
-    // Redirect base paths to their dashboards
+    // Redirect bare base paths to their dashboards
     const baseDashboardRedirects = {
-      '/admin': '/admin/dashboard',
-      '/sales': '/sales/dashboard',
-      '/counsellor': '/counsellor/patients',
-      '/stocks': '/stocks/dashboard',
-      '/reception': '/reception/dashboard',
-      '/surgery': '/surgery/dashboard',
+      "/admin":       "/admin/dashboard",
+      "/super-admin": "/super-admin/dashboard",
+      "/sales":       "/sales/dashboard",
+      "/counsellor":  "/counsellor/patients",
+      "/stocks":      "/stocks/dashboard",
+      "/reception":   "/reception/dashboard",
+      "/surgery":     "/surgery/dashboard",
+      "/hr":          "/hr/dashboard",
     };
 
-    // Check if pathname matches exactly (with or without trailing slash)
-    const normalizedPath = pathname.endsWith('/') && pathname !== '/' 
-      ? pathname.slice(0, -1) 
-      : pathname;
+    const normalizedPath =
+      pathname.endsWith("/") && pathname !== "/"
+        ? pathname.slice(0, -1)
+        : pathname;
 
     if (baseDashboardRedirects[normalizedPath]) {
       return NextResponse.redirect(
@@ -27,38 +29,39 @@ export default withAuth(
       );
     }
 
+    // Role → allowed route prefixes
     const roleRoutes = {
-      admin: ['/admin'],
-      sales: ['/sales'],
-      counsellor: ['/counsellor'],
-      reception: ['/reception'],
-      surgery: ['/surgery'],
-      stock: ['/stocks'],
+      "super-admin": ["/super-admin", "/admin", "/sales", "/reception", "/surgery", "/counsellor", "/stocks", "/hr"],
+      admin:         ["/admin"],
+      sales:         ["/sales"],
+      counsellor:    ["/counsellor"],
+      reception:     ["/reception"],
+      surgery:       ["/surgery"],
+      stock:         ["/stocks"],
+      hr:            ["/hr"],
+    };
+
+    // Home dashboard per role (redirect destination on unauthorized access)
+    const roleDashboard = {
+      "super-admin": "/super-admin/dashboard",
+      admin:         "/admin/dashboard",
+      sales:         "/sales/dashboard",
+      counsellor:    "/counsellor/patients",
+      reception:     "/reception/dashboard",
+      surgery:       "/surgery/dashboard",
+      stock:         "/stocks/dashboard",
+      hr:            "/hr/dashboard",
     };
 
     if (token?.role) {
-      const allowedRoutes = roleRoutes[token.role] || [];
-      
-      if (token.role === 'admin') {
-        return NextResponse.next();
-      }
-
-      const hasAccess = allowedRoutes.some(route => 
-        pathname.startsWith(route)
+      const allowedPrefixes = roleRoutes[token.role] || [];
+      const hasAccess = allowedPrefixes.some((prefix) =>
+        pathname.startsWith(prefix)
       );
 
       if (!hasAccess) {
-        const dashboardRoutes = {
-          sales: '/sales/dashboard',
-          counsellor: '/counsellor/patients',
-          stock: '/stocks/dashboard',
-          reception: '/reception/dashboard',
-          surgery: '/surgery/dashboard',
-        };
-        
-        return NextResponse.redirect(
-          new URL(dashboardRoutes[token.role] || '/login', req.url)
-        );
+        const home = roleDashboard[token.role] || "/login";
+        return NextResponse.redirect(new URL(home, req.url));
       }
     }
 
@@ -73,11 +76,13 @@ export default withAuth(
 
 export const config = {
   matcher: [
-    '/admin/:path*',
-    '/sales/:path*',
-    '/counsellor/:path*',
-    '/stocks/:path*',
-    '/reception/:path*',
-    '/surgery/:path*',
+    "/admin/:path*",
+    "/super-admin/:path*",
+    "/sales/:path*",
+    "/counsellor/:path*",
+    "/stocks/:path*",
+    "/reception/:path*",
+    "/surgery/:path*",
+    "/hr/:path*",
   ],
 };

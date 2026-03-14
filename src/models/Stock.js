@@ -9,6 +9,11 @@ const stockSchema = new mongoose.Schema(
       trim: true,
     },
 
+    location: {
+      type: String,
+      trim: true,
+    },
+
     totalQuantity: {
       type: Number,
       default: 0,

@@ -8,10 +8,11 @@ export async function POST(req) {
   try {
     const session = await getServerSession(authOptions);
 
-    // Check if user is admin
-    if (!session || session.user.role !== 'admin') {
+    // Only super-admin can manage users
+    const callerRole = session?.user?.role;
+    if (!session || callerRole !== 'super-admin') {
       return NextResponse.json(
-        { success: false, message: "Unauthorized. Admin access required." },
+        { success: false, message: "Unauthorized. Super-admin access required." },
         { status: 403 }
       );
     }
@@ -86,7 +87,7 @@ export async function POST(req) {
     }
 
     if (role) {
-      const validRoles = ['sales', 'reception','admin', 'surgery', 'counsellor', 'stock'];
+      const validRoles = ['super-admin', 'admin', 'sales', 'reception', 'surgery', 'counsellor', 'stock'];
       if (!validRoles.includes(role)) {
         return NextResponse.json(
           { success: false, message: "Invalid role" },

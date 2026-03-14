@@ -474,7 +474,7 @@ export default function StaffDashboard() {
                   setSelectedCategory(cat);
                   setFilters((f) => ({ ...f, category: cat }));
                 }}
-                className={`px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-all ${
+                className={`px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-all duration-200 btn-animate ${
                   (filters.category || selectedCategory) === cat
                     ? CATEGORY_COLORS[cat] + " border"
                     : "bg-white text-gray-600 hover:bg-gray-100 border border-gray-200"
@@ -546,7 +546,7 @@ export default function StaffDashboard() {
         </div>
 
         {/* Table */}
-        <section className="p-6">
+        <section key={filters.category || selectedCategory} className="p-6 animate-tab-in">
           <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200">
             <div className="overflow-x-auto">
               <table className="min-w-full text-sm">

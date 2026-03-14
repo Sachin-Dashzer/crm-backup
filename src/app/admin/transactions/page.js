@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import AdminSidebar from "@/components/Sidebars/Sidebar";
 import { useToast } from "@/components/Toast";
 import BillGenerator from "@/components/BillGenerator";
@@ -1641,7 +1641,14 @@ export default function AllTransactionsPage() {
     procedure: "",
   });
   const [showFilters, setShowFilters] = useState(false);
+  const [searchInput, setSearchInput] = useState("");
   const [tableSearch, setTableSearch] = useState("");
+  const searchDebounceRef = useRef(null);
+  const handleSearchChange = (val) => {
+    setSearchInput(val);
+    clearTimeout(searchDebounceRef.current);
+    searchDebounceRef.current = setTimeout(() => setTableSearch(val), 300);
+  };
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deletingTransaction, setDeletingTransaction] = useState(null);
   const [showBillGenerator, setShowBillGenerator] = useState(false);
@@ -2388,7 +2395,7 @@ export default function AllTransactionsPage() {
                   return (
                     <button
                       key={cat.value}
-                      className={`px-4 sm:px-6 py-2 sm:py-2.5 rounded-xl font-semibold transition-all whitespace-nowrap shrink-0 flex items-center gap-2 ${getCategoryGradientClass(cat.value, activeCategory === cat.value)}`}
+                      className={`px-4 sm:px-6 py-2 sm:py-2.5 rounded-xl font-semibold transition-all duration-200 whitespace-nowrap shrink-0 flex items-center gap-2 btn-animate ${getCategoryGradientClass(cat.value, activeCategory === cat.value)}`}
                       onClick={() => setActiveCategory(cat.value)}
                     >
                       <Icon size={18} />
@@ -2404,8 +2411,8 @@ export default function AllTransactionsPage() {
                   <input
                     type="text"
                     placeholder="Search transactions..."
-                    value={tableSearch}
-                    onChange={(e) => setTableSearch(e.target.value)}
+                    value={searchInput}
+                    onChange={(e) => handleSearchChange(e.target.value)}
                     className="pl-9 sm:pl-11 pr-4 py-2 sm:py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-100 focus:border-indigo-300 text-sm w-full lg:w-64 transition-all"
                   />
                 </div>

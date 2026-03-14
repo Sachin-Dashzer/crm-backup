@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/dashzer/src/components/Sidebars/**)",
+      "Bash(ls *.env* .env*)",
+      "Bash(find /c/dashzer/ryan-crm/src/app/stocks -type f -name *)",
+      "Bash(find /c/dashzer/ryan-crm/src/app/admin/stocks -type f -name *)",
+      "Bash(find /c/dashzer/ryan-crm/src/app/api/stocks -type f -name *)"
+    ],
+    "additionalDirectories": [
+      "c:\\dashzer\\ryan-crm\\src\\app\\api\\hr\\candidates",
+      "c:\\dashzer\\ryan-crm\\src\\app\\hr\\employees\\update"
+    ]
+  }
+}

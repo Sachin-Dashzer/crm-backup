@@ -9,20 +9,20 @@ export async function POST(req) {
   try {
     const session = await getServerSession(authOptions);
 
-    // Check if user is admin
-    if (!session || session.user.role !== 'admin') {
+    // Only super-admin can manage users
+    if (!session || session?.user?.role !== 'super-admin') {
       return NextResponse.json(
-        { success: false, message: "Unauthorized. Admin access required." },
+        { success: false, message: "Unauthorized. Super-admin access required." },
         { status: 403 }
       );
     }
 
     await connectDB();
 
-    const { name, email, password, role, branch } = await req.json();
+    const { name, email, password, role: newRole, branch } = await req.json();
 
     // Validation
-    if (!name || !email || !password || !role) {
+    if (!name || !email || !password || !newRole) {
       return NextResponse.json(
         { success: false, message: "Name, email, password, and role are required" },
         { status: 400 }
@@ -37,11 +37,11 @@ export async function POST(req) {
     //   );
     // }
 
-    // Valid non-admin roles
-    const validRoles = ['sales','admin', 'reception', 'surgery', 'counsellor', 'stock'];
-    if (!validRoles.includes(role)) {
+    // Valid roles for creation
+    const validRoles = ['super-admin', 'admin', 'sales', 'reception', 'surgery', 'counsellor', 'stock', 'hr'];
+    if (!validRoles.includes(newRole)) {
       return NextResponse.json(
-        { success: false, message: "Invalid role. Must be: sales, reception, surgery, or counsellor" },
+        { success: false, message: "Invalid role" },
         { status: 400 }
       );
     }
@@ -86,7 +86,7 @@ export async function POST(req) {
       name,
       email: email.toLowerCase(),
       password, // Will be hashed by pre-save hook
-      role,
+      role: newRole,
       branch: branch || 'All',
       sessionVersion: 0,
     });

@@ -1,8 +1,8 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { ArrowLeft } from "lucide-react";
 import Sidebar from "@/components/Sidebars/StockSidebar";
-import Topbar from "@/components/Topbar";
 
 export default function CreateVendorPage() {
   const router = useRouter();
@@ -18,36 +18,26 @@ export default function CreateVendorPage() {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     if (!formData.name) {
       alert("Vendor name is required");
       return;
     }
-
     setLoading(true);
-
     try {
       const response = await fetch("/api/vendors/create", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...formData,
           contact: formData.contact ? Number(formData.contact) : undefined,
         }),
       });
-
       const data = await response.json();
-
       if (data.success) {
         alert("Vendor created successfully!");
         router.push("/stocks/vendors");
@@ -62,124 +52,140 @@ export default function CreateVendorPage() {
     }
   };
 
+  const inputClass =
+    "w-full px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent";
+  const labelClass = "block text-sm font-medium text-gray-700 mb-1.5";
+
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
 
-      <main className="flex-1 p-4 lg:p-8">
-        {/* Form */}
-        <div className="bg-white rounded-xl shadow-lg p-12 max-w-4xl mx-auto">
-          <h1 className="text-4xl text-center font-bold bg-linear-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-            Add New Vendor
-          </h1>
-          <p className="text-gray-600 text-center mt-2">
-            Create a new vendor/supplier
+      <main className="flex-1 px-4 py-6 lg:px-8 lg:py-8">
+        {/* Page header */}
+        <div className="max-w-3xl mx-auto mb-6">
+          <button
+            type="button"
+            onClick={() => router.back()}
+            className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900 mb-4"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back
+          </button>
+          <h1 className="text-2xl font-bold text-gray-900">Add Vendor</h1>
+          <p className="text-sm text-gray-500 mt-1">
+            Create a new vendor or supplier record.
           </p>
-          <form onSubmit={handleSubmit} className="space-y-6 mt-5">
-            {/* Name */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Vendor Name <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                name="name"
-                value={formData.name}
-                onChange={handleChange}
-                required
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Enter vendor name"
-              />
+        </div>
+
+        {/* Card */}
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm max-w-3xl mx-auto">
+          {/* Card header */}
+          <div className="px-6 py-4 border-b border-gray-100">
+            <h2 className="text-base font-semibold text-gray-900">
+              Vendor Details
+            </h2>
+          </div>
+
+          {/* Card body */}
+          <form onSubmit={handleSubmit}>
+            <div className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                {/* Vendor Name */}
+                <div>
+                  <label className={labelClass}>
+                    Vendor Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleChange}
+                    required
+                    className={inputClass}
+                    placeholder="Enter vendor name"
+                  />
+                </div>
+
+                {/* Contact Number */}
+                <div>
+                  <label className={labelClass}>Contact Number</label>
+                  <input
+                    type="tel"
+                    name="contact"
+                    value={formData.contact}
+                    onChange={handleChange}
+                    className={inputClass}
+                    placeholder="Enter contact number"
+                  />
+                </div>
+
+                {/* Email */}
+                <div>
+                  <label className={labelClass}>Email</label>
+                  <input
+                    type="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    className={inputClass}
+                    placeholder="vendor@example.com"
+                  />
+                </div>
+
+                {/* GST Number */}
+                <div>
+                  <label className={labelClass}>GST Number</label>
+                  <input
+                    type="text"
+                    name="gstNumber"
+                    value={formData.gstNumber}
+                    onChange={handleChange}
+                    className={inputClass}
+                    placeholder="e.g., 27AABCU9603R1ZM"
+                  />
+                </div>
+
+                {/* Deals In */}
+                <div>
+                  <label className={labelClass}>Deals In</label>
+                  <input
+                    type="text"
+                    name="DealsIn"
+                    value={formData.DealsIn}
+                    onChange={handleChange}
+                    className={inputClass}
+                    placeholder="e.g., Surgical Equipment, Medicines"
+                  />
+                </div>
+
+                {/* Address — full width */}
+                <div className="md:col-span-2">
+                  <label className={labelClass}>Address</label>
+                  <textarea
+                    name="address"
+                    value={formData.address}
+                    onChange={handleChange}
+                    rows={3}
+                    className={inputClass}
+                    placeholder="Enter full address"
+                  />
+                </div>
+              </div>
             </div>
 
-            {/* Contact */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Contact Number
-              </label>
-              <input
-                type="tel"
-                name="contact"
-                value={formData.contact}
-                onChange={handleChange}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Enter contact number"
-              />
-            </div>
-
-            {/* Email */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Email Address
-              </label>
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="vendor@example.com"
-              />
-            </div>
-
-            {/* Address */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Address
-              </label>
-              <textarea
-                name="address"
-                value={formData.address}
-                onChange={handleChange}
-                rows="3"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Enter full address"
-              />
-            </div>
-
-            {/* GST Number */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                GST Number
-              </label>
-              <input
-                type="text"
-                name="gstNumber"
-                value={formData.gstNumber}
-                onChange={handleChange}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="e.g., 27AABCU9603R1ZM"
-              />
-            </div>
-
-            {/* Deals In */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Deals In (Products/Services)
-              </label>
-              <input
-                type="text"
-                name="DealsIn"
-                value={formData.DealsIn}
-                onChange={handleChange}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="e.g., Surgical Equipment, Medicines, etc."
-              />
-            </div>
-
-            {/* Buttons */}
-            <div className="flex gap-4 pt-4">
+            {/* Card footer */}
+            <div className="px-6 py-4 border-t border-gray-100 flex gap-3">
               <button
                 type="submit"
                 disabled={loading}
-                className="flex-1 px-6 py-3 bg-linear-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                className="px-5 py-2.5 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-50 flex items-center gap-2"
               >
                 {loading ? "Creating..." : "Create Vendor"}
               </button>
               <button
                 type="button"
                 onClick={() => router.back()}
-                className="flex-1 px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"
+                className="px-5 py-2.5 bg-white text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
               >
                 Cancel
               </button>

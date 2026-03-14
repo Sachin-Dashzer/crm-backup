@@ -26,6 +26,9 @@ export default function ViewStockPage() {
 
       if (data.success && data.data) {
         setStock(data.data);
+      } else if (response.status === 403) {
+        alert("You don't have access to this stock item. It belongs to a different branch.");
+        router.push("/stocks/dashboard");
       } else {
         alert("Failed to fetch stock details");
         router.back();

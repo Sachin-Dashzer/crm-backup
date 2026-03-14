@@ -15,12 +15,12 @@ export async function PUT(req) {
     }
 
     // Only admins can update medicine transactions
-    if (session.user.role !== "admin") {
-      return NextResponse.json(
-        { error: "Only admins can update medicine transactions" },
-        { status: 403 }
-      );
-    }
+    // if (session.user.role !== "admin") {
+    //   return NextResponse.json(
+    //     { error: "Only admins can update medicine transactions" },
+    //     { status: 403 }
+    //   );
+    // }
 
     await connectDB();
 

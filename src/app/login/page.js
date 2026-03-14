@@ -45,12 +45,14 @@ export default function LoginPage() {
         const session = await response.json();
 
         const roleRoutes = {
+          'super-admin': '/super-admin/dashboard',
           admin: '/admin/dashboard',
           sales: '/sales/dashboard',
           counsellor: '/counsellor/patients',
           reception: '/reception/dashboard',
           surgery: '/surgery/dashboard',
-          stock: '/stocks/dashboard',         
+          stock: '/stocks/dashboard',
+          hr: '/hr/dashboard',
         };
 
         router.push(roleRoutes[session?.user?.role] || '/');

@@ -16,12 +16,12 @@ export async function DELETE(req) {
       );
     }
 
-    // Only admin and reception can delete stock items
-    if (!["admin", "reception"].includes(session.user.role)) {
+    // Only admin, super-admin, and stock role can delete stock items
+    if (!["admin", "super-admin", "stock"].includes(session.user.role)) {
       return NextResponse.json(
         {
           success: false,
-          message: "Only admins and reception can delete stock items",
+          message: "Only admins can delete stock items",
         },
         { status: 403 }
       );
@@ -43,6 +43,16 @@ export async function DELETE(req) {
       return NextResponse.json(
         { success: false, message: "Stock not found" },
         { status: 404 }
+      );
+    }
+
+    // Branch restriction: non-admin users can only delete stock from their branch
+    const isAdmin = ["admin", "super-admin"].includes(session.user.role);
+    const userBranch = session.user.branch;
+    if (!isAdmin && userBranch && stock.location !== userBranch) {
+      return NextResponse.json(
+        { success: false, message: "You can only delete stock items for your branch" },
+        { status: 403 }
       );
     }
 
