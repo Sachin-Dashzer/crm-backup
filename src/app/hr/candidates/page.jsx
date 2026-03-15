@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import HRSidebar from "@/components/Sidebars/HRSidebar";
 import {
@@ -544,6 +544,18 @@ function FilterDrawer({ filters, setFilters, positions, sources, onClose }) {
 
 /* ── Page ────────────────────────────────────────────────────────────────────── */
 export default function CandidatesPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-screen bg-gray-50 items-center justify-center">
+        <div className="w-8 h-8 border-2 border-gray-200 border-t-indigo-600 rounded-full animate-spin" />
+      </div>
+    }>
+      <CandidatesContent />
+    </Suspense>
+  );
+}
+
+function CandidatesContent() {
   const searchParams  = useSearchParams();
   const initialStatus = searchParams.get("status") || "";
 
