@@ -2,21 +2,13 @@ import { NextResponse } from "next/server";
 import { withDB } from "@/lib/withDB";
 import Leads from "@/models/Leads";
 
-const handler = async (req, { user }) => {
-  // Only super-admin can create leads
-  if (!user || user.role !== 'super-admin') {
-    return NextResponse.json(
-      { success: false, message: "Unauthorized. Super-admin access required." },
-      { status: 403 }
-    );
-  }
-
+const handler = async (req) => {
   const { name, phone, email, location, visitPlan, visitDate, remarks, tag } =
     await req.json();
 
   if (!name || !phone) {
     return NextResponse.json(
-      { message: "Name and phone are required" },
+      { success: false, message: "Name and phone are required" },
       { status: 400 }
     );
   }
@@ -35,7 +27,7 @@ const handler = async (req, { user }) => {
   await newLead.save();
 
   return NextResponse.json(
-    { message: "Lead created successfully", lead: newLead },
+    { success: true, message: "Lead created successfully", lead: newLead },
     { status: 201 }
   );
 };
