@@ -1,29 +1,28 @@
 "use client";
 
 import { Suspense } from "react";
-import Sidebar from "@/components/Sidebars/SalesSidebar";
+import Sidebar from "@/components/Sidebars/StockSidebar";
 import TransactionTable from "@/components/TransactionTable";
 
 const CONFIG = {
-  title:           "Revenue Transactions",
-  subtitle:        "All revenue transactions and payment details",
-  columns:         ["date","patient","branch","procedure","paymentType","method","amount"],
-  actions:         ["view","bill"],
-  viewBasePath:    "/sales/patients",
+  title:           "Stock Transactions",
+  subtitle:        "Medicine and expense transaction records",
+  columns:         ["date","patient","branch","category","procedure","method","amount","remarks"],
+  actions:         ["edit","bill"],
+  editBasePath:    "/stocks/transactions/edit",
   showCsvExport:   true,
   defaultPageSize: 25,
   pageSizeOptions: [25, 50, 100],
-  defaultCostType: "Revenue",
   filters: {
     showCostType:    false,
-    showCategory:    false,
+    showCategory:    true,
     showMethod:      true,
-    showPaymentType: true,
+    showPaymentType: false,
     showBranch:      true,
   },
 };
 
-export default function SalesRevenuePage() {
+export default function StocksTransactionsPage() {
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />

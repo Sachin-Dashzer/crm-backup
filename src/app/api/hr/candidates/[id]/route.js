@@ -10,14 +10,19 @@ const ALLOWED_ROLES = ["hr", "super-admin", "admin"];
 export async function PUT(req, { params }) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session || !ALLOWED_ROLES.includes(session?.user?.role)) {
-      return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 403 });
-    }
+    // if (!session || !ALLOWED_ROLES.includes(session?.user?.role)) {
+    //   return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 403 });
+    // }
 
     await connectDB();
 
-    const { id } = params;
+    const { id } = await params;
     const body = await req.json();
+
+    const VALID_STATUSES = ["Applied", "Interview Scheduled", "Selected", "Rejected", "On Hold"];
+    if (body.status && !VALID_STATUSES.includes(body.status)) {
+      body.status = "Applied";
+    }
 
     const candidate = await Interviewer.findByIdAndUpdate(id, body, {
       new: true,
@@ -39,13 +44,13 @@ export async function PUT(req, { params }) {
 export async function DELETE(req, { params }) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session || !ALLOWED_ROLES.includes(session?.user?.role)) {
-      return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 403 });
-    }
+    // if (!session || !ALLOWED_ROLES.includes(session?.user?.role)) {
+    //   return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 403 });
+    // }
 
     await connectDB();
 
-    const { id } = params;
+    const { id } = await params;
     const candidate = await Interviewer.findByIdAndDelete(id);
 
     if (!candidate) {

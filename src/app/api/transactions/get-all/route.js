@@ -4,32 +4,26 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import connectDB from "@/lib/db";
 import Transactions from "@/models/Transactions";
-import Vendor from "@/models/Vendor";
-import Stock from "@/models/Stock";
-import Employee from "@/models/Employee";
+import "@/models/Patient";
+import "@/models/Stock";
+import "@/models/Vendor";
+import "@/models/Employee";
 
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
 
-    if (!session || !session.user) {
+    if (!session?.user) {
       return NextResponse.json(
-        {
-          success: false,
-          error: "Unauthorized. Please login.",
-        },
+        { success: false, error: "Unauthorized. Please login." },
         { status: 401 },
       );
     }
 
-    const userBranch = session.user.branch;
-
-    let query = {};
-
-    if (userBranch && userBranch !== "All") {
-      query.branch = userBranch;
-    }
     await connectDB();
+
+    const userBranch = session.user.branch;
+    const query = userBranch && userBranch !== "All" ? { branch: userBranch } : {};
 
     const transactions = await Transactions.find(query)
       .populate({

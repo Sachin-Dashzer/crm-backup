@@ -36,6 +36,10 @@ const interviewerSchema = new mongoose.Schema({
     type: Number,
     default: 0,
   },
+  finalSalary: {
+    type: Number,
+    default: 0,
+  },
   experienceType: {
     type: String,
     enum: ['Fresher', 'Experienced'],
@@ -109,6 +113,11 @@ const interviewerSchema = new mongoose.Schema({
   finalRemarks: {
     type: String,
     trim: true,
+  },
+  assignedHr: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Employee",
+    default: null,
   },
   status: {
     type: String,

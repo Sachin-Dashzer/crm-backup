@@ -1,19 +1,23 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import connectDB from "@/lib/db";
 import Interviewer from "@/models/Interviewer";
 
-const ALLOWED_ROLES = ["hr", "super-admin", "admin"];
+// ── CORS helper ────────────────────────────────────────────────────────────────
+function withCORS(response) {
+  response.headers.set("Access-Control-Allow-Origin", "*");
+  response.headers.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  response.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  return response;
+}
 
-// GET — list candidates with optional filters
+// ── OPTIONS — preflight (required for cross-origin POST/GET with custom headers)
+export async function OPTIONS() {
+  return withCORS(new NextResponse(null, { status: 204 }));
+}
+
+// ── GET — list candidates with optional filters ────────────────────────────────
 export async function GET(req) {
   try {
-    const session = await getServerSession(authOptions);
-    // if (!session || !ALLOWED_ROLES.includes(session?.user?.role)) {
-    //   return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 403 });
-    // }
-
     await connectDB();
 
     const { searchParams } = new URL(req.url);
@@ -46,23 +50,24 @@ export async function GET(req) {
       ];
     }
 
-    const candidates = await Interviewer.find(query).sort({ createdAt: -1 });
+    const candidates = await Interviewer.find(query)
+      .populate("assignedHr", "name")
+      .sort({ createdAt: -1 });
 
-    return NextResponse.json({ success: true, candidates });
+    return withCORS(
+      NextResponse.json({ success: true, candidates })
+    );
   } catch (err) {
-    console.error("HR candidates GET error:", err);
-    return NextResponse.json({ success: false, message: "Internal server error" }, { status: 500 });
+    console.error("Candidates GET error:", err);
+    return withCORS(
+      NextResponse.json({ success: false, message: "Internal server error" }, { status: 500 })
+    );
   }
 }
 
-// POST — create a single candidate OR bulk import an array
+// ── POST — create single candidate OR bulk import an array ────────────────────
 export async function POST(req) {
   try {
-    const session = await getServerSession(authOptions);
-    // if (!session || !ALLOWED_ROLES.includes(session?.user?.role)) {
-    //   return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 403 });
-    // }
-
     await connectDB();
 
     const body = await req.json();
@@ -70,16 +75,17 @@ export async function POST(req) {
     // ── Bulk import ────────────────────────────────────────────────────────────
     if (Array.isArray(body)) {
       if (body.length === 0) {
-        return NextResponse.json(
-          { success: false, message: "Array is empty" },
-          { status: 400 }
+        return withCORS(
+          NextResponse.json({ success: false, message: "Array is empty" }, { status: 400 })
         );
       }
 
       if (body.length > 2000) {
-        return NextResponse.json(
-          { success: false, message: "Maximum 2000 candidates per request" },
-          { status: 400 }
+        return withCORS(
+          NextResponse.json(
+            { success: false, message: "Maximum 2000 candidates per request" },
+            { status: 400 }
+          )
         );
       }
 
@@ -89,12 +95,14 @@ export async function POST(req) {
         .filter((i) => i !== null);
 
       if (invalid.length > 0) {
-        return NextResponse.json(
-          {
-            success: false,
-            message: `Missing name or position at indices: ${invalid.slice(0, 10).join(", ")}${invalid.length > 10 ? "…" : ""}`,
-          },
-          { status: 400 }
+        return withCORS(
+          NextResponse.json(
+            {
+              success: false,
+              message: `Missing name or position at indices: ${invalid.slice(0, 10).join(", ")}${invalid.length > 10 ? "…" : ""}`,
+            },
+            { status: 400 }
+          )
         );
       }
 
@@ -116,30 +124,43 @@ export async function POST(req) {
         }
       }
 
-      return NextResponse.json(
-        {
-          success: true,
-          inserted,
-          skipped: body.length - inserted,
-          ...(errors.length > 0 && { errors: errors.slice(0, 20) }),
-        },
-        { status: 201 }
+      return withCORS(
+        NextResponse.json(
+          {
+            success: true,
+            inserted,
+            skipped: body.length - inserted,
+            ...(errors.length > 0 && { errors: errors.slice(0, 20) }),
+          },
+          { status: 201 }
+        )
       );
     }
 
     // ── Single create ──────────────────────────────────────────────────────────
     if (!body.name || !body.position) {
-      return NextResponse.json(
-        { success: false, message: "Name and position are required" },
-        { status: 400 }
+      return withCORS(
+        NextResponse.json(
+          { success: false, message: "Name and position are required" },
+          { status: 400 }
+        )
       );
     }
 
+    const VALID_STATUSES = ["Applied", "Interview Scheduled", "Selected", "Rejected", "On Hold"];
+    if (body.status && !VALID_STATUSES.includes(body.status)) {
+      body.status = "Applied";
+    }
+
     const candidate = await Interviewer.create(body);
-    return NextResponse.json({ success: true, candidate }, { status: 201 });
+    return withCORS(
+      NextResponse.json({ success: true, candidate }, { status: 201 })
+    );
 
   } catch (err) {
-    console.error("HR candidates POST error:", err);
-    return NextResponse.json({ success: false, message: "Internal server error" }, { status: 500 });
+    console.error("Candidates POST error:", err);
+    return withCORS(
+      NextResponse.json({ success: false, message: "Internal server error" }, { status: 500 })
+    );
   }
 }

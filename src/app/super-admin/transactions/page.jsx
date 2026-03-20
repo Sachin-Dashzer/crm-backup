@@ -1,29 +1,29 @@
 "use client";
 
 import { Suspense } from "react";
-import Sidebar from "@/components/Sidebars/SalesSidebar";
+import Sidebar from "@/components/Sidebars/SuperAdminSidebar";
 import TransactionTable from "@/components/TransactionTable";
 
 const CONFIG = {
-  title:           "Revenue Transactions",
-  subtitle:        "All revenue transactions and payment details",
-  columns:         ["date","patient","branch","procedure","paymentType","method","amount"],
-  actions:         ["view","bill"],
-  viewBasePath:    "/sales/patients",
+  title:           "Transactions",
+  subtitle:        "All revenue and expense records across branches",
+  columns:         ["date","patient","branch","category","costType","procedure","paymentType","method","amount"],
+  actions:         ["edit","view","bill"],
+  editBasePath:    "/admin/transactions/edit",
+  viewBasePath:    "/super-admin/patients",
   showCsvExport:   true,
-  defaultPageSize: 25,
-  pageSizeOptions: [25, 50, 100],
-  defaultCostType: "Revenue",
+  defaultPageSize: 50,
+  pageSizeOptions: [25, 50, 100, 200],
   filters: {
-    showCostType:    false,
-    showCategory:    false,
+    showCostType:    true,
+    showCategory:    true,
     showMethod:      true,
     showPaymentType: true,
     showBranch:      true,
   },
 };
 
-export default function SalesRevenuePage() {
+export default function SuperAdminTransactionsPage() {
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />

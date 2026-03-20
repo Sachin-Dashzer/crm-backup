@@ -1,5 +1,6 @@
 import Employee from "@/models/Employee";
 import Patient from "@/models/Patient";
+import Interviewer from "@/models/Interviewer";
 import { withDB } from "@/lib/withDB";
 import { NextResponse } from "next/server";
 
@@ -14,69 +15,79 @@ const handler = async (req) => {
       })
       .sort({ name: 1 });
 
-    const employeesByRole = data.reduce((acc, employee) => {
+    const employeesByRole = {};
+
+    for (const employee of data) {
       const role = employee.role || "Other";
+      if (!employeesByRole[role]) employeesByRole[role] = [];
 
-      if (!acc[role]) {
-        acc[role] = [];
-      }
-
-      const patients = employee.patient || [];
-      const patientCount = patients.length;
-
-      // Calculate amount received
-      const amountReceived = patients.reduce((total, patient) => {
-        return total + (parseInt(patient.payments?.amountReceived) || 0);
-      }, 0);
-
-      // Convert role to lowercase for consistent comparison
       const normalizedRole = role.toLowerCase();
 
-      let employeeData;
+      if (normalizedRole === "hr") {
+        // For HR employees: aggregate candidate performance stats
+        const candidates = await Interviewer.find({ assignedHr: employee._id }).lean();
+        const totalCandidates = candidates.length;
+        const selected  = candidates.filter((c) => c.status === "Selected").length;
+        const rejected  = candidates.filter((c) => c.status === "Rejected").length;
+        const scheduled = candidates.filter((c) => c.status === "Interview Scheduled").length;
+        const onHold    = candidates.filter((c) => c.status === "On Hold").length;
+        const selectionRate = totalCandidates > 0
+          ? parseFloat(((selected / totalCandidates) * 100).toFixed(1))
+          : 0;
 
-      if (normalizedRole === "agent" || normalizedRole === "counsellor") {
-        // For agent and counsellor - use readyForSurgery
-        const readyForSurgery = patients.filter(
-          (patient) =>
-            patient.counselling && patient.counselling.readyForSurgery === true
-        ).length;
-
-        employeeData = {
+        employeesByRole[role].push({
           _id: employee._id,
-          isactive: employee.isactive,
           name: employee.name,
-          totalPatient: patientCount,
-          readyForSurgery: readyForSurgery,
-          amountReceived: amountReceived,
-        };
+          isactive: employee.isactive,
+          totalCandidates,
+          selected,
+          rejected,
+          scheduled,
+          onHold,
+          selectionRate,
+        });
       } else {
-        // For all other roles (doctor, implanter, technician, etc.) - use graftsImplanted
-        const graftsImplanted = patients.reduce((total, patient) => {
-          return total + (parseInt(patient.surgery?.graftsImplanted) || 0);
-        }, 0);
+        const patients = employee.patient || [];
+        const patientCount = patients.length;
+        const amountReceived = patients.reduce(
+          (total, patient) => total + (parseInt(patient.payments?.amountReceived) || 0),
+          0
+        );
 
-        employeeData = {
-          _id: employee._id,
-          isactive: employee.isactive,
-          name: employee.name,
-          totalPatient: patientCount,
-          graftsImplanted: graftsImplanted,
-          amountReceived: amountReceived,
-        };
+        if (normalizedRole === "agent" || normalizedRole === "counsellor") {
+          const readyForSurgery = patients.filter(
+            (p) => p.counselling && p.counselling.readyForSurgery === true
+          ).length;
+          employeesByRole[role].push({
+            _id: employee._id,
+            isactive: employee.isactive,
+            name: employee.name,
+            totalPatient: patientCount,
+            readyForSurgery,
+            amountReceived,
+          });
+        } else {
+          const graftsImplanted = patients.reduce(
+            (total, patient) => total + (parseInt(patient.surgery?.graftsImplanted) || 0),
+            0
+          );
+          employeesByRole[role].push({
+            _id: employee._id,
+            isactive: employee.isactive,
+            name: employee.name,
+            totalPatient: patientCount,
+            graftsImplanted,
+            amountReceived,
+          });
+        }
       }
-
-      acc[role].push(employeeData);
-      return acc;
-    }, {});
+    }
 
     return NextResponse.json(employeesByRole);
   } catch (error) {
     console.error("Error fetching employees:", error);
     return NextResponse.json(
-      {
-        success: false,
-        error: "Failed to fetch employees",
-      },
+      { success: false, error: "Failed to fetch employees" },
       { status: 500 }
     );
   }

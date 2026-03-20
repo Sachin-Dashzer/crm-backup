@@ -14,7 +14,7 @@ import {
   Calendar,
   Loader2,
   Mail,
-  MessageSquare,
+  ScrollText,
 } from "lucide-react";
 
 /* ─────────────────────────────────────────────
@@ -28,22 +28,65 @@ const TAG_OPTIONS = [
 ];
 
 const LOCATION_OPTIONS = [
-  "Agra","Ahmedabad","Amritsar","Aurangabad","Bengaluru","Bhopal",
-  "Bhubaneswar","Chandigarh","Chennai","Coimbatore","Dehradun","Delhi",
-  "Faridabad","Ghaziabad","Gurgaon","Guwahati","Gwalior","Hyderabad",
-  "India","Indore","Jabalpur","Jaipur","Jammu","Jodhpur","Kanpur",
-  "Kochi","Kolkata","Kolhapur","Kota","Lucknow","Ludhiana","Mangalore",
-  "Mumbai","Mysuru","Nagpur","Nashik","Noida","Patna","Pune","Raipur",
-  "Rajkot","Ranchi","Shimla","Solapur","Srinagar","Surat",
-  "Thiruvananthapuram","Udaipur","Vadodara","Varanasi","Vijayawada",
+  "Agra",
+  "Ahmedabad",
+  "Amritsar",
+  "Aurangabad",
+  "Bengaluru",
+  "Bhopal",
+  "Bhubaneswar",
+  "Chandigarh",
+  "Chennai",
+  "Coimbatore",
+  "Dehradun",
+  "Delhi",
+  "Faridabad",
+  "Ghaziabad",
+  "Gurgaon",
+  "Guwahati",
+  "Gwalior",
+  "Hyderabad",
+  "India",
+  "Indore",
+  "Jabalpur",
+  "Jaipur",
+  "Jammu",
+  "Jodhpur",
+  "Kanpur",
+  "Kochi",
+  "Kolkata",
+  "Kolhapur",
+  "Kota",
+  "Lucknow",
+  "Ludhiana",
+  "Mangalore",
+  "Mumbai",
+  "Mysuru",
+  "Nagpur",
+  "Nashik",
+  "Noida",
+  "Patna",
+  "Pune",
+  "Raipur",
+  "Rajkot",
+  "Ranchi",
+  "Shimla",
+  "Solapur",
+  "Srinagar",
+  "Surat",
+  "Thiruvananthapuram",
+  "Udaipur",
+  "Vadodara",
+  "Varanasi",
+  "Vijayawada",
   "Visakhapatnam",
 ];
 
 const TAG_STYLES = {
-  "Google Leads":  "bg-blue-100 text-blue-700 border-blue-200",
-  "Meta Leads":    "bg-indigo-100 text-indigo-700 border-indigo-200",
-  "Form Leads":    "bg-green-100 text-green-700 border-green-200",
-  "Collab Leads":  "bg-purple-100 text-purple-700 border-purple-200",
+  "Google Leads": "bg-blue-100 text-blue-700 border-blue-200",
+  "Meta Leads": "bg-indigo-100 text-indigo-700 border-indigo-200",
+  "Form Leads": "bg-green-100 text-green-700 border-green-200",
+  "Collab Leads": "bg-purple-100 text-purple-700 border-purple-200",
 };
 
 const PER_PAGE_OPTIONS = [10, 25, 50, 100];
@@ -53,21 +96,43 @@ const PER_PAGE_OPTIONS = [10, 25, 50, 100];
 ───────────────────────────────────────────── */
 function fmtDate(iso) {
   if (!iso) return "—";
-  return new Date(iso).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+  return new Date(iso).toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
 }
 
 function fmtFilterLabel(key, val) {
   if (!val) return null;
-  if (key === "createdFrom" || key === "createdTo" || key === "visitFrom" || key === "visitTo") {
+  if (
+    key === "createdFrom" ||
+    key === "createdTo" ||
+    key === "visitFrom" ||
+    key === "visitTo"
+  ) {
     const [, timePart] = val.split("T");
-    const date = new Date(val).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+    const date = new Date(val).toLocaleDateString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
     return timePart ? `${date} ${timePart}` : date;
   }
   return val;
 }
 
 function leadsToCSV(leads) {
-  const headers = ["Name","Phone","Email","City","Tag","Created At","Visit Date","Remarks"];
+  const headers = [
+    "Name",
+    "Phone",
+    "Email",
+    "City",
+    "Tag",
+    "Created At",
+    "Visit Date",
+    "Remarks",
+  ];
   const rows = leads.map((l) => [
     l.name ?? "",
     l.phone ?? "",
@@ -104,7 +169,9 @@ function FilterSection({ title, icon: Icon, children }) {
     <div>
       <div className="flex items-center gap-1.5 mb-2">
         <Icon className="w-3.5 h-3.5 text-gray-400" />
-        <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{title}</span>
+        <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+          {title}
+        </span>
       </div>
       {children}
     </div>
@@ -141,10 +208,14 @@ export default function SuperAdminLeadsPage() {
   const [perPage, setPerPage] = useState(25);
   const [showFilter, setShowFilter] = useState(false);
   const [filters, setFilters] = useState({
-    tag: "", city: "",
-    createdFrom: "", createdTo: "",
-    visitFrom: "", visitTo: "",
-    hasEmail: null, hasRemarks: null,
+    tag: "",
+    city: "",
+    createdFrom: "",
+    createdTo: "",
+    visitFrom: "",
+    visitTo: "",
+    hasEmail: null,
+    hasRemarks: null,
   });
   const [pendingFilters, setPendingFilters] = useState({ ...filters });
   const searchTimer = useRef(null);
@@ -152,7 +223,7 @@ export default function SuperAdminLeadsPage() {
 
   /* Active filter count */
   const activeFilterCount = Object.entries(filters).filter(([k, v]) =>
-    k === "hasEmail" || k === "hasRemarks" ? v !== null : !!v
+    k === "hasEmail" || k === "hasRemarks" ? v !== null : !!v,
   ).length;
 
   /* Fetch */
@@ -182,7 +253,9 @@ export default function SuperAdminLeadsPage() {
     }, 400);
   }, [search]);
 
-  useEffect(() => { fetchLeads(); }, [page, perPage, filters]);
+  useEffect(() => {
+    fetchLeads();
+  }, [page, perPage, filters]);
 
   /* Download all */
   const handleDownload = async () => {
@@ -213,7 +286,16 @@ export default function SuperAdminLeadsPage() {
   };
 
   const clearFilters = () => {
-    const blank = { tag: "", city: "", createdFrom: "", createdTo: "", visitFrom: "", visitTo: "", hasEmail: null, hasRemarks: null };
+    const blank = {
+      tag: "",
+      city: "",
+      createdFrom: "",
+      createdTo: "",
+      visitFrom: "",
+      visitTo: "",
+      hasEmail: null,
+      hasRemarks: null,
+    };
     setFilters(blank);
     setPendingFilters(blank);
     setPage(1);
@@ -228,10 +310,17 @@ export default function SuperAdminLeadsPage() {
         {/* Top bar */}
         <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between gap-4 flex-wrap">
           <div>
-            <h1 className="text-xl font-bold text-gray-900">Leads</h1>
-            <p className="text-xs text-gray-500 mt-0.5">
-              {total.toLocaleString()} total leads
-            </p>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-linear-to-br from-amber-400 via-orange-500 to-red-500 flex items-center justify-center shadow-md">
+                <ScrollText className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold text-gray-900">ALL Leads</h1>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  {total.toLocaleString()} total leads
+                </p>
+              </div>
+            </div>
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
@@ -246,18 +335,12 @@ export default function SuperAdminLeadsPage() {
               />
             </div>
 
-            {/* Per page */}
-            <select
-              value={perPage}
-              onChange={(e) => { setPerPage(Number(e.target.value)); setPage(1); }}
-              className="border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
-            >
-              {PER_PAGE_OPTIONS.map((n) => <option key={n} value={n}>{n} / page</option>)}
-            </select>
-
             {/* Filter toggle */}
             <button
-              onClick={() => { setPendingFilters({ ...filters }); setShowFilter((p) => !p); }}
+              onClick={() => {
+                setPendingFilters({ ...filters });
+                setShowFilter((p) => !p);
+              }}
               className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-sm font-medium transition-all ${
                 showFilter || activeFilterCount > 0
                   ? "bg-amber-500 text-white border-amber-500"
@@ -279,7 +362,11 @@ export default function SuperAdminLeadsPage() {
               disabled={downloading}
               className="flex items-center gap-2 px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-xl text-sm font-medium transition-colors disabled:opacity-60"
             >
-              {downloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+              {downloading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Download className="w-4 h-4" />
+              )}
               {downloading ? "Exporting…" : `Export CSV (${total})`}
             </button>
           </div>
@@ -287,95 +374,186 @@ export default function SuperAdminLeadsPage() {
 
         {/* Filter panel */}
         {showFilter && (
-          <div ref={filterPanelRef} className="bg-white border-b border-gray-200 px-6 py-5 shadow-sm">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-              <FilterSection title="Tag / Source" icon={Tag}>
-                <select
-                  value={pendingFilters.tag}
-                  onChange={(e) => setPendingFilters((p) => ({ ...p, tag: e.target.value }))}
-                  className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
-                >
-                  <option value="">All Tags</option>
-                  {TAG_OPTIONS.map((t) => <option key={t}>{t}</option>)}
-                </select>
-              </FilterSection>
-
-              <FilterSection title="City" icon={Users}>
-                <select
-                  value={pendingFilters.city}
-                  onChange={(e) => setPendingFilters((p) => ({ ...p, city: e.target.value }))}
-                  className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
-                >
-                  <option value="">All Cities</option>
-                  {LOCATION_OPTIONS.map((c) => <option key={c}>{c}</option>)}
-                </select>
-              </FilterSection>
-
-              <FilterSection title="Created At Range" icon={Calendar}>
-                <div className="space-y-2">
-                  <input
-                    type="datetime-local"
-                    value={pendingFilters.createdFrom}
-                    onChange={(e) => setPendingFilters((p) => ({ ...p, createdFrom: e.target.value }))}
-                    className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
-                  />
-                  <input
-                    type="datetime-local"
-                    value={pendingFilters.createdTo}
-                    onChange={(e) => setPendingFilters((p) => ({ ...p, createdTo: e.target.value }))}
-                    className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
-                  />
-                </div>
-              </FilterSection>
-
-              <FilterSection title="Visit Date Range" icon={Calendar}>
-                <div className="space-y-2">
-                  <input
-                    type="datetime-local"
-                    value={pendingFilters.visitFrom}
-                    onChange={(e) => setPendingFilters((p) => ({ ...p, visitFrom: e.target.value }))}
-                    className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
-                  />
-                  <input
-                    type="datetime-local"
-                    value={pendingFilters.visitTo}
-                    onChange={(e) => setPendingFilters((p) => ({ ...p, visitTo: e.target.value }))}
-                    className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
-                  />
-                </div>
-              </FilterSection>
-
-              <FilterSection title="Has Email" icon={Mail}>
-                <div className="flex gap-2">
-                  <ToggleChip label="With Email" value={pendingFilters.hasEmail} onChange={(v) => setPendingFilters((p) => ({ ...p, hasEmail: v }))} />
-                </div>
-              </FilterSection>
-
-              <FilterSection title="Has Remarks" icon={MessageSquare}>
-                <div className="flex gap-2">
-                  <ToggleChip label="With Remarks" value={pendingFilters.hasRemarks} onChange={(v) => setPendingFilters((p) => ({ ...p, hasRemarks: v }))} />
-                </div>
-              </FilterSection>
+          <div
+            ref={filterPanelRef}
+            className="bg-white border-b border-gray-100 px-6 py-4"
+          >
+            {/* Header row */}
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest">
+                Filters
+              </p>
+              <button
+                onClick={() => setShowFilter(false)}
+                className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X className="w-3.5 h-3.5 text-gray-400" />
+              </button>
             </div>
 
-            <div className="flex items-center gap-3 mt-5 pt-4 border-t border-gray-100">
+            {/* Filter grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+              {/* Tag / Source */}
+              <div className="bg-gray-50 rounded-xl px-3.5 py-3 border border-gray-100">
+                <label className="flex items-center gap-1.5 text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-2">
+                  <Tag className="w-3 h-3" /> Source
+                </label>
+                <select
+                  value={pendingFilters.tag}
+                  onChange={(e) =>
+                    setPendingFilters((p) => ({ ...p, tag: e.target.value }))
+                  }
+                  className="w-full bg-white border border-gray-200 rounded-lg px-3 py-1.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all"
+                >
+                  <option value="">All Tags</option>
+                  {TAG_OPTIONS.map((t) => (
+                    <option key={t}>{t}</option>
+                  ))}
+                </select>
+
+                <label className="flex items-center gap-1.5 mt-4 text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-2">
+                  <Users className="w-3 h-3" /> City
+                </label>
+                <select
+                  value={pendingFilters.city}
+                  onChange={(e) =>
+                    setPendingFilters((p) => ({ ...p, city: e.target.value }))
+                  }
+                  className="w-full bg-white border border-gray-200 rounded-lg px-3 py-1.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all"
+                >
+                  <option value="">All Cities</option>
+                  {LOCATION_OPTIONS.map((c) => (
+                    <option key={c}>{c}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Created At Range */}
+              <div className="bg-gray-50 rounded-xl px-3.5 py-3 border border-gray-100">
+                <label className="flex items-center gap-1.5 text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-2">
+                  <Calendar className="w-3 h-3" /> Created Range
+                </label>
+                <div className="space-y-1.5 mt-4">
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-medium text-gray-400 pointer-events-none z-10">
+                      FROM
+                    </span>
+                    <input
+                      type="datetime-local"
+                      value={pendingFilters.createdFrom}
+                      onChange={(e) =>
+                        setPendingFilters((p) => ({
+                          ...p,
+                          createdFrom: e.target.value,
+                        }))
+                      }
+                      className="w-full bg-white border border-gray-200 rounded-lg pl-12 pr-3 py-1.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all"
+                    />
+                  </div>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-medium text-gray-400 pointer-events-none z-10">
+                      TO
+                    </span>
+                    <input
+                      type="datetime-local"
+                      value={pendingFilters.createdTo}
+                      onChange={(e) =>
+                        setPendingFilters((p) => ({
+                          ...p,
+                          createdTo: e.target.value,
+                        }))
+                      }
+                      className="w-full bg-white border border-gray-200 rounded-lg pl-12 pr-3 py-1.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Visit Date Range */}
+              <div className="bg-gray-50 rounded-xl px-3.5 py-3 border border-gray-100">
+                <label className="flex items-center gap-1.5 text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-2">
+                  <Calendar className="w-3 h-3" /> Visit Range
+                </label>
+                <div className="space-y-1.5 mt-4">
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-medium text-gray-400 pointer-events-none z-10">
+                      FROM
+                    </span>
+                    <input
+                      type="datetime-local"
+                      value={pendingFilters.visitFrom}
+                      onChange={(e) =>
+                        setPendingFilters((p) => ({
+                          ...p,
+                          visitFrom: e.target.value,
+                        }))
+                      }
+                      className="w-full bg-white border border-gray-200 rounded-lg pl-12 pr-3 py-1.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all"
+                    />
+                  </div>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-medium text-gray-400 pointer-events-none z-10">
+                      TO
+                    </span>
+                    <input
+                      type="datetime-local"
+                      value={pendingFilters.visitTo}
+                      onChange={(e) =>
+                        setPendingFilters((p) => ({
+                          ...p,
+                          visitTo: e.target.value,
+                        }))
+                      }
+                      className="w-full bg-white border border-gray-200 rounded-lg pl-12 pr-3 py-1.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Has Email */}
+              <div className="bg-gray-50 rounded-xl px-3.5 py-3 border border-gray-100">
+                <label className="flex items-center gap-1.5 text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-2">
+                  <Mail className="w-3 h-3" /> Email
+                </label>
+                <button
+                  onClick={() =>
+                    setPendingFilters((p) => ({ ...p, hasEmail: !p.hasEmail }))
+                  }
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium border transition-all ${
+                    pendingFilters.hasEmail
+                      ? "bg-amber-50 border-amber-300 text-amber-700"
+                      : "bg-white border-gray-200 text-gray-500 hover:border-gray-300"
+                  }`}
+                >
+                  <span
+                    className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors ${
+                      pendingFilters.hasEmail
+                        ? "border-amber-500 bg-amber-500"
+                        : "border-gray-300"
+                    }`}
+                  >
+                    {pendingFilters.hasEmail && (
+                      <span className="w-1.5 h-1.5 bg-white rounded-full" />
+                    )}
+                  </span>
+                  With Email
+                </button>
+              </div>
+            </div>
+
+            {/* Action row */}
+            <div className="flex items-center gap-2 mt-4 pt-3.5 border-t border-gray-100">
               <button
                 onClick={applyFilters}
-                className="px-5 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-sm font-medium transition-colors"
+                className="px-5 py-2 bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-white rounded-lg text-sm font-semibold transition-colors shadow-sm shadow-amber-100"
               >
-                Apply Filters
+                Apply
               </button>
               <button
                 onClick={clearFilters}
-                className="px-5 py-2 border border-gray-300 text-gray-600 rounded-xl text-sm font-medium hover:bg-gray-50 transition-colors"
+                className="px-4 py-2 border border-gray-200 text-gray-500 rounded-lg text-sm font-medium hover:bg-gray-50 hover:text-gray-700 transition-colors"
               >
-                Clear All
-              </button>
-              <button
-                onClick={() => setShowFilter(false)}
-                className="ml-auto p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <X className="w-4 h-4 text-gray-500" />
+                Clear all
               </button>
             </div>
           </div>
@@ -384,14 +562,22 @@ export default function SuperAdminLeadsPage() {
         {/* Active filter pills */}
         {activeFilterCount > 0 && (
           <div className="bg-amber-50 border-b border-amber-100 px-6 py-2 flex items-center gap-2 flex-wrap">
-            <span className="text-xs text-amber-600 font-medium">Active filters:</span>
+            <span className="text-xs text-amber-600 font-medium">
+              Active filters:
+            </span>
             {Object.entries(filters).map(([k, v]) => {
               if (k === "hasEmail" || k === "hasRemarks") {
                 if (v === null) return null;
                 return (
-                  <span key={k} className="flex items-center gap-1 bg-amber-100 text-amber-700 border border-amber-200 rounded-full px-2.5 py-0.5 text-xs font-medium">
+                  <span
+                    key={k}
+                    className="flex items-center gap-1 bg-amber-100 text-amber-700 border border-amber-200 rounded-full px-2.5 py-0.5 text-xs font-medium"
+                  >
                     {k === "hasEmail" ? "Has Email" : "Has Remarks"}
-                    <button onClick={() => setFilters((p) => ({ ...p, [k]: null }))} className="hover:text-red-500">
+                    <button
+                      onClick={() => setFilters((p) => ({ ...p, [k]: null }))}
+                      className="hover:text-red-500"
+                    >
                       <X className="w-3 h-3" />
                     </button>
                   </span>
@@ -399,15 +585,24 @@ export default function SuperAdminLeadsPage() {
               }
               if (!v) return null;
               return (
-                <span key={k} className="flex items-center gap-1 bg-amber-100 text-amber-700 border border-amber-200 rounded-full px-2.5 py-0.5 text-xs font-medium">
+                <span
+                  key={k}
+                  className="flex items-center gap-1 bg-amber-100 text-amber-700 border border-amber-200 rounded-full px-2.5 py-0.5 text-xs font-medium"
+                >
                   {k}: {fmtFilterLabel(k, v)}
-                  <button onClick={() => setFilters((p) => ({ ...p, [k]: "" }))} className="hover:text-red-500">
+                  <button
+                    onClick={() => setFilters((p) => ({ ...p, [k]: "" }))}
+                    className="hover:text-red-500"
+                  >
                     <X className="w-3 h-3" />
                   </button>
                 </span>
               );
             })}
-            <button onClick={clearFilters} className="ml-auto text-xs text-amber-600 hover:text-red-500 font-medium">
+            <button
+              onClick={clearFilters}
+              className="ml-auto text-xs text-amber-600 hover:text-red-500 font-medium"
+            >
               Clear all
             </button>
           </div>
@@ -420,8 +615,21 @@ export default function SuperAdminLeadsPage() {
               <table className="min-w-full divide-y divide-gray-100">
                 <thead className="bg-gray-50">
                   <tr>
-                    {["#", "Name", "Phone", "Email", "City", "Tag", "Visit Date", "Created At", "Remarks"].map((h) => (
-                      <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                    {[
+                      "#",
+                      "Name",
+                      "Phone",
+                      "Email",
+                      "City",
+                      "Tag",
+                      "Visit Date",
+                      "Created At",
+                      "Remarks",
+                    ].map((h) => (
+                      <th
+                        key={h}
+                        className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap"
+                      >
                         {h}
                       </th>
                     ))}
@@ -432,33 +640,62 @@ export default function SuperAdminLeadsPage() {
                     <tr>
                       <td colSpan={9} className="px-4 py-12 text-center">
                         <Loader2 className="w-6 h-6 animate-spin text-amber-500 mx-auto" />
-                        <p className="text-sm text-gray-400 mt-2">Loading leads…</p>
+                        <p className="text-sm text-gray-400 mt-2">
+                          Loading leads…
+                        </p>
                       </td>
                     </tr>
                   ) : leads.length === 0 ? (
                     <tr>
-                      <td colSpan={9} className="px-4 py-12 text-center text-gray-400 text-sm">
+                      <td
+                        colSpan={9}
+                        className="px-4 py-12 text-center text-gray-400 text-sm"
+                      >
                         No leads found
                       </td>
                     </tr>
                   ) : (
                     leads.map((lead, idx) => (
-                      <tr key={lead._id} className="hover:bg-gray-50 transition-colors">
-                        <td className="px-4 py-3 text-xs text-gray-400">{(page - 1) * perPage + idx + 1}</td>
-                        <td className="px-4 py-3 text-sm font-medium text-gray-900 whitespace-nowrap">{lead.name || "—"}</td>
-                        <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">{lead.phone || "—"}</td>
-                        <td className="px-4 py-3 text-sm text-gray-500 whitespace-nowrap">{lead.email || "—"}</td>
-                        <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">{lead.city || "—"}</td>
+                      <tr
+                        key={lead._id}
+                        className="hover:bg-gray-50 transition-colors"
+                      >
+                        <td className="px-4 py-3 text-xs text-gray-400">
+                          {(page - 1) * perPage + idx + 1}
+                        </td>
+                        <td className="px-4 py-3 text-sm font-medium text-gray-900 whitespace-nowrap">
+                          {lead.name || "—"}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">
+                          {lead.phone || "—"}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-500 whitespace-nowrap">
+                          {lead.email || "—"}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">
+                          {lead.city || "—"}
+                        </td>
                         <td className="px-4 py-3 whitespace-nowrap">
                           {lead.tag ? (
-                            <span className={`px-2 py-0.5 rounded-full text-xs font-semibold border ${TAG_STYLES[lead.tag] || "bg-gray-100 text-gray-600 border-gray-200"}`}>
+                            <span
+                              className={`px-2 py-0.5 rounded-full text-xs font-semibold border ${TAG_STYLES[lead.tag] || "bg-gray-100 text-gray-600 border-gray-200"}`}
+                            >
                               {lead.tag}
                             </span>
-                          ) : "—"}
+                          ) : (
+                            "—"
+                          )}
                         </td>
-                        <td className="px-4 py-3 text-sm text-gray-500 whitespace-nowrap">{fmtDate(lead.visitDate)}</td>
-                        <td className="px-4 py-3 text-sm text-gray-500 whitespace-nowrap">{fmtDate(lead.createdAt)}</td>
-                        <td className="px-4 py-3 text-sm text-gray-500 max-w-[200px] truncate" title={lead.remarks}>
+                        <td className="px-4 py-3 text-sm text-gray-500 whitespace-nowrap">
+                          {fmtDate(lead.visitDate)}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-500 whitespace-nowrap">
+                          {fmtDate(lead.createdAt)}
+                        </td>
+                        <td
+                          className="px-4 py-3 text-sm text-gray-500 max-w-[200px] truncate"
+                          title={lead.remarks}
+                        >
                           {lead.remarks || "—"}
                         </td>
                       </tr>
@@ -471,8 +708,11 @@ export default function SuperAdminLeadsPage() {
             {/* Pagination */}
             <div className="px-5 py-4 border-t border-gray-100 flex items-center justify-between flex-wrap gap-3">
               <p className="text-xs text-gray-500">
-                {total === 0 ? "No results" : `${(page - 1) * perPage + 1}–${Math.min(page * perPage, total)} of ${total.toLocaleString()}`}
+                {total === 0
+                  ? "No results"
+                  : `${(page - 1) * perPage + 1}–${Math.min(page * perPage, total)} of ${total.toLocaleString()}`}
               </p>
+
               <div className="flex items-center gap-1">
                 <button
                   onClick={() => setPage((p) => Math.max(1, p - 1))}
@@ -505,6 +745,22 @@ export default function SuperAdminLeadsPage() {
                   <ChevronRight className="w-4 h-4 text-gray-600" />
                 </button>
               </div>
+
+              {/* Per page */}
+              <select
+                value={perPage}
+                onChange={(e) => {
+                  setPerPage(Number(e.target.value));
+                  setPage(1);
+                }}
+                className="border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
+              >
+                {PER_PAGE_OPTIONS.map((n) => (
+                  <option key={n} value={n}>
+                    {n} / page
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
         </div>

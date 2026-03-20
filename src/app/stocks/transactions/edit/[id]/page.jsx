@@ -1662,12 +1662,242 @@ export default function EditTransactionPage() {
               </div>
             )}
 
-            {/* EXPENSE TAB - Keep as-is from your original code */}
+            {/* EXPENSE TAB */}
             {activeTab === "expense" && (
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* ... expense tab content from your original code ... */}
-                <div className="text-center p-8">
-                  <p className="text-gray-600">Expense tab content (keep your original code here)</p>
+                <div className="lg:col-span-2 space-y-6">
+
+                  {/* Expense Category & Payee */}
+                  <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Expense Details</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Expense Category <span className="text-red-500">*</span>
+                        </label>
+                        <select
+                          value={expenseData.expenseCategory}
+                          onChange={(e) => setExpenseData({ ...expenseData, expenseCategory: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 outline-none"
+                        >
+                          <option value="">Select category…</option>
+                          <option>Salary</option>
+                          <option>Rent</option>
+                          <option>Utilities</option>
+                          <option>Marketing</option>
+                          <option>Equipment</option>
+                          <option>Medical Supplies</option>
+                          <option>Transportation</option>
+                          <option>Maintenance</option>
+                          <option>Other</option>
+                        </select>
+                      </div>
+
+                      {/* Payee type toggle */}
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Payee Type</label>
+                        <div className="flex gap-3">
+                          <button
+                            type="button"
+                            onClick={() => setExpenseData({ ...expenseData, isVendor: true, expenseGiverName: "" })}
+                            className={`flex-1 py-2 px-4 rounded-lg border text-sm font-medium transition-colors ${
+                              expenseData.isVendor
+                                ? "bg-indigo-600 text-white border-indigo-600"
+                                : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                            }`}
+                          >
+                            Vendor
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setExpenseData({ ...expenseData, isVendor: false, vendorId: "" })}
+                            className={`flex-1 py-2 px-4 rounded-lg border text-sm font-medium transition-colors ${
+                              !expenseData.isVendor
+                                ? "bg-indigo-600 text-white border-indigo-600"
+                                : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                            }`}
+                          >
+                            Manual / Individual
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Vendor selector or manual name */}
+                      {expenseData.isVendor ? (
+                        <div className="md:col-span-2">
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Select Vendor <span className="text-red-500">*</span>
+                          </label>
+                          <select
+                            value={expenseData.vendorId}
+                            onChange={(e) => setExpenseData({ ...expenseData, vendorId: e.target.value })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 outline-none"
+                          >
+                            <option value="">Select a vendor…</option>
+                            {vendors.map((v) => (
+                              <option key={v._id} value={v._id}>{v.name}</option>
+                            ))}
+                          </select>
+                          {vendors.length === 0 && (
+                            <p className="text-xs text-gray-400 mt-1">No vendors found. Add vendors from the Vendors section.</p>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="md:col-span-2">
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Payee Name <span className="text-red-500">*</span>
+                          </label>
+                          <input
+                            type="text"
+                            value={expenseData.expenseGiverName}
+                            onChange={(e) => setExpenseData({ ...expenseData, expenseGiverName: e.target.value })}
+                            placeholder="Enter payee name"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 outline-none"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Payment Details */}
+                  <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Payment Details</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Amount (₹) <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="number"
+                          value={expenseData.amount}
+                          onChange={(e) => setExpenseData({ ...expenseData, amount: e.target.value })}
+                          min="0"
+                          placeholder="0"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 outline-none"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Payment Method</label>
+                        <select
+                          value={expenseData.method}
+                          onChange={(e) => setExpenseData({ ...expenseData, method: e.target.value, paymentId: "" })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 outline-none"
+                        >
+                          <option value="cash">Cash</option>
+                          <option value="upi">UPI</option>
+                          <option value="card">Card</option>
+                          <option value="banking">Bank Transfer</option>
+                          <option value="Loan">Loan</option>
+                          <option value="other">Other</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Transaction ID
+                          {getPaymentIdConfig(expenseData.method).required && (
+                            <span className="text-red-500 ml-1">*</span>
+                          )}
+                        </label>
+                        <input
+                          type="text"
+                          value={expenseData.paymentId}
+                          onChange={(e) => setExpenseData({ ...expenseData, paymentId: e.target.value })}
+                          placeholder={getPaymentIdConfig(expenseData.method).placeholder}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 outline-none"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Branch</label>
+                        <select
+                          value={expenseData.branch}
+                          onChange={(e) => setExpenseData({ ...expenseData, branch: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 outline-none"
+                        >
+                          <option value="Delhi">Delhi</option>
+                          <option value="Mumbai">Mumbai</option>
+                          <option value="Hyderabad">Hyderabad</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Date</label>
+                        <input
+                          type="date"
+                          value={expenseData.date}
+                          onChange={(e) => setExpenseData({ ...expenseData, date: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 outline-none"
+                        />
+                      </div>
+
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Remarks</label>
+                        <textarea
+                          value={expenseData.remarks}
+                          onChange={(e) => setExpenseData({ ...expenseData, remarks: e.target.value })}
+                          rows="2"
+                          placeholder="Optional notes…"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 outline-none resize-none"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Summary sidebar */}
+                <div>
+                  <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 sticky top-6">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Expense Summary</h3>
+                    <div className="space-y-3">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Category:</span>
+                        <span className="font-semibold text-gray-900">{expenseData.expenseCategory || "—"}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Payee:</span>
+                        <span className="font-semibold text-gray-900 text-right max-w-[150px] truncate">
+                          {expenseData.isVendor
+                            ? (vendors.find((v) => v._id === expenseData.vendorId)?.name || "—")
+                            : (expenseData.expenseGiverName || "—")}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Method:</span>
+                        <span className="font-semibold text-gray-900 capitalize">{expenseData.method || "—"}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Branch:</span>
+                        <span className="font-semibold text-gray-900">{expenseData.branch || "—"}</span>
+                      </div>
+                      <div className="border-t border-gray-200 pt-3 mt-3">
+                        <div className="flex justify-between items-center">
+                          <span className="text-lg font-bold text-gray-900">Total:</span>
+                          <span className="text-2xl font-bold text-red-600">
+                            {formatCurrency(calculateExpenseTotal())}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <button
+                      onClick={handleUpdateExpense}
+                      disabled={loading}
+                      className="w-full mt-6 px-4 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 font-medium"
+                    >
+                      {loading ? (
+                        <div className="flex items-center justify-center gap-2">
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Updating…
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-center gap-2">
+                          <Save className="w-4 h-4" />
+                          Update Expense
+                        </div>
+                      )}
+                    </button>
+                  </div>
                 </div>
               </div>
             )}

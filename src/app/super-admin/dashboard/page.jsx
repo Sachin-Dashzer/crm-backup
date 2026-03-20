@@ -3,12 +3,13 @@
 import { useEffect, useState, useCallback } from "react";
 import {
   AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid,
-  Tooltip, ResponsiveContainer, Cell,
+  Tooltip, ResponsiveContainer, Cell, PieChart, Pie, Legend,
 } from "recharts";
 import {
   Users, UserCheck, UserX, IndianRupee, Package,
   ClipboardList, Activity, TrendingUp, Stethoscope,
-  Crown, ChevronDown,
+  Crown, ChevronDown, Briefcase, Calendar, MapPin,
+  RefreshCw, HeartPulse, Scissors, BarChart2, CreditCard,
 } from "lucide-react";
 import SuperAdminSidebar from "@/components/Sidebars/SuperAdminSidebar";
 
@@ -18,16 +19,22 @@ import SuperAdminSidebar from "@/components/Sidebars/SuperAdminSidebar";
 const BRANCHES    = ["All", "Delhi", "Mumbai", "Hyderabad"];
 const DATE_RANGES = ["Today", "Yesterday", "Last 7 Days", "Last 30 Days", "Custom"];
 
-const TECHNIQUE_COLORS = [
-  "#6366f1","#8b5cf6","#a78bfa","#ec4899","#f59e0b",
-  "#10b981","#3b82f6","#f97316","#14b8a6","#ef4444",
+const PALETTE = [
+  "#6366f1","#8b5cf6","#ec4899","#f59e0b",
+  "#10b981","#3b82f6","#f97316","#14b8a6","#ef4444","#a78bfa",
 ];
+
+const METHOD_ICONS = {
+  upi: "📲", cash: "💵", card: "💳", banking: "🏦", Loan: "📄", other: "💰",
+};
 
 /* ─────────────────────────────────────────────
    Helpers
 ───────────────────────────────────────────── */
 const rupee = (n) =>
   new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(n || 0);
+
+const fmt = (n) => new Intl.NumberFormat("en-IN").format(n || 0);
 
 function buildDateRange(range, custom) {
   const now = new Date();
@@ -56,60 +63,111 @@ function fmtDate(iso) {
 }
 
 /* ─────────────────────────────────────────────
-   Sub-components
+   KPI Card
 ───────────────────────────────────────────── */
-function KpiCard({ title, value, subtitle, icon: Icon, color, growth }) {
-  const colors = {
-    indigo: { bg: "bg-indigo-50",  icon: "text-indigo-600",  border: "border-indigo-100" },
-    purple: { bg: "bg-purple-50",  icon: "text-purple-600",  border: "border-purple-100" },
-    green:  { bg: "bg-green-50",   icon: "text-green-600",   border: "border-green-100"  },
-    amber:  { bg: "bg-amber-50",   icon: "text-amber-600",   border: "border-amber-100"  },
-    red:    { bg: "bg-red-50",     icon: "text-red-600",     border: "border-red-100"    },
-    blue:   { bg: "bg-blue-50",    icon: "text-blue-600",    border: "border-blue-100"   },
-    teal:   { bg: "bg-teal-50",    icon: "text-teal-600",    border: "border-teal-100"   },
-    pink:   { bg: "bg-pink-50",    icon: "text-pink-600",    border: "border-pink-100"   },
-  };
-  const c = colors[color] || colors.indigo;
+const COLOR_MAP = {
+  indigo: { accent: "bg-indigo-500",  soft: "bg-indigo-50",  text: "text-indigo-600", border: "border-indigo-100" },
+  purple: { accent: "bg-purple-500",  soft: "bg-purple-50",  text: "text-purple-600", border: "border-purple-100" },
+  green:  { accent: "bg-emerald-500", soft: "bg-emerald-50", text: "text-emerald-600",border: "border-emerald-100"},
+  amber:  { accent: "bg-amber-500",   soft: "bg-amber-50",   text: "text-amber-600",  border: "border-amber-100"  },
+  red:    { accent: "bg-red-500",     soft: "bg-red-50",     text: "text-red-600",    border: "border-red-100"    },
+  blue:   { accent: "bg-blue-500",    soft: "bg-blue-50",    text: "text-blue-600",   border: "border-blue-100"   },
+  teal:   { accent: "bg-teal-500",    soft: "bg-teal-50",    text: "text-teal-600",   border: "border-teal-100"   },
+  pink:   { accent: "bg-pink-500",    soft: "bg-pink-50",    text: "text-pink-600",   border: "border-pink-100"   },
+  rose:   { accent: "bg-rose-500",    soft: "bg-rose-50",    text: "text-rose-600",   border: "border-rose-100"   },
+};
+
+function KpiCard({ title, value, subtitle, icon: Icon, color }) {
+  const c = COLOR_MAP[color] || COLOR_MAP.indigo;
   return (
-    <div className={`bg-white rounded-2xl border ${c.border} p-5 shadow-sm hover:shadow-md transition-shadow`}>
-      <div className="flex items-start justify-between mb-3">
-        <div className={`w-10 h-10 rounded-xl ${c.bg} flex items-center justify-center shrink-0`}>
-          <Icon className={`w-5 h-5 ${c.icon}`} />
+    <div className={`bg-white rounded-2xl border ${c.border} shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden group`}>
+      <div className={`h-1 ${c.accent}`} />
+      <div className="p-4">
+        <div className="flex items-center justify-between mb-3">
+          <div className={`w-9 h-9 rounded-xl ${c.soft} flex items-center justify-center`}>
+            <Icon className={`w-4.5 h-4.5 ${c.text}`} />
+          </div>
+          <span className={`text-[10px] font-semibold uppercase tracking-widest ${c.text} opacity-70`}>{subtitle}</span>
         </div>
-        {growth !== undefined && (
-          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
-            growth >= 0 ? "bg-green-50 text-green-600" : "bg-red-50 text-red-600"
-          }`}>
-            {growth >= 0 ? "+" : ""}{growth}%
-          </span>
-        )}
+        <p className="text-2xl font-bold text-gray-900 leading-none">{value}</p>
+        <p className="text-xs font-medium text-gray-500 mt-1.5">{title}</p>
       </div>
-      <p className="text-2xl font-bold text-gray-900 mt-1">{value}</p>
-      <p className="text-sm font-medium text-gray-500 mt-0.5">{title}</p>
-      {subtitle && <p className="text-xs text-gray-400 mt-0.5">{subtitle}</p>}
     </div>
   );
 }
 
-function SectionCard({ title, children, className = "" }) {
+/* ─────────────────────────────────────────────
+   Section Header
+───────────────────────────────────────────── */
+function SectionHeader({ icon: Icon, title, color = "text-gray-700", accent = "bg-gray-100" }) {
+  return (
+    <div className="flex items-center gap-2.5 mb-4">
+      <div className={`w-7 h-7 rounded-lg ${accent} flex items-center justify-center`}>
+        <Icon className={`w-3.5 h-3.5 ${color}`} />
+      </div>
+      <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wider">{title}</h2>
+      <div className="flex-1 h-px bg-gray-200" />
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────
+   Chart Card
+───────────────────────────────────────────── */
+function ChartCard({ title, subtitle, children, className = "" }) {
   return (
     <div className={`bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden ${className}`}>
-      <div className="px-5 py-4 border-b border-gray-100">
-        <h3 className="text-sm font-semibold text-gray-800">{title}</h3>
+      <div className="px-6 py-4 border-b border-gray-100 flex items-start justify-between">
+        <div>
+          <h3 className="text-sm font-semibold text-gray-800">{title}</h3>
+          {subtitle && <p className="text-xs text-gray-400 mt-0.5">{subtitle}</p>}
+        </div>
       </div>
       <div className="p-5">{children}</div>
     </div>
   );
 }
 
+/* ─────────────────────────────────────────────
+   Staff Role Colors
+───────────────────────────────────────────── */
 const STAFF_COLORS = {
-  Agent:      { bg: "bg-blue-100",   text: "text-blue-700"   },
-  Counsellor: { bg: "bg-purple-100", text: "text-purple-700" },
-  Doctor:     { bg: "bg-green-100",  text: "text-green-700"  },
-  Technician: { bg: "bg-amber-100",  text: "text-amber-700"  },
-  Implanter:  { bg: "bg-pink-100",   text: "text-pink-700"   },
-  Others:     { bg: "bg-gray-100",   text: "text-gray-700"   },
+  Agent:      { soft: "bg-blue-50",   text: "text-blue-700",   bar: "#3b82f6" },
+  Counsellor: { soft: "bg-purple-50", text: "text-purple-700", bar: "#8b5cf6" },
+  Doctor:     { soft: "bg-emerald-50",text: "text-emerald-700",bar: "#10b981" },
+  Technician: { soft: "bg-amber-50",  text: "text-amber-700",  bar: "#f59e0b" },
+  Implanter:  { soft: "bg-pink-50",   text: "text-pink-700",   bar: "#ec4899" },
+  Others:     { soft: "bg-gray-50",   text: "text-gray-600",   bar: "#9ca3af" },
+  Hr:         { soft: "bg-rose-50",   text: "text-rose-700",   bar: "#f43f5e" },
 };
+
+/* ─────────────────────────────────────────────
+   Skeleton Loader
+───────────────────────────────────────────── */
+function Skeleton({ className = "" }) {
+  return <div className={`animate-pulse bg-gray-100 rounded-xl ${className}`} />;
+}
+
+function DashboardSkeleton() {
+  return (
+    <div className="space-y-8">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        {[...Array(6)].map((_, i) => <Skeleton key={i} className="h-28" />)}
+      </div>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-28" />)}
+      </div>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-28" />)}
+      </div>
+      <Skeleton className="h-64" />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Skeleton className="h-72" />
+        <Skeleton className="h-72" />
+      </div>
+    </div>
+  );
+}
 
 /* ─────────────────────────────────────────────
    Main Page
@@ -134,13 +192,10 @@ export default function SuperAdminDashboard() {
         body: JSON.stringify({ branch, from, to }),
       });
       const json = await res.json();
-      if (json.success) {
-        setData(json);
-      } else {
-        setError(json.message || "Failed to load");
-      }
-    } catch (err) {
-      setError("Network error");
+      if (json.success) setData(json);
+      else setError(json.message || "Failed to load");
+    } catch {
+      setError("Network error — please try again");
     } finally {
       setLoading(false);
     }
@@ -151,159 +206,258 @@ export default function SuperAdminDashboard() {
   const d = data || {};
 
   return (
-    <section className="flex min-h-screen bg-gray-50">
+    <section className="flex min-h-screen bg-[#f8f9fc]">
       <SuperAdminSidebar />
 
       <main className="flex-1 flex flex-col min-w-0 overflow-auto">
 
-        {/* ── Top Header ── */}
-        <div className="bg-white border-b border-gray-200 px-6 py-4 flex flex-wrap items-center justify-between gap-4 sticky top-0 z-10">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-linear-to-br from-amber-500 to-orange-500 flex items-center justify-center shadow">
-              <Crown className="w-5 h-5 text-white" />
+        {/* ── Header ── */}
+        <div className="bg-white border-b border-gray-200 px-6 py-4 sticky top-0 z-10 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            {/* Title */}
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-linear-to-br from-amber-400 via-orange-500 to-red-500 flex items-center justify-center shadow-md">
+                <Crown className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h1 className="text-base font-bold text-gray-900 leading-tight">Super Admin Dashboard</h1>
+                <p className="text-[11px] text-gray-400 mt-0.5">System-wide overview · All tenants</p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-lg font-bold text-gray-900 leading-tight">Super Admin Dashboard</h1>
-              <p className="text-xs text-gray-400">System-wide overview</p>
-            </div>
-          </div>
 
-          {/* Filters */}
-          <div className="flex items-center gap-2 flex-wrap">
-            {/* Branch */}
-            <div className="relative">
-              <select
-                value={branch}
-                onChange={(e) => setBranch(e.target.value)}
-                className="pl-3 pr-8 py-2 border border-gray-300 rounded-xl text-sm font-medium text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-300 appearance-none cursor-pointer"
+            {/* Controls */}
+            <div className="flex items-center gap-2 flex-wrap">
+              {/* Branch */}
+              <div className="relative">
+                <MapPin className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
+                <select
+                  value={branch}
+                  onChange={(e) => setBranch(e.target.value)}
+                  className="pl-7 pr-7 py-2 border border-gray-200 rounded-xl text-xs font-semibold text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-amber-300 appearance-none cursor-pointer shadow-sm"
+                >
+                  {BRANCHES.map((b) => <option key={b}>{b}</option>)}
+                </select>
+                <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
+              </div>
+
+              {/* Date Range */}
+              <div className="relative">
+                <Calendar className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
+                <select
+                  value={dateRange}
+                  onChange={(e) => setDateRange(e.target.value)}
+                  className="pl-7 pr-7 py-2 border border-gray-200 rounded-xl text-xs font-semibold text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-amber-300 appearance-none cursor-pointer shadow-sm"
+                >
+                  {DATE_RANGES.map((r) => <option key={r}>{r}</option>)}
+                </select>
+                <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
+              </div>
+
+              {/* Custom date inputs */}
+              {dateRange === "Custom" && (
+                <>
+                  <input
+                    type="date"
+                    value={custom.from}
+                    onChange={(e) => setCustom((p) => ({ ...p, from: e.target.value }))}
+                    className="border border-gray-200 rounded-xl px-3 py-2 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-amber-300 shadow-sm"
+                  />
+                  <input
+                    type="date"
+                    value={custom.to}
+                    onChange={(e) => setCustom((p) => ({ ...p, to: e.target.value }))}
+                    className="border border-gray-200 rounded-xl px-3 py-2 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-amber-300 shadow-sm"
+                  />
+                </>
+              )}
+
+              {/* Refresh */}
+              <button
+                onClick={fetchData}
+                disabled={loading}
+                className="w-9 h-9 flex items-center justify-center border border-gray-200 rounded-xl bg-white hover:bg-gray-50 shadow-sm transition-colors disabled:opacity-50"
+                title="Refresh"
               >
-                {BRANCHES.map((b) => <option key={b}>{b}</option>)}
-              </select>
-              <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                <RefreshCw className={`w-4 h-4 text-gray-500 ${loading ? "animate-spin" : ""}`} />
+              </button>
             </div>
-
-            {/* Date Range */}
-            <div className="relative">
-              <select
-                value={dateRange}
-                onChange={(e) => setDateRange(e.target.value)}
-                className="pl-3 pr-8 py-2 border border-gray-300 rounded-xl text-sm font-medium text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-300 appearance-none cursor-pointer"
-              >
-                {DATE_RANGES.map((r) => <option key={r}>{r}</option>)}
-              </select>
-              <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-            </div>
-
-            {/* Custom date inputs */}
-            {dateRange === "Custom" && (
-              <>
-                <input
-                  type="date"
-                  value={custom.from}
-                  onChange={(e) => setCustom((p) => ({ ...p, from: e.target.value }))}
-                  className="border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
-                />
-                <input
-                  type="date"
-                  value={custom.to}
-                  onChange={(e) => setCustom((p) => ({ ...p, to: e.target.value }))}
-                  className="border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
-                />
-              </>
-            )}
           </div>
         </div>
 
         {/* ── Content ── */}
-        <div className="flex-1 p-6 space-y-6">
+        <div className="flex-1 p-6 space-y-8">
 
           {loading ? (
-            <div className="flex items-center justify-center py-32">
-              <div className="text-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500 mx-auto" />
-                <p className="mt-4 text-sm text-gray-500">Loading dashboard…</p>
-              </div>
-            </div>
+            <DashboardSkeleton />
           ) : error ? (
-            <div className="flex items-center justify-center py-32">
-              <p className="text-red-500 text-sm">{error}</p>
+            <div className="flex flex-col items-center justify-center py-40 gap-4">
+              <div className="w-16 h-16 rounded-2xl bg-red-50 flex items-center justify-center">
+                <Activity className="w-8 h-8 text-red-400" />
+              </div>
+              <div className="text-center">
+                <p className="text-sm font-semibold text-gray-800">{error}</p>
+                <button onClick={fetchData} className="mt-3 text-xs font-semibold text-amber-600 hover:text-amber-700 underline">
+                  Try again
+                </button>
+              </div>
             </div>
           ) : (
             <>
-              {/* ── Row 1: Lead + Patient KPIs ── */}
+
+              {/* ── Leads & Patients ── */}
               <div>
-                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Leads & Patients</p>
+                <SectionHeader icon={HeartPulse} title="Leads & Patients" color="text-blue-600" accent="bg-blue-50" />
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-                  <KpiCard title="Total Leads"       value={d.totalLeads ?? 0}    icon={ClipboardList} color="blue"   subtitle={dateRange}    />
-                  <KpiCard title="Appointments"      value={d.appointments ?? 0}  icon={Users}         color="indigo" subtitle="In period"    />
-                  <KpiCard title="Patient Visited"   value={d.visited ?? 0}       icon={UserCheck}     color="green"  subtitle="Counselled"   />
-                  <KpiCard title="Converted"         value={d.converted ?? 0}     icon={TrendingUp}    color="teal"   subtitle="Ready for surgery" />
-                  <KpiCard title="Not Converted"     value={d.notConverted ?? 0}  icon={UserX}         color="red"    subtitle="In period"    />
-                  <KpiCard title="Surgeries"         value={d.surgeries ?? 0}     icon={Activity}      color="purple" subtitle="In period"    />
+                  <KpiCard title="Total Leads"     value={fmt(d.totalLeads)}      icon={ClipboardList} color="blue"   subtitle={dateRange} />
+                  <KpiCard title="Appointments"    value={fmt(d.appointments)}    icon={Users}         color="indigo" subtitle="In period" />
+                  <KpiCard title="Visited"         value={fmt(d.visited)}         icon={UserCheck}     color="green"  subtitle="Counselled" />
+                  <KpiCard title="Converted"       value={fmt(d.converted)}       icon={TrendingUp}    color="teal"   subtitle="Ready" />
+                  <KpiCard title="Not Converted"   value={fmt(d.notConverted)}    icon={UserX}         color="red"    subtitle="Dropped" />
+                  <KpiCard title="Surgeries"       value={fmt(d.surgeries)}       icon={Scissors}      color="purple" subtitle="Done" />
                 </div>
               </div>
 
-              {/* ── Row 2: Revenue KPIs ── */}
+              {/* ── HR Recruitment ── */}
               <div>
-                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Revenue</p>
+                <SectionHeader icon={Briefcase} title="HR Recruitment" color="text-rose-600" accent="bg-rose-50" />
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  <KpiCard title="Amount Received"   value={rupee(d.totalAmount)}   icon={IndianRupee} color="green"  subtitle="All revenue"  />
-                  <KpiCard title="Medicine Amount"   value={rupee(d.medicineAmount)} icon={Stethoscope} color="amber"  subtitle="Medicine sales" />
-                  <KpiCard title="Total Stocks"      value={d.totalStockItems ?? 0} icon={Package}     color="indigo" subtitle={`${d.totalStockQty ?? 0} units`} />
-                  <KpiCard title="Stock Value"       value={rupee(d.totalStockValue)} icon={IndianRupee} color="pink"  subtitle="MRP × Qty"   />
+                  <KpiCard title="Total Candidates"   value={fmt(d.totalInterviews)}     icon={ClipboardList} color="purple" subtitle={dateRange} />
+                  <KpiCard title="Selected"           value={fmt(d.selectedInterviews)}  icon={UserCheck}     color="green"  subtitle="Hired" />
+                  <KpiCard title="Rejected"           value={fmt(d.rejectedInterviews)}  icon={UserX}         color="red"    subtitle="Not selected" />
+                  <KpiCard title="Scheduled"          value={fmt(d.scheduledInterviews)} icon={Calendar}      color="amber"  subtitle="Upcoming" />
+                </div>
+
+                {/* Mini HR progress bar */}
+                {(d.totalInterviews > 0) && (
+                  <div className="mt-3 bg-white rounded-2xl border border-gray-200 shadow-sm p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-semibold text-gray-500">Selection Rate</span>
+                      <span className="text-xs font-bold text-emerald-600">
+                        {d.totalInterviews > 0 ? ((d.selectedInterviews / d.totalInterviews) * 100).toFixed(1) : 0}%
+                      </span>
+                    </div>
+                    <div className="flex h-2.5 rounded-full overflow-hidden bg-gray-100 gap-0.5">
+                      <div
+                        className="bg-emerald-500 transition-all duration-700 rounded-l-full"
+                        style={{ width: `${d.totalInterviews > 0 ? (d.selectedInterviews / d.totalInterviews) * 100 : 0}%` }}
+                      />
+                      <div
+                        className="bg-red-400 transition-all duration-700"
+                        style={{ width: `${d.totalInterviews > 0 ? (d.rejectedInterviews / d.totalInterviews) * 100 : 0}%` }}
+                      />
+                      <div
+                        className="bg-amber-400 transition-all duration-700"
+                        style={{ width: `${d.totalInterviews > 0 ? (d.scheduledInterviews / d.totalInterviews) * 100 : 0}%` }}
+                      />
+                      <div className="flex-1 bg-gray-200 rounded-r-full" />
+                    </div>
+                    <div className="flex items-center gap-4 mt-2">
+                      {[
+                        { label: "Selected", color: "bg-emerald-500" },
+                        { label: "Rejected", color: "bg-red-400" },
+                        { label: "Scheduled", color: "bg-amber-400" },
+                        { label: "Others", color: "bg-gray-200" },
+                      ].map(({ label, color }) => (
+                        <span key={label} className="flex items-center gap-1 text-[10px] text-gray-500">
+                          <span className={`w-2 h-2 rounded-full ${color}`} /> {label}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* ── Revenue & Stock ── */}
+              <div>
+                <SectionHeader icon={IndianRupee} title="Revenue & Inventory" color="text-emerald-600" accent="bg-emerald-50" />
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <KpiCard title="Amount Received"  value={rupee(d.totalAmount)}    icon={IndianRupee} color="green"  subtitle="All revenue" />
+                  <KpiCard title="Medicine Sales"   value={rupee(d.medicineAmount)} icon={Stethoscope} color="teal"   subtitle="Medicine" />
+                  <KpiCard title="Stock Items"      value={fmt(d.totalStockItems)}  icon={Package}     color="indigo" subtitle={`${fmt(d.totalStockQty)} units`} />
+                  <KpiCard title="Stock Value"      value={rupee(d.totalStockValue)}icon={BarChart2}   color="amber"  subtitle="MRP × Qty" />
                 </div>
               </div>
 
-              {/* ── Row 3: Per-day Sale Graph ── */}
-              <SectionCard title={`Daily Revenue — ${dateRange}${branch !== "All" ? ` · ${branch}` : ""}`}>
+              {/* ── Daily Revenue Chart ── */}
+              <ChartCard
+                title="Daily Revenue"
+                subtitle={`${dateRange}${branch !== "All" ? ` · ${branch}` : ""}`}
+              >
                 {d.perDay && d.perDay.length > 0 ? (
-                  <ResponsiveContainer width="100%" height={220}>
-                    <AreaChart data={d.perDay} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
+                  <ResponsiveContainer width="100%" height={240}>
+                    <AreaChart data={d.perDay} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                       <defs>
-                        <linearGradient id="revenueGrad" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%"  stopColor="#6366f1" stopOpacity={0.2} />
-                          <stop offset="95%" stopColor="#6366f1" stopOpacity={0}   />
+                        <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%"  stopColor="#f59e0b" stopOpacity={0.18} />
+                          <stop offset="95%" stopColor="#f59e0b" stopOpacity={0} />
                         </linearGradient>
                       </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                      <XAxis dataKey="date" tickFormatter={fmtDate} tick={{ fontSize: 11 }} />
-                      <YAxis tickFormatter={(v) => `₹${(v/1000).toFixed(0)}k`} tick={{ fontSize: 11 }} width={55} />
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false} />
+                      <XAxis
+                        dataKey="date"
+                        tickFormatter={fmtDate}
+                        tick={{ fontSize: 11, fill: "#9ca3af" }}
+                        axisLine={false}
+                        tickLine={false}
+                      />
+                      <YAxis
+                        tickFormatter={(v) => v >= 100000 ? `₹${(v/100000).toFixed(1)}L` : `₹${(v/1000).toFixed(0)}k`}
+                        tick={{ fontSize: 11, fill: "#9ca3af" }}
+                        axisLine={false}
+                        tickLine={false}
+                        width={60}
+                      />
                       <Tooltip
                         formatter={(v) => [rupee(v), "Revenue"]}
-                        labelFormatter={(l) => new Date(l).toLocaleDateString("en-IN", { weekday: "short", day: "2-digit", month: "short" })}
-                        contentStyle={{ borderRadius: "12px", border: "1px solid #e5e7eb", fontSize: "12px" }}
+                        labelFormatter={(l) => new Date(l).toLocaleDateString("en-IN", { weekday: "long", day: "2-digit", month: "long" })}
+                        contentStyle={{ borderRadius: "14px", border: "1px solid #e5e7eb", fontSize: "12px", boxShadow: "0 4px 20px rgba(0,0,0,0.08)" }}
                       />
-                      <Area type="monotone" dataKey="total" stroke="#6366f1" strokeWidth={2} fill="url(#revenueGrad)" dot={{ r: 3, fill: "#6366f1" }} />
+                      <Area
+                        type="monotone"
+                        dataKey="total"
+                        stroke="#f59e0b"
+                        strokeWidth={2.5}
+                        fill="url(#revGrad)"
+                        dot={{ r: 3.5, fill: "#f59e0b", strokeWidth: 0 }}
+                        activeDot={{ r: 5, fill: "#f59e0b" }}
+                      />
                     </AreaChart>
                   </ResponsiveContainer>
                 ) : (
-                  <div className="h-48 flex items-center justify-center text-gray-400 text-sm">No revenue data for this period</div>
+                  <div className="h-52 flex flex-col items-center justify-center gap-3 text-gray-400">
+                    <BarChart2 className="w-10 h-10 opacity-30" />
+                    <p className="text-sm">No revenue data for this period</p>
+                  </div>
                 )}
-              </SectionCard>
+              </ChartCard>
 
-              {/* ── Row 4: Technique-wise + Staff ── */}
+              {/* ── Technique-wise + Staff ── */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-                {/* Technique-wise Sales */}
-                <SectionCard title="Services / Technique-wise Sales">
+                {/* Technique-wise */}
+                <ChartCard title="Services / Technique-wise Sales" subtitle="By revenue contribution">
                   {d.techniqueWise && d.techniqueWise.length > 0 ? (
-                    <div className="space-y-3">
+                    <div className="space-y-3.5">
                       {d.techniqueWise.map((item, i) => {
                         const pct = d.totalAmount > 0 ? ((item.total / d.totalAmount) * 100).toFixed(1) : 0;
+                        const color = PALETTE[i % PALETTE.length];
                         return (
                           <div key={item.procedure}>
-                            <div className="flex items-center justify-between mb-1">
-                              <span className="text-sm font-medium text-gray-700">{item.procedure}</span>
+                            <div className="flex items-center justify-between mb-1.5">
+                              <div className="flex items-center gap-2">
+                                <div className="w-2 h-2 rounded-full shrink-0" style={{ background: color }} />
+                                <span className="text-xs font-medium text-gray-700">{item.procedure}</span>
+                              </div>
                               <div className="flex items-center gap-3">
-                                <span className="text-xs text-gray-400">{item.count} txn</span>
-                                <span className="text-sm font-semibold text-gray-900">{rupee(item.total)}</span>
-                                <span className="text-xs text-gray-400 w-10 text-right">{pct}%</span>
+                                <span className="text-[10px] text-gray-400 bg-gray-50 px-1.5 py-0.5 rounded-md">{item.count} txn</span>
+                                <span className="text-xs font-bold text-gray-800">{rupee(item.total)}</span>
+                                <span className="text-[10px] font-semibold w-8 text-right" style={{ color }}>{pct}%</span>
                               </div>
                             </div>
-                            <div className="w-full bg-gray-100 rounded-full h-1.5">
+                            <div className="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
                               <div
-                                className="h-1.5 rounded-full transition-all"
-                                style={{ width: `${pct}%`, backgroundColor: TECHNIQUE_COLORS[i % TECHNIQUE_COLORS.length] }}
+                                className="h-1.5 rounded-full transition-all duration-700"
+                                style={{ width: `${pct}%`, background: color }}
                               />
                             </div>
                           </div>
@@ -311,68 +465,81 @@ export default function SuperAdminDashboard() {
                       })}
                     </div>
                   ) : (
-                    <p className="text-center text-gray-400 text-sm py-8">No technique data for this period</p>
+                    <div className="h-52 flex flex-col items-center justify-center gap-3 text-gray-400">
+                      <BarChart2 className="w-10 h-10 opacity-30" />
+                      <p className="text-sm">No technique data for this period</p>
+                    </div>
                   )}
-                </SectionCard>
+                </ChartCard>
 
                 {/* Staff Breakdown */}
-                <SectionCard title="Total Staff by Role">
-                  <div className="flex items-center justify-between mb-4">
-                    <span className="text-3xl font-bold text-gray-900">{d.totalStaff ?? 0}</span>
-                    <span className="text-sm text-gray-400">Active employees</span>
-                  </div>
+                <ChartCard title="Staff Breakdown" subtitle="Active employees by role">
                   {d.staffBreakdown && Object.keys(d.staffBreakdown).length > 0 ? (
                     <>
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                        {Object.entries(d.staffBreakdown).map(([role, count]) => {
-                          const c = STAFF_COLORS[role] || { bg: "bg-gray-100", text: "text-gray-700" };
-                          return (
-                            <div key={role} className={`${c.bg} rounded-xl px-3 py-3 text-center`}>
-                              <p className={`text-2xl font-bold ${c.text}`}>{count}</p>
-                              <p className={`text-xs font-medium mt-0.5 ${c.text}`}>{role}</p>
-                            </div>
-                          );
-                        })}
+                      {/* Total badge */}
+                      <div className="flex items-center gap-3 mb-5 p-3 bg-gray-50 rounded-xl border border-gray-100">
+                        <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center">
+                          <Users className="w-5 h-5 text-amber-600" />
+                        </div>
+                        <div>
+                          <p className="text-2xl font-bold text-gray-900 leading-none">{fmt(d.totalStaff)}</p>
+                          <p className="text-xs text-gray-400 mt-0.5">Total active employees</p>
+                        </div>
                       </div>
-                      {/* Bar chart */}
-                      <div className="mt-5">
-                        <ResponsiveContainer width="100%" height={130}>
-                          <BarChart
-                            data={Object.entries(d.staffBreakdown).map(([role, count]) => ({ role, count }))}
-                            margin={{ top: 0, right: 0, left: -20, bottom: 0 }}
-                          >
-                            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                            <XAxis dataKey="role" tick={{ fontSize: 10 }} />
-                            <YAxis tick={{ fontSize: 10 }} />
-                            <Tooltip contentStyle={{ borderRadius: "10px", fontSize: "12px" }} />
-                            <Bar dataKey="count" radius={[4, 4, 0, 0]}>
-                              {Object.keys(d.staffBreakdown).map((role, i) => (
-                                <Cell key={role} fill={TECHNIQUE_COLORS[i % TECHNIQUE_COLORS.length]} />
-                              ))}
-                            </Bar>
-                          </BarChart>
-                        </ResponsiveContainer>
+
+                      {/* Role rows */}
+                      <div className="space-y-2.5">
+                        {Object.entries(d.staffBreakdown)
+                          .sort((a, b) => b[1] - a[1])
+                          .map(([role, count]) => {
+                            const c = STAFF_COLORS[role] || { soft: "bg-gray-50", text: "text-gray-600", bar: "#9ca3af" };
+                            const pct = d.totalStaff > 0 ? ((count / d.totalStaff) * 100).toFixed(0) : 0;
+                            return (
+                              <div key={role} className="flex items-center gap-3">
+                                <span className={`text-[10px] font-bold ${c.text} ${c.soft} px-2 py-0.5 rounded-lg w-20 text-center shrink-0`}>
+                                  {role}
+                                </span>
+                                <div className="flex-1 bg-gray-100 rounded-full h-2 overflow-hidden">
+                                  <div
+                                    className="h-2 rounded-full transition-all duration-700"
+                                    style={{ width: `${pct}%`, background: c.bar }}
+                                  />
+                                </div>
+                                <span className="text-xs font-bold text-gray-700 w-6 text-right shrink-0">{count}</span>
+                              </div>
+                            );
+                          })}
                       </div>
                     </>
                   ) : (
-                    <p className="text-center text-gray-400 text-sm py-8">No staff data available</p>
+                    <div className="h-52 flex flex-col items-center justify-center gap-3 text-gray-400">
+                      <Users className="w-10 h-10 opacity-30" />
+                      <p className="text-sm">No staff data available</p>
+                    </div>
                   )}
-                </SectionCard>
+                </ChartCard>
               </div>
 
-              {/* ── Row 5: Payment method breakdown ── */}
+              {/* ── Payment Method Breakdown ── */}
               {d.byMethod && d.byMethod.length > 0 && (
-                <SectionCard title="Revenue by Payment Method">
+                <div>
+                  <SectionHeader icon={CreditCard} title="Revenue by Payment Method" color="text-indigo-600" accent="bg-indigo-50" />
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-                    {d.byMethod.map((item, i) => (
-                      <div key={item.method} className="bg-gray-50 rounded-xl p-3 text-center border border-gray-100">
-                        <p className="text-lg font-bold text-gray-900">{rupee(item.total)}</p>
-                        <p className="text-xs font-medium text-gray-500 mt-1 capitalize">{item.method}</p>
-                        <p className="text-xs text-gray-400">{item.count} txn</p>
-                      </div>
-                    ))}
+                    {d.byMethod
+                      .sort((a, b) => b.total - a.total)
+                      .map((item) => (
+                        <div
+                          key={item.method}
+                          className="bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition-all p-4 text-center"
+                        >
+                          <p className="text-2xl mb-2">{METHOD_ICONS[item.method] || "💰"}</p>
+                          <p className="text-sm font-bold text-gray-900">{rupee(item.total)}</p>
+                          <p className="text-[11px] font-semibold text-gray-500 mt-0.5 capitalize">{item.method}</p>
+                          <p className="text-[10px] text-gray-400 mt-0.5">{item.count} transactions</p>
+                        </div>
+                      ))}
                   </div>
-                </SectionCard>
+                </div>
               )}
 
             </>

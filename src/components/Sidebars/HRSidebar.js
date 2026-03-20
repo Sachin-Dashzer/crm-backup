@@ -10,6 +10,7 @@ import {
   X,
   Menu,
   ClipboardList,
+  FileText,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -109,7 +110,7 @@ export default function HRSidebar() {
 
         <div className="mx-4 border-t border-gray-100" />
 
-        <nav className="flex-1 overflow-y-auto px-3 pb-4 scrollbar-hide">
+        <nav className="flex-1 overflow-y-auto px-3 pb-4 mt-5 scrollbar-hide">
           <NavSection title="">
             <NavItem
               label="Dashboard"
@@ -130,16 +131,16 @@ export default function HRSidebar() {
             />
             <NavItem
               label="Selected"
-              href="/hr/candidates?status=Selected"
+              href="/hr/selected"
               icon={UserCheck}
-              active={false}
+              active={isActive("/hr/selected")}
               onClick={close}
             />
             <NavItem
               label="Rejected"
-              href="/hr/candidates?status=Rejected"
+              href="/hr/rejected"
               icon={UserX}
-              active={false}
+              active={isActive("/hr/rejected")}
               onClick={close}
             />
           </NavSection>
@@ -150,6 +151,13 @@ export default function HRSidebar() {
               href="/hr/employees"
               icon={UsersRound}
               active={isActive("/hr/employees")}
+              onClick={close}
+            />
+            <NavItem
+              label="Reports"
+              href="/hr/reports"
+              icon={FileText}
+              active={isActive("/hr/reports")}
               onClick={close}
             />
           </NavSection>

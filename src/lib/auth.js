@@ -60,7 +60,7 @@ export const ROLE_PERMISSIONS = {
   },
   hr: {
     routes: ['/hr'],
-    permissions: ['candidates', 'interviews'],
+    permissions: ['candidates', 'interviews', 'employees', 'reports'],
     canAccessAllBranches: true,
   },
 };

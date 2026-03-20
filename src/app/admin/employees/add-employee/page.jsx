@@ -72,6 +72,15 @@ const RoleDescriptionCard = ({ role }) => {
       ],
       color: "indigo",
     },
+    Hr: {
+      description: "Manages human resources, recruitment, and employee relations",
+      responsibilities: [
+        "Manage recruitment and onboarding",
+        "Handle employee performance and appraisals",
+        "Maintain HR records and compliance",
+      ],
+      color: "pink",
+    },
   };
 
   if (!role || !roleDescriptions[role]) return null;
@@ -86,6 +95,7 @@ const RoleDescriptionCard = ({ role }) => {
     orange: { bg: "bg-orange-50", border: "border-orange-500", text: "text-orange-600", textDark: "text-orange-900", textMedium: "text-orange-700", textLight: "text-orange-800" },
     purple: { bg: "bg-purple-50", border: "border-purple-500", text: "text-purple-600", textDark: "text-purple-900", textMedium: "text-purple-700", textLight: "text-purple-800" },
     indigo: { bg: "bg-indigo-50", border: "border-indigo-500", text: "text-indigo-600", textDark: "text-indigo-900", textMedium: "text-indigo-700", textLight: "text-indigo-800" },
+    pink:   { bg: "bg-pink-50",   border: "border-pink-500",   text: "text-pink-600",   textDark: "text-pink-900",   textMedium: "text-pink-700",   textLight: "text-pink-800" },
   };
 
   const colors = colorClasses[roleInfo.color];
@@ -220,6 +230,7 @@ export default function EmployeeRegistration() {
     { value: "Technician", label: "Technician" },
     { value: "Implanter", label: "Implanter" },
     { value: "Others", label: "Others" },
+    { value: "Hr", label: "Hr" },
   ];
 
   return (

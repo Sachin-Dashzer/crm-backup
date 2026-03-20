@@ -22,7 +22,6 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  Cell,
 } from "recharts";
 
 // ── Date helpers ──────────────────────────────────────────────────────────────
@@ -240,6 +239,76 @@ export default function HRDashboard() {
                   )}
                 </div>
               </div>
+            </div>
+
+            {/* Interviews by HR */}
+            <div className="mb-6 bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+              <h2 className="text-sm font-semibold text-gray-700 mb-4 flex items-center gap-2">
+                <Briefcase className="w-4 h-4 text-violet-500" />
+                Interviews by HR
+              </h2>
+              {data?.byHr?.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="bg-gray-50">
+                        <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider rounded-l-lg">HR Name</th>
+                        <th className="px-4 py-2.5 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Total</th>
+                        <th className="px-4 py-2.5 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Scheduled</th>
+                        <th className="px-4 py-2.5 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Selected</th>
+                        <th className="px-4 py-2.5 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Rejected</th>
+                        <th className="px-4 py-2.5 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider rounded-r-lg">On Hold</th>
+                        <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider rounded-r-lg">Conversion</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50">
+                      {data.byHr.map((hr) => {
+                        const convRate = hr.total > 0 ? Math.round((hr.selected / hr.total) * 100) : 0;
+                        return (
+                          <tr key={hr._id} className="hover:bg-gray-50 transition-colors">
+                            <td className="px-4 py-3">
+                              <div className="flex items-center gap-2">
+                                <div className="w-7 h-7 rounded-full bg-violet-100 flex items-center justify-center shrink-0">
+                                  <span className="text-violet-700 font-bold text-[10px]">{hr._id?.slice(0,2).toUpperCase()}</span>
+                                </div>
+                                <span className="font-semibold text-gray-800 text-sm">{hr._id || "Unassigned"}</span>
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 text-center">
+                              <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-violet-50 text-violet-700 font-bold text-xs">{hr.total}</span>
+                            </td>
+                            <td className="px-4 py-3 text-center">
+                              <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-indigo-50 text-indigo-700 font-bold text-xs">{hr.scheduled}</span>
+                            </td>
+                            <td className="px-4 py-3 text-center">
+                              <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-emerald-50 text-emerald-700 font-bold text-xs">{hr.selected}</span>
+                            </td>
+                            <td className="px-4 py-3 text-center">
+                              <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-red-50 text-red-600 font-bold text-xs">{hr.rejected}</span>
+                            </td>
+                            <td className="px-4 py-3 text-center">
+                              <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-amber-50 text-amber-700 font-bold text-xs">{hr.onHold}</span>
+                            </td>
+                            <td className="px-4 py-3">
+                              <div className="flex items-center gap-2">
+                                <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden max-w-[80px]">
+                                  <div
+                                    className={`h-full rounded-full transition-all duration-500 ${convRate >= 50 ? "bg-emerald-500" : convRate >= 25 ? "bg-amber-400" : "bg-red-400"}`}
+                                    style={{ width: `${convRate}%` }}
+                                  />
+                                </div>
+                                <span className="text-xs font-bold text-gray-700 tabular-nums">{convRate}%</span>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <p className="text-sm text-gray-400 text-center py-10">No HR interview data for selected range</p>
+              )}
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

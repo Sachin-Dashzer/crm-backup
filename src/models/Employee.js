@@ -18,7 +18,7 @@ const employeeSchema = new mongoose.Schema({
   role: {
     type: String,
     required: [true, 'Role is required'],
-    enum : ["Agent", "Counsellor" , "Doctor" , "Technician" , "Implanter" , "Others"],
+    enum : ["Agent", "Counsellor" , "Doctor" , "Technician" , "Implanter" , "Others", "Hr"],
     trim: true
   },
   isactive : {

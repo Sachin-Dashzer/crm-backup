@@ -16,6 +16,9 @@ import {
   Archive,
   Settings,
   Crown,
+  Briefcase,
+  ClipboardList,
+  FileText,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -123,7 +126,7 @@ export default function SuperAdminSidebar() {
         <div className="mx-4 border-t border-gray-100" />
 
         {/* ── Navigation ── */}
-        <nav className="flex-1 overflow-y-auto px-3 pb-4 scrollbar-hide">
+        <nav className="flex-1 overflow-y-auto px-3 pb-4 mt-4 scrollbar-hide">
 
           <NavSection title="">
             <NavItem
@@ -136,13 +139,13 @@ export default function SuperAdminSidebar() {
           </NavSection>
 
           <NavSection title="Super Admin">
-            <NavItem
+            {/* <NavItem
               label="Manage Users"
               href="/super-admin/manage-users"
               icon={ShieldCheck}
               active={isActive("/super-admin/manage-users")}
               onClick={close}
-            />
+            /> */}
             <NavItem
               label="Leads"
               href="/super-admin/leads"
@@ -155,16 +158,40 @@ export default function SuperAdminSidebar() {
           <NavSection title="Management">
             <NavItem
               label="Patients"
-              href="/admin/patients"
+              href="/super-admin/patients"
               icon={HeartPulse}
-              active={isActive("/admin/patients")}
+              active={isActive("/super-admin/patients")}
               onClick={close}
             />
             <NavItem
               label="Employees"
-              href="/admin/employees"
+              href="/super-admin/employees"
               icon={UsersRound}
-              active={isActive("/admin/employees")}
+              active={isActive("/super-admin/employees")}
+              onClick={close}
+            />
+          </NavSection>
+
+          <NavSection title="HR">
+            <NavItem
+              label="Candidates"
+              href="/hr/candidates"
+              icon={ClipboardList}
+              active={isActive("/hr/candidates")}
+              onClick={close}
+            />
+            <NavItem
+              label="HR Employees"
+              href="/hr/employees"
+              icon={Briefcase}
+              active={isActive("/hr/employees")}
+              onClick={close}
+            />
+            <NavItem
+              label="HR Reports"
+              href="/hr/reports"
+              icon={FileText}
+              active={isActive("/hr/reports")}
               onClick={close}
             />
           </NavSection>
@@ -172,16 +199,16 @@ export default function SuperAdminSidebar() {
           <NavSection title="Financial">
             <NavItem
               label="Transactions"
-              href="/admin/transactions"
+              href="/super-admin/transactions"
               icon={Receipt}
-              active={isActive("/admin/transactions")}
+              active={isActive("/super-admin/transactions")}
               onClick={close}
             />
             <NavItem
               label="Stocks"
-              href="/admin/stocks"
+              href="/super-admin/stocks"
               icon={Boxes}
-              active={isActive("/admin/stocks")}
+              active={isActive("/super-admin/stocks")}
               onClick={close}
             />
           </NavSection>

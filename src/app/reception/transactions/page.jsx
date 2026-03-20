@@ -1,16 +1,16 @@
 "use client";
 
 import { Suspense } from "react";
-import Sidebar from "@/components/Sidebars/SalesSidebar";
+import Sidebar from "@/components/Sidebars/ReceptionSidebar";
 import TransactionTable from "@/components/TransactionTable";
 
 const CONFIG = {
-  title:           "Revenue Transactions",
-  subtitle:        "All revenue transactions and payment details",
+  title:           "Transactions",
+  subtitle:        "Revenue transactions",
   columns:         ["date","patient","branch","procedure","paymentType","method","amount"],
-  actions:         ["view","bill"],
-  viewBasePath:    "/sales/patients",
-  showCsvExport:   true,
+  actions:         ["edit","bill"],
+  editBasePath:    "/reception/transactions/edit",
+  showCsvExport:   false,
   defaultPageSize: 25,
   pageSizeOptions: [25, 50, 100],
   defaultCostType: "Revenue",
@@ -19,11 +19,11 @@ const CONFIG = {
     showCategory:    false,
     showMethod:      true,
     showPaymentType: true,
-    showBranch:      true,
+    showBranch:      false,
   },
 };
 
-export default function SalesRevenuePage() {
+export default function ReceptionTransactionsPage() {
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />

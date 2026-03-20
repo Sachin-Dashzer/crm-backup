@@ -77,6 +77,15 @@ const RoleDescriptionCard = ({ role }) => {
       ],
       color: "indigo",
     },
+    Hr: {
+      description: "Manages human resources, recruitment, and employee relations",
+      responsibilities: [
+        "Manage recruitment and onboarding",
+        "Handle employee performance and appraisals",
+        "Maintain HR records and compliance",
+      ],
+      color: "pink",
+    },
   };
 
   if (!role || !roleDescriptions[role]) return null;
@@ -254,6 +263,7 @@ export default function EmployeeUpdate() {
     { value: "Technician", label: "Technician" },
     { value: "Implanter", label: "Implanter" },
     { value: "Others", label: "Others" },
+    { value: "Hr", label: "Hr" },
   ];
 
   // Loading state

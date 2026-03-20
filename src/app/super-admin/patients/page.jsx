@@ -1,35 +1,35 @@
 "use client";
 
 import { Suspense } from "react";
-import SurgerySidebar from "@/components/Sidebars/SurgerySidebar";
+import Sidebar from "@/components/Sidebars/SuperAdminSidebar";
 import PatientTable from "@/components/PatientTable";
 
 const CONFIG = {
-  basePath:        "/surgery/patients",
-  title:           "Patients",
-  subtitle:        "Manage and track patient records",
-  columns:         ["name","phone","branch","visitDate","status","package"],
+  basePath:        "/admin/patients",
+  title:           "Patient Management",
+  subtitle:        "Comprehensive patient data overview",
+  columns:         ["visitDate","name","phone","branch","technique","package","received","pending","status","reference"],
   actions:         ["view","edit"],
-  showCsvExport:   false,
+  showCsvExport:   true,
   showAddButton:   false,
-  defaultPageSize: 10,
-  pageSizeOptions: [10, 25, 50],
+  defaultPageSize: 50,
+  pageSizeOptions: [10, 25, 50, 100],
   enableSorting:   true,
   formatCurrency:  false,
   filters: {
     showSurgeryDate:     true,
     showVisited:         true,
     showReadyForSurgery: true,
-    showDoctor:          true,
-    showSeniorTech:      true,
-    showImplanter:       true,
+    showDoctor:          false,
+    showSeniorTech:      false,
+    showImplanter:       false,
   },
 };
 
-export default function SurgeryPatientsPage() {
+export default function AdminPatientsPage() {
   return (
     <div className="flex min-h-screen bg-gray-50">
-      <SurgerySidebar />
+      <Sidebar />
       <Suspense fallback={<div className="flex-1 flex items-center justify-center"><div className="animate-spin h-10 w-10 border-4 border-indigo-100 border-t-indigo-500 rounded-full" /></div>}>
         <PatientTable config={CONFIG} />
       </Suspense>

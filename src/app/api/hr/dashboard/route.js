@@ -24,7 +24,7 @@ export async function POST(req) {
 
     const dateFilter = { createdAt: { $gte: fromDate, $lte: toDate } };
 
-    const [statsAgg, positionAgg, recentCandidates] = await Promise.all([
+    const [statsAgg, positionAgg, recentCandidates, byHrAgg] = await Promise.all([
       // Overall counts by status
       Interviewer.aggregate([
         { $match: dateFilter },
@@ -66,6 +66,36 @@ export async function POST(req) {
         .sort({ createdAt: -1 })
         .limit(5)
         .select("name position status interviewDate createdAt"),
+
+      // Interviews by HR name
+      Interviewer.aggregate([
+        { $match: dateFilter },
+        {
+          $lookup: {
+            from: "employees",
+            localField: "assignedHr",
+            foreignField: "_id",
+            as: "hrData",
+          },
+        },
+        {
+          $group: {
+            _id: {
+              $cond: [
+                { $gt: [{ $size: "$hrData" }, 0] },
+                { $arrayElemAt: ["$hrData.name", 0] },
+                "Unassigned",
+              ],
+            },
+            total:     { $sum: 1 },
+            selected:  { $sum: { $cond: [{ $eq: ["$status", "Selected"] }, 1, 0] } },
+            rejected:  { $sum: { $cond: [{ $eq: ["$status", "Rejected"] }, 1, 0] } },
+            scheduled: { $sum: { $cond: [{ $eq: ["$status", "Interview Scheduled"] }, 1, 0] } },
+            onHold:    { $sum: { $cond: [{ $eq: ["$status", "On Hold"] }, 1, 0] } },
+          },
+        },
+        { $sort: { total: -1 } },
+      ]),
     ]);
 
     const s = statsAgg[0] || {};
@@ -92,6 +122,7 @@ export async function POST(req) {
       perDay:    perDayFilled,
       positions: positionAgg,
       recentCandidates,
+      byHr:      byHrAgg,
     });
   } catch (err) {
     console.error("HR dashboard error:", err);

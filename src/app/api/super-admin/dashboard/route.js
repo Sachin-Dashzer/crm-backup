@@ -7,6 +7,7 @@ import Transactions from "@/models/Transactions";
 import Employee from "@/models/Employee";
 import Stock from "@/models/Stock";
 import Leads from "@/models/Leads";
+import Interviewer from "@/models/Interviewer";
 
 export async function POST(req) {
   try {
@@ -19,10 +20,9 @@ export async function POST(req) {
 
     const { branch = "All", from, to } = await req.json();
 
+    // Client sends IST-bounded ISO strings — trust them directly (Vercel runs UTC)
     const fromDate = new Date(from);
     const toDate   = new Date(to);
-    fromDate.setHours(0, 0, 0, 0);
-    toDate.setHours(23, 59, 59, 999);
 
     // Branch filters
     const patientBranchFilter = branch === "All" ? {} : { "personal.branch": branch };
@@ -109,7 +109,7 @@ export async function POST(req) {
           perDay: [
             {
               $group: {
-                _id: { $dateToString: { format: "%Y-%m-%d", date: "$date" } },
+                _id: { $dateToString: { format: "%Y-%m-%d", date: "$date", timezone: "Asia/Kolkata" } },
                 total: { $sum: "$amount" },
                 count: { $sum: 1 },
               },
@@ -159,18 +159,33 @@ export async function POST(req) {
       createdAt: { $gte: fromDate, $lte: toDate },
     });
 
+    // ── 6. Interview Stats ────────────────────────────────────────
+    const interviewStatsPromise = Interviewer.aggregate([
+      { $match: { createdAt: { $gte: fromDate, $lte: toDate } } },
+      {
+        $facet: {
+          total:     [{ $count: "count" }],
+          selected:  [{ $match: { status: "Selected" } },  { $count: "count" }],
+          rejected:  [{ $match: { status: "Rejected" } },  { $count: "count" }],
+          scheduled: [{ $match: { status: "Interview Scheduled" } }, { $count: "count" }],
+        },
+      },
+    ]);
+
     // ── Run all in parallel ───────────────────────────────────────
-    const [patientAgg, revenueAgg, staffAgg, stockAgg, totalLeads] =
+    const [patientAgg, revenueAgg, staffAgg, stockAgg, totalLeads, interviewAgg] =
       await Promise.all([
         patientStatsPromise,
         revenueStatsPromise,
         staffStatsPromise,
         stockStatsPromise,
         totalLeadsPromise,
+        interviewStatsPromise,
       ]);
 
-    const p  = patientAgg[0] || {};
-    const rv = revenueAgg[0]  || {};
+    const p   = patientAgg[0]   || {};
+    const rv  = revenueAgg[0]   || {};
+    const iv  = interviewAgg[0] || {};
 
     // Shape staff
     const staffBreakdown = {};
@@ -180,12 +195,17 @@ export async function POST(req) {
     const totalStaff = Object.values(staffBreakdown).reduce((a, b) => a + b, 0);
 
     // Fill per-day graph — include all days in range even if 0 revenue
+    // Use IST date keys to match the $dateToString timezone: "Asia/Kolkata" output
+    const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;
+    const toISTDateKey = (utcDate) =>
+      new Date(utcDate.getTime() + IST_OFFSET_MS).toISOString().slice(0, 10);
+
     const dayMs = 86400000;
     const perDayMap = {};
     (rv.perDay || []).forEach(({ _id, total }) => { perDayMap[_id] = total; });
     const perDayFilled = [];
     for (let d = new Date(fromDate); d <= toDate; d = new Date(d.getTime() + dayMs)) {
-      const key = d.toISOString().slice(0, 10);
+      const key = toISTDateKey(d);
       perDayFilled.push({ date: key, total: perDayMap[key] || 0 });
     }
 
@@ -219,6 +239,11 @@ export async function POST(req) {
       // Staff
       totalStaff,
       staffBreakdown,
+      // Interviews
+      totalInterviews:     iv.total?.[0]?.count     ?? 0,
+      selectedInterviews:  iv.selected?.[0]?.count  ?? 0,
+      rejectedInterviews:  iv.rejected?.[0]?.count  ?? 0,
+      scheduledInterviews: iv.scheduled?.[0]?.count ?? 0,
     });
   } catch (err) {
     console.error("Super-admin dashboard error:", err);
