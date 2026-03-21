@@ -6,7 +6,7 @@ import TransactionTable from "@/components/TransactionTable";
 
 const CONFIG = {
   title:           "Transactions",
-  subtitle:        "Revenue transactions",
+  subtitle:        "Revenue & expense transactions",
   columns:         ["date","patient","branch","procedure","paymentType","method","amount"],
   actions:         ["edit","bill","delete"],
   editBasePath:    "/reception/transactions/edit",
@@ -14,10 +14,9 @@ const CONFIG = {
   showCsvExport:   false,
   defaultPageSize: 25,
   pageSizeOptions: [25, 50, 100],
-  defaultCostType: "Revenue",
   filters: {
     showCostType:    false,
-    showCategory:    false,
+    showCategory:    true,
     showMethod:      true,
     showPaymentType: true,
     showBranch:      false,
