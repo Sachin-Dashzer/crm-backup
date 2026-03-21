@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef } from "react";
+import { useRouter } from "next/navigation";
 import {
   Search, Download, RefreshCw, Pencil, Trash2, FileText,
   Scissors, Heart, Pill, Receipt, ChevronLeft, ChevronRight,
   ChevronDown, User, Filter, X, Clock, History, ArrowRight,
-  CheckCircle, AlertCircle,
+  CheckCircle, AlertCircle, Plus,
 } from "lucide-react";
 import Link from "next/link";
 import BillGenerator from "@/components/BillGenerator";
@@ -270,6 +271,7 @@ export default function TransactionTable({ config = {} }) {
     actions           = ["view", "edit"],
     editBasePath      = "",
     viewBasePath      = "",
+    createPath        = "",
     showCsvExport     = true,
     defaultPageSize   = 25,
     pageSizeOptions   = [25, 50, 100],
@@ -281,12 +283,15 @@ export default function TransactionTable({ config = {} }) {
     },
   } = config;
 
+  const router = useRouter();
+
   // ── State ──────────────────────────────────────────────────────────────────
   const [allTx, setAllTx]             = useState([]);
   const [loading, setLoading]         = useState(true);
   const [refreshKey, setRefreshKey]   = useState(0);
   const [auditTx, setAuditTx]         = useState(null);   // tx being audited
   const [billTxId, setBillTxId]       = useState(null);   // tx id for bill modal
+  const [deletingId, setDeletingId]   = useState(null);   // tx id being deleted
 
   const [activeTab, setActiveTab]     = useState(visibleCategories[0]);
   const [search, setSearch]           = useState("");
@@ -318,6 +323,37 @@ export default function TransactionTable({ config = {} }) {
       .catch(() => setAllTx([]))
       .finally(() => setLoading(false));
   }, [apiEndpoint, refreshKey]);
+
+  // ── Delete handler ─────────────────────────────────────────────────────────
+  const handleDelete = async (tx) => {
+    if (!confirm(`Delete this ${tx.transactionCategory?.toLowerCase()} transaction of ₹${tx.amount}? This cannot be undone.`)) return;
+    const categoryEndpointMap = {
+      TRANSPLANT: "/api/transactions/transplant/delete",
+      SERVICE:    "/api/transactions/service/delete",
+      MEDICINE:   "/api/transactions/medicine/delete",
+      EXPENSE:    "/api/transactions/expense/delete",
+    };
+    const endpoint = categoryEndpointMap[tx.transactionCategory];
+    if (!endpoint) return alert("Unknown transaction category");
+    setDeletingId(tx._id);
+    try {
+      const res = await fetch(endpoint, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ transactionId: tx._id }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setAllTx((prev) => prev.filter((t) => t._id !== tx._id));
+      } else {
+        alert(data.message || "Failed to delete transaction");
+      }
+    } catch {
+      alert("Network error while deleting transaction");
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   // ── Date-filtered base (for stat cards + tabs) ─────────────────────────────
   const dateFiltered = useMemo(() => {
@@ -421,6 +457,15 @@ export default function TransactionTable({ config = {} }) {
               <p className="text-sm text-gray-500 mt-0.5">{subtitle}</p>
             </div>
             <div className="flex gap-2">
+              {createPath && (
+                <button
+                  onClick={() => router.push(createPath)}
+                  className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-semibold text-sm shadow-sm transition-colors"
+                >
+                  <Plus className="w-4 h-4" />
+                  Add Transaction
+                </button>
+              )}
               {showCsvExport && (
                 <button
                   onClick={exportCSV}
@@ -734,10 +779,12 @@ export default function TransactionTable({ config = {} }) {
                                   )}
                                   {actions.includes("delete") && (
                                     <button
-                                      className="p-1.5 rounded-lg text-red-400 hover:bg-red-50 transition-colors"
+                                      onClick={() => handleDelete(tx)}
+                                      disabled={deletingId === tx._id}
+                                      className="p-1.5 rounded-lg text-red-400 hover:bg-red-50 transition-colors disabled:opacity-50"
                                       title="Delete Transaction"
                                     >
-                                      <Trash2 className="w-4 h-4" />
+                                      <Trash2 className={`w-4 h-4 ${deletingId === tx._id ? "animate-spin" : ""}`} />
                                     </button>
                                   )}
                                 </div>
