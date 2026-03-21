@@ -87,7 +87,7 @@ export async function POST(req) {
     }
 
     if (role) {
-      const validRoles = ['super-admin', 'admin', 'sales', 'reception', 'surgery', 'counsellor', 'stock'];
+      const validRoles = ['super-admin', 'admin', 'sales', 'reception', 'surgery', 'counsellor', 'stock', 'hr'];
       if (!validRoles.includes(role)) {
         return NextResponse.json(
           { success: false, message: "Invalid role" },

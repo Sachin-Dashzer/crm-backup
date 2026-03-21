@@ -770,7 +770,11 @@ export default function TransactionTable({ config = {} }) {
                                   )}
                                   {actions.includes("bill") && tx.transactionCategory !== "EXPENSE" && (
                                     <button
-                                      onClick={() => setBillTxId(tx._id)}
+                                      onClick={() => setBillTxId(
+                                        tx.transactionCategory === "TRANSPLANT" && tx.patient?._id
+                                          ? tx.patient._id
+                                          : tx._id
+                                      )}
                                       className="p-1.5 rounded-lg text-amber-600 hover:bg-amber-50 transition-colors"
                                       title="View Bill"
                                     >

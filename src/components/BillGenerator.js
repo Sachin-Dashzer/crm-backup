@@ -48,6 +48,7 @@ const formatDateForDisplay = (date) => {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
+    timeZone: "Asia/Kolkata",
   });
 };
 
@@ -60,6 +61,7 @@ const formatDateTime = (date) => {
     hour: "2-digit",
     minute: "2-digit",
     hour12: true,
+    timeZone: "Asia/Kolkata",
   });
 };
 

@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Crown, Plus, Search, Shield, Trash2, Edit3, X, Eye, EyeOff } from "lucide-react";
 import SuperAdminSidebar from "@/components/Sidebars/SuperAdminSidebar";
 
-const ALL_ROLES = ["super-admin", "admin", "sales", "reception", "surgery", "counsellor", "stock"];
+const ALL_ROLES = ["super-admin", "admin", "sales", "reception", "surgery", "counsellor", "stock", "hr"];
 const BRANCHES = ["Delhi", "Mumbai", "Hyderabad", "All"];
 
 const ROLE_COLOR = {
@@ -15,6 +15,7 @@ const ROLE_COLOR = {
   surgery:       "bg-pink-100 text-pink-700 border-pink-200",
   counsellor:    "bg-purple-100 text-purple-700 border-purple-200",
   stock:         "bg-orange-100 text-orange-700 border-orange-200",
+  hr:            "bg-teal-100 text-teal-700 border-teal-200",
 };
 
 /* ── Modal ── */
