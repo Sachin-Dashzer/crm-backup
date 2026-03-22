@@ -73,12 +73,14 @@ export default function SuperAdminSidebar() {
 
   const close = () => setOpen(false);
 
-  const userName  = session?.user?.name  || session?.user?.email || "Super Admin";
+  const userName = session?.user?.name || session?.user?.email || "Super Admin";
   const userEmail = session?.user?.email || "";
-  const initials  = userName.slice(0, 2).toUpperCase();
+  const initials = userName.slice(0, 2).toUpperCase();
 
   const isActive = (href, exact = false) =>
-    exact ? pathname === href : pathname === href || pathname.startsWith(href + "/");
+    exact
+      ? pathname === href
+      : pathname === href || pathname.startsWith(href + "/");
 
   return (
     <>
@@ -106,13 +108,21 @@ export default function SuperAdminSidebar() {
       >
         {/* ── Brand ── */}
         <div className="px-5 py-5 flex items-center justify-between shrink-0">
-          <Link href="/super-admin/dashboard" onClick={close} className="flex items-center gap-3">
+          <Link
+            href="/super-admin/dashboard"
+            onClick={close}
+            className="flex items-center gap-3"
+          >
             <div className="w-9 h-9 rounded-xl bg-linear-to-br from-amber-500 via-orange-500 to-red-500 flex items-center justify-center shadow-md brand-glow">
               <Crown className="w-5 h-5 text-white" />
             </div>
             <div>
-              <p className="font-bold text-gray-900 text-sm leading-none">LearCRM</p>
-              <p className="text-amber-600 text-[10px] mt-0.5 font-semibold">Super Admin</p>
+              <p className="font-bold text-gray-900 text-sm leading-none">
+                LearCRM
+              </p>
+              <p className="text-amber-600 text-[10px] mt-0.5 font-semibold">
+                Super Admin
+              </p>
             </div>
           </Link>
           <button
@@ -127,7 +137,6 @@ export default function SuperAdminSidebar() {
 
         {/* ── Navigation ── */}
         <nav className="flex-1 overflow-y-auto px-3 pb-4 mt-4 scrollbar-hide">
-
           <NavSection title="">
             <NavItem
               label="Dashboard"
@@ -138,19 +147,19 @@ export default function SuperAdminSidebar() {
             />
           </NavSection>
 
-          <NavSection title="Super Admin">
-            {/* <NavItem
-              label="Manage Users"
-              href="/super-admin/manage-users"
-              icon={ShieldCheck}
-              active={isActive("/super-admin/manage-users")}
-              onClick={close}
-            /> */}
+          <NavSection title="Leads Data">
             <NavItem
               label="Leads"
               href="/super-admin/leads"
               icon={Megaphone}
               active={isActive("/super-admin/leads")}
+              onClick={close}
+            />
+            <NavItem
+              label="Inverview Leads"
+              href="/super-admin/interviews"
+              icon={ShieldCheck}
+              active={isActive("/super-admin/interviews")}
               onClick={close}
             />
           </NavSection>
@@ -172,30 +181,7 @@ export default function SuperAdminSidebar() {
             />
           </NavSection>
 
-          <NavSection title="HR">
-            <NavItem
-              label="Candidates"
-              href="/hr/candidates"
-              icon={ClipboardList}
-              active={isActive("/hr/candidates")}
-              onClick={close}
-            />
-            <NavItem
-              label="HR Employees"
-              href="/hr/employees"
-              icon={Briefcase}
-              active={isActive("/hr/employees")}
-              onClick={close}
-            />
-            <NavItem
-              label="HR Reports"
-              href="/hr/reports"
-              icon={FileText}
-              active={isActive("/hr/reports")}
-              onClick={close}
-            />
-          </NavSection>
-
+         
           <NavSection title="Financial">
             <NavItem
               label="Transactions"
@@ -216,33 +202,33 @@ export default function SuperAdminSidebar() {
           <NavSection title="Analytics">
             <NavItem
               label="Reports"
-              href="/admin/reports"
+              href="/super-admin/reports"
               icon={FileBarChart}
-              active={isActive("/admin/reports")}
+              active={isActive("/super-admin/reports")}
               onClick={close}
             />
             <NavItem
               label="Performance"
-              href="/admin/performance"
+              href="/super-admin/performance"
               icon={TrendingUp}
-              active={isActive("/admin/performance")}
+              active={isActive("/super-admin/performance")}
               onClick={close}
             />
           </NavSection>
 
           <NavSection title="System">
             <NavItem
-              label="Admin Users"
-              href="/admin/manage-users"
+              label="Total Users"
+              href="/super-admin/manage-users"
               icon={Settings}
-              active={isActive("/admin/manage-users")}
+              active={isActive("/super-admin/manage-users")}
               onClick={close}
             />
             <NavItem
               label="Deleted Log"
-              href="/admin/deleted-data"
+              href="/super-admin/deleted-data"
               icon={Archive}
-              active={isActive("/admin/deleted-data")}
+              active={isActive("/super-admin/deleted-data")}
               onClick={close}
             />
           </NavSection>
@@ -255,8 +241,12 @@ export default function SuperAdminSidebar() {
               {initials}
             </div>
             <div className="min-w-0">
-              <p className="text-gray-900 text-sm font-semibold truncate leading-none">{userName}</p>
-              <p className="text-amber-600 text-[11px] truncate mt-0.5 font-medium">Super Admin</p>
+              <p className="text-gray-900 text-sm font-semibold truncate leading-none">
+                {userName}
+              </p>
+              <p className="text-amber-600 text-[11px] truncate mt-0.5 font-medium">
+                Super Admin
+              </p>
             </div>
           </div>
           <LogoutButton />

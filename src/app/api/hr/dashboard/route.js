@@ -30,21 +30,35 @@ export async function POST(req) {
         { $match: dateFilter },
         {
           $facet: {
-            total:     [{ $count: "count" }],
-            selected:  [{ $match: { status: "Selected"  } }, { $count: "count" }],
-            rejected:  [{ $match: { status: "Rejected"  } }, { $count: "count" }],
-            scheduled: [{ $match: { status: "Interview Scheduled" } }, { $count: "count" }],
-            onHold:    [{ $match: { status: "On Hold"   } }, { $count: "count" }],
-            applied:   [{ $match: { status: "Applied"   } }, { $count: "count" }],
+            total:        [{ $count: "count" }],
+            selected:     [{ $match: { status: "Selected"  } }, { $count: "count" }],
+            rejected:     [{ $match: { status: "Rejected"  } }, { $count: "count" }],
+            scheduled:    [{ $match: { status: "Interview Scheduled" } }, { $count: "count" }],
+            onHold:       [{ $match: { status: "On Hold"   } }, { $count: "count" }],
+            applied:      [{ $match: { status: "Applied"   } }, { $count: "count" }],
+            visitedCount: [{ $match: { source: "qr"     } }, { $count: "count" }],
+            appliedCount: [{ $match: { source: "direct" } }, { $count: "count" }],
             byStatus:  [
               { $group: { _id: "$status", count: { $sum: 1 } } },
+              { $sort: { count: -1 } },
+            ],
+            bySource: [
+              { $group: {
+                _id:       "$source",
+                count:     { $sum: 1 },
+                selected:  { $sum: { $cond: [{ $eq: ["$status", "Selected"] }, 1, 0] } },
+                rejected:  { $sum: { $cond: [{ $eq: ["$status", "Rejected"] }, 1, 0] } },
+                scheduled: { $sum: { $cond: [{ $eq: ["$status", "Interview Scheduled"] }, 1, 0] } },
+              }},
               { $sort: { count: -1 } },
             ],
             perDay: [
               {
                 $group: {
-                  _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
-                  count: { $sum: 1 },
+                  _id:     { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+                  count:   { $sum: 1 },
+                  visited: { $sum: { $cond: [{ $eq: ["$source", "qr"]     }, 1, 0] } },
+                  applied: { $sum: { $cond: [{ $eq: ["$source", "direct"] }, 1, 0] } },
                 },
               },
               { $sort: { _id: 1 } },
@@ -103,26 +117,32 @@ export async function POST(req) {
     // Fill per-day gaps
     const dayMs = 86400000;
     const perDayMap = {};
-    (s.perDay || []).forEach(({ _id, count }) => { perDayMap[_id] = count; });
+    (s.perDay || []).forEach(({ _id, count, visited, applied }) => {
+      perDayMap[_id] = { count, visited, applied };
+    });
     const perDayFilled = [];
     for (let d = new Date(fromDate); d <= toDate; d = new Date(d.getTime() + dayMs)) {
       const key = d.toISOString().slice(0, 10);
-      perDayFilled.push({ date: key, count: perDayMap[key] || 0 });
+      const entry = perDayMap[key] || { count: 0, visited: 0, applied: 0 };
+      perDayFilled.push({ date: key, count: entry.count, visited: entry.visited, applied: entry.applied });
     }
 
     return NextResponse.json({
       success: true,
-      total:     s.total?.[0]?.count     ?? 0,
-      selected:  s.selected?.[0]?.count  ?? 0,
-      rejected:  s.rejected?.[0]?.count  ?? 0,
-      scheduled: s.scheduled?.[0]?.count ?? 0,
-      onHold:    s.onHold?.[0]?.count    ?? 0,
-      applied:   s.applied?.[0]?.count   ?? 0,
-      byStatus:  s.byStatus || [],
-      perDay:    perDayFilled,
-      positions: positionAgg,
+      total:        s.total?.[0]?.count        ?? 0,
+      selected:     s.selected?.[0]?.count     ?? 0,
+      rejected:     s.rejected?.[0]?.count     ?? 0,
+      scheduled:    s.scheduled?.[0]?.count    ?? 0,
+      onHold:       s.onHold?.[0]?.count       ?? 0,
+      applied:      s.applied?.[0]?.count      ?? 0,
+      visitedCount: s.visitedCount?.[0]?.count ?? 0,
+      appliedCount: s.appliedCount?.[0]?.count ?? 0,
+      byStatus:     s.byStatus || [],
+      bySource:     s.bySource || [],
+      perDay:       perDayFilled,
+      positions:    positionAgg,
       recentCandidates,
-      byHr:      byHrAgg,
+      byHr:         byHrAgg,
     });
   } catch (err) {
     console.error("HR dashboard error:", err);

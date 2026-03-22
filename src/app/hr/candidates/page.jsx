@@ -7,7 +7,7 @@ import {
   Plus, Search, Eye, Pencil, Trash2, X, Star, Filter,
   ChevronLeft, ChevronRight, UserCheck, UserX, Clock,
   Users, Briefcase, CalendarDays, IndianRupee, Building2,
-  SlidersHorizontal, CheckCircle, UserCog, User,
+  SlidersHorizontal, CheckCircle, UserCog, User, QrCode, Globe,
 } from "lucide-react";
 
 /* ── Constants ──────────────────────────────────────────────────────────────── */
@@ -447,7 +447,7 @@ function ViewModal({ candidate: c, onClose, onEdit, hrEmployees }) {
           <Row label="Phone"       value={c.phone} />
           <Row label="Email"       value={c.email} />
           <Row label="Address"     value={c.address} />
-          <Row label="Source"      value={c.source} />
+          <Row label="Source"      value={c.source === "qr" ? "Visited via QR" : c.source === "direct" ? "Applied Online" : c.source} />
           <Row label="Reference"   value={c.reference} />
           <Row label="Assigned HR" value={assignedHrName} />
           <Row label="Applied"     value={fmtDate(c.createdAt)} />
@@ -558,7 +558,8 @@ function FilterDrawer({ filters, setFilters, positions, sources, hrEmployees, on
           <F label="Source">
             <select value={filters.source} onChange={(e) => setFilters((f) => ({ ...f, source: e.target.value }))} className={sel}>
               <option value="">All Sources</option>
-              {sources.map((s) => <option key={s}>{s}</option>)}
+              <option value="qr">Visited via QR</option>
+              <option value="direct">Applied Online</option>
             </select>
           </F>
 
@@ -881,6 +882,7 @@ function CandidatesContent() {
                         { label: "#",               cls: "w-10" },
                         { label: "Candidate",        cls: "min-w-44" },
                         { label: "Position",         cls: "min-w-36" },
+                        { label: "Source",           cls: "min-w-28" },
                         { label: "Phone",            cls: "min-w-32" },
                         { label: "Reference",        cls: "min-w-32" },
                         { label: "Experience",       cls: "min-w-28" },
@@ -888,7 +890,7 @@ function CandidatesContent() {
                         { label: "Interview Date",   cls: "min-w-32" },
                         { label: "Avg Rating",       cls: "min-w-28" },
                         { label: "Status",           cls: "min-w-36" },
-                        { label: "Options",                 cls: "w-24" },
+                        { label: "Options",          cls: "w-24" },
                       ].map(({ label, cls }) => (
                         <th key={label} className={`px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wide whitespace-nowrap ${cls}`}>
                           {label}
@@ -916,6 +918,19 @@ function CandidatesContent() {
                             </div>
                           </td>
                           <td className="px-4 py-3 text-gray-700 whitespace-nowrap font-medium">{c.position || "—"}</td>
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            {c.source === "qr" ? (
+                              <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 font-semibold">
+                                <QrCode className="w-3 h-3" />Visited
+                              </span>
+                            ) : c.source === "direct" ? (
+                              <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 font-semibold">
+                                <Globe className="w-3 h-3" />Applied
+                              </span>
+                            ) : (
+                              <span className="text-gray-400 text-xs">—</span>
+                            )}
+                          </td>
                           <td className="px-4 py-3 text-gray-600 whitespace-nowrap text-xs">{c.phone || "—"}</td>
                           <td className="px-4 py-3 whitespace-nowrap">
                             {assignedHrName ? (

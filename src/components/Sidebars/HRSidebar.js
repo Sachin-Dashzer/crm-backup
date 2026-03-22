@@ -11,6 +11,8 @@ import {
   Menu,
   ClipboardList,
   FileText,
+  QrCode,
+  Globe,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -127,6 +129,20 @@ export default function HRSidebar() {
               href="/hr/candidates"
               icon={ClipboardList}
               active={isActive("/hr/candidates")}
+              onClick={close}
+            />
+            <NavItem
+              label="Visited (QR)"
+              href="/hr/visited"
+              icon={QrCode}
+              active={isActive("/hr/visited")}
+              onClick={close}
+            />
+            <NavItem
+              label="Applied Online"
+              href="/hr/applied"
+              icon={Globe}
+              active={isActive("/hr/applied")}
               onClick={close}
             />
             <NavItem

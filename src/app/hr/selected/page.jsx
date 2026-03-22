@@ -5,7 +5,7 @@ import HRSidebar from "@/components/Sidebars/HRSidebar";
 import {
   Search, Eye, X, UserCheck, Star, Briefcase,
   CalendarDays, IndianRupee, Phone, Mail, Building2,
-  ChevronLeft, ChevronRight, User,
+  ChevronLeft, ChevronRight, User, QrCode, Globe,
 } from "lucide-react";
 
 /* ── Helpers ─────────────────────────────────────────────────────────────── */
@@ -97,7 +97,7 @@ function ViewModal({ candidate: c, onClose }) {
             <div className="grid grid-cols-2 gap-3">
               <InfoRow icon={CalendarDays} label="Interview Date" value={fmtDate(c.interviewDate)} />
               <InfoRow icon={User}         label="Assigned HR"    value={c.assignedHr?.name || "—"} />
-              <InfoRow icon={Briefcase}    label="Source"         value={c.source} />
+              <InfoRow icon={Briefcase}    label="Source"         value={c.source === "qr" ? "Visited via QR" : c.source === "direct" ? "Applied Online" : c.source} />
               <InfoRow icon={User}         label="Reference"      value={c.reference} />
             </div>
           </section>
@@ -257,6 +257,7 @@ export default function SelectedPage() {
                     <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">#</th>
                     <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Candidate</th>
                     <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Position</th>
+                    <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Source</th>
                     <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Phone</th>
                     <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Experience</th>
                     <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Exp. Salary</th>
@@ -285,6 +286,17 @@ export default function SelectedPage() {
                         </td>
                         <td className="px-4 py-3">
                           <span className="text-xs font-medium text-gray-700 bg-gray-100 px-2 py-1 rounded-md">{c.position || "—"}</span>
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          {c.source === "qr" ? (
+                            <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 font-semibold">
+                              <QrCode className="w-3 h-3" />Visited
+                            </span>
+                          ) : c.source === "direct" ? (
+                            <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 font-semibold">
+                              <Globe className="w-3 h-3" />Applied
+                            </span>
+                          ) : <span className="text-gray-400 text-xs">—</span>}
                         </td>
                         <td className="px-4 py-3 text-gray-600 text-sm">{c.phone || "—"}</td>
                         <td className="px-4 py-3">

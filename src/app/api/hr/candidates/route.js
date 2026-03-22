@@ -22,6 +22,7 @@ export async function GET(req) {
 
     const { searchParams } = new URL(req.url);
     const status   = searchParams.get("status");
+    const source   = searchParams.get("source");
     const position = searchParams.get("position");
     const from     = searchParams.get("from");
     const to       = searchParams.get("to");
@@ -30,6 +31,7 @@ export async function GET(req) {
     const query = {};
 
     if (status)   query.status   = status;
+    if (source)   query.source   = source;
     if (position) query.position = { $regex: position, $options: "i" };
 
     if (from || to) {
