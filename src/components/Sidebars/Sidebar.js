@@ -31,7 +31,7 @@ function NavItem({ label, href, icon: Icon, active, onClick }) {
         }`}
       >
         <Icon
-          className={`w-[18px] h-[18px] shrink-0 transition-all duration-200 ${
+          className={`w-4.5 h-4.5 shrink-0 transition-all duration-200 ${
             active
               ? "text-indigo-600 scale-110"
               : "text-gray-400 group-hover:text-indigo-500 group-hover:scale-110"
@@ -105,7 +105,7 @@ export default function AdminSidebar() {
               <Shield className="w-5 h-5 text-white" />
             </div>
             <div>
-              <p className="font-bold text-gray-900 text-sm leading-none">LearCRM</p>
+              <p className="font-bold text-gray-900 text-sm leading-none">RyanCRM</p>
               <p className="text-gray-400 text-[10px] mt-0.5 font-medium">Admin Control Center</p>
             </div>
           </Link>
@@ -120,7 +120,7 @@ export default function AdminSidebar() {
         <div className="mx-4 border-t border-gray-100" />
 
         {/* ── Navigation ── */}
-        <nav className="flex-1 overflow-y-auto px-3 pb-4 scrollbar-hide">
+        <nav className="flex-1 overflow-y-auto mt-4 px-3 pb-4 scrollbar-hide">
 
           <NavSection title="">
             <NavItem

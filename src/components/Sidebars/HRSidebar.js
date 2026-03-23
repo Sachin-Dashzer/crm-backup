@@ -98,7 +98,7 @@ export default function HRSidebar() {
               <Briefcase className="w-5 h-5 text-white" />
             </div>
             <div>
-              <p className="font-bold text-gray-900 text-sm leading-none">LearCRM</p>
+              <p className="font-bold text-gray-900 text-sm leading-none">RyanCRM</p>
               <p className="text-violet-600 text-[10px] mt-0.5 font-semibold">HR Panel</p>
             </div>
           </Link>

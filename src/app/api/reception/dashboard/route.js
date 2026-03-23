@@ -313,12 +313,47 @@ const handler = async (req) => {
       }
     };
 
+    // Get converted patients — visited in the period AND have at least one transaction
+    const getConvertedStats = async () => {
+      try {
+        const result = await Patient.aggregate([
+          {
+            $match: {
+              ...branchFilter,
+              $or: [
+                { "personal.visitDate": { $gte: fromDate, $lte: toDate } },
+                { "personal.visitDate": { $gte: comparisonStart, $lte: comparisonEnd } },
+              ],
+              $expr: { $gt: [{ $size: { $ifNull: ["$payments.transactions", []] } }, 0] },
+            },
+          },
+          {
+            $facet: {
+              current: [
+                { $match: { "personal.visitDate": { $gte: fromDate, $lte: toDate } } },
+                { $count: "count" },
+              ],
+              comparison: [
+                { $match: { "personal.visitDate": { $gte: comparisonStart, $lte: comparisonEnd } } },
+                { $count: "count" },
+              ],
+            },
+          },
+        ]);
+        return result[0] || {};
+      } catch (error) {
+        console.error('Error in getConvertedStats:', error);
+        return {};
+      }
+    };
+
     // Execute all queries in parallel with error handling
-    const [patientStats, revenueStats, recentPatients, upcomingAppointments] = await Promise.allSettled([
+    const [patientStats, revenueStats, recentPatients, upcomingAppointments, convertedStats] = await Promise.allSettled([
       getPatientStats(),
       getRevenueStats(),
       getRecentPatients(),
-      getUpcomingAppointments()
+      getUpcomingAppointments(),
+      getConvertedStats(),
     ]);
 
     // Handle promise results with safe defaults
@@ -326,6 +361,7 @@ const handler = async (req) => {
     const revenueStatsResult = revenueStats.status === 'fulfilled' ? revenueStats.value : {};
     const recentPatientsResult = recentPatients.status === 'fulfilled' ? recentPatients.value : [];
     const upcomingAppointmentsResult = upcomingAppointments.status === 'fulfilled' ? upcomingAppointments.value : [];
+    const convertedStatsResult = convertedStats.status === 'fulfilled' ? convertedStats.value : {};
 
     // Process stats with safe defaults
     const currentAppointments = patientStatsResult.currentAppointments?.[0]?.count || 0;
@@ -335,6 +371,8 @@ const handler = async (req) => {
     const comparisonVisited = patientStatsResult.comparisonVisited?.[0]?.count || 0;
     const currentRevenue = revenueStatsResult.current?.[0]?.total || 0;
     const comparisonRevenue = revenueStatsResult.comparison?.[0]?.total || 0;
+    const currentConverted = convertedStatsResult.current?.[0]?.count || 0;
+    const comparisonConverted = convertedStatsResult.comparison?.[0]?.count || 0;
 
     // Calculate growth percentages
     const calculateGrowth = (current, comparison) => {
@@ -346,6 +384,7 @@ const handler = async (req) => {
     const appointmentsGrowth = calculateGrowth(currentAppointments, comparisonAppointments);
     const visitsGrowth = calculateGrowth(currentVisited, comparisonVisited);
     const revenueGrowth = calculateGrowth(currentRevenue, comparisonRevenue);
+    const convertedGrowth = calculateGrowth(currentConverted, comparisonConverted);
 
     // Prepare final response
     const response = {
@@ -354,6 +393,7 @@ const handler = async (req) => {
         todayAppointments: currentAppointments,
         todayVisits: currentVisited,
         pendingAppointments: currentPending,
+        convertedPatients: currentConverted,
         totalPatients: currentAppointments,
         todayRevenue: currentRevenue,
         recentPatients: recentPatientsResult,
@@ -362,6 +402,7 @@ const handler = async (req) => {
           appointments: appointmentsGrowth,
           visits: visitsGrowth,
           revenue: revenueGrowth,
+          converted: convertedGrowth,
         },
         // ✅ Return the actual branch being used and admin status
         activeBranch: branch,

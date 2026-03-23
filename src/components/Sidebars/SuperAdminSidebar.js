@@ -118,7 +118,7 @@ export default function SuperAdminSidebar() {
             </div>
             <div>
               <p className="font-bold text-gray-900 text-sm leading-none">
-                LearCRM
+                RyanCRM
               </p>
               <p className="text-amber-600 text-[10px] mt-0.5 font-semibold">
                 Super Admin

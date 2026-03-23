@@ -178,18 +178,18 @@ const plans = [
 ];
 
 const testimonials = [
-  { initials: "DR", name: "Dr. Rajesh Kapoor", role: "Medical Director, Delhi", grad: "from-[#9a6f2a] to-[#7a5218]", text: "LearCRM transformed how we manage our Delhi clinic. The audit trail alone has saved us from so many disputes, and the revenue dashboards are insightful." },
+  { initials: "DR", name: "Dr. Rajesh Kapoor", role: "Medical Director, Delhi", grad: "from-[#9a6f2a] to-[#7a5218]", text: "RyanCRM transformed how we manage our Delhi clinic. The audit trail alone has saved us from so many disputes, and the revenue dashboards are insightful." },
   { initials: "SS", name: "Sunita Sharma", role: "Operations Head, Mumbai", grad: "from-[#0a8f63] to-[#047857]", text: "Managing three cities from one platform was previously a nightmare. Now our Mumbai team works independently while I see everything from HQ. Remarkable." },
   { initials: "AM", name: "Anil Mehta", role: "Clinic Owner, Hyderabad", grad: "from-[#818cf8] to-[#4f46e5]", text: "The patient status pipeline is brilliant. Sales, counsellors, and surgery teams are always on the same page. Patient satisfaction has noticeably improved." },
 ];
 
 const faqs = [
   { q: "Can I restrict a staff member to only see their branch data?", a: "Yes. Every non-admin user is branch-locked at the API level — not just the UI. Receptionists in Mumbai can only view and manage Mumbai data, regardless of how they access the system." },
-  { q: "What transaction types does LearCRM support?", a: "Four types: Transplant (Sapphire FUE, DHI, Turkish DHI, Beard Transplant), Service (PRP, GFC, Alopecia, Headwash, Canacot), Medicine sales, and Expenses (Vendor or manual). All support multiple payment methods." },
-  { q: "Is there a mobile-friendly version?", a: "LearCRM is fully responsive and works on all modern browsers and devices. Receptionists and sales agents frequently use it on tablets for patient check-ins and appointment booking." },
+  { q: "What transaction types does RyanCRM support?", a: "Four types: Transplant (Sapphire FUE, DHI, Turkish DHI, Beard Transplant), Service (PRP, GFC, Alopecia, Headwash, Canacot), Medicine sales, and Expenses (Vendor or manual). All support multiple payment methods." },
+  { q: "Is there a mobile-friendly version?", a: "RyanCRM is fully responsive and works on all modern browsers and devices. Receptionists and sales agents frequently use it on tablets for patient check-ins and appointment booking." },
   { q: "Can I export reports to Excel?", a: "Yes, the Professional and Enterprise plans include Excel export for all financial and patient reports, with full date-range and branch filters applied." },
   { q: "How does the audit trail work for edited transactions?", a: "Every edit is captured in an editors array on the document — storing the editor's name, email, branch, date, and an array of changed fields each with their previous and new values. Separately, an immutable Audit collection records financial transactions." },
-  { q: "Is my patient data secure?", a: "LearCRM uses bcrypt password hashing, JWT sessions with version control, and role-based access at the API layer. Sessions are immediately invalidated across all devices when a password changes." },
+  { q: "Is my patient data secure?", a: "RyanCRM uses bcrypt password hashing, JWT sessions with version control, and role-based access at the API layer. Sessions are immediately invalidated across all devices when a password changes." },
 ];
 
 // ─── HOOKS ──────────────────────────────────────────────────────────────────
@@ -348,7 +348,7 @@ export default function LandingPage() {
               The <em className="grad-text not-italic">Complete</em><br />Clinic Operating<br />System
             </h1>
             <p className="anim-fadeup-3 text-lg text-[#6b5f4e] leading-[1.8] mb-10 max-w-125">
-              LearCRM unifies patient management, surgery tracking, financial reporting, and multi-branch operations — purpose-built for modern hair transplant clinics.
+              RyanCRM unifies patient management, surgery tracking, financial reporting, and multi-branch operations — purpose-built for modern hair transplant clinics.
             </p>
             <div className="anim-fadeup-4 flex flex-wrap gap-4">
               <Link href="/login" className="no-underline inline-flex items-center gap-2 px-8 py-3.5 rounded-xl bg-linear-to-r from-[#9a6f2a] to-[#7a5218] text-white font-bold tracking-wide hover:shadow-xl hover:shadow-[#9a6f2a]/35 hover:-translate-y-0.5 transition-all duration-300">
@@ -465,7 +465,7 @@ export default function LandingPage() {
           <RevealDiv>
             <SectionTag>Platform Features</SectionTag>
             <SectionH2>Everything your clinic needs,<br /><span className="font-cormorant italic text-[#b8862e]">in one place</span></SectionH2>
-            <p className="text-[#6b5f4e] text-lg leading-[1.7] max-w-xl">From the first patient inquiry to post-surgery aftercare — LearCRM covers every touchpoint in your clinical workflow.</p>
+            <p className="text-[#6b5f4e] text-lg leading-[1.7] max-w-xl">From the first patient inquiry to post-surgery aftercare — RyanCRM covers every touchpoint in your clinical workflow.</p>
           </RevealDiv>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-14">
@@ -492,7 +492,7 @@ export default function LandingPage() {
           <RevealDiv className="text-center">
             <SectionTag center>Patient Journey</SectionTag>
             <SectionH2>From <span className="italic text-[#b8862e]">enquiry</span> to aftercare</SectionH2>
-            <p className="text-[#6b5f4e] text-lg leading-[1.7] max-w-xl mx-auto">LearCRM maps your entire patient pipeline automatically — status updates as data is entered, no manual intervention needed.</p>
+            <p className="text-[#6b5f4e] text-lg leading-[1.7] max-w-xl mx-auto">RyanCRM maps your entire patient pipeline automatically — status updates as data is entered, no manual intervention needed.</p>
           </RevealDiv>
 
           <RevealDiv className="relative mt-14">
@@ -747,14 +747,14 @@ export default function LandingPage() {
               Ready to run your clinic<br />with <em className="not-italic text-[#b8862e]">total clarity?</em>
             </h2>
             <p className="text-[#f8f5ef]/60 text-lg max-w-120 mx-auto mb-10 leading-[1.7]">
-              Join clinics across Delhi, Mumbai, and Hyderabad who've replaced spreadsheets and scattered tools with LearCRM.
+              Join clinics across Delhi, Mumbai, and Hyderabad who've replaced spreadsheets and scattered tools with RyanCRM.
             </p>
             <div className="flex flex-wrap items-center justify-center gap-4">
               <Link href="/login" className="no-underline inline-flex items-center gap-2 px-8 py-3.5 rounded-xl bg-linear-to-r from-[#9a6f2a] to-[#7a5218] text-white font-bold tracking-wide hover:shadow-xl hover:shadow-[#9a6f2a]/30 hover:-translate-y-0.5 transition-all duration-300">
                 Start 14-Day Free Trial →
               </Link>
               <a
-                href="mailto:hello@Learcrm.in"
+                href="mailto:hello@RyanCRM.in"
                 className="no-underline inline-flex items-center gap-2 px-8 py-3.5 rounded-xl border border-[#f8f5ef]/25 text-[#f8f5ef]/80 font-medium hover:border-[#f8f5ef]/50 hover:text-[#f8f5ef] transition-all duration-300"
               >
                 Talk to Sales
@@ -778,7 +778,7 @@ export default function LandingPage() {
             </div>
             {[
               { heading: "Product", links: [{ label: "Features", href: "#features" }, { label: "Patient Workflow", href: "#workflow" }, { label: "Role Access", href: "#roles" }, { label: "Pricing", href: "#pricing" }] },
-              { heading: "Support", links: [{ label: "Documentation", href: "#" }, { label: "Contact Us", href: "mailto:hello@Learcrm.in" }, { label: "System Status", href: "#" }, { label: "Changelog", href: "#" }] },
+              { heading: "Support", links: [{ label: "Documentation", href: "#" }, { label: "Contact Us", href: "mailto:hello@RyanCRM.in" }, { label: "System Status", href: "#" }, { label: "Changelog", href: "#" }] },
             ].map((col) => (
               <div key={col.heading}>
                 <div className="text-xs font-bold uppercase tracking-widest text-[#9a6f2a] mb-4">{col.heading}</div>
@@ -791,7 +791,7 @@ export default function LandingPage() {
             ))}
           </div>
           <div className="flex flex-col md:flex-row items-center justify-between gap-3 pt-8 border-t border-black/8 text-xs text-[#a8998a]">
-            <span>© {new Date().getFullYear()} LearCRM. All rights reserved.</span>
+            <span>© {new Date().getFullYear()} RyanCRM. All rights reserved.</span>
             <span>Built on Next.js · MongoDB · TailwindCSS</span>
           </div>
         </div>

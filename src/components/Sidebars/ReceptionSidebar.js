@@ -95,7 +95,7 @@ export default function ReceptionSidebar({ sidebarOpen: externalOpen, setSidebar
               <Building2 className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h1 className="font-bold text-lg text-gray-900">LearCRM</h1>
+              <h1 className="font-bold text-lg text-gray-900">RyanCRM</h1>
               <p className="text-xs text-gray-500">Reception Panel</p>
             </div>
           </Link>
@@ -108,7 +108,7 @@ export default function ReceptionSidebar({ sidebarOpen: externalOpen, setSidebar
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 space-y-1 overflow-y-auto scrollbar-hide">
+        <nav className="flex-1 space-y-1 overflow-y-auto lg:mt-4 scrollbar-hide">
           {navItems.map((item) => (
             <NavItem
               key={item.name}

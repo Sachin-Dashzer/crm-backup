@@ -88,7 +88,7 @@ export default function SurgerySidebar() {
               <Stethoscope className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h1 className="font-bold text-lg text-gray-900">LearCRM</h1>
+              <h1 className="font-bold text-lg text-gray-900">RyanCRM</h1>
               <p className="text-xs text-gray-500">Surgery Panel</p>
             </div>
           </Link>

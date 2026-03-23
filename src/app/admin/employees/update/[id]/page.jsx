@@ -322,7 +322,7 @@ export default function EmployeeUpdate() {
                     <span>Update Employee</span>
                   </h1>
                   <p className="text-blue-100 mt-1">
-                    Edit employee information for LearCRM
+                    Edit employee information for RyanCRM
                   </p>
                 </div>
                 <div className="text-right hidden md:block">

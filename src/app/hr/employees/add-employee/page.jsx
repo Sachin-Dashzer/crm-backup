@@ -116,7 +116,7 @@ export default function HRAddEmployee() {
                 <UserPlus size={28} />
                 Employee Registration
               </h1>
-              <p className="text-violet-100 mt-1">Add a new team member to LearCRM</p>
+              <p className="text-violet-100 mt-1">Add a new team member to RyanCRM</p>
             </div>
 
             <form onSubmit={handleSubmit} className="px-8 py-8">
