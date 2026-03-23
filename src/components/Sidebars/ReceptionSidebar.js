@@ -36,10 +36,12 @@ const NavItem = ({ item, href, isActive, onClick, icon: Icon }) => (
   </Link>
 );
 
-export default function ReceptionSidebar() {
+export default function ReceptionSidebar({ sidebarOpen: externalOpen, setSidebarOpen: setExternalOpen } = {}) {
   const pathname = usePathname();
   const router = useRouter();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const sidebarOpen = externalOpen !== undefined ? externalOpen : internalOpen;
+  const setSidebarOpen = setExternalOpen || setInternalOpen;
   const [userName, setUserName] = useState("User");
 
   useEffect(() => {
