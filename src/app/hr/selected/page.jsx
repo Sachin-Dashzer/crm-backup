@@ -3,10 +3,11 @@
 import { useState, useEffect, useCallback } from "react";
 import HRSidebar from "@/components/Sidebars/HRSidebar";
 import {
-  Search, Eye, X, UserCheck, Star, Briefcase,
+  Search, Eye, X, UserCheck, Star, Briefcase, Pencil,
   CalendarDays, IndianRupee, Phone, Mail, Building2,
   ChevronLeft, ChevronRight, User, QrCode, Globe,
 } from "lucide-react";
+import CandidateEditModal from "@/components/hr/CandidateEditModal";
 
 /* ── Helpers ─────────────────────────────────────────────────────────────── */
 const fmt     = (n) => n ? `₹${Number(n).toLocaleString("en-IN")}` : "—";
@@ -163,6 +164,8 @@ export default function SelectedPage() {
   const [search, setSearch]         = useState("");
   const [page, setPage]             = useState(1);
   const [viewing, setViewing]       = useState(null);
+  const [editing, setEditing]       = useState(null);
+  const [hrEmployees, setHrEmployees] = useState([]);
 
   const fetchCandidates = useCallback(async () => {
     setLoading(true);
@@ -175,7 +178,10 @@ export default function SelectedPage() {
     }
   }, []);
 
-  useEffect(() => { fetchCandidates(); }, [fetchCandidates]);
+  useEffect(() => {
+    fetchCandidates();
+    fetch("/api/hr/employees").then((r) => r.json()).then((d) => { if (d.success) setHrEmployees(d.employees); }).catch(() => {});
+  }, [fetchCandidates]);
 
   // Filter by search
   const filtered = candidates.filter((c) => {
@@ -315,13 +321,22 @@ export default function SelectedPage() {
                         </td>
                         <td className="px-4 py-3"><RatingBar value={avg} /></td>
                         <td className="px-4 py-3">
-                          <button
-                            onClick={() => setViewing(c)}
-                            className="p-1.5 rounded-lg text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 transition-colors"
-                            title="View details"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </button>
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => setViewing(c)}
+                              className="p-1.5 rounded-lg text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 transition-colors"
+                              title="View details"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => setEditing(c)}
+                              className="p-1.5 rounded-lg text-gray-400 hover:text-amber-600 hover:bg-amber-50 transition-colors"
+                              title="Edit"
+                            >
+                              <Pencil className="w-4 h-4" />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     );
@@ -360,6 +375,7 @@ export default function SelectedPage() {
       </main>
 
       {viewing && <ViewModal candidate={viewing} onClose={() => setViewing(null)} />}
+      {editing && <CandidateEditModal candidate={editing} hrEmployees={hrEmployees} onClose={() => setEditing(null)} onSaved={() => { setEditing(null); fetchCandidates(); }} />}
     </div>
   );
 }
