@@ -30,7 +30,7 @@ function NavItem({ label, href, icon: Icon, active, onClick }) {
         }`}
       >
         <Icon
-          className={`w-[18px] h-[18px] shrink-0 transition-all duration-200 ${
+          className={`w-4.5 h-4.5 shrink-0 transition-all duration-200 ${
             active
               ? "text-violet-600 scale-110"
               : "text-gray-400 group-hover:text-violet-500 group-hover:scale-110"

@@ -146,7 +146,7 @@ export default function HRDashboard() {
         <header className="bg-white border-b border-gray-200 px-6 py-4 sticky top-0 z-10 shadow-sm shrink-0">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-md">
+              <div className="w-9 h-9 rounded-xl bg-linear-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-md">
                 <TrendingUp className="w-4 h-4 text-white" />
               </div>
               <div>
@@ -250,7 +250,7 @@ export default function HRDashboard() {
                       </AreaChart>
                     </ResponsiveContainer>
                   ) : (
-                    <div className="flex items-center justify-center h-[200px] text-sm text-gray-400">No data for selected range</div>
+                    <div className="flex items-center justify-center h-50 text-sm text-gray-400">No data for selected range</div>
                   )}
                 </div>
 
@@ -304,7 +304,7 @@ export default function HRDashboard() {
                       </BarChart>
                     </ResponsiveContainer>
                   ) : (
-                    <div className="flex items-center justify-center h-[200px] text-sm text-gray-400">No data for selected range</div>
+                    <div className="flex items-center justify-center h-50 text-sm text-gray-400">No data for selected range</div>
                   )}
                 </div>
 
@@ -334,7 +334,7 @@ export default function HRDashboard() {
                       ))}
                     </div>
                   ) : (
-                    <div className="flex items-center justify-center h-[200px] text-sm text-gray-400">No candidates yet</div>
+                    <div className="flex items-center justify-center h-50 text-sm text-gray-400">No candidates yet</div>
                   )}
                 </div>
               </div>

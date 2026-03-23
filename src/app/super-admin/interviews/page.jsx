@@ -110,7 +110,7 @@ function CandidateModal({ candidate, onClose }) {
         {/* Header */}
         <div className="p-6 border-b border-gray-100 flex items-start justify-between">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white font-bold text-xl shadow-md">
+            <div className="w-14 h-14 rounded-2xl bg-linear-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white font-bold text-xl shadow-md">
               {candidate.name?.slice(0, 2).toUpperCase()}
             </div>
             <div>
@@ -300,7 +300,7 @@ function CandidateRow({ candidate, onView }) {
     <tr className="hover:bg-gray-50 transition-colors group">
       <td className="px-4 py-3.5">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white text-xs font-bold shrink-0 shadow-sm">
+          <div className="w-8 h-8 rounded-xl bg-linear-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white text-xs font-bold shrink-0 shadow-sm">
             {candidate.name?.slice(0, 2).toUpperCase()}
           </div>
           <div className="min-w-0">
@@ -412,7 +412,7 @@ export default function InterviewsPage() {
         <div className="bg-white border-b border-gray-200 px-6 py-4 sticky top-0 z-10 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 via-orange-500 to-red-500 flex items-center justify-center shadow-md">
+              <div className="w-10 h-10 rounded-xl bg-linear-to-br from-amber-400 via-orange-500 to-red-500 flex items-center justify-center shadow-md">
                 <Briefcase className="w-5 h-5 text-white" />
               </div>
               <div>

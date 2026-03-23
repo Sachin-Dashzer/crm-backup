@@ -1,1081 +1,926 @@
 "use client";
-import { useState, useEffect } from "react";
-import Sidebar from "@/components/Sidebars/Sidebar";
-import { 
-  Download, 
-  Filter, 
-  Search, 
-  Calendar, 
+
+import { useState, useMemo } from "react";
+import AdminSidebar from "@/components/Sidebars/Sidebar";
+import {
+  Download,
+  Filter,
+  Search,
+  Calendar,
   FileText,
   Users,
   IndianRupee,
   Activity,
   TrendingUp,
-  PieChart,
   BarChart2,
   Star,
   X,
-  ChevronDown,
-  ChevronUp,
   RefreshCw,
-  AlertCircle
+  ChevronDown,
+  Package,
+  Briefcase,
+  Stethoscope,
+  HeartPulse,
+  FileBarChart,
+  ClipboardList,
+  Loader2,
+  CheckCircle2,
+  AlertCircle,
 } from "lucide-react";
 
-export default function ReportsPage() {
-  const [activePage, setActivePage] = useState("Reports");
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
+/* ─── Constants ─────────────────────────────────────────────────────────────── */
+const BRANCHES = ["All", "Delhi", "Mumbai", "Hyderabad"];
+
+const DATE_PRESETS = [
+  { label: "Today", value: "today" },
+  { label: "Yesterday", value: "yesterday" },
+  { label: "Last 7 Days", value: "last7" },
+  { label: "Last 30 Days", value: "last30" },
+  { label: "This Month", value: "thisMonth" },
+  { label: "Last Month", value: "lastMonth" },
+  { label: "Custom", value: "custom" },
+];
+
+const TECHNIQUES = [
+  "Sapphire FUE", "DHI", "Turkish DHI", "Beard Transplant", "PRP",
+  "Alopecia", "Headwash", "GFC", "Other",
+];
+
+const PROCEDURES = [
+  "Sapphire FUE", "DHI", "Turkish DHI", "Beard Transplant",
+  "PRP", "GFC", "Medicine", "Other",
+];
+
+const PAYMENT_TYPES = ["Booking", "Pending", "Full-payment", "Other"];
+
+const PATIENT_STATUSES = [
+  "NEW", "NOT_VISITED", "NOT_CONVERTED", "CONSULTED",
+  "SURGERY_BOOKED", "CLOSED",
+];
+
+/* ─── Color map ─────────────────────────────────────────────────────────────── */
+const COLOR_MAP = {
+  amber:  { accent: "bg-amber-500",   soft: "bg-amber-50",   text: "text-amber-700",  border: "border-amber-200",  badge: "bg-amber-100 text-amber-700" },
+  orange: { accent: "bg-orange-500",  soft: "bg-orange-50",  text: "text-orange-700", border: "border-orange-200", badge: "bg-orange-100 text-orange-700" },
+  blue:   { accent: "bg-blue-500",    soft: "bg-blue-50",    text: "text-blue-700",   border: "border-blue-200",   badge: "bg-blue-100 text-blue-700" },
+  green:  { accent: "bg-emerald-500", soft: "bg-emerald-50", text: "text-emerald-700",border: "border-emerald-200",badge: "bg-emerald-100 text-emerald-700" },
+  purple: { accent: "bg-purple-500",  soft: "bg-purple-50",  text: "text-purple-700", border: "border-purple-200", badge: "bg-purple-100 text-purple-700" },
+  red:    { accent: "bg-red-500",     soft: "bg-red-50",     text: "text-red-700",    border: "border-red-200",    badge: "bg-red-100 text-red-700" },
+  indigo: { accent: "bg-indigo-500",  soft: "bg-indigo-50",  text: "text-indigo-700", border: "border-indigo-200", badge: "bg-indigo-100 text-indigo-700" },
+  teal:   { accent: "bg-teal-500",    soft: "bg-teal-50",    text: "text-teal-700",   border: "border-teal-200",   badge: "bg-teal-100 text-teal-700" },
+  pink:   { accent: "bg-pink-500",    soft: "bg-pink-50",    text: "text-pink-700",   border: "border-pink-200",   badge: "bg-pink-100 text-pink-700" },
+};
+
+/* ─── Report definitions ─────────────────────────────────────────────────── */
+const REPORTS = [
+  // Patient Reports
+  {
+    id: 1, type: "patients-comprehensive", category: "Patient Reports",
+    name: "Comprehensive Patient Report",
+    description: "Full patient data — personal info, medical history, counselling, surgery, and payments",
+    icon: HeartPulse, color: "blue",
+    filters: ["branch", "status", "technique", "staff"],
+  },
+  {
+    id: 2, type: "patients-status", category: "Patient Reports",
+    name: "Patient Status Pipeline",
+    description: "Patient distribution across all status stages — NEW → CLOSED",
+    icon: Activity, color: "amber",
+    filters: ["branch", "status"],
+  },
+  {
+    id: 3, type: "patients-medical", category: "Patient Reports",
+    name: "Medical History Report",
+    description: "Patient medical records — blood group, allergies, BP, sugar, HIV, HCV",
+    icon: FileText, color: "red",
+    filters: ["branch"],
+  },
+  {
+    id: 4, type: "patients-surgery", category: "Patient Reports",
+    name: "Surgery Schedule Report",
+    description: "All surgeries with doctor, technician, implanter, technique, and graft details",
+    icon: Stethoscope, color: "purple",
+    filters: ["branch", "staff"],
+  },
+  {
+    id: 5, type: "patients-counselling", category: "Patient Reports",
+    name: "Counselling Outcomes Report",
+    description: "Counselling sessions — technique suggested, package, readiness, medicines",
+    icon: ClipboardList, color: "indigo",
+    filters: ["branch", "staff"],
+  },
+  {
+    id: 6, type: "outstanding-payments", category: "Patient Reports",
+    name: "Outstanding Payments Report",
+    description: "Patients with pending dues — sorted by highest pending amount",
+    icon: IndianRupee, color: "orange",
+    filters: ["branch", "status"],
+  },
+  {
+    id: 7, type: "grafts-analysis", category: "Patient Reports",
+    name: "Grafts Analysis Report",
+    description: "Grafts suggested vs needed vs implanted — variance and implantation rate",
+    icon: BarChart2, color: "teal",
+    filters: ["branch", "technique"],
+  },
+
+  // Staff Reports
+  {
+    id: 8, type: "employees-all", category: "Staff Reports",
+    name: "All Employees Report",
+    description: "Complete employee list with role, branch, contact details, and patient count",
+    icon: Users, color: "blue",
+    filters: ["branch"],
+  },
+  {
+    id: 9, type: "counsellors", category: "Staff Reports",
+    name: "Counsellor Performance",
+    description: "Counsellor-wise conversion rates, package values, and surgery readiness",
+    icon: TrendingUp, color: "purple",
+    filters: ["branch", "staff"],
+  },
+  {
+    id: 10, type: "agents", category: "Staff Reports",
+    name: "Agent Referral Performance",
+    description: "Agent-wise referral count, conversions, and total revenue generated",
+    icon: Users, color: "indigo",
+    filters: ["branch", "staff"],
+  },
+  {
+    id: 11, type: "doctors", category: "Staff Reports",
+    name: "Doctor Performance Report",
+    description: "Doctor surgery count, techniques performed, grafts implanted per surgery",
+    icon: Activity, color: "green",
+    filters: ["branch", "staff", "technique"],
+  },
+  {
+    id: 12, type: "implanters", category: "Staff Reports",
+    name: "Implanter Efficiency Report",
+    description: "Implanter procedure count and average grafts implanted per procedure",
+    icon: BarChart2, color: "teal",
+    filters: ["branch", "staff"],
+  },
+  {
+    id: 13, type: "technicians", category: "Staff Reports",
+    name: "Technician Workload Report",
+    description: "Technician roles — senior tech, grafting person, helper distributions",
+    icon: Briefcase, color: "amber",
+    filters: ["branch", "staff"],
+  },
+
+  // Financial Reports
+  {
+    id: 14, type: "revenue", category: "Financial Reports",
+    name: "Revenue Report",
+    description: "All revenue transactions with patient, procedure, method, and amount details",
+    icon: IndianRupee, color: "green",
+    filters: ["branch", "procedure", "paymentType"],
+  },
+  {
+    id: 15, type: "expenses", category: "Financial Reports",
+    name: "Expenses Report",
+    description: "All expense transactions — category, vendor, method, and amount",
+    icon: IndianRupee, color: "red",
+    filters: ["branch"],
+  },
+  {
+    id: 16, type: "transactions-all", category: "Financial Reports",
+    name: "All Transactions Report",
+    description: "Complete transaction history — both revenue and expenses with all filters",
+    icon: FileText, color: "blue",
+    filters: ["branch", "procedure", "paymentType"],
+  },
+  {
+    id: 17, type: "procedure-revenue", category: "Financial Reports",
+    name: "Procedure-wise Revenue",
+    description: "Revenue breakdown by procedure type — total, count, and average transaction",
+    icon: BarChart2, color: "purple",
+    filters: ["branch", "procedure"],
+  },
+  {
+    id: 18, type: "techniques", category: "Financial Reports",
+    name: "Technique Revenue Analysis",
+    description: "Surgery technique analysis — count, grafts, and average revenue per technique",
+    icon: BarChart2, color: "indigo",
+    filters: ["branch", "technique"],
+  },
+  {
+    id: 19, type: "branch-comparison", category: "Financial Reports",
+    name: "Branch Comparison Report",
+    description: "All-branch comparison — patients, surgeries, revenue, expenses, and net profit",
+    icon: TrendingUp, color: "amber",
+    filters: [],
+  },
+
+  // Inventory Reports
+  {
+    id: 20, type: "stocks-all", category: "Inventory Reports",
+    name: "Stock Inventory Report",
+    description: "Full stock list — quantity, MRP, purchase price, expiry, and total stock value",
+    icon: Package, color: "orange",
+    filters: [],
+  },
+  {
+    id: 21, type: "vendors-all", category: "Inventory Reports",
+    name: "Vendors Report",
+    description: "All vendor details — contact, GST number, deals in, and transaction count",
+    icon: Briefcase, color: "teal",
+    filters: [],
+  },
+];
+
+const CATEGORIES = ["All", ...new Set(REPORTS.map((r) => r.category))];
+
+/* ─── Helpers ─────────────────────────────────────────────────────────────── */
+function buildDateRange(preset, custom) {
+  const now = new Date();
+
+  if (preset === "today") {
+    const from = new Date(now); from.setHours(0, 0, 0, 0);
+    const to   = new Date(now); to.setHours(23, 59, 59, 999);
+    return { from: from.toISOString(), to: to.toISOString() };
+  }
+  if (preset === "yesterday") {
+    const from = new Date(now); from.setDate(from.getDate() - 1); from.setHours(0, 0, 0, 0);
+    const to   = new Date(from); to.setHours(23, 59, 59, 999);
+    return { from: from.toISOString(), to: to.toISOString() };
+  }
+  if (preset === "last7") {
+    const from = new Date(now); from.setDate(from.getDate() - 6); from.setHours(0, 0, 0, 0);
+    const to   = new Date(now); to.setHours(23, 59, 59, 999);
+    return { from: from.toISOString(), to: to.toISOString() };
+  }
+  if (preset === "last30") {
+    const from = new Date(now); from.setDate(from.getDate() - 29); from.setHours(0, 0, 0, 0);
+    const to   = new Date(now); to.setHours(23, 59, 59, 999);
+    return { from: from.toISOString(), to: to.toISOString() };
+  }
+  if (preset === "thisMonth") {
+    const from = new Date(now.getFullYear(), now.getMonth(), 1);
+    const to   = new Date(now); to.setHours(23, 59, 59, 999);
+    return { from: from.toISOString(), to: to.toISOString() };
+  }
+  if (preset === "lastMonth") {
+    const from = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const to   = new Date(now.getFullYear(), now.getMonth(), 0); to.setHours(23, 59, 59, 999);
+    return { from: from.toISOString(), to: to.toISOString() };
+  }
+  if (preset === "custom" && custom.from) {
+    const from = new Date(custom.from); from.setHours(0, 0, 0, 0);
+    const to   = custom.to ? new Date(custom.to) : new Date(custom.from);
+    to.setHours(23, 59, 59, 999);
+    return { from: from.toISOString(), to: to.toISOString() };
+  }
+  return { from: null, to: null };
+}
+
+function PieChartIcon(props) { return <BarChart2 {...props} />; }
+
+/* ─── Report Card ─────────────────────────────────────────────────────────── */
+function ReportCard({ report, filters, loadingId, favorites, onDownload, onToggleFavorite }) {
+  const c = COLOR_MAP[report.color] || COLOR_MAP.blue;
+  const Icon = report.icon;
+  const isLoading = loadingId === report.id;
+  const isFav = favorites.includes(report.id);
+
+  return (
+    <div
+      className={`bg-white rounded-2xl border ${c.border} shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden flex flex-col group`}
+    >
+      <div className={`h-1 ${c.accent}`} />
+
+      <div className="p-5 flex flex-col flex-1">
+        <div className="flex items-start justify-between mb-3">
+          <div className={`w-10 h-10 rounded-xl ${c.soft} flex items-center justify-center shrink-0`}>
+            <Icon className={`w-5 h-5 ${c.text}`} />
+          </div>
+          <button
+            onClick={() => onToggleFavorite(report.id)}
+            className={`p-1.5 rounded-lg transition-colors ${
+              isFav ? "text-amber-500 bg-amber-50" : "text-gray-300 hover:text-amber-400 hover:bg-amber-50"
+            }`}
+            title={isFav ? "Remove from favorites" : "Add to favorites"}
+          >
+            <Star className={`w-4 h-4 ${isFav ? "fill-amber-500" : ""}`} />
+          </button>
+        </div>
+
+        <div className="mb-2">
+          <span className={`text-[10px] font-bold uppercase tracking-widest ${c.text} opacity-80`}>
+            {report.category}
+          </span>
+          <h3 className="font-semibold text-gray-900 text-sm mt-0.5 leading-snug">
+            {report.name}
+          </h3>
+        </div>
+
+        <p className="text-xs text-gray-500 leading-relaxed flex-1 mb-4">
+          {report.description}
+        </p>
+
+        {report.filters.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 mb-4">
+            {report.filters.includes("branch") && filters.branch && filters.branch !== "All" && (
+              <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${c.badge}`}>
+                {filters.branch}
+              </span>
+            )}
+            {report.filters.includes("status") && filters.status && (
+              <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${c.badge}`}>
+                {filters.status}
+              </span>
+            )}
+            {report.filters.includes("technique") && filters.technique && (
+              <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${c.badge}`}>
+                {filters.technique}
+              </span>
+            )}
+            {report.filters.includes("procedure") && filters.procedure && (
+              <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${c.badge}`}>
+                {filters.procedure}
+              </span>
+            )}
+            {report.filters.includes("paymentType") && filters.paymentType && (
+              <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${c.badge}`}>
+                {filters.paymentType}
+              </span>
+            )}
+          </div>
+        )}
+
+        <button
+          onClick={() => onDownload(report)}
+          disabled={isLoading}
+          className={`w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-sm font-semibold transition-all duration-200 ${
+            isLoading
+              ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+              : `${c.accent} text-white hover:opacity-90 hover:shadow-md active:scale-95`
+          }`}
+        >
+          {isLoading ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Generating...
+            </>
+          ) : (
+            <>
+              <Download className="w-4 h-4" />
+              Download Excel
+            </>
+          )}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Toast ───────────────────────────────────────────────────────────────── */
+function Toast({ toast, onDismiss }) {
+  if (!toast) return null;
+  const isError = toast.type === "error";
+  return (
+    <div
+      className={`fixed bottom-6 right-6 z-50 flex items-start gap-3 p-4 rounded-2xl shadow-xl border max-w-sm transition-all duration-300 ${
+        isError
+          ? "bg-red-50 border-red-200 text-red-800"
+          : "bg-emerald-50 border-emerald-200 text-emerald-800"
+      }`}
+    >
+      {isError ? (
+        <AlertCircle className="w-5 h-5 shrink-0 mt-0.5 text-red-500" />
+      ) : (
+        <CheckCircle2 className="w-5 h-5 shrink-0 mt-0.5 text-emerald-500" />
+      )}
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-semibold">{toast.title}</p>
+        {toast.message && (
+          <p className="text-xs mt-0.5 opacity-80">{toast.message}</p>
+        )}
+      </div>
+      <button
+        onClick={onDismiss}
+        className="p-1 rounded-lg hover:bg-black/10 transition-colors"
+      >
+        <X className="w-4 h-4" />
+      </button>
+    </div>
+  );
+}
+
+/* ─── Main Page ───────────────────────────────────────────────────────────── */
+export default function AdminReportsPage() {
   const [loadingId, setLoadingId] = useState(null);
-  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
-  const [favorites, setFavorites] = useState([]);
-  
+  const [toast, setToast] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [activeCategory, setActiveCategory] = useState("All");
+  const [showFilters, setShowFilters] = useState(false);
+  const [favorites, setFavorites] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("admin_favoriteReports") || "[]"); }
+    catch { return []; }
+  });
+
+  const [datePreset, setDatePreset] = useState("last30");
+  const [customDates, setCustomDates] = useState({ from: "", to: "" });
+  const [pendingCustom, setPendingCustom] = useState({ from: "", to: "" });
   const [filters, setFilters] = useState({
-    category: "all",
-    period: "all",
-    startDate: "",
-    endDate: "",
-    branch: "",
-    staffFilter: "",
-    techniqueFilter: "",
-    statusFilter: "",
-    procedureFilter: "",
-    paymentTypeFilter: "",
+    branch: "All",
+    status: "",
+    technique: "",
+    staff: "",
+    procedure: "",
+    paymentType: "",
   });
 
-  const [filterOptions, setFilterOptions] = useState({
-    staff: [],
-    techniques: [],
-    status: [],
-    branches: ["Delhi", "Mumbai", "Hyderabad"],
-    procedures: ["Sapphire FUE", "DHI", "Turkish DHI", "Beard Transplant", "PRP", "GFC", "Medicine", "Other"],
-    paymentTypes: ["Booking", "Pending", "Full-payment", "Other"],
-  });
-
-  // Color configuration for Tailwind
-  const colorConfig = {
-    blue: {
-      bg: "bg-blue-100",
-      text: "text-blue-600",
-      border: "border-blue-200",
-      hover: "hover:bg-blue-50"
-    },
-    green: {
-      bg: "bg-green-100",
-      text: "text-green-600",
-      border: "border-green-200",
-      hover: "hover:bg-green-50"
-    },
-    red: {
-      bg: "bg-red-100",
-      text: "text-red-600",
-      border: "border-red-200",
-      hover: "hover:bg-red-50"
-    },
-    purple: {
-      bg: "bg-purple-100",
-      text: "text-purple-600",
-      border: "border-purple-200",
-      hover: "hover:bg-purple-50"
-    },
-    indigo: {
-      bg: "bg-indigo-100",
-      text: "text-indigo-600",
-      border: "border-indigo-200",
-      hover: "hover:bg-indigo-50"
-    },
-    teal: {
-      bg: "bg-teal-100",
-      text: "text-teal-600",
-      border: "border-teal-200",
-      hover: "hover:bg-teal-50"
-    },
-    cyan: {
-      bg: "bg-cyan-100",
-      text: "text-cyan-600",
-      border: "border-cyan-200",
-      hover: "hover:bg-cyan-50"
-    },
-    orange: {
-      bg: "bg-orange-100",
-      text: "text-orange-600",
-      border: "border-orange-200",
-      hover: "hover:bg-orange-50"
-    },
+  const showToast = (title, message, type = "success") => {
+    setToast({ title, message, type });
+    setTimeout(() => setToast(null), 5000);
   };
 
-  const reports = [
-    // Patient Reports
-    {
-      id: 1,
-      name: "Comprehensive Patient Report",
-      description: "Complete patient database with personal, medical, counselling, and surgery details",
-      category: "Patient Reports",
-      type: "patients-comprehensive",
-      icon: Users,
-      color: "blue",
-    },
-    {
-      id: 2,
-      name: "Patient Demographics Report",
-      description: "Patient demographics including age, gender, profession, and location",
-      category: "Patient Reports",
-      type: "patients-demographics",
-      icon: Users,
-      color: "blue",
-    },
-    {
-      id: 3,
-      name: "Patient Status Pipeline Report",
-      description: "Patient distribution across different status stages",
-      category: "Patient Reports",
-      type: "patients-status",
-      icon: Activity,
-      color: "green",
-    },
-    {
-      id: 4,
-      name: "Medical History Report",
-      description: "Patient medical histories, allergies, blood group, and health conditions",
-      category: "Patient Reports",
-      type: "patients-medical",
-      icon: FileText,
-      color: "red",
-    },
+  const toggleFavorite = (id) => {
+    const next = favorites.includes(id)
+      ? favorites.filter((f) => f !== id)
+      : [...favorites, id];
+    setFavorites(next);
+    try { localStorage.setItem("admin_favoriteReports", JSON.stringify(next)); } catch {}
+  };
 
-    // Staff Performance Reports
-    {
-      id: 5,
-      name: "Counsellor Performance Report",
-      description: "Counsellor conversion rates, packages quoted, and patient readiness metrics",
-      category: "Staff Reports",
-      type: "counsellors",
-      icon: TrendingUp,
-      color: "purple",
-    },
-    {
-      id: 6,
-      name: "Agent Referral Report",
-      description: "Agent referral performance and patient acquisition metrics",
-      category: "Staff Reports",
-      type: "agents",
-      icon: Users,
-      color: "indigo",
-    },
-    {
-      id: 7,
-      name: "Doctor Performance Report",
-      description: "Doctor surgery count, techniques performed, and patient outcomes",
-      category: "Staff Reports",
-      type: "doctors",
-      icon: Activity,
-      color: "blue",
-    },
-    {
-      id: 8,
-      name: "Implanter Efficiency Report",
-      description: "Implanter grafts implanted, surgery efficiency, and performance metrics",
-      category: "Staff Reports",
-      type: "implanters",
-      icon: BarChart2,
-      color: "teal",
-    },
-    {
-      id: 9,
-      name: "Technician Workload Report",
-      description: "Technician procedure count and workload distribution",
-      category: "Staff Reports",
-      type: "technicians",
-      icon: Activity,
-      color: "cyan",
-    },
+  const clearFilters = () => {
+    setDatePreset("last30");
+    setCustomDates({ from: "", to: "" });
+    setPendingCustom({ from: "", to: "" });
+    setFilters({ branch: "All", status: "", technique: "", staff: "", procedure: "", paymentType: "" });
+    setSearchTerm("");
+  };
 
-    // Surgery & Medical Reports
-    {
-      id: 10,
-      name: "Surgical Technique Analysis",
-      description: "Analysis of surgical techniques (FUE, Turkish DHI, Indian DHI, Hybrid) with success rates",
-      category: "Medical Reports",
-      type: "techniques",
-      icon: PieChart,
-      color: "purple",
-    },
-    {
-      id: 11,
-      name: "Surgery Schedule Report",
-      description: "Upcoming and completed surgeries with details",
-      category: "Medical Reports",
-      type: "surgery-schedule",
-      icon: Calendar,
-      color: "orange",
-    },
-    {
-      id: 12,
-      name: "Grafts Analysis Report",
-      description: "Grafts suggested vs implanted comparison and analysis",
-      category: "Medical Reports",
-      type: "grafts-analysis",
-      icon: BarChart2,
-      color: "green",
-    },
-    {
-      id: 13,
-      name: "Counselling Outcomes Report",
-      description: "Counselling success rates and surgery readiness metrics",
-      category: "Medical Reports",
-      type: "counselling-outcomes",
-      icon: TrendingUp,
-      color: "blue",
-    },
+  const applyCustomDates = () => {
+    if (!pendingCustom.from) return;
+    setCustomDates(pendingCustom);
+    setDatePreset("custom");
+  };
 
-    // Financial Reports
-    {
-      id: 14,
-      name: "Revenue Report",
-      description: "Complete revenue analysis from all procedures and transactions",
-      category: "Financial Reports",
-      type: "revenue",
-      icon: IndianRupee,
-      color: "green",
-    },
-    {
-      id: 15,
-      name: "Expenses Report",
-      description: "All business expenses and cost analysis",
-      category: "Financial Reports",
-      type: "expenses",
-      icon: IndianRupee,
-      color: "red",
-    },
-    {
-      id: 16,
-      name: "Transaction History Report",
-      description: "Detailed transaction history with payment methods and types",
-      category: "Financial Reports",
-      type: "transactions",
-      icon: FileText,
-      color: "blue",
-    },
-    {
-      id: 17,
-      name: "Outstanding Payments Report",
-      description: "Patients with pending payments and outstanding amounts",
-      category: "Financial Reports",
-      type: "outstanding-payments",
-      icon: IndianRupee,
-      color: "orange",
-    },
-    {
-      id: 18,
-      name: "Payment Collection Report",
-      description: "Payment collection efficiency by branch and staff",
-      category: "Financial Reports",
-      type: "payment-collection",
-      icon: TrendingUp,
-      color: "purple",
-    },
-    {
-      id: 19,
-      name: "Procedure-wise Revenue Report",
-      description: "Revenue breakdown by procedure type",
-      category: "Financial Reports",
-      type: "procedure-revenue",
-      icon: PieChart,
-      color: "indigo",
-    },
-
-    // Branch Performance Reports
-    {
-      id: 20,
-      name: "Branch Performance Comparison",
-      description: "Comparative analysis of all branches",
-      category: "Branch Reports",
-      type: "branch-comparison",
-      icon: BarChart2,
-      color: "blue",
-    },
-    {
-      id: 21,
-      name: "Branch Revenue Report",
-      description: "Revenue analysis by branch location",
-      category: "Branch Reports",
-      type: "branch-revenue",
-      icon: IndianRupee,
-      color: "green",
-    },
-    {
-      id: 22,
-      name: "Branch Patient Volume Report",
-      description: "Patient volume and conversion rates by branch",
-      category: "Branch Reports",
-      type: "branch-patients",
-      icon: Users,
-      color: "purple",
-    },
-  ];
-
-  const categories = [
-    "all",
-    ...new Set(reports.map((report) => report.category)),
-  ];
-
-  useEffect(() => {
-    fetchFilterOptions();
-    loadFavorites();
-  }, []);
-
-  const fetchFilterOptions = async () => {
-    try {
-      const response = await fetch("/api/admin/reports/filters");
-      const result = await response.json();
-
-      if (result.success) {
-        setFilterOptions((prev) => ({
-          ...prev,
-          staff: result.data.staff || [],
-          techniques: result.data.techniques || [],
-          status: result.data.status || [],
-        }));
-      }
-    } catch (error) {
-      console.error("Error fetching filter options:", error);
+  const visibleReports = useMemo(() => {
+    let list = REPORTS;
+    if (activeCategory !== "All") list = list.filter((r) => r.category === activeCategory);
+    if (searchTerm.trim()) {
+      const s = searchTerm.toLowerCase();
+      list = list.filter(
+        (r) =>
+          r.name.toLowerCase().includes(s) ||
+          r.description.toLowerCase().includes(s) ||
+          r.category.toLowerCase().includes(s)
+      );
     }
-  };
+    return [...list].sort((a, b) => {
+      const af = favorites.includes(a.id);
+      const bf = favorites.includes(b.id);
+      if (af && !bf) return -1;
+      if (!af && bf) return 1;
+      return 0;
+    });
+  }, [activeCategory, searchTerm, favorites]);
 
-  const loadFavorites = () => {
+  const activeFilterCount = [
+    filters.branch !== "All" && filters.branch,
+    filters.status,
+    filters.technique,
+    filters.procedure,
+    filters.paymentType,
+    datePreset !== "last30" && datePreset,
+  ].filter(Boolean).length;
+
+  const handleDownload = async (report) => {
+    setLoadingId(report.id);
+
     try {
-      const saved = localStorage.getItem("favoriteReports");
-      if (saved) {
-        setFavorites(JSON.parse(saved));
-      }
-    } catch (error) {
-      console.error("Error loading favorites:", error);
-      setFavorites([]);
-    }
-  };
+      const { from, to } = buildDateRange(datePreset, customDates);
 
-  const toggleFavorite = (reportId) => {
-    try {
-      const newFavorites = favorites.includes(reportId)
-        ? favorites.filter((id) => id !== reportId)
-        : [...favorites, reportId];
-      
-      setFavorites(newFavorites);
-      localStorage.setItem("favoriteReports", JSON.stringify(newFavorites));
-    } catch (error) {
-      console.error("Error saving favorites:", error);
-    }
-  };
+      const params = new URLSearchParams({ type: report.type });
+      if (from) params.append("from", from);
+      if (to) params.append("to", to);
+      if (filters.branch && filters.branch !== "All") params.append("branch", filters.branch);
+      if (filters.status) params.append("statusFilter", filters.status);
+      if (filters.technique) params.append("techniqueFilter", filters.technique);
+      if (filters.staff) params.append("staffFilter", filters.staff);
+      if (filters.procedure) params.append("procedureFilter", filters.procedure);
+      if (filters.paymentType) params.append("paymentTypeFilter", filters.paymentType);
 
-  const filteredReports = reports.filter((report) => {
-    const matchesSearch =
-      report.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      report.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      report.category.toLowerCase().includes(searchTerm.toLowerCase());
+      const res = await fetch(`/api/admin/reports?${params.toString()}`, {
+        credentials: "include",
+      });
+      const result = await res.json();
 
-    const matchesCategory =
-      filters.category === "all" || report.category === filters.category;
-
-    return matchesSearch && matchesCategory;
-  });
-
-  // Sort favorites first
-  const sortedReports = [...filteredReports].sort((a, b) => {
-    const aIsFav = favorites.includes(a.id);
-    const bIsFav = favorites.includes(b.id);
-    if (aIsFav && !bIsFav) return -1;
-    if (!aIsFav && bIsFav) return 1;
-    return 0;
-  });
-
-  const downloadExcel = async (reportType, reportId, reportName) => {
-    setLoadingId(reportId);
-    
-    try {
-      // Build query parameters with proper date handling
-      const params = new URLSearchParams();
-      params.append('type', reportType);
-      
-      // Handle period-based dates
-      if (filters.period !== 'all') {
-        params.append('period', filters.period);
-      }
-      
-      // Handle custom date range
-      if (filters.period === 'custom') {
-        if (filters.startDate) params.append('startDate', filters.startDate);
-        if (filters.endDate) params.append('endDate', filters.endDate);
-      }
-      
-      // Add other filters only if they have values
-      if (filters.branch) params.append('branch', filters.branch);
-      if (filters.staffFilter) params.append('staffFilter', filters.staffFilter);
-      if (filters.techniqueFilter) params.append('techniqueFilter', filters.techniqueFilter);
-      if (filters.statusFilter) params.append('statusFilter', filters.statusFilter);
-      if (filters.procedureFilter) params.append('procedureFilter', filters.procedureFilter);
-      if (filters.paymentTypeFilter) params.append('paymentTypeFilter', filters.paymentTypeFilter);
-
-      console.log('Requesting report with params:', params.toString());
-
-      const response = await fetch(`/api/admin/reports?${params.toString()}`);
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
-      }
-      
-      const result = await response.json();
-
-      if (!result.success) {
-        throw new Error(result.message || "Failed to generate report");
+      if (!res.ok || !result.success) {
+        throw new Error(result.message || `Request failed (${res.status})`);
       }
 
       if (!result.data || result.data.length === 0) {
-        alert("⚠️ No data found for the selected filters. Try adjusting your filter criteria.");
+        showToast("No Data Found", "Try adjusting the date range or filters.", "error");
         return;
       }
 
-      // Import XLSX dynamically
       const { utils, writeFile } = await import("xlsx");
       const wb = utils.book_new();
       const ws = utils.json_to_sheet(result.data);
-      
-      // Set column widths
-      const maxWidth = 50;
-      const colWidths = Object.keys(result.data[0] || {}).map(key => ({
-        wch: Math.min(Math.max(key.length, 10), maxWidth)
+
+      const cols = Object.keys(result.data[0] || {});
+      ws["!cols"] = cols.map((k) => ({
+        wch: Math.min(Math.max(k.length + 2, 12), 40),
       }));
-      ws['!cols'] = colWidths;
 
       utils.book_append_sheet(wb, ws, "Report");
 
-      const fileName = `${reportName.replace(/\s+/g, '_')}_${new Date().toISOString().split("T")[0]}.xlsx`;
+      const meta = [
+        { Field: "Report Name", Value: report.name },
+        { Field: "Category", Value: report.category },
+        { Field: "Date Range", Value: datePreset === "custom" ? `${customDates.from} — ${customDates.to}` : datePreset },
+        { Field: "Branch Filter", Value: filters.branch || "All" },
+        { Field: "Total Records", Value: result.data.length },
+        { Field: "Generated At", Value: new Date().toLocaleString("en-IN") },
+      ];
+      const metaWs = utils.json_to_sheet(meta);
+      metaWs["!cols"] = [{ wch: 20 }, { wch: 40 }];
+      utils.book_append_sheet(wb, metaWs, "Info");
+
+      const fileName = `${report.name.replace(/\s+/g, "_")}_${new Date()
+        .toISOString()
+        .split("T")[0]}.xlsx`;
+
       writeFile(wb, fileName);
 
-      // Success notification
-      const successMsg = `✓ Report downloaded successfully!\n\nFile: ${fileName}\nRecords: ${result.data.length}`;
-      alert(successMsg);
-    } catch (error) {
-      console.error("Download error:", error);
-      alert(`✗ Error downloading report:\n\n${error.message}\n\nPlease try again or contact support if the issue persists.`);
+      showToast("Report Downloaded!", `${result.data.length} records saved as ${fileName}`);
+    } catch (err) {
+      console.error(err);
+      showToast("Download Failed", err.message, "error");
     } finally {
       setLoadingId(null);
     }
   };
 
-  const clearFilters = () => {
-    setFilters({
-      category: "all",
-      period: "all",
-      startDate: "",
-      endDate: "",
-      branch: "",
-      staffFilter: "",
-      techniqueFilter: "",
-      statusFilter: "",
-      procedureFilter: "",
-      paymentTypeFilter: "",
+  const categoryCounts = useMemo(() => {
+    const counts = {};
+    CATEGORIES.forEach((cat) => {
+      counts[cat] = cat === "All" ? REPORTS.length : REPORTS.filter((r) => r.category === cat).length;
     });
-    setSearchTerm("");
-    setShowAdvancedFilters(false);
-  };
-
-  const clearAdvancedFilters = () => {
-    setFilters(prev => ({
-      ...prev,
-      branch: "",
-      staffFilter: "",
-      techniqueFilter: "",
-      statusFilter: "",
-      procedureFilter: "",
-      paymentTypeFilter: "",
-    }));
-  };
-
-  // Count active filters (excluding category and search)
-  const activeBasicFilters = [filters.period !== 'all', filters.startDate, filters.endDate].filter(Boolean).length;
-  const activeAdvancedFilters = [
-    filters.branch, 
-    filters.staffFilter, 
-    filters.techniqueFilter, 
-    filters.statusFilter, 
-    filters.procedureFilter, 
-    filters.paymentTypeFilter
-  ].filter(Boolean).length;
-  const totalActiveFilters = activeBasicFilters + activeAdvancedFilters;
-
-  const showDateRange = filters.period === "custom";
+    return counts;
+  }, []);
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-      <Sidebar
-        sidebarOpen={sidebarOpen}
-        setSidebarOpen={setSidebarOpen}
-        activePage={activePage}
-        setActivePage={setActivePage}
-      />
+      <AdminSidebar />
 
       <div className="flex-1 overflow-auto">
         <div className="p-4 sm:p-6 lg:p-8">
-          <div className="max-w-7xl mx-auto">
-            {/* Header */}
-            <div className="mb-6">
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                Reports Dashboard
-              </h1>
-              <p className="text-gray-600">
-                Generate and download comprehensive reports with advanced filtering
-              </p>
-            </div>
+          <div className="max-w-7xl mx-auto space-y-6">
 
-            {/* Main Filter Panel */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-6">
-              {/* Filter Header */}
-              <div className="px-6 py-4 border-b border-gray-200">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <Filter className="w-5 h-5 text-gray-600" />
-                    <h2 className="text-lg font-semibold text-gray-900">Filters</h2>
-                    {totalActiveFilters > 0 && (
-                      <span className="flex items-center justify-center px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-700 text-xs font-semibold">
-                        {totalActiveFilters} active
-                      </span>
-                    )}
+            {/* ── Page Header ── */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-3 mb-1">
+                  <div className="w-9 h-9 rounded-xl bg-linear-to-br from-amber-500 via-orange-500 to-red-500 flex items-center justify-center shadow-md">
+                    <FileBarChart className="w-5 h-5 text-white" />
                   </div>
-                  {totalActiveFilters > 0 && (
-                    <button
-                      onClick={clearFilters}
-                      className="flex items-center gap-2 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                    >
-                      <RefreshCw className="w-4 h-4" />
-                      Reset All
-                    </button>
-                  )}
+                  <h1 className="text-2xl font-bold text-gray-900">Reports Center</h1>
                 </div>
+                <p className="text-sm text-gray-500 ml-12">
+                  Generate and download {REPORTS.length} report types across all modules
+                </p>
               </div>
 
-              {/* Basic Filters */}
-              <div className="p-6 space-y-4">
-                {/* Search and Category Row */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="flex items-center gap-3 ml-12 sm:ml-0">
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-amber-50 border border-amber-200">
+                  <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
+                  <span className="text-sm font-semibold text-amber-700">{favorites.length} Favorited</span>
+                </div>
+                {activeFilterCount > 0 && (
+                  <button
+                    onClick={clearFilters}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 rounded-xl border border-red-200 transition-colors"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" />
+                    Clear Filters
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* ── Filter Panel ── */}
+            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+              <div className="px-5 py-4 flex items-center justify-between border-b border-gray-100">
+                <div className="flex items-center gap-2.5">
+                  <Filter className="w-4.5 h-4.5 text-amber-600" />
+                  <span className="font-semibold text-gray-900 text-sm">Filters</span>
+                  {activeFilterCount > 0 && (
+                    <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 text-xs font-bold">
+                      {activeFilterCount} active
+                    </span>
+                  )}
+                </div>
+                <button
+                  onClick={() => setShowFilters(!showFilters)}
+                  className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition-colors"
+                >
+                  <span>{showFilters ? "Hide" : "Show"} Advanced</span>
+                  <ChevronDown className={`w-4 h-4 transition-transform ${showFilters ? "rotate-180" : ""}`} />
+                </button>
+              </div>
+
+              <div className="p-5 space-y-5">
+                {/* Row 1: Date + Branch + Search */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {/* Date preset */}
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">
+                      Date Range
+                    </label>
+                    <div className="flex flex-wrap gap-1.5">
+                      {DATE_PRESETS.filter((p) => p.value !== "custom").map((p) => (
+                        <button
+                          key={p.value}
+                          onClick={() => setDatePreset(p.value)}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                            datePreset === p.value
+                              ? "bg-amber-500 text-white shadow-sm"
+                              : "bg-gray-100 text-gray-600 hover:bg-amber-50 hover:text-amber-700"
+                          }`}
+                        >
+                          {p.label}
+                        </button>
+                      ))}
+                      <button
+                        onClick={() => setDatePreset("custom")}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                          datePreset === "custom"
+                            ? "bg-amber-500 text-white shadow-sm"
+                            : "bg-gray-100 text-gray-600 hover:bg-amber-50 hover:text-amber-700"
+                        }`}
+                      >
+                        Custom
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Branch */}
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">
+                      Branch
+                    </label>
+                    <div className="flex flex-wrap gap-1.5">
+                      {BRANCHES.map((b) => (
+                        <button
+                          key={b}
+                          onClick={() => setFilters((f) => ({ ...f, branch: b }))}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                            filters.branch === b
+                              ? "bg-amber-500 text-white shadow-sm"
+                              : "bg-gray-100 text-gray-600 hover:bg-amber-50 hover:text-amber-700"
+                          }`}
+                        >
+                          {b}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
                   {/* Search */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">
                       Search Reports
                     </label>
                     <div className="relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                       <input
                         type="text"
-                        placeholder="Search by name, description, or category..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                        placeholder="Search by name or category..."
+                        className="w-full pl-9 pr-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-300 focus:border-amber-400 transition-all"
                       />
                       {searchTerm && (
                         <button
                           onClick={() => setSearchTerm("")}
-                          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                         >
-                          <X className="w-4 h-4" />
+                          <X className="w-3.5 h-3.5" />
                         </button>
                       )}
                     </div>
                   </div>
+                </div>
 
-                  {/* Category Filter */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Report Category
-                    </label>
-                    <select
-                      value={filters.category}
-                      onChange={(e) =>
-                        setFilters((prev) => ({
-                          ...prev,
-                          category: e.target.value,
-                        }))
-                      }
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                {/* Custom date picker */}
+                {datePreset === "custom" && (
+                  <div className="flex flex-wrap items-end gap-3 p-4 bg-amber-50 rounded-xl border border-amber-200">
+                    <Calendar className="w-4 h-4 text-amber-600 self-center" />
+                    <div>
+                      <label className="block text-xs font-semibold text-amber-700 mb-1">From</label>
+                      <input
+                        type="date"
+                        value={pendingCustom.from}
+                        onChange={(e) => setPendingCustom((p) => ({ ...p, from: e.target.value }))}
+                        className="px-3 py-2 text-sm border border-amber-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-300"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-amber-700 mb-1">To</label>
+                      <input
+                        type="date"
+                        value={pendingCustom.to}
+                        onChange={(e) => setPendingCustom((p) => ({ ...p, to: e.target.value }))}
+                        min={pendingCustom.from}
+                        className="px-3 py-2 text-sm border border-amber-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-300"
+                      />
+                    </div>
+                    <button
+                      onClick={applyCustomDates}
+                      disabled={!pendingCustom.from}
+                      className="px-4 py-2 bg-amber-500 text-white text-sm font-semibold rounded-lg hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
-                      {categories.map((category) => (
-                        <option key={category} value={category}>
-                          {category === "all" ? "All Categories" : category}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                {/* Time Period Row */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Time Period
-                  </label>
-                  <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-                    {[
-                      { value: 'all', label: 'All Time' },
-                      { value: 'daily', label: 'Today' },
-                      { value: 'weekly', label: 'This Week' },
-                      { value: 'monthly', label: 'This Month' },
-                      { value: 'custom', label: 'Custom Range' },
-                    ].map((period) => (
-                      <button
-                        key={period.value}
-                        onClick={() =>
-                          setFilters((prev) => ({ ...prev, period: period.value }))
-                        }
-                        className={`px-4 py-2.5 rounded-lg font-medium transition-all ${
-                          filters.period === period.value
-                            ? "bg-indigo-600 text-white shadow-sm"
-                            : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                        }`}
-                      >
-                        {period.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Custom Date Range */}
-                {showDateRange && (
-                  <div className="p-4 bg-indigo-50 border border-indigo-200 rounded-lg">
-                    <div className="flex items-start gap-2 mb-3">
-                      <Calendar className="w-5 h-5 text-indigo-600 mt-0.5" />
-                      <div>
-                        <h3 className="text-sm font-semibold text-indigo-900">Custom Date Range</h3>
-                        <p className="text-xs text-indigo-700 mt-0.5">Select start and end dates for your report</p>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Start Date
-                        </label>
-                        <input
-                          type="date"
-                          value={filters.startDate}
-                          onChange={(e) =>
-                            setFilters((prev) => ({
-                              ...prev,
-                              startDate: e.target.value,
-                            }))
-                          }
-                          max={filters.endDate || undefined}
-                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          End Date
-                        </label>
-                        <input
-                          type="date"
-                          value={filters.endDate}
-                          onChange={(e) =>
-                            setFilters((prev) => ({
-                              ...prev,
-                              endDate: e.target.value,
-                            }))
-                          }
-                          min={filters.startDate || undefined}
-                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                        />
-                      </div>
-                    </div>
-                    {filters.startDate && filters.endDate && (
-                      <div className="mt-3 flex items-center gap-2 text-sm text-indigo-700">
-                        <AlertCircle className="w-4 h-4" />
-                        <span>
-                          Range: {new Date(filters.startDate).toLocaleDateString()} - {new Date(filters.endDate).toLocaleDateString()}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* Advanced Filters Section */}
-              <div className="border-t border-gray-200">
-                <button
-                  onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-                  className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="text-sm font-semibold text-gray-900">Advanced Filters</span>
-                    {activeAdvancedFilters > 0 && (
-                      <span className="flex items-center justify-center px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-700 text-xs font-semibold">
-                        {activeAdvancedFilters} active
+                      Apply
+                    </button>
+                    {customDates.from && (
+                      <span className="text-xs text-amber-700 font-medium">
+                        Active: {customDates.from} → {customDates.to || customDates.from}
                       </span>
                     )}
                   </div>
-                  {showAdvancedFilters ? (
-                    <ChevronUp className="w-5 h-5 text-gray-500" />
-                  ) : (
-                    <ChevronDown className="w-5 h-5 text-gray-500" />
-                  )}
-                </button>
+                )}
 
-                {showAdvancedFilters && (
-                  <div className="px-6 pb-6 pt-2 bg-gray-50 border-t border-gray-200">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {/* Branch Filter */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Branch Location
-                        </label>
-                        <select
-                          value={filters.branch}
-                          onChange={(e) =>
-                            setFilters((prev) => ({
-                              ...prev,
-                              branch: e.target.value,
-                            }))
-                          }
-                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                        >
-                          <option value="">All Branches</option>
-                          {filterOptions.branches.map((branch) => (
-                            <option key={branch} value={branch}>
-                              {branch}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-
-                      {/* Staff Filter */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Staff Member
-                        </label>
-                        <select
-                          value={filters.staffFilter}
-                          onChange={(e) =>
-                            setFilters((prev) => ({
-                              ...prev,
-                              staffFilter: e.target.value,
-                            }))
-                          }
-                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                        >
-                          <option value="">All Staff</option>
-                          {filterOptions.staff.map((staff) => (
-                            <option key={staff} value={staff}>
-                              {staff}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-
-                      {/* Technique Filter */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Surgical Technique
-                        </label>
-                        <select
-                          value={filters.techniqueFilter}
-                          onChange={(e) =>
-                            setFilters((prev) => ({
-                              ...prev,
-                              techniqueFilter: e.target.value,
-                            }))
-                          }
-                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                        >
-                          <option value="">All Techniques</option>
-                          {filterOptions.techniques.map((technique) => (
-                            <option key={technique} value={technique}>
-                              {technique}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-
-                      {/* Status Filter */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Patient Status
-                        </label>
-                        <select
-                          value={filters.statusFilter}
-                          onChange={(e) =>
-                            setFilters((prev) => ({
-                              ...prev,
-                              statusFilter: e.target.value,
-                            }))
-                          }
-                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                        >
-                          <option value="">All Status</option>
-                          {filterOptions.status.map((status) => (
-                            <option key={status} value={status}>
-                              {status}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-
-                      {/* Procedure Filter */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Procedure Type
-                        </label>
-                        <select
-                          value={filters.procedureFilter}
-                          onChange={(e) =>
-                            setFilters((prev) => ({
-                              ...prev,
-                              procedureFilter: e.target.value,
-                            }))
-                          }
-                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                        >
-                          <option value="">All Procedures</option>
-                          {filterOptions.procedures.map((procedure) => (
-                            <option key={procedure} value={procedure}>
-                              {procedure}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-
-                      {/* Payment Type Filter */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Payment Type
-                        </label>
-                        <select
-                          value={filters.paymentTypeFilter}
-                          onChange={(e) =>
-                            setFilters((prev) => ({
-                              ...prev,
-                              paymentTypeFilter: e.target.value,
-                            }))
-                          }
-                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                        >
-                          <option value="">All Payment Types</option>
-                          {filterOptions.paymentTypes.map((type) => (
-                            <option key={type} value={type}>
-                              {type}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
+                {/* Advanced filters (collapsible) */}
+                {showFilters && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-1 border-t border-gray-100">
+                    {/* Status */}
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">
+                        Patient Status
+                      </label>
+                      <select
+                        value={filters.status}
+                        onChange={(e) => setFilters((f) => ({ ...f, status: e.target.value }))}
+                        className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-300 bg-white"
+                      >
+                        <option value="">All Statuses</option>
+                        {PATIENT_STATUSES.map((s) => (
+                          <option key={s} value={s}>{s.replace(/_/g, " ")}</option>
+                        ))}
+                      </select>
                     </div>
 
-                    {/* Clear Advanced Filters */}
-                    {activeAdvancedFilters > 0 && (
-                      <div className="mt-4 flex justify-end">
-                        <button
-                          onClick={clearAdvancedFilters}
-                          className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-                        >
-                          <X className="w-4 h-4" />
-                          Clear Advanced Filters
-                        </button>
-                      </div>
-                    )}
+                    {/* Technique */}
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">
+                        Technique
+                      </label>
+                      <select
+                        value={filters.technique}
+                        onChange={(e) => setFilters((f) => ({ ...f, technique: e.target.value }))}
+                        className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-300 bg-white"
+                      >
+                        <option value="">All Techniques</option>
+                        {TECHNIQUES.map((t) => (
+                          <option key={t} value={t}>{t}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Procedure */}
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">
+                        Procedure
+                      </label>
+                      <select
+                        value={filters.procedure}
+                        onChange={(e) => setFilters((f) => ({ ...f, procedure: e.target.value }))}
+                        className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-300 bg-white"
+                      >
+                        <option value="">All Procedures</option>
+                        {PROCEDURES.map((p) => (
+                          <option key={p} value={p}>{p}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Payment Type */}
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">
+                        Payment Type
+                      </label>
+                      <select
+                        value={filters.paymentType}
+                        onChange={(e) => setFilters((f) => ({ ...f, paymentType: e.target.value }))}
+                        className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-300 bg-white"
+                      >
+                        <option value="">All Payment Types</option>
+                        {PAYMENT_TYPES.map((p) => (
+                          <option key={p} value={p}>{p}</option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
                 )}
               </div>
             </div>
 
-            {/* Active Filters Summary */}
-            {totalActiveFilters > 0 && (
-              <div className="mb-6 p-4 bg-indigo-50 border border-indigo-200 rounded-lg">
-                <div className="flex items-start gap-3">
-                  <Filter className="w-5 h-5 text-indigo-600 mt-0.5 shrink-0" />
-                  <div className="flex-1">
-                    <h3 className="text-sm font-semibold text-indigo-900 mb-2">Active Filters ({totalActiveFilters})</h3>
-                    <div className="flex flex-wrap gap-2">
-                      {filters.period !== 'all' && (
-                        <span className="inline-flex items-center gap-1 px-3 py-1 bg-white border border-indigo-200 rounded-full text-xs font-medium text-indigo-700">
-                          Period: {filters.period === 'daily' ? 'Today' : filters.period === 'weekly' ? 'This Week' : filters.period === 'monthly' ? 'This Month' : 'Custom'}
-                        </span>
-                      )}
-                      {filters.branch && (
-                        <span className="inline-flex items-center gap-1 px-3 py-1 bg-white border border-indigo-200 rounded-full text-xs font-medium text-indigo-700">
-                          Branch: {filters.branch}
-                        </span>
-                      )}
-                      {filters.staffFilter && (
-                        <span className="inline-flex items-center gap-1 px-3 py-1 bg-white border border-indigo-200 rounded-full text-xs font-medium text-indigo-700">
-                          Staff: {filters.staffFilter}
-                        </span>
-                      )}
-                      {filters.techniqueFilter && (
-                        <span className="inline-flex items-center gap-1 px-3 py-1 bg-white border border-indigo-200 rounded-full text-xs font-medium text-indigo-700">
-                          Technique: {filters.techniqueFilter}
-                        </span>
-                      )}
-                      {filters.statusFilter && (
-                        <span className="inline-flex items-center gap-1 px-3 py-1 bg-white border border-indigo-200 rounded-full text-xs font-medium text-indigo-700">
-                          Status: {filters.statusFilter}
-                        </span>
-                      )}
-                      {filters.procedureFilter && (
-                        <span className="inline-flex items-center gap-1 px-3 py-1 bg-white border border-indigo-200 rounded-full text-xs font-medium text-indigo-700">
-                          Procedure: {filters.procedureFilter}
-                        </span>
-                      )}
-                      {filters.paymentTypeFilter && (
-                        <span className="inline-flex items-center gap-1 px-3 py-1 bg-white border border-indigo-200 rounded-full text-xs font-medium text-indigo-700">
-                          Payment: {filters.paymentTypeFilter}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </div>
+            {/* ── Category Tabs ── */}
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide">
+              {CATEGORIES.map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => setActiveCategory(cat)}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition-all ${
+                    activeCategory === cat
+                      ? "bg-amber-500 text-white shadow-sm"
+                      : "bg-white text-gray-600 border border-gray-200 hover:border-amber-300 hover:text-amber-700 shadow-sm"
+                  }`}
+                >
+                  {cat}
+                  <span
+                    className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${
+                      activeCategory === cat
+                        ? "bg-white/25 text-white"
+                        : "bg-gray-100 text-gray-500"
+                    }`}
+                  >
+                    {categoryCounts[cat]}
+                  </span>
+                </button>
+              ))}
+            </div>
+
+            {/* ── Reports Grid ── */}
+            {visibleReports.length === 0 ? (
+              <div className="bg-white rounded-2xl border border-gray-200 p-16 text-center">
+                <Search className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                <p className="text-gray-500 font-medium">No reports match your search.</p>
+                <button
+                  onClick={() => { setSearchTerm(""); setActiveCategory("All"); }}
+                  className="mt-3 text-sm text-amber-600 hover:underline"
+                >
+                  Clear search
+                </button>
               </div>
+            ) : (
+              <>
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-gray-500 font-medium">
+                    Showing <span className="font-bold text-gray-900">{visibleReports.length}</span> reports
+                    {searchTerm && ` for "${searchTerm}"`}
+                  </p>
+                  {loadingId && (
+                    <div className="flex items-center gap-2 text-sm text-amber-600 font-medium">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Generating report...
+                    </div>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  {visibleReports.map((report) => (
+                    <ReportCard
+                      key={report.id}
+                      report={report}
+                      filters={filters}
+                      loadingId={loadingId}
+                      favorites={favorites}
+                      onDownload={handleDownload}
+                      onToggleFavorite={toggleFavorite}
+                    />
+                  ))}
+                </div>
+              </>
             )}
 
-            {/* Results Header */}
-            <div className="mb-4 flex items-center justify-between">
-              <div>
-                <h2 className="text-xl font-semibold text-gray-900">
-                  {favorites.length > 0 && sortedReports.some(r => favorites.includes(r.id)) ? "All Reports" : "Available Reports"}
-                </h2>
-                <p className="text-sm text-gray-600 mt-1">
-                  {sortedReports.length} report{sortedReports.length !== 1 ? "s" : ""} found
-                  {searchTerm && ` for "${searchTerm}"`}
-                </p>
-              </div>
-              {favorites.length > 0 && (
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
-                  <span>{favorites.length} favorite{favorites.length !== 1 ? 's' : ''}</span>
-                </div>
-              )}
-            </div>
-
-            {/* Reports Grid */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              {sortedReports.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {sortedReports.map((report) => {
-                    const Icon = report.icon;
-                    const isFavorite = favorites.includes(report.id);
-                    const colors = colorConfig[report.color] || colorConfig.blue;
-                    
-                    return (
-                      <div
-                        key={report.id}
-                        className="relative bg-white border-2 border-gray-200 rounded-xl p-6 hover:border-indigo-400 hover:shadow-lg transition-all duration-200 group"
-                      >
-                        {/* Favorite Badge */}
-                        {isFavorite && (
-                          <div className="absolute top-0 right-0 bg-yellow-500 text-white px-2 py-1 rounded-bl-lg rounded-tr-xl text-xs font-semibold">
-                            Favorite
-                          </div>
-                        )}
-
-                        {/* Favorite Button */}
-                        <button
-                          onClick={() => toggleFavorite(report.id)}
-                          className={`absolute ${isFavorite ? 'top-8 right-3' : 'top-3 right-3'} p-2 rounded-full hover:bg-gray-100 transition-colors`}
-                          aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
-                        >
-                          <Star 
-                            className={`w-5 h-5 ${isFavorite ? 'fill-yellow-500 text-yellow-500' : 'text-gray-400 group-hover:text-yellow-500'}`}
-                          />
-                        </button>
-
-                        {/* Report Icon */}
-                        <div className={`inline-flex p-3 rounded-xl ${colors.bg} mb-4`}>
-                          <Icon className={`w-6 h-6 ${colors.text}`} />
-                        </div>
-
-                        {/* Report Info */}
-                        <h3 className="text-lg font-bold text-gray-900 mb-2 pr-8 line-clamp-2">
-                          {report.name}
-                        </h3>
-                        <p className="text-sm text-gray-600 mb-4 line-clamp-2 min-h-10">
-                          {report.description}
-                        </p>
-
-                        {/* Category Badge */}
-                        <span
-                          className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold mb-4 ${
-                            report.category === "Patient Reports"
-                              ? "bg-blue-100 text-blue-800"
-                              : report.category === "Staff Reports"
-                              ? "bg-purple-100 text-purple-800"
-                              : report.category === "Medical Reports"
-                              ? "bg-green-100 text-green-800"
-                              : report.category === "Financial Reports"
-                              ? "bg-orange-100 text-orange-800"
-                              : "bg-indigo-100 text-indigo-800"
-                          }`}
-                        >
-                          {report.category}
-                        </span>
-
-                        {/* Download Button */}
-                        <button
-                          onClick={() => downloadExcel(report.type, report.id, report.name)}
-                          disabled={loadingId === report.id}
-                          className="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white px-4 py-3 rounded-lg font-semibold transition-colors shadow-sm hover:shadow-md"
-                        >
-                          {loadingId === report.id ? (
-                            <>
-                              <svg
-                                className="animate-spin h-5 w-5 text-white"
-                                xmlns="http://www.w3.org/2000/svg"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                              >
-                                <circle
-                                  className="opacity-25"
-                                  cx="12"
-                                  cy="12"
-                                  r="10"
-                                  stroke="currentColor"
-                                  strokeWidth="4"
-                                ></circle>
-                                <path
-                                  className="opacity-75"
-                                  fill="currentColor"
-                                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                                ></path>
-                              </svg>
-                              <span>Downloading...</span>
-                            </>
-                          ) : (
-                            <>
-                              <Download className="w-5 h-5" />
-                              <span>Download Excel</span>
-                            </>
-                          )}
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="text-center py-16">
-                  <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                    No reports found
-                  </h3>
-                  <p className="text-gray-600 mb-6">
-                    {searchTerm 
-                      ? `No reports match "${searchTerm}"`
-                      : "Try adjusting your filters to see more reports"
-                    }
-                  </p>
+            {/* ── Quick Reference ── */}
+            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
+              <h3 className="text-sm font-bold text-gray-900 mb-3">
+                Quick Reference — Report Coverage
+              </h3>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {[
+                  { label: "Patient Reports",   count: 7, color: "bg-blue-50 text-blue-700 border-blue-200",     icon: HeartPulse,  cat: "Patient Reports" },
+                  { label: "Staff Reports",     count: 6, color: "bg-purple-50 text-purple-700 border-purple-200", icon: Users,       cat: "Staff Reports" },
+                  { label: "Financial Reports", count: 6, color: "bg-emerald-50 text-emerald-700 border-emerald-200", icon: IndianRupee, cat: "Financial Reports" },
+                  { label: "Inventory Reports", count: 2, color: "bg-orange-50 text-orange-700 border-orange-200",  icon: Package,     cat: "Inventory Reports" },
+                ].map((item) => (
                   <button
-                    onClick={clearFilters}
-                    className="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-semibold shadow-sm"
+                    key={item.label}
+                    onClick={() => setActiveCategory(item.cat)}
+                    className={`flex items-center gap-3 p-3 rounded-xl border ${item.color} transition-all hover:shadow-sm`}
                   >
-                    <RefreshCw className="w-5 h-5" />
-                    Clear All Filters
+                    <item.icon className="w-5 h-5 shrink-0" />
+                    <div className="text-left">
+                      <p className="text-xs font-bold leading-none">{item.count} reports</p>
+                      <p className="text-[10px] mt-0.5 opacity-80">{item.label}</p>
+                    </div>
                   </button>
-                </div>
-              )}
+                ))}
+              </div>
             </div>
+
           </div>
         </div>
       </div>
+
+      <Toast toast={toast} onDismiss={() => setToast(null)} />
     </div>
   );
 }

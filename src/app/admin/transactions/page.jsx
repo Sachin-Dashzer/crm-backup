@@ -25,6 +25,7 @@ import {
   ChevronDown,
   Package,
   FileText as Bill,
+  FileDown,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -1162,6 +1163,29 @@ export default function AllTransactionsPage() {
 
   const hasActiveFilters = Object.values(filters).some((value) => value !== "") || tableSearch;
 
+  const exportToExcel = async () => {
+    const { utils, writeFile } = await import("xlsx");
+    const rows = sortedRows.map((t) => ({
+      Date: formatDateForDisplay(t.date),
+      Category: t.transactionCategory || "",
+      Patient: t.patient?.personal?.name || t.patientName || "Walk-in Customer",
+      Procedure: t.procedure || "",
+      "Payment Type": t.paymentType || "",
+      Amount: parseFloat(t.amount) || 0,
+      Method: t.method || "",
+      "Transaction ID": t.paymentId || "",
+      Branch: t.branch || "",
+      "Batch ID": t.batchId || "",
+      "Expense Giver": t.expenseGiver?.name || "",
+    }));
+    const ws = utils.json_to_sheet(rows);
+    const wb = utils.book_new();
+    utils.book_append_sheet(wb, ws, "Transactions");
+    const from = filters.dateFrom || "all";
+    const to = filters.dateTo || "all";
+    writeFile(wb, `transactions_${activeCategory}_${from}_${to}.xlsx`);
+  };
+
   useEffect(() => {
     setPage(1);
   }, [filters, activeCategory, tableSearch]);
@@ -1304,6 +1328,15 @@ export default function AllTransactionsPage() {
                 title="Refresh data"
               >
                 <RefreshCw className={`w-4 h-4 sm:w-5 sm:h-5 text-gray-600 ${refreshing ? "animate-spin" : ""}`} />
+              </button>
+
+              <button
+                onClick={exportToExcel}
+                disabled={sortedRows.length === 0}
+                className="p-2 sm:p-3 bg-white border-2 border-gray-200 rounded-xl hover:bg-indigo-50 hover:border-indigo-200 transition-all shadow-sm disabled:opacity-50 shrink-0"
+                title="Download Excel"
+              >
+                <FileDown className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-600" />
               </button>
 
               <button

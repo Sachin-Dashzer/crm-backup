@@ -24,7 +24,7 @@ function RatingBar({ value }) {
   const pct = (n / 10) * 100;
   const color = n >= 7 ? "bg-emerald-500" : n >= 5 ? "bg-amber-400" : "bg-red-400";
   return (
-    <div className="flex items-center gap-2 min-w-[80px]">
+    <div className="flex items-center gap-2 min-w-20">
       <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
         <div className={`h-full rounded-full ${color}`} style={{ width: `${pct}%` }} />
       </div>
@@ -114,7 +114,7 @@ function ViewModal({ candidate: c, onClose }) {
                 <div key={label} className="flex items-center justify-between">
                   <span className="text-sm text-gray-600 w-40">{label}</span>
                   <div className="flex items-center gap-2 flex-1">
-                    <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden max-w-[160px]">
+                    <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden max-w-40">
                       <div
                         className={`h-full rounded-full ${Number(val) >= 7 ? "bg-emerald-500" : Number(val) >= 5 ? "bg-amber-400" : "bg-red-400"}`}
                         style={{ width: val ? `${(Number(val) / 10) * 100}%` : "0%" }}
@@ -291,7 +291,7 @@ export default function RejectedPage() {
                             </div>
                             <div>
                               <p className="font-semibold text-gray-800 text-sm leading-none">{c.name}</p>
-                              {c.email && <p className="text-xs text-gray-400 mt-0.5 truncate max-w-[150px]">{c.email}</p>}
+                              {c.email && <p className="text-xs text-gray-400 mt-0.5 truncate max-w-37.5">{c.email}</p>}
                             </div>
                           </div>
                         </td>

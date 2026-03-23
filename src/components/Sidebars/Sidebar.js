@@ -175,16 +175,6 @@ export default function AdminSidebar() {
               onClick={close}
             />
             <NavItem
-              label="Performance"
-              href="/admin/performance"
-              icon={TrendingUp}
-              active={isActive("/admin/performance")}
-              onClick={close}
-            />
-          </NavSection>
-
-          <NavSection title="Settings">
-            <NavItem
               label="Deleted Log"
               href="/admin/deleted-data"
               icon={Archive}

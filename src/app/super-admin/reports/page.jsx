@@ -664,7 +664,7 @@ export default function SuperAdminReportsPage() {
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
                 <div className="flex items-center gap-3 mb-1">
-                  <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-500 via-orange-500 to-red-500 flex items-center justify-center shadow-md">
+                  <div className="w-9 h-9 rounded-xl bg-linear-to-br from-amber-500 via-orange-500 to-red-500 flex items-center justify-center shadow-md">
                     <FileBarChart className="w-5 h-5 text-white" />
                   </div>
                   <h1 className="text-2xl font-bold text-gray-900">Reports Center</h1>

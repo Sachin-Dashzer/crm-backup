@@ -37,7 +37,7 @@ function NavItem({ label, href, icon: Icon, active, onClick }) {
         }`}
       >
         <Icon
-          className={`w-[18px] h-[18px] shrink-0 transition-all duration-200 ${
+          className={`w-4.5 h-4.5 shrink-0 transition-all duration-200 ${
             active
               ? "text-amber-600 scale-110"
               : "text-gray-400 group-hover:text-amber-500 group-hover:scale-110"
@@ -224,13 +224,13 @@ export default function SuperAdminSidebar() {
               active={isActive("/super-admin/manage-users")}
               onClick={close}
             />
-            <NavItem
+            {/* <NavItem
               label="Deleted Log"
               href="/super-admin/deleted-data"
               icon={Archive}
               active={isActive("/super-admin/deleted-data")}
               onClick={close}
-            />
+            /> */}
           </NavSection>
         </nav>
 
