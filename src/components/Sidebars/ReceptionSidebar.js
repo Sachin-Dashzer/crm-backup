@@ -10,7 +10,6 @@ import {
   Receipt,
   UserMinus,
   FileBarChart,
-  TrendingUp,
   X,
   Menu,
   Users
@@ -60,7 +59,6 @@ export default function ReceptionSidebar({ sidebarOpen: externalOpen, setSidebar
     { name: "Not Visited",  path: "/reception/not-visited", icon: UserMinus },
     { name: "Transactions", path: "/reception/transactions",icon: Receipt },
     { name: "Reports",      path: "/reception/reports",     icon: FileBarChart },
-    { name: "Performance",  path: "/reception/performance", icon: TrendingUp },
   ];
 
 

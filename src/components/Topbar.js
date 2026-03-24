@@ -1,8 +1,7 @@
 "use client";
 
 import { Menu, Calendar, Check, X } from "lucide-react";
-import { useState , useEffect } from "react";
-import { useSession } from "next-auth/react";
+import { useState } from "react";
 
 export default function Topbar({
   title,
@@ -15,18 +14,8 @@ export default function Topbar({
   setCustomDates,
 }) {
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const [user, setUser] = useState("");
   const branches = ["All", "Delhi", "Mumbai", "Hyderabad"];
   const timeRanges = ["Today", "Yesterday", "Last 7 Days", "Custom"];
-
-  const { data: session } = useSession();
-
-  useEffect(() => {
-    if (session) {
-      // Set username
-      setUser(session.user?.role || "");
-    }
-  }, [session]);
 
   const handleCustomDateChange = (field, value) => {
     setCustomDates((prev) => ({
@@ -75,7 +64,7 @@ export default function Topbar({
           {/* Right side - Filters */}
           <div className="flex flex-col sm:flex-row gap-3">
             {/* Branch Filter */}
-            {user !== "reception" ? (
+            {typeof setBranch === "function" ? (
               <div className="flex items-center gap-2">
                 <select
                   value={branch}

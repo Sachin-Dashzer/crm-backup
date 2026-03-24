@@ -354,14 +354,6 @@ export default function ReceptionDashboard() {
                     textCls: "text-purple-700",
                     path: "/reception/reports",
                   },
-                  {
-                    label: "Performance",
-                    icon: Activity,
-                    cls: "border-rose-100 bg-rose-50 hover:bg-rose-100 hover:border-rose-200",
-                    iconCls: "bg-rose-100 text-rose-600",
-                    textCls: "text-rose-700",
-                    path: "/reception/performance",
-                  },
                 ].map(({ label, icon: Icon, cls, iconCls, textCls, path }) => (
                   <button
                     key={label}

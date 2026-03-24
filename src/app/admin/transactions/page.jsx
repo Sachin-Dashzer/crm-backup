@@ -1165,25 +1165,139 @@ export default function AllTransactionsPage() {
 
   const exportToExcel = async () => {
     const { utils, writeFile } = await import("xlsx");
-    const rows = sortedRows.map((t) => ({
-      Date: formatDateForDisplay(t.date),
-      Category: t.transactionCategory || "",
-      Patient: t.patient?.personal?.name || t.patientName || "Walk-in Customer",
-      Procedure: t.procedure || "",
-      "Payment Type": t.paymentType || "",
-      Amount: parseFloat(t.amount) || 0,
-      Method: t.method || "",
-      "Transaction ID": t.paymentId || "",
-      Branch: t.branch || "",
-      "Batch ID": t.batchId || "",
-      "Expense Giver": t.expenseGiver?.name || "",
-    }));
+
+    const rows = sortedRows.map((t) => {
+      const amount      = parseFloat(t.amount)   || 0;
+      const discount    = parseFloat(t.discount) || 0;
+      const originalAmt = amount + discount;
+      const netAmt      = amount;
+
+      // Date & time of creation (createdAt) vs transaction date
+      const createdAt = t.createdAt
+        ? new Date(t.createdAt).toLocaleString("en-IN", {
+            day: "2-digit", month: "short", year: "numeric",
+            hour: "2-digit", minute: "2-digit", hour12: true,
+          })
+        : "";
+
+      return {
+        "Date":             formatDateForDisplay(t.date),
+        "Patient Name":     t.patient?.personal?.name || t.patientName || "Walk-in Customer",
+        "Phone":            t.patient?.personal?.phone || t.patientPhone || "",
+        "Branch":           t.branch || "",
+        "Procedure":        t.procedure || "",
+        "Payment Type":     t.paymentType || "",
+        "Payment Method":   t.method || "",
+        "Original Amount":  originalAmt,
+        "TransID / CardNo": t.paymentId || "",
+        "Discount":         discount,
+        "Net Amount":       netAmt,
+        "Pending Amount":   parseFloat(t.patient?.payments?.pendingAmount) || 0,
+        "Remarks":          t.remarks || "",
+        "Created By":       t.createdBy?.name || "",
+        "Date & Time":      createdAt,
+        "Total Edits":      t.editors?.length || 0,
+      };
+    });
+
     const ws = utils.json_to_sheet(rows);
+
+    // Set column widths for readability
+    ws["!cols"] = [
+      { wch: 14 }, // Date
+      { wch: 24 }, // Patient Name
+      { wch: 14 }, // Phone
+      { wch: 12 }, // Branch
+      { wch: 18 }, // Procedure
+      { wch: 15 }, // Payment Type
+      { wch: 16 }, // Payment Method
+      { wch: 16 }, // Original Amount
+      { wch: 20 }, // TransID / CardNo
+      { wch: 12 }, // Discount
+      { wch: 14 }, // Net Amount
+      { wch: 16 }, // Pending Amount
+      { wch: 24 }, // Remarks
+      { wch: 18 }, // Created By
+      { wch: 22 }, // Date & Time
+      { wch: 12 }, // Total Edits
+    ];
+
     const wb = utils.book_new();
     utils.book_append_sheet(wb, ws, "Transactions");
+
+    // ── Sheet 2: Edit History ──────────────────────────────────────────────
+    const historyRows = [];
+    sortedRows.forEach((t) => {
+      const patientName = t.patient?.personal?.name || t.patientName || "Walk-in Customer";
+      const txDate      = formatDateForDisplay(t.date);
+
+      if (!t.editors || t.editors.length === 0) return;
+
+      t.editors.forEach((editor, editIdx) => {
+        const editedAt = editor.date
+          ? new Date(editor.date).toLocaleString("en-IN", {
+              day: "2-digit", month: "short", year: "numeric",
+              hour: "2-digit", minute: "2-digit", hour12: true,
+            })
+          : "";
+
+        if (!editor.updatedFields || editor.updatedFields.length === 0) {
+          // Record the edit even if no field details stored
+          historyRows.push({
+            "Transaction Date": txDate,
+            "Patient Name":     patientName,
+            "Branch":           t.branch || "",
+            "Edit #":           editIdx + 1,
+            "Edited By":        editor.name || "",
+            "Editor Email":     editor.email || "",
+            "Editor Branch":    editor.branch || "",
+            "Edited At":        editedAt,
+            "Field Changed":    "(no field details)",
+            "Previous Value":   "",
+            "New Value":        "",
+          });
+        } else {
+          editor.updatedFields.forEach((field) => {
+            historyRows.push({
+              "Transaction Date": txDate,
+              "Patient Name":     patientName,
+              "Branch":           t.branch || "",
+              "Edit #":           editIdx + 1,
+              "Edited By":        editor.name || "",
+              "Editor Email":     editor.email || "",
+              "Editor Branch":    editor.branch || "",
+              "Edited At":        editedAt,
+              "Field Changed":    field.name || "",
+              "Previous Value":   field.previousValue || "",
+              "New Value":        field.newValue || "",
+            });
+          });
+        }
+      });
+    });
+
+    if (historyRows.length > 0) {
+      const wsHistory = utils.json_to_sheet(historyRows);
+      wsHistory["!cols"] = [
+        { wch: 16 }, // Transaction Date
+        { wch: 24 }, // Patient Name
+        { wch: 12 }, // Branch
+        { wch: 8  }, // Edit #
+        { wch: 20 }, // Edited By
+        { wch: 26 }, // Editor Email
+        { wch: 14 }, // Editor Branch
+        { wch: 22 }, // Edited At
+        { wch: 20 }, // Field Changed
+        { wch: 24 }, // Previous Value
+        { wch: 24 }, // New Value
+      ];
+      utils.book_append_sheet(wb, wsHistory, "Edit History");
+    }
+    // ──────────────────────────────────────────────────────────────────────
+
     const from = filters.dateFrom || "all";
-    const to = filters.dateTo || "all";
-    writeFile(wb, `transactions_${activeCategory}_${from}_${to}.xlsx`);
+    const to   = filters.dateTo   || "all";
+    writeFile(wb, `transactions_${activeCategory}_${from}_to_${to}.xlsx`);
   };
 
   useEffect(() => {

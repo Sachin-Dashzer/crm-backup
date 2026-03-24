@@ -61,6 +61,8 @@ const handler = async (req) => {
     last30DaysStart.setDate(actualToday.getDate() - 29);
     last30DaysStart.setHours(0, 0, 0, 0);
 
+    const thisMonthStart = new Date(actualToday.getFullYear(), actualToday.getMonth(), 1, 0, 0, 0, 0);
+
     // ✅ Centralized filter objects
     const branchFilter = branch === "All" ? {} : { "personal.branch": branch };
     const branchFilterPatient =
@@ -214,6 +216,7 @@ const handler = async (req) => {
               { date: { $gte: yesterdayStart, $lte: yesterdayEnd } },
               { date: { $gte: last7DaysStart, $lte: actualToday } },
               { date: { $gte: last30DaysStart, $lte: actualToday } },
+              { date: { $gte: thisMonthStart, $lte: actualToday } },
             ],
           },
         },
@@ -299,6 +302,31 @@ const handler = async (req) => {
               {
                 $match: { date: { $gte: last30DaysStart, $lte: actualToday } },
               },
+              {
+                $group: {
+                  _id: { $dateToString: { format: "%Y-%m-%d", date: "$date" } },
+                  total: { $sum: "$amount" },
+                },
+              },
+              { $sort: { _id: 1 } },
+            ],
+            // This month
+            thisMonthTotal: [
+              { $match: { date: { $gte: thisMonthStart, $lte: actualToday } } },
+              { $group: { _id: null, total: { $sum: "$amount" } } },
+            ],
+            thisMonthByMethod: [
+              { $match: { date: { $gte: thisMonthStart, $lte: actualToday } } },
+              {
+                $group: {
+                  _id: "$method",
+                  total: { $sum: "$amount" },
+                  count: { $sum: 1 },
+                },
+              },
+            ],
+            thisMonthPerDay: [
+              { $match: { date: { $gte: thisMonthStart, $lte: actualToday } } },
               {
                 $group: {
                   _id: { $dateToString: { format: "%Y-%m-%d", date: "$date" } },
@@ -405,6 +433,13 @@ const handler = async (req) => {
         total: revenueStats.last30DaysTotal[0]?.total || 0,
         amountByMethod: formatRevenueData(revenueStats.last30DaysByMethod),
         perDay: formatDailyRevenue(revenueStats.last30DaysPerDay),
+      },
+
+      // This month
+      thisMonth: {
+        total: revenueStats.thisMonthTotal[0]?.total || 0,
+        amountByMethod: formatRevenueData(revenueStats.thisMonthByMethod),
+        perDay: formatDailyRevenue(revenueStats.thisMonthPerDay),
       },
     });
   } catch (error) {

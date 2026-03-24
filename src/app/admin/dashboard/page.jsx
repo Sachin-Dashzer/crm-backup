@@ -215,9 +215,11 @@ export default function AdminDashboard() {
 
   /* ── Chart data ── */
   const perDay7    = (d.last7Days?.perDay  || []).map((x) => ({ date: x.date, amount: x.total }));
-  const perDay30   = (d.last30Days?.perDay || []).map((x) => ({ date: x.date, amount: x.total }));
-  const byMethod7  = d.last7Days?.amountByMethod  || [];
-  const byMethod30 = d.last30Days?.amountByMethod || [];
+  const perDay30      = (d.last30Days?.perDay   || []).map((x) => ({ date: x.date, amount: x.total }));
+  const perDayMonth   = (d.thisMonth?.perDay    || []).map((x) => ({ date: x.date, amount: x.total }));
+  const byMethod7     = d.last7Days?.amountByMethod  || [];
+  const byMethod30    = d.last30Days?.amountByMethod || [];
+  const byMethodMonth = d.thisMonth?.amountByMethod  || [];
   const byTechnique = d.amountByTechnique || [];
 
   const patientFunnel = [
@@ -366,12 +368,12 @@ export default function AdminDashboard() {
 
               {/* ── 30-day Revenue + Payment Methods + Summary ── */}
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-                <ChartCard title="Revenue — Last 30 Days" subtitle="Daily collection" className="lg:col-span-2">
-                  {perDay30.length > 0 ? (
+                <ChartCard title="Revenue — This Month" subtitle="Daily collection this month" className="lg:col-span-2">
+                  {perDayMonth.length > 0 ? (
                     <ResponsiveContainer width="100%" height={220}>
-                      <AreaChart data={perDay30}>
+                      <AreaChart data={perDayMonth}>
                         <defs>
-                          <linearGradient id="revGrad30" x1="0" y1="0" x2="0" y2="1">
+                          <linearGradient id="revGradMonth" x1="0" y1="0" x2="0" y2="1">
                             <stop offset="5%"  stopColor="#8b5cf6" stopOpacity={0.3} />
                             <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0} />
                           </linearGradient>
@@ -380,7 +382,7 @@ export default function AdminDashboard() {
                         <XAxis dataKey="date" tickFormatter={fmtDate} tick={{ fontSize: 9 }} axisLine={false} tickLine={false} interval={4} />
                         <YAxis tickFormatter={fmtK} tick={{ fontSize: 9 }} axisLine={false} tickLine={false} />
                         <Tooltip content={<CustomTooltip formatter={(v) => fmtK(v)} />} />
-                        <Area type="monotone" dataKey="amount" name="Revenue" stroke="#8b5cf6" fill="url(#revGrad30)" strokeWidth={2} dot={false} />
+                        <Area type="monotone" dataKey="amount" name="Revenue" stroke="#8b5cf6" fill="url(#revGradMonth)" strokeWidth={2} dot={false} />
                       </AreaChart>
                     </ResponsiveContainer>
                   ) : (
@@ -453,16 +455,16 @@ export default function AdminDashboard() {
                     <p className="text-[10px] text-gray-400 mt-0.5">Total collected in last 7 days</p>
                   </div>
 
-                  {/* 30-day total */}
+                  {/* This month total */}
                   <div className="bg-white rounded-2xl border border-purple-100 shadow-sm p-4">
                     <div className="flex items-center gap-2 mb-1">
                       <div className="w-7 h-7 rounded-lg bg-purple-50 flex items-center justify-center">
                         <Target className="w-3.5 h-3.5 text-purple-600" />
                       </div>
-                      <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">30-Day Revenue</span>
+                      <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">This Month Revenue</span>
                     </div>
-                    <p className="text-2xl font-bold text-gray-900">{fmtK(d.last30Days?.total ?? 0)}</p>
-                    <p className="text-[10px] text-gray-400 mt-0.5">Total collected in last 30 days</p>
+                    <p className="text-2xl font-bold text-gray-900">{fmtK(d.thisMonth?.total ?? 0)}</p>
+                    <p className="text-[10px] text-gray-400 mt-0.5">Total collected this month</p>
                   </div>
 
                   {/* Quick nav */}
