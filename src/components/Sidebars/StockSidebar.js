@@ -11,6 +11,7 @@ import {
   FilePlus2,
   Store,
   UserPlus,
+  ClipboardList,
   X,
   Menu,
 } from "lucide-react";
@@ -56,6 +57,7 @@ export default function StockSidebar({ sidebarOpen, setSidebarOpen }) {
     { name: "New Transaction",    path: "/stocks/transactions/create",  icon: FilePlus2 },
     { name: "Vendors",            path: "/stocks/vendors",              icon: Store },
     { name: "Add Vendor",         path: "/stocks/vendors/create",       icon: UserPlus },
+    { name: "Stock Audit",        path: "/stocks/audit",                icon: ClipboardList },
   ];
 
   return (

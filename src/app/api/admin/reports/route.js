@@ -264,6 +264,7 @@ async function generateComprehensivePatientReport(filters) {
   }
 
   return patients.map((p) => ({
+    "Patient ID": p._id?.toString() || "",
     "Patient Name": p.personal?.name || "",
     Phone: p.personal?.phone || "",
     Email: p.personal?.email || "",
@@ -310,6 +311,7 @@ async function generateDemographicsReport(filters) {
   const patients = await Patient.find(query).lean();
 
   return patients.map((p) => ({
+    "Patient ID": p._id?.toString() || "",
     "Patient Name": p.personal?.name || "",
     Phone: p.personal?.phone || "",
     Age: p.personal?.age || "",
@@ -333,6 +335,7 @@ async function generateStatusReport(filters) {
     .lean();
 
   return patients.map((p) => ({
+    "Patient ID": p._id?.toString() || "",
     "Patient Name": p.personal?.name || "",
     Phone: p.personal?.phone || "",
     Branch: p.personal?.branch || "",
@@ -354,6 +357,7 @@ async function generateMedicalHistoryReport(filters) {
   const patients = await Patient.find(query).lean();
 
   return patients.map((p) => ({
+    "Patient ID": p._id?.toString() || "",
     "Patient Name": p.personal?.name || "",
     Phone: p.personal?.phone || "",
     Age: p.personal?.age || "",
