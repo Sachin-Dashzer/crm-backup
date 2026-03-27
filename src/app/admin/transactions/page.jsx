@@ -1169,7 +1169,7 @@ export default function AllTransactionsPage() {
     const rows = sortedRows.map((t) => {
       const amount      = parseFloat(t.amount)   || 0;
       const discount    = parseFloat(t.discount) || 0;
-      // const originalAmt = amount + discount;
+      const originalAmt = amount + discount;
       const netAmt      = amount;
 
       // Date & time of creation (createdAt) vs transaction date
@@ -1188,7 +1188,7 @@ export default function AllTransactionsPage() {
         "Procedure":        t.procedure || "",
         "Payment Type":     t.paymentType || "",
         "Payment Method":   t.method || "",
-        // "Original Amount":  originalAmt,
+        "Original Amount":  originalAmt,
         "TransID / CardNo": t.paymentId || "",
         "Discount":         discount,
         "Net Amount":       netAmt,
@@ -1211,7 +1211,7 @@ export default function AllTransactionsPage() {
       { wch: 18 }, // Procedure
       { wch: 15 }, // Payment Type
       { wch: 16 }, // Payment Method
-      // { wch: 16 }, // Original Amount
+      { wch: 16 }, // Original Amount
       { wch: 20 }, // TransID / CardNo
       { wch: 12 }, // Discount
       { wch: 14 }, // Net Amount
