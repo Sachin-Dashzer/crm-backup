@@ -1170,6 +1170,7 @@ export default function AllTransactionsPage() {
       const amount      = parseFloat(t.amount)   || 0;
       const discount    = parseFloat(t.discount) || 0;
       const originalAmt = amount + discount;
+    
       const netAmt      = amount;
 
       // Date & time of creation (createdAt) vs transaction date

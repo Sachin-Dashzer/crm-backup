@@ -12,7 +12,8 @@
       "Bash(rm c:/dashzer/ryan-crm/src/app/stocks/transactions/page.js)",
       "Bash(find /c/dashzer/ryan-crm/src/app -type f -name *bill* -o -name *invoice*)",
       "Bash(grep -E \"\\\\.\\(jsx?|tsx?\\)$\")",
-      "Bash(grep -r BillGenerator /c/dashzer/ryan-crm/src --include=*.jsx --include=*.js)"
+      "Bash(grep -r BillGenerator /c/dashzer/ryan-crm/src --include=*.jsx --include=*.js)",
+      "Bash(find c:dashzerryan-crmsrcappapi -name *patient* -type f)"
     ],
     "additionalDirectories": [
       "c:\\dashzer\\ryan-crm\\src\\app\\api\\hr\\candidates",

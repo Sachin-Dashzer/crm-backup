@@ -268,26 +268,59 @@ export default function PatientTable({ config = {} }) {
     setPage(1);
   };
 
-  /* ── CSV Export ── */
-  const exportCSV = () => {
-    const headers = ["Name","Phone","Branch","Visit Date","Status","Package","Received","Pending","Counsellor","Technique","Ready","Surgery Date","Reference"];
-    const rows = patients.map((pt) => [
-      pt.personal?.name || "", pt.personal?.phone || "", pt.personal?.branch || "",
-      fmtDate(pt.personal?.visitDate), pt.ops?.status || "",
-      pt.counselling?.finlpackage || pt.personal?.packageQuoted || 0,
-      pt.payments?.amountReceived || 0, pt.payments?.pendingAmount || 0,
-      pt.counselling?.counsellor?.name || "",
-      pt.counselling?.techniqueSuggested || pt.surgery?.technique || "",
-      pt.counselling?.readyForSurgery ? "Yes" : "No",
-      fmtDate(pt.surgery?.surgeryDate),
-      pt.personal?.reference?.name || "",
-    ]);
-    const csv = [headers, ...rows].map((r) => r.join(",")).join("\n");
-    const a = Object.assign(document.createElement("a"), {
-      href: URL.createObjectURL(new Blob([csv], { type: "text/csv" })),
-      download: `patients-${new Date().toISOString().slice(0,10)}.csv`,
-    });
-    a.click();
+  /* ── CSV Export (all filtered records) ── */
+  const [exporting, setExporting] = useState(false);
+  const exportCSV = async () => {
+    setExporting(true);
+    try {
+      const p = new URLSearchParams({
+        page: 1, limit: 10000,
+        sortKey: enableSorting ? sort.key : "personal.visitDate",
+        sortDir: enableSorting ? sort.dir : "desc",
+      });
+      if (search)                   p.set("search",          search);
+      if (filters.status)           p.set("status",          filters.status);
+      if (filters.branch)           p.set("branch",          filters.branch);
+      if (filters.counsellor)       p.set("counsellor",      filters.counsellor);
+      if (filters.agent)            p.set("agent",           filters.agent);
+      if (filters.technique)        p.set("technique",       filters.technique);
+      if (filters.surgeryDate)      p.set("surgeryDate",     filters.surgeryDate);
+      if (filters.dateFrom)         p.set("dateFrom",        filters.dateFrom);
+      if (filters.dateTo)           p.set("dateTo",          filters.dateTo);
+      if (filters.visited)          p.set("visited",         "true");
+      if (filters.readyForSurgery)  p.set("readyForSurgery", "true");
+      if (filters.doctor)           p.set("doctor",          filters.doctor);
+      if (filters.seniorTech)       p.set("seniorTech",      filters.seniorTech);
+      if (filters.implanter)        p.set("implanter",       filters.implanter);
+
+      const res = await fetch(`/api/patients/get-patient?${p.toString()}`);
+      if (!res.ok) throw new Error("Failed to fetch patients for export");
+      const data = await res.json();
+      const all = data.patients || [];
+
+      const headers = ["Name","Phone","Branch","Visit Date","Status","Package","Received","Pending","Counsellor","Technique","Ready","Surgery Date","Reference"];
+      const rows = all.map((pt) => [
+        pt.personal?.name || "", pt.personal?.phone || "", pt.personal?.branch || "",
+        fmtDate(pt.personal?.visitDate), pt.ops?.status || "",
+        pt.counselling?.finlpackage || pt.personal?.packageQuoted || 0,
+        pt.payments?.amountReceived || 0, pt.payments?.pendingAmount || 0,
+        pt.counselling?.counsellor?.name || "",
+        pt.counselling?.techniqueSuggested || pt.surgery?.technique || "",
+        pt.counselling?.readyForSurgery ? "Yes" : "No",
+        fmtDate(pt.surgery?.surgeryDate),
+        pt.personal?.reference?.name || "",
+      ]);
+      const csv = [headers, ...rows].map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
+      const a = Object.assign(document.createElement("a"), {
+        href: URL.createObjectURL(new Blob([csv], { type: "text/csv" })),
+        download: `patients-${new Date().toISOString().slice(0,10)}.csv`,
+      });
+      a.click();
+    } catch (e) {
+      alert(e.message || "Export failed");
+    } finally {
+      setExporting(false);
+    }
   };
 
   /* ── Active filter chips ── */
@@ -450,11 +483,12 @@ export default function PatientTable({ config = {} }) {
         {showCsvExport && (
           <button
             onClick={exportCSV}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 text-sm font-medium text-gray-700 transition-colors"
+            disabled={exporting}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 text-sm font-medium text-gray-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
             title="Export CSV"
           >
-            <Download className="w-4 h-4" />
-            <span className="hidden sm:inline">Export</span>
+            <Download className={`w-4 h-4 ${exporting ? "animate-bounce" : ""}`} />
+            <span className="hidden sm:inline">{exporting ? "Exporting…" : "Export"}</span>
           </button>
         )}
       </div>
