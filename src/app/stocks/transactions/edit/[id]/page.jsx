@@ -1,6 +1,6 @@
 // app/(dashboard)/admin/transactions/edit/[id]/page.jsx
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Sidebar from "@/components/Sidebars/StockSidebar";
 import SearchableSelect from "@/components/SearchableSelect";
@@ -33,6 +33,9 @@ export default function EditTransactionPage() {
   const [loading, setLoading] = useState(false);
   const [fetchLoading, setFetchLoading] = useState(true);
   const [patients, setPatients] = useState([]);
+  const [patientSearching, setPatientSearching] = useState(false);
+  const [patientCache, setPatientCache] = useState({});
+  const patientDebounceRef = useRef(null);
   const [medicines, setMedicines] = useState([]);
   const [vendors, setVendors] = useState([]);
   const [transaction, setTransaction] = useState(null);
@@ -101,6 +104,38 @@ export default function EditTransactionPage() {
     remarks: "",
   });
 
+  const fetchPatients = async (term = "") => {
+    setPatientSearching(true);
+    try {
+      const p = new URLSearchParams({ limit: 30 });
+      if (term) p.set("search", term);
+      const res = await fetch(`/api/patients/get-patient?${p}`);
+      if (res.ok) {
+        const data = await res.json();
+        setPatients(data.patients || []);
+      }
+    } catch (error) {
+      console.error("Error fetching patients:", error);
+    } finally {
+      setPatientSearching(false);
+    }
+  };
+
+  const handlePatientSearch = (term) => {
+    clearTimeout(patientDebounceRef.current);
+    patientDebounceRef.current = setTimeout(() => fetchPatients(term), 350);
+  };
+
+  const addToPatientCache = (patientObj) => {
+    if (patientObj) setPatientCache((prev) => ({ ...prev, [patientObj._id]: patientObj }));
+  };
+
+  const patientOptions = useMemo(() => {
+    const resultIds = new Set(patients.map((p) => p._id));
+    const cached = Object.values(patientCache).filter((p) => !resultIds.has(p._id));
+    return [...cached, ...patients];
+  }, [patients, patientCache]);
+
   const showToast = (message, type = "info") => {
     setToast({ show: true, message, type });
     setTimeout(() => {
@@ -138,16 +173,8 @@ export default function EditTransactionPage() {
         return;
       }
 
-      // Fetch patients
-      try {
-        const patientsRes = await fetch("/api/patients/get-patient");
-        if (patientsRes.ok) {
-          const patientsData = await patientsRes.json();
-          setPatients(patientsData.patients || patientsData.data || []);
-        }
-      } catch (error) {
-        console.error("Error fetching patients:", error);
-      }
+      // Fetch initial patients
+      fetchPatients("");
 
       // Fetch medicines
       try {
@@ -180,8 +207,6 @@ export default function EditTransactionPage() {
   };
 
   const prefillFormData = (trans) => {
-    console.log("Transaction data:", trans); // Debug log
-
     // Determine transaction category
     let category = trans.transactionCategory;
     
@@ -189,7 +214,7 @@ export default function EditTransactionPage() {
       if (trans.costType === "Revenue") {
         if (["Sapphire FUE", "DHI", "Turkish DHI", "Beard Transplant"].includes(trans.procedure)) {
           category = "TRANSPLANT";
-        } else if (["PRP", "GFC"].includes(trans.procedure)) {
+        } else if (["PRP", "GFC", "Alopecia", "Canacot", "Headwash", "Other"].includes(trans.procedure)) {
           category = "SERVICE";
         } else if (trans.procedure === "Medicine" || trans.medicineId) {
           category = "MEDICINE";
@@ -203,14 +228,14 @@ export default function EditTransactionPage() {
       ? new Date(trans.date).toISOString().split("T")[0]
       : new Date().toISOString().split("T")[0];
 
-    // Extract patient ID
+    // Extract patient ID and seed cache so selected patient is always visible
     const patientId =
       typeof trans.patient === "object" && trans.patient !== null
         ? trans.patient._id
         : trans.patient || "";
-
-    console.log("Category:", category); // Debug log
-    console.log("Patient ID:", patientId); // Debug log
+    if (typeof trans.patient === "object" && trans.patient !== null && patientId) {
+      addToPatientCache(trans.patient);
+    }
 
     switch (category) {
       case "TRANSPLANT":
@@ -249,15 +274,6 @@ export default function EditTransactionPage() {
           remarks: trans.remarks || "",
         });
 
-        console.log("Service Data Set:", {
-          patient: patientId,
-          patientName: trans.patientName,
-          patientPhone: trans.patientPhone,
-          isWalkIn: isServiceWalkIn,
-          procedure: trans.procedure,
-          quantity: trans.quantity,
-          perSessionCost: trans.perSessionCost,
-        }); // Debug log
         break;
 
       case "MEDICINE":
@@ -293,16 +309,6 @@ export default function EditTransactionPage() {
           remarks: trans.remarks || "",
         });
 
-        console.log("Medicine Data Set:", {
-          patient: patientId,
-          patientName: trans.patientName,
-          patientPhone: trans.patientPhone,
-          isWalkIn: isMedicineWalkIn,
-          medicineId: medicineIdValue,
-          medicineName: medicineName,
-          quantity: trans.quantity,
-          perUnitCost: trans.perUnitCost,
-        }); // Debug log
         break;
 
       case "EXPENSE":
@@ -770,15 +776,6 @@ export default function EditTransactionPage() {
               </div>
             </div>
 
-            {/* DEBUG INFO - Remove after testing */}
-            <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-              <p className="text-xs font-mono">
-                <strong>Debug:</strong> Active Tab: {activeTab} | Transaction Category: {transaction?.transactionCategory} | 
-                Service Data: Qty={serviceData.quantity}, Cost={serviceData.perSessionCost}, Procedure={serviceData.procedure} |
-                Medicine Data: MedID={medicineData.medicineId}, Qty={medicineData.quantity}, Cost={medicineData.perUnitCost}
-              </p>
-            </div>
-
             {/* TRANSPLANT TAB */}
             {activeTab === "transplant" && (
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -793,17 +790,17 @@ export default function EditTransactionPage() {
                         Select Patient <span className="text-red-500">*</span>
                       </label>
                       <SearchableSelect
-                        options={patients}
+                        options={patientOptions}
                         value={transplantData.patient}
-                        onChange={(value) =>
-                          setTransplantData({
-                            ...transplantData,
-                            patient: value,
-                          })
-                        }
+                        onChange={(value, obj) => {
+                          addToPatientCache(obj);
+                          setTransplantData({ ...transplantData, patient: value });
+                        }}
                         placeholder="Search and select a patient..."
                         valueKey="_id"
                         formatOption={formatPatientOption}
+                        onSearch={handlePatientSearch}
+                        searching={patientSearching}
                       />
                     </div>
                   </div>
@@ -1113,17 +1110,17 @@ export default function EditTransactionPage() {
                           Select Patient <span className="text-red-500">*</span>
                         </label>
                         <SearchableSelect
-                          options={patients}
+                          options={patientOptions}
                           value={serviceData.patient}
-                          onChange={(value) =>
-                            setServiceData({
-                              ...serviceData,
-                              patient: value,
-                            })
-                          }
+                          onChange={(value, obj) => {
+                            addToPatientCache(obj);
+                            setServiceData({ ...serviceData, patient: value });
+                          }}
                           placeholder="Search and select a patient..."
                           valueKey="_id"
                           formatOption={formatPatientOption}
+                          onSearch={handlePatientSearch}
+                          searching={patientSearching}
                         />
                       </div>
                     )}
@@ -1150,6 +1147,10 @@ export default function EditTransactionPage() {
                         >
                           <option value="PRP">PRP</option>
                           <option value="GFC">GFC</option>
+                          <option value="Alopecia">Alopecia</option>
+                          <option value="Canacot">Canacot</option>
+                          <option value="Headwash">Headwash</option>
+                          <option value="Other">Other</option>
                         </select>
                       </div>
                       <div>
@@ -1226,6 +1227,7 @@ export default function EditTransactionPage() {
                           <option value="cash">Cash</option>
                           <option value="card">Card</option>
                           <option value="upi">UPI</option>
+                          <option value="loan">Loan</option>
                           <option value="banking">Bank Transfer</option>
                         </select>
                       </div>
@@ -1425,17 +1427,17 @@ export default function EditTransactionPage() {
                           Select Patient <span className="text-red-500">*</span>
                         </label>
                         <SearchableSelect
-                          options={patients}
+                          options={patientOptions}
                           value={medicineData.patient}
-                          onChange={(value) =>
-                            setMedicineData({
-                              ...medicineData,
-                              patient: value,
-                            })
-                          }
+                          onChange={(value, obj) => {
+                            addToPatientCache(obj);
+                            setMedicineData({ ...medicineData, patient: value });
+                          }}
                           placeholder="Search and select a patient..."
                           valueKey="_id"
                           formatOption={formatPatientOption}
+                          onSearch={handlePatientSearch}
+                          searching={patientSearching}
                         />
                       </div>
                     )}

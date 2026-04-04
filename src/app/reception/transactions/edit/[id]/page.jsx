@@ -207,8 +207,6 @@ export default function EditTransactionPage() {
   };
 
   const prefillFormData = (trans) => {
-    console.log("Transaction data:", trans); // Debug log
-
     // Determine transaction category
     let category = trans.transactionCategory;
 
@@ -220,7 +218,7 @@ export default function EditTransactionPage() {
           )
         ) {
           category = "TRANSPLANT";
-        } else if (["PRP", "GFC" , "ALOPECIA" , "CANACOT" , "HEADWASH"].includes(trans.procedure)) {
+        } else if (["PRP", "GFC", "Alopecia", "ALOPECIA", "Canacot", "CANACOT", "Headwash", "HEADWASH", "Other"].includes(trans.procedure)) {
           category = "SERVICE";
         } else if (trans.procedure === "Medicine" || trans.medicineId) {
           category = "MEDICINE";
@@ -246,9 +244,6 @@ export default function EditTransactionPage() {
     if (typeof trans.patient === "object" && trans.patient !== null && patientId) {
       addToPatientCache(trans.patient);
     }
-
-    console.log("Category:", category); // Debug log
-    console.log("Patient ID:", patientId); // Debug log
 
     switch (category) {
       case "TRANSPLANT":
@@ -287,15 +282,6 @@ export default function EditTransactionPage() {
           remarks: trans.remarks || "",
         });
 
-        console.log("Service Data Set:", {
-          patient: patientId,
-          patientName: trans.patientName,
-          patientPhone: trans.patientPhone,
-          isWalkIn: isServiceWalkIn,
-          procedure: trans.procedure,
-          quantity: trans.quantity,
-          perSessionCost: trans.perSessionCost,
-        }); // Debug log
         break;
 
       case "MEDICINE":
@@ -331,16 +317,6 @@ export default function EditTransactionPage() {
           remarks: trans.remarks || "",
         });
 
-        console.log("Medicine Data Set:", {
-          patient: patientId,
-          patientName: trans.patientName,
-          patientPhone: trans.patientPhone,
-          isWalkIn: isMedicineWalkIn,
-          medicineId: medicineIdValue,
-          medicineName: medicineName,
-          quantity: trans.quantity,
-          perUnitCost: trans.perUnitCost,
-        }); // Debug log
         break;
 
       case "EXPENSE":
@@ -808,17 +784,6 @@ export default function EditTransactionPage() {
               </div>
             </div>
 
-            {/* DEBUG INFO - Remove after testing */}
-            <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-              <p className="text-xs font-mono">
-                <strong>Debug:</strong> Active Tab: {activeTab} | Transaction
-                Category: {transaction?.transactionCategory} | Service Data:
-                Qty={serviceData.quantity}, Cost={serviceData.perSessionCost},
-                Procedure={serviceData.procedure} | Medicine Data: MedID=
-                {medicineData.medicineId}, Qty={medicineData.quantity}, Cost=
-                {medicineData.perUnitCost}
-              </p>
-            </div>
 
             {/* TRANSPLANT TAB */}
             {activeTab === "transplant" && (

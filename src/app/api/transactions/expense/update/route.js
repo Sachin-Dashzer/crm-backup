@@ -12,14 +12,6 @@ export async function PUT(req) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Only admins can update expenses
-    if (session.user.role !== "admin") {
-      return NextResponse.json(
-        { error: "Only admins can update expense transactions" },
-        { status: 403 }
-      );
-    }
-
     await connectDB();
 
     const body = await req.json();
