@@ -17,7 +17,7 @@ const CLINIC_BRANCHES = {
     name: "RYAN CLINIC",
     address: "CD 163, Block CD, Dakshini Pitampura",
     city: "Pitampura, Delhi, 110034",
-    phone: "8828202830",
+    phone: "8076099390",
     website: "https://clinicryan.com",
     gstin: "07LYSP2547H2ZI",
   },
@@ -36,7 +36,7 @@ const CLINIC_BRANCHES = {
     address:
       "2nd Floor, 8-2, 316/A/6/A, Road No. 14, above SBI bank, beside Asha hospital",
     city: "GS Nagar, Nandi Nagar, Banjara Hills, Hyderabad, Telangana 500034",
-    phone: "8828202830",
+    phone: "9989497410",
     website: "https://clinicryan.com",
     gstin: "07LYSP2547H2ZI",
   },
