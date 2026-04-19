@@ -17,7 +17,7 @@ const CLINIC_BRANCHES = {
     name: "RYAN CLINIC",
     address: "CD 163, Block CD, Dakshini Pitampura",
     city: "Pitampura, Delhi, 110034",
-    phone: "8076099390",
+    phone: "9911111247",
     website: "https://clinicryan.com",
     gstin: "07LYSP2547H2ZI",
   },
