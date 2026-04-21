@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
+import { maskPhone } from "@/utils/phoneUtils";
 import {
   UserX,
   Phone,
@@ -16,6 +18,8 @@ import { useToast } from "@/components/Toast";
 export default function NotVisited() {
   const router = useRouter();
   const toast = useToast();
+  const { data: session } = useSession();
+  const userRole = session?.user?.role || "";
   const [loading, setLoading] = useState(true);
   const [patients, setPatients] = useState([]);
   const [filteredPatients, setFilteredPatients] = useState([]);
@@ -173,7 +177,7 @@ export default function NotVisited() {
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 text-sm text-gray-600">
                     <Phone className="w-4 h-4" />
-                    <span>{patient.personal?.phone || "N/A"}</span>
+                    <span>{maskPhone(patient.personal?.phone, userRole) || "N/A"}</span>
                   </div>
                   <div className="flex items-center gap-2 text-sm text-gray-600">
                     <MapPin className="w-4 h-4" />

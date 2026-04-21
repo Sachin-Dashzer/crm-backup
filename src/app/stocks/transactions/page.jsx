@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useSession } from "next-auth/react";
+import { maskPhone } from "@/utils/phoneUtils";
 import StockSidebar from "@/components/Sidebars/StockSidebar";
 import { useToast } from "@/components/Toast";
 import BillGenerator from "@/components/BillGenerator";
@@ -196,6 +198,8 @@ function Select({ label, value, onChange, options, required, icon: Icon }) {
 // ========== DATA TABLE COMPONENT ==========
 function DataTable({ category, rows, onDelete, onSort, sortConfig, pagination, onGenerateBill }) {
   const router = useRouter();
+  const { data: session } = useSession();
+  const userRole = session?.user?.role || "";
 
   const hasUndefinedCategory = (row) => {
     const cat = row.transactionCategory || row.category;
@@ -294,8 +298,8 @@ function DataTable({ category, rows, onDelete, onSort, sortConfig, pagination, o
     return row.patientName || "Walk-in Customer";
   };
   const getPatientPhone = (row) => {
-    if (row.patient && typeof row.patient === "object") return row.patient.personal?.phone || "";
-    return row.patientPhone || "";
+    const raw = (row.patient && typeof row.patient === "object") ? row.patient.personal?.phone || "" : row.patientPhone || "";
+    return maskPhone(raw, userRole);
   };
   const getMedicineName = (row) => {
     if (row.medicineId && typeof row.medicineId === "object") return row.medicineId.name || "N/A";

@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useSession } from "next-auth/react";
+import { maskPhone } from "@/utils/phoneUtils";
 import AdminSidebar from "@/components/Sidebars/ReceptionSidebar";
 import { useToast } from "@/components/Toast";
 import BillGenerator from "@/components/BillGenerator";
@@ -297,6 +299,8 @@ function DataTable({
   onGenerateBill,
 }) {
   const router = useRouter();
+  const { data: session } = useSession();
+  const userRole = session?.user?.role || "";
 
   const hasUndefinedCategory = (row) => {
     const category = row.transactionCategory || row.category;
@@ -488,10 +492,8 @@ function DataTable({
   };
 
   const getPatientPhone = (row) => {
-    if (row.patient && typeof row.patient === "object") {
-      return row.patient.personal?.phone || "";
-    }
-    return row.patientPhone || "";
+    const raw = (row.patient && typeof row.patient === "object") ? row.patient.personal?.phone || "" : row.patientPhone || "";
+    return maskPhone(raw, userRole);
   };
 
   const getMedicineName = (row) => {

@@ -1,22 +1,26 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { 
-  Stethoscope, 
-  Calendar, 
-  CheckCircle, 
-  Clock, 
+import {
+  Stethoscope,
+  Calendar,
+  CheckCircle,
+  Clock,
   MapPin,
   Activity,
   Users,
   TrendingUp
 } from "lucide-react";
+import { useSession } from "next-auth/react";
 import Sidebar from "@/components/Sidebars/SurgerySidebar";
+import { maskPhone } from "@/utils/phoneUtils";
 import Topbar from "@/components/Topbar";
 import MetricCard from "@/components/MetricCard";
 import Link from "next/link";
 
 export default function SurgeryDashboard() {
+  const { data: session } = useSession();
+  const userRole = session?.user?.role || "";
   const [loading, setLoading] = useState(true);
   const [dashboardData, setDashboardData] = useState(null);
   const [branch, setBranch] = useState("All");
@@ -264,7 +268,7 @@ export default function SurgeryDashboard() {
                             <td className="py-3 px-4">
                               <div className="font-medium text-gray-900">{patient.personal?.name}</div>
                             </td>
-                            <td className="py-3 px-4 text-sm text-gray-600">{patient.personal?.phone}</td>
+                            <td className="py-3 px-4 text-sm text-gray-600">{maskPhone(patient.personal?.phone, userRole)}</td>
                             <td className="py-3 px-4">
                               <span className={`px-2 py-1 text-xs font-medium rounded-full ${getTechniqueColor(patient.surgery?.technique || patient.counselling?.techniqueSuggested)}`}>
                                 {patient.surgery?.technique || patient.counselling?.techniqueSuggested}
@@ -337,7 +341,7 @@ export default function SurgeryDashboard() {
                             <td className="py-3 px-4">
                               <div className="font-medium text-gray-900">{patient.personal?.name}</div>
                             </td>
-                            <td className="py-3 px-4 text-sm text-gray-600">{patient.personal?.phone}</td>
+                            <td className="py-3 px-4 text-sm text-gray-600">{maskPhone(patient.personal?.phone, userRole)}</td>
                             <td className="py-3 px-4">
                               <span className={`px-2 py-1 text-xs font-medium rounded-full ${getTechniqueColor(patient.surgery?.technique)}`}>
                                 {patient.surgery?.technique}

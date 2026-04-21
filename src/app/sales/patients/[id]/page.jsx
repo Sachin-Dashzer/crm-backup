@@ -2,12 +2,16 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
+import { maskPhone } from "@/utils/phoneUtils";
 import ReceptionSidebar from "@/components/Sidebars/SalesSidebar";
 import { ArrowLeft, Download } from "lucide-react";
 
 const PatientProfile = () => {
   const params = useParams();
   const id = params.id;
+  const { data: session } = useSession();
+  const userRole = session?.user?.role || "";
   const [patientData, setPatientData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -429,7 +433,7 @@ const PatientProfile = () => {
               </div>
               <div class="info-item">
                 <span class="info-label">Phone:</span>
-                <span class="info-value">${data.personal?.phone || "N/A"}</span>
+                <span class="info-value">${maskPhone(data.personal?.phone, userRole) || "N/A"}</span>
               </div>
               <div class="info-item">
                 <span class="info-label">Email:</span>
@@ -658,7 +662,7 @@ const PatientProfile = () => {
                       Phone
                     </label>
                     <p className="text-gray-900 font-medium">
-                      {patientData.personal?.phone || "N/A"}
+                      {maskPhone(patientData.personal?.phone, userRole) || "N/A"}
                     </p>
                   </div>
                   <div>

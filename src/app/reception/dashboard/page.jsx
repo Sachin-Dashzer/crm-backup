@@ -2,6 +2,8 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
+import { maskPhone } from "@/utils/phoneUtils";
 import {
   Calendar,
   UserPlus,
@@ -102,6 +104,8 @@ function FunnelBar({ label, value, max, color }) {
 export default function ReceptionDashboard() {
   const router = useRouter();
   const toast = useToast();
+  const { data: session } = useSession();
+  const userRole = session?.user?.role || "";
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const [timeRange, setTimeRange] = useState("Today");
@@ -409,7 +413,7 @@ export default function ReceptionDashboard() {
                         <p className="font-semibold text-gray-900 text-sm truncate">{patient.personal?.name}</p>
                         <span className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
                           <Phone className="w-3 h-3 shrink-0" />
-                          {patient.personal?.phone || "—"}
+                          {maskPhone(patient.personal?.phone, userRole) || "—"}
                         </span>
                       </div>
                       <span className={`shrink-0 px-2 py-1 rounded-full text-[10px] font-semibold border ${meta.color}`}>

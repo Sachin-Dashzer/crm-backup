@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useSession } from "next-auth/react";
+import { maskPhone } from "@/utils/phoneUtils";
 import SalesSidebar from "@/components/Sidebars/SalesSidebar";
 import { useToast } from "@/components/Toast";
 import BillGenerator from "@/components/BillGenerator";
@@ -148,6 +150,8 @@ function Select({ label, value, onChange, options, required, icon: Icon }) {
 
 function DataTable({ category, rows, onDelete, onSort, sortConfig, pagination, onGenerateBill }) {
   const router = useRouter();
+  const { data: session } = useSession();
+  const userRole = session?.user?.role || "";
 
   const hasUndefinedCategory = (row) => { const cat = row.transactionCategory || row.category; return !cat || cat === ""; };
 
@@ -220,7 +224,7 @@ function DataTable({ category, rows, onDelete, onSort, sortConfig, pagination, o
 
   const gridTemplateColumns = columns.map((col) => col.width).join(" ");
   const getPatientName = (row) => { if (row.patient && typeof row.patient === "object") return row.patient.personal?.name || "N/A"; return row.patientName || "Walk-in Customer"; };
-  const getPatientPhone = (row) => { if (row.patient && typeof row.patient === "object") return row.patient.personal?.phone || ""; return row.patientPhone || ""; };
+  const getPatientPhone = (row) => { const raw = (row.patient && typeof row.patient === "object") ? row.patient.personal?.phone || "" : row.patientPhone || ""; return maskPhone(raw, userRole); };
   const getMedicineName = (row) => { if (row.medicineId && typeof row.medicineId === "object") return row.medicineId.name || "N/A"; return "N/A"; };
   const getExpenseGiverName = (row) => { if (row.expenseGiver?.type === "VENDOR") { if (typeof row.expenseGiver.vendorId === "object") return row.expenseGiver.vendorId?.name || row.expenseGiver.name || "N/A"; return row.expenseGiver.name || "N/A"; } return row.expenseGiver?.name || "N/A"; };
 

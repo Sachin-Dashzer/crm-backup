@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
+import { maskPhone } from "@/utils/phoneUtils";
 import {
   Search, Download, RefreshCw, Pencil, Trash2, FileText,
   Scissors, Heart, Pill, Receipt, ChevronLeft, ChevronRight,
@@ -285,6 +287,10 @@ export default function TransactionTable({ config = {} }) {
 
   const router = useRouter();
 
+  // ── Session ────────────────────────────────────────────────────────────────
+  const { data: session } = useSession();
+  const userRole = session?.user?.role || "";
+
   // ── State ──────────────────────────────────────────────────────────────────
   const [allTx, setAllTx]             = useState([]);
   const [loading, setLoading]         = useState(true);
@@ -387,7 +393,7 @@ export default function TransactionTable({ config = {} }) {
       const q = debSearch.toLowerCase();
       rows = rows.filter((t) =>
         (t.patient?.personal?.name  || "").toLowerCase().includes(q) ||
-        (t.patient?.personal?.phone || "").toLowerCase().includes(q) ||
+        maskPhone(t.patient?.personal?.phone, userRole).toLowerCase().includes(q) ||
         (t.procedure  || "").toLowerCase().includes(q) ||
         (t.paymentId  || "").toLowerCase().includes(q) ||
         (t.branch     || "").toLowerCase().includes(q)
@@ -415,7 +421,7 @@ export default function TransactionTable({ config = {} }) {
     const rows = tableRows.map((t) => [
       fmtDate(t.date),
       t.patient?.personal?.name  || t.patientName  || "N/A",
-      t.patient?.personal?.phone || t.patientPhone || "",
+      maskPhone(t.patient?.personal?.phone || t.patientPhone, userRole),
       t.procedure   || "",
       t.paymentType || "",
       t.amount      || 0,
@@ -693,7 +699,7 @@ export default function TransactionTable({ config = {} }) {
                             {/* Patient */}
                             <td className="px-5 py-3.5">
                               <div className="font-semibold text-sm text-gray-900 leading-none">{tx.patient?.personal?.name || tx.patientName || "Walk-in Customer"}</div>
-                              <div className="text-xs text-gray-400 mt-0.5">{tx.patient?.personal?.phone || tx.patientPhone || ""}</div>
+                              <div className="text-xs text-gray-400 mt-0.5">{maskPhone(tx.patient?.personal?.phone || tx.patientPhone, userRole)}</div>
                             </td>
 
                             {/* Procedure */}

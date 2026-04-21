@@ -2,8 +2,10 @@
 
 import { useEffect, useRef, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
+import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { maskPhone } from "@/utils/phoneUtils";
 import {
   Filter,
   X,
@@ -55,6 +57,8 @@ const formatDate = (date) =>
 function PatientDashboardContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { data: session } = useSession();
+  const userRole = session?.user?.role || "";
 
   /* ── State ── */
   const [patients, setPatients] = useState([]);
@@ -353,7 +357,7 @@ function PatientDashboardContent() {
                             {p.personal?.name}
                           </td>
                           <td className="px-6 py-4 text-gray-700">
-                            {p.personal?.phone}
+                            {maskPhone(p.personal?.phone, userRole)}
                           </td>
                           <td className="px-6 py-4 text-gray-700">
                             {p.personal?.branch}

@@ -5,6 +5,7 @@ import { useRouter, useParams } from "next/navigation";
 import Sidebar from "@/components/Sidebars/StockSidebar";
 import SearchableSelect from "@/components/SearchableSelect";
 import { useSession } from "next-auth/react";
+import { maskPhone } from "@/utils/phoneUtils";
 import {
   ArrowLeft,
   Save,
@@ -351,7 +352,7 @@ export default function EditTransactionPage() {
   };
 
   const formatPatientOption = (patient) => {
-    return `${patient.personal?.name || "N/A"} - ${patient.personal?.phone || "N/A"} | Package: ${formatCurrency(patient?.payments?.totalAmount)} | Received: ${formatCurrency(patient?.payments?.amountReceived)} | Pending: ${formatCurrency(patient?.payments?.pendingAmount)}`;
+    return `${patient.personal?.name || "N/A"} - ${maskPhone(patient.personal?.phone, session?.user?.role) || "N/A"} | Package: ${formatCurrency(patient?.payments?.totalAmount)} | Received: ${formatCurrency(patient?.payments?.amountReceived)} | Pending: ${formatCurrency(patient?.payments?.pendingAmount)}`;
   };
 
   const formatMedicineOption = (medicine) => {

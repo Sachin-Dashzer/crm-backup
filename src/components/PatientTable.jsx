@@ -27,7 +27,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { useSession } from "next-auth/react";
 import Link from "next/link";
+import { maskPhone } from "@/utils/phoneUtils";
 import {
   Filter, X, ChevronRight, ChevronLeft,
   Eye, SquarePen, Search, Calendar,
@@ -145,6 +147,8 @@ export default function PatientTable({ config = {} }) {
   } = config;
 
   const searchParams = useSearchParams();
+  const { data: session } = useSession();
+  const userRole = session?.user?.role || "";
 
   /* ── State ── */
   const [patients, setPatients]     = useState([]);
@@ -300,7 +304,7 @@ export default function PatientTable({ config = {} }) {
 
       const headers = ["Name","Phone","Branch","Visit Date","Status","Package","Received","Pending","Counsellor","Technique","Ready","Surgery Date","Reference"];
       const rows = all.map((pt) => [
-        pt.personal?.name || "", pt.personal?.phone || "", pt.personal?.branch || "",
+        pt.personal?.name || "", maskPhone(pt.personal?.phone, userRole), pt.personal?.branch || "",
         fmtDate(pt.personal?.visitDate), pt.ops?.status || "",
         pt.counselling?.finlpackage || pt.personal?.packageQuoted || 0,
         pt.payments?.amountReceived || 0, pt.payments?.pendingAmount || 0,
@@ -356,7 +360,7 @@ export default function PatientTable({ config = {} }) {
         return (
           <span className="flex items-center gap-1.5 text-sm text-gray-600">
             <Phone className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-            {pt.personal?.phone}
+            {maskPhone(pt.personal?.phone, userRole)}
           </span>
         );
       case "branch":

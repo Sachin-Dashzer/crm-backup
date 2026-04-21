@@ -2,10 +2,14 @@
 
 import { useState, useEffect } from "react";
 import { Clock, Search, Calendar, MapPin, Phone, AlertCircle } from "lucide-react";
+import { useSession } from "next-auth/react";
 import Sidebar from "@/components/Sidebars/SurgerySidebar";
 import Link from "next/link";
+import { maskPhone } from "@/utils/phoneUtils";
 
 export default function NotVisitedPatients() {
+  const { data: session } = useSession();
+  const userRole = session?.user?.role || "";
   const [loading, setLoading] = useState(true);
   const [patients, setPatients] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -169,7 +173,7 @@ export default function NotVisitedPatients() {
                             <h4 className="font-semibold text-gray-900">{patient.personal?.name}</h4>
                             <div className="flex items-center gap-1 text-sm text-gray-600 mt-1">
                               <Phone className="w-3 h-3" />
-                              {patient.personal?.phone}
+                              {maskPhone(patient.personal?.phone, userRole)}
                             </div>
                           </div>
                           {isUrgent && (
