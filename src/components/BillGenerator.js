@@ -433,6 +433,20 @@ function TransplantInvoice({ transactions, patient, consultant, branch, packageA
         </tbody>
       </table>
 
+      {/* Additional Benefits */}
+      {patient.additionalbenefits?.length > 0 && (
+        <div style={{ marginBottom: "24px" }}>
+          <h4 style={s.subTitle}>Package Includes:</h4>
+          <ul style={{ margin: "0", paddingLeft: "20px" }}>
+            {patient.additionalbenefits.map((benefit, idx) => (
+              <li key={idx} style={{ fontSize: "13px", color: "#374151", marginBottom: "4px" }}>
+                {benefit}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       <h4 style={s.subTitle}>Paid Amounts:</h4>
       <table style={s.table}>
         <thead>

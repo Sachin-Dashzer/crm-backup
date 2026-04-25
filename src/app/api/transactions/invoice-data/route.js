@@ -61,6 +61,7 @@ const handler = async (req) => {
             email: patient.personal?.email || "N/A",
             gender: patient.personal?.gender || "N/A",
             age: patient.personal?.age || "N/A",
+            additionalbenefits: patient.counselling?.additionalbenefits || [],
           },
           consultant: patient.counselling?.counsellor?.name || "Dr. Ryan",
         },
