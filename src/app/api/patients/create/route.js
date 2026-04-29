@@ -19,7 +19,7 @@ const handler = async (req) => {
   //   );
   // }
 
-  const userBranch = session.user.branch;
+  const userBranch = session?.user?.branch || null;
 
   const {
     personal,
