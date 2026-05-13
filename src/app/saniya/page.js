@@ -247,7 +247,7 @@ export default function SaniyaPage() {
     <div className="flex flex-col h-screen bg-[#fff5ec] overflow-hidden">
 
       {/* Header */}
-      <div className="bg-[#D32F2F] text-white px-5 py-3 flex items-center justify-between shadow-lg flex-shrink-0">
+      <div className="bg-[#D32F2F] text-white px-5 py-3 flex items-center justify-between shadow-lg shrink-0">
         <div className="flex items-center gap-3">
           <div className="relative">
             <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center ring-2 ring-white/30">
@@ -276,7 +276,7 @@ export default function SaniyaPage() {
       </div>
 
       {/* Status bar */}
-      <div className={`py-1.5 text-xs font-medium text-center flex items-center justify-center gap-1.5 flex-shrink-0 transition-colors ${
+      <div className={`py-1.5 text-xs font-medium text-center flex items-center justify-center gap-1.5 shrink-0 transition-colors ${
         isListening ? "bg-green-50 text-green-700" :
         isWake      ? "bg-amber-50 text-amber-600" :
         loading     ? "bg-blue-50 text-blue-600"   :
@@ -297,7 +297,7 @@ export default function SaniyaPage() {
           {messages.map((m) => (
             <div key={m.id} className={`flex gap-2 ${m.role === "user" ? "justify-end" : "justify-start"}`}>
               {m.role === "assistant" && (
-                <div className="w-8 h-8 rounded-full bg-[#D32F2F] flex items-center justify-center flex-shrink-0 mt-1 shadow">
+                <div className="w-8 h-8 rounded-full bg-[#D32F2F] flex items-center justify-center shrink-0 mt-1 shadow">
                   <Sparkles className="w-4 h-4 text-white" />
                 </div>
               )}
@@ -318,7 +318,7 @@ export default function SaniyaPage() {
           {liveText && (
             <div className="flex justify-end">
               <div className="bg-green-100 text-green-800 px-4 py-2 rounded-2xl rounded-tr-sm text-sm italic max-w-[82%] flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse flex-shrink-0" />
+                <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse shrink-0" />
                 {liveText}
               </div>
             </div>
@@ -327,7 +327,7 @@ export default function SaniyaPage() {
           {/* Loading dots */}
           {loading && (
             <div className="flex gap-2">
-              <div className="w-8 h-8 rounded-full bg-[#D32F2F] flex items-center justify-center flex-shrink-0 shadow">
+              <div className="w-8 h-8 rounded-full bg-[#D32F2F] flex items-center justify-center shrink-0 shadow">
                 <Sparkles className="w-4 h-4 text-white" />
               </div>
               <div className="bg-white px-4 py-3 rounded-2xl rounded-tl-sm border border-red-100 shadow-sm flex gap-1 items-center">
@@ -343,11 +343,11 @@ export default function SaniyaPage() {
       </div>
 
       {/* Quick prompts */}
-      <div className="px-4 pb-2 flex-shrink-0">
+      <div className="px-4 pb-2 shrink-0">
         <div className="max-w-2xl mx-auto flex gap-2 overflow-x-auto pb-1 no-scrollbar">
           {quickPrompts.map((p) => (
             <button key={p} onClick={() => sendMessage(p)} disabled={loading}
-              className="flex-shrink-0 text-xs px-3 py-1.5 rounded-full bg-white border border-red-200 text-[#D32F2F] hover:bg-red-50 transition disabled:opacity-40 whitespace-nowrap">
+              className="shrink-0 text-xs px-3 py-1.5 rounded-full bg-white border border-red-200 text-[#D32F2F] hover:bg-red-50 transition disabled:opacity-40 whitespace-nowrap">
               {p}
             </button>
           ))}
@@ -355,7 +355,7 @@ export default function SaniyaPage() {
       </div>
 
       {/* Input bar */}
-      <div className="bg-white border-t border-red-100 px-4 pt-3 pb-5 flex-shrink-0 shadow-[0_-4px_16px_rgba(0,0,0,0.06)]">
+      <div className="bg-white border-t border-red-100 px-4 pt-3 pb-5 shrink-0 shadow-[0_-4px_16px_rgba(0,0,0,0.06)]">
         <div className="max-w-2xl mx-auto space-y-2.5">
 
           {/* Wake word toggle */}
@@ -383,7 +383,7 @@ export default function SaniyaPage() {
             {/* Mic — click to start, click again to stop & send */}
             <button onClick={onMicClick} disabled={loading}
               title={isListening ? "Tap to stop & send" : "Tap to speak"}
-              className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 transition-all ${
+              className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 transition-all ${
                 isListening
                   ? "bg-green-500 text-white shadow-lg shadow-green-200 scale-110"
                   : isWake
@@ -394,7 +394,7 @@ export default function SaniyaPage() {
             </button>
 
             <button onClick={() => sendMessage()} disabled={!input.trim() || loading}
-              className="w-11 h-11 rounded-xl bg-[#D32F2F] text-white flex items-center justify-center hover:bg-red-700 disabled:opacity-40 transition flex-shrink-0">
+              className="w-11 h-11 rounded-xl bg-[#D32F2F] text-white flex items-center justify-center hover:bg-red-700 disabled:opacity-40 transition shrink-0">
               <Send className="w-5 h-5" />
             </button>
           </div>

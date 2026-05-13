@@ -13,15 +13,30 @@ export async function POST(req) {
 
     await dbConnect();
 
-    // ── Time windows ──────────────────────────────────────────────
-    const now            = new Date();
-    const todayStart     = new Date(now); todayStart.setHours(0, 0, 0, 0);
-    const yesterdayStart = new Date(todayStart); yesterdayStart.setDate(yesterdayStart.getDate() - 1);
-    const yesterdayEnd   = new Date(todayStart); yesterdayEnd.setMilliseconds(-1);
-    const weekStart      = new Date(now); weekStart.setDate(now.getDate() - 7);
-    const monthStart     = new Date(now.getFullYear(), now.getMonth(), 1);
-    const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    const lastMonthEnd   = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
+    // ── Time windows (IST = UTC+5:30) ────────────────────────────
+    // Server runs UTC. setHours(0,0,0,0) = UTC midnight = 5:30 AM IST — WRONG.
+    // We calculate each boundary as IST midnight converted to UTC for MongoDB queries.
+    const IST_MS = 5.5 * 60 * 60 * 1000; // 330 min offset
+
+    const now    = new Date();
+    const nowIST = new Date(now.getTime() + IST_MS); // UTC methods now read as IST
+
+    const Y = nowIST.getUTCFullYear();
+    const M = nowIST.getUTCMonth();
+    const D = nowIST.getUTCDate();
+
+    // IST midnight of (y,m,d) expressed as a UTC Date for MongoDB $match
+    // Date.UTC(y,m,d) = 00:00 UTC of that date; subtract IST offset = 00:00 IST of that date
+    const istMid = (y, m, d) => new Date(Date.UTC(y, m, d) - IST_MS);
+
+    const todayStart     = istMid(Y, M, D);      // today     00:00 IST in UTC
+    const todayEnd       = istMid(Y, M, D + 1);  // tomorrow  00:00 IST in UTC (exclusive)
+    const yesterdayStart = istMid(Y, M, D - 1);  // yesterday 00:00 IST in UTC
+    const yesterdayEnd   = new Date(todayStart - 1);      // yesterday 23:59:59.999 IST
+    const weekStart      = istMid(Y, M, D - 7);  // 7 days ago 00:00 IST
+    const monthStart     = istMid(Y, M, 1);       // this month 1st 00:00 IST
+    const lastMonthStart = istMid(Y, M - 1, 1);  // last month 1st 00:00 IST
+    const lastMonthEnd   = new Date(monthStart - 1); // last month last moment IST
 
     // ── Reusable aggregate builders ───────────────────────────────
     const agentPerf = (dateFilter) => Patient.aggregate([
