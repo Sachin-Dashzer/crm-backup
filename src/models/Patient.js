@@ -230,5 +230,17 @@ patientSchema.pre("save", function (next) {
   next();
 });
 
+patientSchema.index({ "personal.branch": 1, "ops.status": 1 });
+patientSchema.index({ "personal.branch": 1, "personal.visitDate": -1 });
+patientSchema.index({ "surgery.surgeryDate": -1 });
+patientSchema.index({ "counselling.counsellor": 1 });
+patientSchema.index({ "personal.reference": 1 });
+patientSchema.index({ "personal.name": 1 });
+patientSchema.index({
+  "personal.name": "text",
+  "personal.phone": "text",
+  "personal.email": "text",
+});
+
 export default mongoose.models.Patient ||
   mongoose.model("Patient", patientSchema);

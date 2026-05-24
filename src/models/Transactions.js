@@ -210,5 +210,11 @@ transactionSchema.virtual("vendorDetails", {
 transactionSchema.set("toJSON", { virtuals: true });
 transactionSchema.set("toObject", { virtuals: true });
 
+transactionSchema.index({ date: -1 });
+transactionSchema.index({ costType: 1, date: -1 });
+transactionSchema.index({ branch: 1, date: -1 });
+transactionSchema.index({ branch: 1, costType: 1, date: -1 });
+transactionSchema.index({ patient: 1 });
+
 export default mongoose.models.Transactions ||
   mongoose.model("Transactions", transactionSchema);

@@ -65,8 +65,7 @@ const handler = async (req) => {
 
     // ✅ Centralized filter objects
     const branchFilter = branch === "All" ? {} : { "personal.branch": branch };
-    const branchFilterPatient =
-      branch === "All" ? {} : { "patientData.personal.branch": branch };
+    const branchFilterTx = branch === "All" ? {} : { branch: branch };
 
     // ✅ OPTIMIZED: Single aggregation for all patient counts (current period & comparison period)
     const getPatientStats = async () => {
@@ -211,6 +210,7 @@ const handler = async (req) => {
         {
           $match: {
             costType: "Revenue",
+            ...branchFilterTx,
             $or: [
               { date: { $gte: fromDate, $lte: toDate } },
               { date: { $gte: yesterdayStart, $lte: yesterdayEnd } },
@@ -220,16 +220,6 @@ const handler = async (req) => {
             ],
           },
         },
-        {
-          $lookup: {
-            from: "patients",
-            localField: "patient",
-            foreignField: "_id",
-            as: "patientData",
-          },
-        },
-        { $unwind: "$patientData" },
-        ...(branch !== "All" ? [{ $match: branchFilterPatient }] : []),
         {
           $facet: {
             // Current period revenue
@@ -241,7 +231,7 @@ const handler = async (req) => {
               { $match: { date: { $gte: fromDate, $lte: toDate } } },
               {
                 $group: {
-                  _id: "$patientData.counselling.techniqueSuggested",
+                  _id: "$procedure",
                   total: { $sum: "$amount" },
                   count: { $sum: 1 },
                 },

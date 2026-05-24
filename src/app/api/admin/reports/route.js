@@ -21,6 +21,18 @@ export async function GET(request) {
 
     let data = [];
 
+    const allEmployees = await Employee.find(
+      { isactive: true },
+      { name: 1, role: 1, email: 1, phone: 1, _id: 1 }
+    ).lean();
+    const employeesByRole = {
+      counsellors: allEmployees.filter(e => e.role === "Counsellor"),
+      agents:      allEmployees.filter(e => e.role === "Agent"),
+      doctors:     allEmployees.filter(e => e.role === "Doctor"),
+      implanters:  allEmployees.filter(e => e.role === "Implanter"),
+      technicians: allEmployees.filter(e => e.role === "Technician"),
+    };
+
     // Build date filter
     const dateFilter = {};
     if (period && period !== "all") {
@@ -79,11 +91,12 @@ export async function GET(request) {
           dateFilter,
           branch,
           staffFilter,
+          employees: employeesByRole.counsellors,
         });
         break;
 
       case "agents":
-        data = await generateAgentReport({ dateFilter, branch, staffFilter });
+        data = await generateAgentReport({ dateFilter, branch, staffFilter, employees: employeesByRole.agents });
         break;
 
       case "doctors":
@@ -92,6 +105,7 @@ export async function GET(request) {
           branch,
           staffFilter,
           techniqueFilter,
+          employees: employeesByRole.doctors,
         });
         break;
 
@@ -100,6 +114,7 @@ export async function GET(request) {
           dateFilter,
           branch,
           staffFilter,
+          employees: employeesByRole.implanters,
         });
         break;
 
@@ -108,6 +123,7 @@ export async function GET(request) {
           dateFilter,
           branch,
           staffFilter,
+          employees: employeesByRole.technicians,
         });
         break;
 
@@ -237,13 +253,22 @@ async function generateComprehensivePatientReport(filters) {
   if (filters.branch) query["personal.branch"] = filters.branch;
   if (filters.statusFilter) query["ops.status"] = filters.statusFilter;
 
-  let patients = await Patient.find(query)
+  let patients = await Patient.find(query, {
+    "documents.images": 0,
+    "documents.consentForm": 0,
+    "documents.suregeryForm": 0,
+    "documents.consultForm": 0,
+    "afterSurgery": 0,
+    "products": 0,
+    "editors": 0,
+  })
     .populate("personal.reference", "name role")
     .populate("counselling.counsellor", "name")
     .populate("surgery.doctor", "name")
     .populate("surgery.seniorTech", "name")
     .populate("surgery.implanterRight", "name")
     .populate("surgery.implanterLeft", "name")
+    .limit(5000)
     .lean();
 
   if (filters.staffFilter) {
@@ -308,7 +333,16 @@ async function generateDemographicsReport(filters) {
   const query = { ...filters.dateFilter };
   if (filters.branch) query["personal.branch"] = filters.branch;
 
-  const patients = await Patient.find(query).lean();
+  const patients = await Patient.find(query, {
+    "personal.name": 1,
+    "personal.phone": 1,
+    "personal.age": 1,
+    "personal.gender": 1,
+    "personal.profession": 1,
+    "personal.branch": 1,
+    "personal.address": 1,
+    "personal.visitDate": 1,
+  }).limit(5000).lean();
 
   return patients.map((p) => ({
     "Patient ID": p._id?.toString() || "",
@@ -330,8 +364,17 @@ async function generateStatusReport(filters) {
   if (filters.branch) query["personal.branch"] = filters.branch;
   if (filters.statusFilter) query["ops.status"] = filters.statusFilter;
 
-  const patients = await Patient.find(query)
+  const patients = await Patient.find(query, {
+    "personal.name": 1,
+    "personal.phone": 1,
+    "personal.branch": 1,
+    "personal.visitDate": 1,
+    "personal.reference": 1,
+    "ops.status": 1,
+    "updatedAt": 1,
+  })
     .populate("personal.reference", "name")
+    .limit(5000)
     .lean();
 
   return patients.map((p) => ({
@@ -354,7 +397,13 @@ async function generateMedicalHistoryReport(filters) {
   const query = { ...filters.dateFilter };
   if (filters.branch) query["personal.branch"] = filters.branch;
 
-  const patients = await Patient.find(query).lean();
+  const patients = await Patient.find(query, {
+    "personal.name": 1,
+    "personal.phone": 1,
+    "personal.age": 1,
+    "personal.gender": 1,
+    "medical": 1,
+  }).limit(5000).lean();
 
   return patients.map((p) => ({
     "Patient ID": p._id?.toString() || "",
@@ -375,13 +424,19 @@ async function generateMedicalHistoryReport(filters) {
 }
 
 async function generateCounsellorReport(filters) {
-  const counsellors = await Employee.find({ role: "Counsellor" }).lean();
+  const counsellors = filters.employees || [];
 
   const query = { ...filters.dateFilter };
   if (filters.branch) query["personal.branch"] = filters.branch;
 
-  const patients = await Patient.find(query)
+  const patients = await Patient.find(query, {
+    "personal.branch": 1,
+    "counselling.counsellor": 1,
+    "counselling.readyForSurgery": 1,
+    "counselling.finlpackage": 1,
+  })
     .populate("counselling.counsellor", "name")
+    .limit(5000)
     .lean();
 
   const counsellorStats = {};
@@ -433,13 +488,19 @@ async function generateCounsellorReport(filters) {
 }
 
 async function generateAgentReport(filters) {
-  const agents = await Employee.find({ role: "Agent" }).lean();
+  const agents = filters.employees || [];
 
   const query = { ...filters.dateFilter };
   if (filters.branch) query["personal.branch"] = filters.branch;
 
-  const patients = await Patient.find(query)
+  const patients = await Patient.find(query, {
+    "personal.reference": 1,
+    "personal.branch": 1,
+    "ops.status": 1,
+    "payments.amountReceived": 1,
+  })
     .populate("personal.reference", "name")
+    .limit(5000)
     .lean();
 
   const agentStats = {};
@@ -485,15 +546,22 @@ async function generateAgentReport(filters) {
 }
 
 async function generateDoctorReport(filters) {
-  const doctors = await Employee.find({ role: "Doctor" }).lean();
+  const doctors = filters.employees || [];
 
   const query = { ...filters.dateFilter };
   if (filters.branch) query["personal.branch"] = filters.branch;
   if (filters.techniqueFilter)
     query["surgery.technique"] = filters.techniqueFilter;
 
-  const patients = await Patient.find(query)
+  const patients = await Patient.find(query, {
+    "personal.branch": 1,
+    "surgery.doctor": 1,
+    "surgery.surgeryDate": 1,
+    "surgery.technique": 1,
+    "surgery.graftsImplanted": 1,
+  })
     .populate("surgery.doctor", "name")
+    .limit(5000)
     .lean();
 
   const doctorStats = {};
@@ -546,14 +614,21 @@ async function generateDoctorReport(filters) {
 }
 
 async function generateImplanterReport(filters) {
-  const implanters = await Employee.find({ role: "Implanter" }).lean();
+  const implanters = filters.employees || [];
 
   const query = { ...filters.dateFilter };
   if (filters.branch) query["personal.branch"] = filters.branch;
 
-  const patients = await Patient.find(query)
+  const patients = await Patient.find(query, {
+    "personal.branch": 1,
+    "surgery.implanterRight": 1,
+    "surgery.implanterLeft": 1,
+    "surgery.surgeryDate": 1,
+    "surgery.graftsImplanted": 1,
+  })
     .populate("surgery.implanterRight", "name")
     .populate("surgery.implanterLeft", "name")
+    .limit(5000)
     .lean();
 
   const implanterStats = {};
@@ -597,15 +672,22 @@ async function generateImplanterReport(filters) {
 }
 
 async function generateTechnicianReport(filters) {
-  const technicians = await Employee.find({ role: "Technician" }).lean();
+  const technicians = filters.employees || [];
 
   const query = { ...filters.dateFilter };
   if (filters.branch) query["personal.branch"] = filters.branch;
 
-  const patients = await Patient.find(query)
+  const patients = await Patient.find(query, {
+    "personal.branch": 1,
+    "surgery.seniorTech": 1,
+    "surgery.graftingPerson": 1,
+    "surgery.helper": 1,
+    "surgery.surgeryDate": 1,
+  })
     .populate("surgery.seniorTech", "name")
     .populate("surgery.graftingPerson", "name")
     .populate("surgery.helpers", "name")
+    .limit(5000)
     .lean();
 
   const techStats = {};
@@ -656,7 +738,13 @@ async function generateTechniqueReport(filters) {
   if (filters.techniqueFilter)
     query["surgery.technique"] = filters.techniqueFilter;
 
-  const patients = await Patient.find(query).lean();
+  const patients = await Patient.find(query, {
+    "personal.branch": 1,
+    "surgery.technique": 1,
+    "surgery.surgeryDate": 1,
+    "surgery.graftsImplanted": 1,
+    "payments.amountReceived": 1,
+  }).limit(5000).lean();
 
   const techniques = {};
 
@@ -705,12 +793,25 @@ async function generateSurgeryScheduleReport(filters) {
   };
   if (filters.branch) query["personal.branch"] = filters.branch;
 
-  const patients = await Patient.find(query)
+  const patients = await Patient.find(query, {
+    "personal.name": 1,
+    "personal.phone": 1,
+    "personal.branch": 1,
+    "surgery.surgeryDate": 1,
+    "surgery.technique": 1,
+    "surgery.graftsneed": 1,
+    "surgery.doctor": 1,
+    "surgery.seniorTech": 1,
+    "surgery.implanterRight": 1,
+    "surgery.implanterLeft": 1,
+    "ops.status": 1,
+  })
     .populate("surgery.doctor", "name")
     .populate("surgery.seniorTech", "name")
     .populate("surgery.implanterRight", "name")
     .populate("surgery.implanterLeft", "name")
     .sort({ "surgery.surgeryDate": 1 })
+    .limit(5000)
     .lean();
 
   return patients.map((p) => ({
@@ -739,7 +840,16 @@ async function generateGraftsAnalysisReport(filters) {
   if (filters.techniqueFilter)
     query["surgery.technique"] = filters.techniqueFilter;
 
-  const patients = await Patient.find(query).lean();
+  const patients = await Patient.find(query, {
+    "personal.name": 1,
+    "personal.phone": 1,
+    "personal.branch": 1,
+    "surgery.technique": 1,
+    "surgery.surgeryDate": 1,
+    "surgery.graftsneed": 1,
+    "surgery.graftsImplanted": 1,
+    "counselling.graftsSuggested": 1,
+  }).limit(5000).lean();
 
   return patients.map((p) => ({
     "Patient Name": p.personal?.name || "",
@@ -765,8 +875,15 @@ async function generateCounsellingOutcomesReport(filters) {
   const query = { ...filters.dateFilter };
   if (filters.branch) query["personal.branch"] = filters.branch;
 
-  const patients = await Patient.find(query)
+  const patients = await Patient.find(query, {
+    "personal.name": 1,
+    "personal.phone": 1,
+    "personal.branch": 1,
+    "counselling": 1,
+    "ops.status": 1,
+  })
     .populate("counselling.counsellor", "name")
+    .limit(5000)
     .lean();
 
   return patients.map((p) => ({
@@ -799,6 +916,7 @@ async function generateRevenueReport(filters) {
   const transactions = await Transactions.find(query)
     .populate("patient", "personal.name personal.phone")
     .sort({ date: -1 })
+    .limit(5000)
     .lean();
 
   return transactions.map((t) => ({
@@ -821,7 +939,7 @@ async function generateExpensesReport(filters) {
   };
   if (filters.branch) query.branch = filters.branch;
 
-  const transactions = await Transactions.find(query).sort({ date: -1 }).lean();
+  const transactions = await Transactions.find(query).sort({ date: -1 }).limit(5000).lean();
 
   return transactions.map((t) => ({
     Date: t.date ? new Date(t.date).toLocaleDateString() : "",
@@ -842,6 +960,7 @@ async function generateTransactionsReport(filters) {
   const transactions = await Transactions.find(query)
     .populate("patient", "personal.name personal.phone")
     .sort({ date: -1 })
+    .limit(5000)
     .lean();
 
   return transactions.map((t) => ({
@@ -867,9 +986,20 @@ async function generateOutstandingPaymentsReport(filters) {
   if (filters.branch) query["personal.branch"] = filters.branch;
   if (filters.statusFilter) query["ops.status"] = filters.statusFilter;
 
-  const patients = await Patient.find(query)
+  const patients = await Patient.find(query, {
+    "personal.name": 1,
+    "personal.phone": 1,
+    "personal.branch": 1,
+    "counselling.counsellor": 1,
+    "payments.totalAmount": 1,
+    "payments.amountReceived": 1,
+    "payments.pendingAmount": 1,
+    "surgery.surgeryDate": 1,
+    "ops.status": 1,
+  })
     .populate("counselling.counsellor", "name")
     .sort({ "payments.pendingAmount": -1 })
+    .limit(5000)
     .lean();
 
   return patients.map((p) => ({
@@ -908,6 +1038,7 @@ async function generatePaymentCollectionReport(filters) {
       path: "patient",
       populate: { path: "counselling.counsellor", select: "name" },
     })
+    .limit(5000)
     .lean();
 
   const collectionData = {};
@@ -963,7 +1094,7 @@ async function generateProcedureRevenueReport(filters) {
   if (filters.branch) query.branch = filters.branch;
   if (filters.procedureFilter) query.procedure = filters.procedureFilter;
 
-  const transactions = await Transactions.find(query).lean();
+  const transactions = await Transactions.find(query).limit(5000).lean();
 
   const procedureData = {};
 
@@ -1071,7 +1202,7 @@ async function generateBranchRevenueReport(filters) {
   };
   if (filters.branch) query.branch = filters.branch;
 
-  const transactions = await Transactions.find(query).lean();
+  const transactions = await Transactions.find(query).limit(5000).lean();
 
   const branchData = {};
 

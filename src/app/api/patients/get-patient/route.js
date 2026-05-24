@@ -16,7 +16,7 @@ const handler = async (req) => {
 
     /* ── Pagination & Sort ── */
     const page    = Math.max(1, parseInt(searchParams.get("page"))  || 1);
-    const limit   = Math.min(10000, parseInt(searchParams.get("limit")) || 50);
+    const limit   = Math.min(500, parseInt(searchParams.get("limit")) || 50);
     const skip    = (page - 1) * limit;
     const sortKey = searchParams.get("sortKey") || "personal.visitDate";
     const sortDir = searchParams.get("sortDir") === "asc" ? 1 : -1;
@@ -113,7 +113,7 @@ const handler = async (req) => {
     }
 
     /* ── Run DB operations in parallel ── */
-    const [patients, total, filterOptions] = await Promise.all([
+    const [patients, total] = await Promise.all([
       Patient.find(query)
         .sort({ [sortKey]: sortDir })
         .skip(skip)
@@ -126,21 +126,9 @@ const handler = async (req) => {
         .populate("surgery.implanterLeft",  "name")
         .lean(),
       Patient.countDocuments(query),
-      // Lightweight distinct queries for filter dropdowns
-      Promise.all([
-        Employee.distinct("name", { role: "Counsellor", isactive: true }),
-        Employee.distinct("name", { role: "Agent",      isactive: true }),
-        Patient.distinct("counselling.techniqueSuggested"),
-        Patient.distinct("surgery.technique"),
-        Patient.distinct("personal.techniqueQuoted"),
-      ]).then(([counsellors, agents, t1, t2, t3]) => ({
-        counsellors: counsellors.filter(Boolean).sort(),
-        agents:      agents.filter(Boolean).sort(),
-        techniques:  [...new Set([...t1, ...t2, ...t3].filter(Boolean))].sort(),
-      })),
     ]);
 
-    return NextResponse.json({ patients, total, page, limit, filterOptions, success: true }, { status: 200 });
+    return NextResponse.json({ patients, total, page, limit, success: true }, { status: 200 });
   } catch (error) {
     console.error("Error fetching patients:", error);
     return NextResponse.json({ success: false, error: "Failed to fetch patients" }, { status: 500 });
