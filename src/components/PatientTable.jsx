@@ -302,9 +302,10 @@ export default function PatientTable({ config = {} }) {
       const data = await res.json();
       const all = data.patients || [];
 
-      const headers = ["Name","Phone","Branch","Visit Date","Status","Package","Received","Pending","Counsellor","Technique","Ready","Surgery Date","Reference"];
+      const headers = ["Name","Phone","Address","Branch","Visit Date","Status","Package","Received","Pending","Counsellor","Technique","Ready","Surgery Date","Reference"];
       const rows = all.map((pt) => [
-        pt.personal?.name || "", maskPhone(pt.personal?.phone, userRole), pt.personal?.branch || "",
+        pt.personal?.name || "", maskPhone(pt.personal?.phone, userRole), pt.personal?.address || "",
+        pt.personal?.branch || "",
         fmtDate(pt.personal?.visitDate), pt.ops?.status || "",
         pt.counselling?.finlpackage || pt.personal?.packageQuoted || 0,
         pt.payments?.amountReceived || 0, pt.payments?.pendingAmount || 0,

@@ -11,7 +11,7 @@ import {
   Calendar, Activity, CheckCircle2, Stethoscope, IndianRupee,
   Users, TrendingUp, RefreshCw, ChevronDown,
   MapPin, ArrowUpRight, ArrowDownRight, Minus,
-  BarChart2, Target,
+  BarChart2, Target, Droplets,
 } from "lucide-react";
 import AdminSidebar from "@/components/Sidebars/Sidebar";
 
@@ -487,6 +487,118 @@ export default function AdminDashboard() {
                     </div>
                   </div>
                 </div>
+              </div>
+
+              {/* ── PRP & GFC ── */}
+              <div>
+                <div className="flex items-center gap-2.5 mb-4">
+                  <div className="w-7 h-7 rounded-lg bg-teal-50 flex items-center justify-center">
+                    <Droplets className="w-3.5 h-3.5 text-teal-600" />
+                  </div>
+                  <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wider">PRP &amp; GFC Sessions</h2>
+                  <div className="flex-1 h-px bg-gray-200" />
+                  <span className="text-xs text-gray-400">{dateRange}</span>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {/* PRP Sessions */}
+                  <div className="bg-white rounded-2xl border border-teal-100 shadow-sm overflow-hidden">
+                    <div className="h-1 bg-teal-500" />
+                    <div className="p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="w-9 h-9 rounded-xl bg-teal-50 flex items-center justify-center">
+                          <Droplets className="w-4 h-4 text-teal-600" />
+                        </div>
+                        <span className="text-[10px] font-semibold text-teal-600 bg-teal-50 px-2 py-0.5 rounded-full">PRP</span>
+                      </div>
+                      <p className="text-2xl font-bold text-gray-900">{fmt(d.prp?.prpSessions ?? 0)}</p>
+                      <p className="text-xs text-gray-500 mt-1">Sessions</p>
+                      <p className="text-sm font-semibold text-teal-700 mt-1">{fmtK(d.prp?.prpRevenue ?? 0)}</p>
+                    </div>
+                  </div>
+
+                  {/* GFC Sessions */}
+                  <div className="bg-white rounded-2xl border border-purple-100 shadow-sm overflow-hidden">
+                    <div className="h-1 bg-purple-500" />
+                    <div className="p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="w-9 h-9 rounded-xl bg-purple-50 flex items-center justify-center">
+                          <Droplets className="w-4 h-4 text-purple-600" />
+                        </div>
+                        <span className="text-[10px] font-semibold text-purple-600 bg-purple-50 px-2 py-0.5 rounded-full">GFC</span>
+                      </div>
+                      <p className="text-2xl font-bold text-gray-900">{fmt(d.prp?.gfcSessions ?? 0)}</p>
+                      <p className="text-xs text-gray-500 mt-1">Sessions</p>
+                      <p className="text-sm font-semibold text-purple-700 mt-1">{fmtK(d.prp?.gfcRevenue ?? 0)}</p>
+                    </div>
+                  </div>
+
+                  {/* Total Sessions */}
+                  <div className="bg-white rounded-2xl border border-indigo-100 shadow-sm overflow-hidden">
+                    <div className="h-1 bg-indigo-500" />
+                    <div className="p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="w-9 h-9 rounded-xl bg-indigo-50 flex items-center justify-center">
+                          <Activity className="w-4 h-4 text-indigo-600" />
+                        </div>
+                        <span className="text-[10px] font-semibold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">Total</span>
+                      </div>
+                      <p className="text-2xl font-bold text-gray-900">{fmt(d.prp?.totalSessions ?? 0)}</p>
+                      <p className="text-xs text-gray-500 mt-1">Combined sessions</p>
+                    </div>
+                  </div>
+
+                  {/* Total Revenue */}
+                  <div className="bg-white rounded-2xl border border-emerald-100 shadow-sm overflow-hidden">
+                    <div className="h-1 bg-emerald-500" />
+                    <div className="p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="w-9 h-9 rounded-xl bg-emerald-50 flex items-center justify-center">
+                          <IndianRupee className="w-4 h-4 text-emerald-600" />
+                        </div>
+                        <span className="text-[10px] font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">Revenue</span>
+                      </div>
+                      <p className="text-2xl font-bold text-gray-900">{fmtK(d.prp?.totalRevenue ?? 0)}</p>
+                      <p className="text-xs text-gray-500 mt-1">PRP + GFC combined</p>
+                      {(d.prp?.totalSessions ?? 0) > 0 && (
+                        <p className="text-[10px] text-gray-400 mt-0.5">
+                          avg {fmtK(Math.round((d.prp?.totalRevenue ?? 0) / (d.prp?.totalSessions ?? 1)))} / session
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* PRP vs GFC bar comparison */}
+                {((d.prp?.prpSessions ?? 0) > 0 || (d.prp?.gfcSessions ?? 0) > 0) && (
+                  <div className="mt-4 bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
+                    <p className="text-xs font-semibold text-gray-500 mb-3">PRP vs GFC — session split</p>
+                    <div className="flex items-center gap-3">
+                      <span className="text-[11px] font-bold text-teal-600 w-8 text-right">{d.prp?.prpSessions ?? 0}</span>
+                      <div className="flex-1 flex h-3 rounded-full overflow-hidden bg-gray-100">
+                        {(() => {
+                          const total = (d.prp?.totalSessions ?? 0) || 1;
+                          const prpPct = ((d.prp?.prpSessions ?? 0) / total) * 100;
+                          return (
+                            <>
+                              <div className="h-full bg-teal-500 transition-all duration-700" style={{ width: `${prpPct}%` }} />
+                              <div className="h-full bg-purple-500 transition-all duration-700" style={{ width: `${100 - prpPct}%` }} />
+                            </>
+                          );
+                        })()}
+                      </div>
+                      <span className="text-[11px] font-bold text-purple-600 w-8">{d.prp?.gfcSessions ?? 0}</span>
+                    </div>
+                    <div className="flex items-center gap-4 mt-2">
+                      <span className="flex items-center gap-1.5 text-[11px] text-gray-500">
+                        <span className="w-2 h-2 rounded-full bg-teal-500" /> PRP · {fmtK(d.prp?.prpRevenue ?? 0)}
+                      </span>
+                      <span className="flex items-center gap-1.5 text-[11px] text-gray-500">
+                        <span className="w-2 h-2 rounded-full bg-purple-500" /> GFC · {fmtK(d.prp?.gfcRevenue ?? 0)}
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* ── 7d vs 30d Payment Method Comparison ── */}

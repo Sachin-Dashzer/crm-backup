@@ -125,6 +125,18 @@ export async function POST(req) {
               },
             },
           ],
+          prpStats: [
+            {
+              $match: { procedure: { $in: ["PRP", "GFC"] } },
+            },
+            {
+              $group: {
+                _id: "$procedure",
+                total: { $sum: "$amount" },
+                count: { $sum: 1 },
+              },
+            },
+          ],
         },
       },
     ]);
@@ -244,6 +256,20 @@ export async function POST(req) {
       selectedInterviews:  iv.selected?.[0]?.count  ?? 0,
       rejectedInterviews:  iv.rejected?.[0]?.count  ?? 0,
       scheduledInterviews: iv.scheduled?.[0]?.count ?? 0,
+      // PRP & GFC
+      prp: (() => {
+        const prpStats = rv.prpStats || [];
+        const prpRow   = prpStats.find((r) => r._id === "PRP");
+        const gfcRow   = prpStats.find((r) => r._id === "GFC");
+        return {
+          prpSessions:   prpRow?.count || 0,
+          prpRevenue:    prpRow?.total || 0,
+          gfcSessions:   gfcRow?.count || 0,
+          gfcRevenue:    gfcRow?.total || 0,
+          totalSessions: (prpRow?.count || 0) + (gfcRow?.count || 0),
+          totalRevenue:  (prpRow?.total || 0) + (gfcRow?.total || 0),
+        };
+      })(),
     });
   } catch (err) {
     console.error("Super-admin dashboard error:", err);

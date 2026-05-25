@@ -325,6 +325,22 @@ const handler = async (req) => {
               },
               { $sort: { _id: 1 } },
             ],
+            // PRP & GFC stats for the selected period
+            prpStats: [
+              {
+                $match: {
+                  date: { $gte: fromDate, $lte: toDate },
+                  procedure: { $in: ["PRP", "GFC"] },
+                },
+              },
+              {
+                $group: {
+                  _id: "$procedure",
+                  total: { $sum: "$amount" },
+                  count: { $sum: 1 },
+                },
+              },
+            ],
           },
         },
       ]);
@@ -431,6 +447,20 @@ const handler = async (req) => {
         amountByMethod: formatRevenueData(revenueStats.thisMonthByMethod),
         perDay: formatDailyRevenue(revenueStats.thisMonthPerDay),
       },
+
+      // PRP & GFC
+      prp: (() => {
+        const prpRow = revenueStats.prpStats?.find((r) => r._id === "PRP");
+        const gfcRow = revenueStats.prpStats?.find((r) => r._id === "GFC");
+        return {
+          prpSessions:  prpRow?.count   || 0,
+          prpRevenue:   prpRow?.total   || 0,
+          gfcSessions:  gfcRow?.count   || 0,
+          gfcRevenue:   gfcRow?.total   || 0,
+          totalSessions: (prpRow?.count || 0) + (gfcRow?.count || 0),
+          totalRevenue:  (prpRow?.total || 0) + (gfcRow?.total || 0),
+        };
+      })(),
     });
   } catch (error) {
     console.error("Dashboard analytics error:", error);

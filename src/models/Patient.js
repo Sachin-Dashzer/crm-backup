@@ -118,6 +118,7 @@ const patientSchema = new mongoose.Schema(
         {
           prpNumber: Number,
           date: Date,
+          type: { type: String, enum: ["PRP", "GFC"], default: "PRP" },
         },
       ],
     },

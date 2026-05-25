@@ -6,11 +6,16 @@ import { NextResponse } from "next/server";
 
 const handler = async (req) => {
   try {
+    const { searchParams } = new URL(req.url);
+    const dateFrom  = searchParams.get("dateFrom");
+    const dateTo    = searchParams.get("dateTo");
+    const technique = searchParams.get("technique");
+
     const data = await Employee.find({})
       .populate({
         path: "patient",
         select:
-          "personal.name surgery.technique surgery.graftsImplanted payments.amountReceived counselling.readyForSurgery ops.status createdAt",
+          "personal.name personal.visitDate surgery.technique surgery.graftsImplanted payments.amountReceived counselling.readyForSurgery counselling.techniqueSuggested ops.status createdAt",
         options: { sort: { createdAt: -1 } },
       })
       .sort({ name: 1 });
@@ -47,7 +52,29 @@ const handler = async (req) => {
           selectionRate,
         });
       } else {
-        const patients = employee.patient || [];
+        let patients = employee.patient || [];
+
+        if (dateFrom) {
+          const from = new Date(dateFrom);
+          patients = patients.filter(
+            (p) => p.personal?.visitDate && new Date(p.personal.visitDate) >= from
+          );
+        }
+        if (dateTo) {
+          const to = new Date(dateTo);
+          to.setHours(23, 59, 59, 999);
+          patients = patients.filter(
+            (p) => p.personal?.visitDate && new Date(p.personal.visitDate) <= to
+          );
+        }
+        if (technique) {
+          patients = patients.filter(
+            (p) =>
+              p.surgery?.technique === technique ||
+              p.counselling?.techniqueSuggested === technique
+          );
+        }
+
         const patientCount = patients.length;
         const amountReceived = patients.reduce(
           (total, patient) => total + (parseInt(patient.payments?.amountReceived) || 0),

@@ -9,7 +9,7 @@ import {
   Users, UserCheck, UserX, IndianRupee, Package,
   ClipboardList, Activity, TrendingUp, Stethoscope,
   Crown, ChevronDown, Briefcase, Calendar, MapPin,
-  RefreshCw, HeartPulse, Scissors, BarChart2, CreditCard,
+  RefreshCw, HeartPulse, Scissors, BarChart2, CreditCard, Droplets,
 } from "lucide-react";
 import SuperAdminSidebar from "@/components/Sidebars/SuperAdminSidebar";
 
@@ -362,6 +362,47 @@ export default function SuperAdminDashboard() {
                           <span className={`w-2 h-2 rounded-full ${color}`} /> {label}
                         </span>
                       ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* ── PRP & GFC ── */}
+              <div>
+                <SectionHeader icon={Droplets} title="PRP & GFC Sessions" color="text-teal-600" accent="bg-teal-50" />
+                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                  <KpiCard title="PRP Sessions"  value={fmt(d.prp?.prpSessions  ?? 0)} subtitle={rupee(d.prp?.prpRevenue  ?? 0)} icon={Droplets}     color="teal"   />
+                  <KpiCard title="GFC Sessions"  value={fmt(d.prp?.gfcSessions  ?? 0)} subtitle={rupee(d.prp?.gfcRevenue  ?? 0)} icon={Droplets}     color="purple" />
+                  <KpiCard title="Total Sessions" value={fmt(d.prp?.totalSessions ?? 0)} subtitle="Combined"                       icon={Activity}     color="indigo" />
+                  <KpiCard title="PRP+GFC Revenue" value={rupee(d.prp?.totalRevenue ?? 0)} subtitle={fmt(d.prp?.totalSessions ?? 0) + " sessions"}  icon={IndianRupee} color="green" />
+                </div>
+
+                {((d.prp?.totalSessions ?? 0) > 0) && (
+                  <div className="mt-3 bg-white rounded-2xl border border-gray-200 shadow-sm p-4">
+                    <p className="text-xs font-semibold text-gray-500 mb-3">PRP vs GFC — session split</p>
+                    <div className="flex items-center gap-3">
+                      <span className="text-[11px] font-bold text-teal-600 w-8 text-right">{d.prp?.prpSessions ?? 0}</span>
+                      <div className="flex-1 flex h-2.5 rounded-full overflow-hidden bg-gray-100">
+                        {(() => {
+                          const total  = d.prp?.totalSessions || 1;
+                          const prpPct = ((d.prp?.prpSessions ?? 0) / total) * 100;
+                          return (
+                            <>
+                              <div className="h-full bg-teal-500 transition-all duration-700" style={{ width: `${prpPct}%` }} />
+                              <div className="h-full bg-purple-500 transition-all duration-700" style={{ width: `${100 - prpPct}%` }} />
+                            </>
+                          );
+                        })()}
+                      </div>
+                      <span className="text-[11px] font-bold text-purple-600 w-8">{d.prp?.gfcSessions ?? 0}</span>
+                    </div>
+                    <div className="flex items-center gap-6 mt-2">
+                      <span className="flex items-center gap-1.5 text-[11px] text-gray-500">
+                        <span className="w-2 h-2 rounded-full bg-teal-500" /> PRP · {rupee(d.prp?.prpRevenue ?? 0)}
+                      </span>
+                      <span className="flex items-center gap-1.5 text-[11px] text-gray-500">
+                        <span className="w-2 h-2 rounded-full bg-purple-500" /> GFC · {rupee(d.prp?.gfcRevenue ?? 0)}
+                      </span>
                     </div>
                   </div>
                 )}

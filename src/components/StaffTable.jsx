@@ -4,11 +4,16 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   Filter, X, Plus, ChevronRight, ChevronLeft,
-  Search, TrendingUp, Edit, Users, IndianRupee, Activity, Trash2,
+  Search, TrendingUp, Edit, Users, IndianRupee, Activity, Trash2, Calendar, Stethoscope,
 } from "lucide-react";
 
 /* ─── Constants ──────────────────────────────────────────────── */
 const CATEGORY_OPTIONS = ["Doctor", "Agent", "Counsellor", "Technician", "Implanter", "Others", "Hr"];
+
+const TECHNIQUES = [
+  "Sapphire FUE", "DHI", "Turkish DHI", "Beard Transplant", "PRP",
+  "Alopecia", "Headwash", "GFC", "Other",
+];
 
 const CATEGORY_COLORS = {
   Doctor:     "bg-purple-100 text-purple-800 border-purple-200",
@@ -31,6 +36,7 @@ const EMPTY_FILTERS = {
   minPatients: "", maxPatients: "",
   minAmount: "", maxAmount: "",
   minGrafts: "", maxGrafts: "",
+  dateFrom: "", dateTo: "", technique: "",
 };
 
 /* ═══════════════════════════════════════════════════════════════
@@ -61,14 +67,18 @@ export default function StaffTable({ config = {} }) {
   const [perPage,  setPerPage]  = useState(10);
   const [selectedCategory, setSelectedCategory] = useState("Doctor");
 
-  /* ── Fetch ── */
+  /* ── Fetch (re-runs when server-side filters change) ── */
   useEffect(() => {
     (async () => {
       try {
         setLoading(true);
-        const res  = await fetch("/api/employees/get-patients");
+        const p = new URLSearchParams();
+        if (filters.dateFrom)  p.set("dateFrom",  filters.dateFrom);
+        if (filters.dateTo)    p.set("dateTo",    filters.dateTo);
+        if (filters.technique) p.set("technique", filters.technique);
+        const res = await fetch(`/api/employees/get-patients?${p.toString()}`);
         if (!res.ok) throw new Error("Failed to fetch");
-        const raw  = await res.json();
+        const raw = await res.json();
         const transformed = {};
         Object.keys(raw).forEach((cat) => {
           transformed[cat] = raw[cat].map((e) => ({ ...e, status: e.isactive ? "active" : "inactive" }));
@@ -80,7 +90,7 @@ export default function StaffTable({ config = {} }) {
         setLoading(false);
       }
     })();
-  }, []);
+  }, [filters.dateFrom, filters.dateTo, filters.technique]);
 
   /* ── Derived ── */
   const currentCategory = filters.category || selectedCategory;
@@ -161,6 +171,9 @@ export default function StaffTable({ config = {} }) {
     if (filters.maxAmount)   chips.push({ k: "maxAmount",   label: `Max Amount: ${fmtCurrency(filters.maxAmount)}` });
     if (filters.minGrafts)   chips.push({ k: "minGrafts",   label: `Min Grafts: ${filters.minGrafts}` });
     if (filters.maxGrafts)   chips.push({ k: "maxGrafts",   label: `Max Grafts: ${filters.maxGrafts}` });
+    if (filters.dateFrom)    chips.push({ k: "dateFrom",    label: `From: ${filters.dateFrom}` });
+    if (filters.dateTo)      chips.push({ k: "dateTo",      label: `To: ${filters.dateTo}` });
+    if (filters.technique)   chips.push({ k: "technique",   label: `Service: ${filters.technique}` });
     return chips;
   }, [filters]);
 
@@ -492,6 +505,21 @@ export default function StaffTable({ config = {} }) {
                   </div>
                 </FilterSection>
               )}
+
+              <FilterSection title="Visit Date Range" icon={<Calendar className="w-4 h-4" />}>
+                <div className="grid grid-cols-2 gap-4">
+                  <FilterDateInput label="From" value={filters.dateFrom} onChange={(v) => setFilter("dateFrom", v)} />
+                  <FilterDateInput label="To"   value={filters.dateTo}   onChange={(v) => setFilter("dateTo",   v)} />
+                </div>
+              </FilterSection>
+
+              <FilterSection title="Service / Technique" icon={<Stethoscope className="w-4 h-4" />}>
+                <FilterSelect
+                  value={filters.technique}
+                  onChange={(v) => setFilter("technique", v)}
+                  options={[{ label: "All Services", value: "" }, ...TECHNIQUES.map((t) => ({ label: t, value: t }))]}
+                />
+              </FilterSection>
             </div>
 
             <div className="px-6 py-4 border-t bg-gray-50 flex gap-3">
@@ -541,6 +569,20 @@ function FilterInput({ label, value, onChange, placeholder }) {
         type="number"
         value={value}
         placeholder={placeholder}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500"
+      />
+    </label>
+  );
+}
+
+function FilterDateInput({ label, value, onChange }) {
+  return (
+    <label className="block">
+      <span className="block text-sm font-medium text-gray-700 mb-2">{label}</span>
+      <input
+        type="date"
+        value={value}
         onChange={(e) => onChange(e.target.value)}
         className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500"
       />
