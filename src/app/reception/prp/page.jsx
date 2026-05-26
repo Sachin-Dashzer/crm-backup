@@ -22,7 +22,9 @@ import {
   Tag,
   FlaskConical,
   Filter,
+  Download,
 } from "lucide-react";
+import * as XLSX from "xlsx";
 
 // ─── constants ───────────────────────────────────────────────────────────────
 const METHODS = ["cash", "upi", "card", "banking", "Loan", "other"];
@@ -140,6 +142,12 @@ export default function PRPGFCPage() {
   const [patientResults, setPatientResults] = useState([]);
   const [searching, setSearching]           = useState(false);
   const [saving, setSaving]                 = useState(false);
+
+  // Export modal
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [exportFrom, setExportFrom]           = useState(todayISO());
+  const [exportTo, setExportTo]               = useState(todayISO());
+  const [exporting, setExporting]             = useState(false);
 
   // Mark-paid modal
   const [showPayModal, setShowPayModal]     = useState(false);
@@ -312,6 +320,50 @@ export default function PRPGFCPage() {
     finally      { setPaying(false); }
   };
 
+  // ── export to Excel ──────────────────────────────────────────────────────────
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      const res  = await fetch(`/api/reception/prp?from=${exportFrom}&to=${exportTo}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Fetch failed");
+
+      const allRecords = [
+        ...(data.paid   || []).map((r) => ({ ...r, status: "Paid" })),
+        ...(data.unpaid || []).map((r) => ({ ...r, status: "Unpaid" })),
+      ].sort((a, b) => new Date(a.date) - new Date(b.date));
+
+      const rows = allRecords.map((r, i) => ({
+        "#":            i + 1,
+        "Patient Name": r.patientName || "Walk-in",
+        "Phone":        r.patientPhone || "",
+        "Branch":       r.branch || "",
+        "Type":         r.procedure || "PRP",
+        "Session #":    r.sessionNumber || "",
+        "Status":       r.status,
+        "Amount (₹)":   r.status === "Paid" ? (r.amount || 0) : 0,
+        "Method":       r.method || "",
+        "Date":         r.date ? new Date(r.date).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "",
+        "Remarks":      r.remarks || "",
+      }));
+
+      const ws = XLSX.utils.json_to_sheet(rows);
+      ws["!cols"] = [
+        { wch: 4 }, { wch: 24 }, { wch: 14 }, { wch: 12 },
+        { wch: 6 }, { wch: 10 }, { wch: 8 }, { wch: 12 },
+        { wch: 10 }, { wch: 14 }, { wch: 24 },
+      ];
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "PRP-GFC Sessions");
+      XLSX.writeFile(wb, `PRP_GFC_${exportFrom}_to_${exportTo}.xlsx`);
+      setShowExportModal(false);
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setExporting(false);
+    }
+  };
+
   // ── stat cards ────────────────────────────────────────────────────────────────
   const stats = [
     {
@@ -393,6 +445,14 @@ export default function PRPGFCPage() {
               className="p-2 bg-white border border-gray-200 rounded-xl shadow-sm hover:bg-gray-50 transition"
             >
               <RefreshCw className={`w-4 h-4 text-gray-500 ${refreshing ? "animate-spin" : ""}`} />
+            </button>
+
+            <button
+              onClick={() => { setExportFrom(todayISO()); setExportTo(todayISO()); setShowExportModal(true); }}
+              className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-xl text-sm font-semibold shadow-sm hover:bg-emerald-700 transition"
+            >
+              <Download className="w-4 h-4" />
+              Export Excel
             </button>
 
             <button
@@ -612,6 +672,63 @@ export default function PRPGFCPage() {
           )}
         </div>
       </main>
+
+      {/* ═══════════════════════ EXPORT MODAL ═══════════════════════ */}
+      {showExportModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm">
+            <div className="flex items-center justify-between p-6 border-b border-gray-100">
+              <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                <Download className="w-5 h-5 text-emerald-500" />
+                Export PRP / GFC Records
+              </h2>
+              <button onClick={() => setShowExportModal(false)} className="p-1.5 hover:bg-gray-100 rounded-lg transition">
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-1">From Date</label>
+                <input
+                  type="date"
+                  value={exportFrom}
+                  onChange={(e) => setExportFrom(e.target.value)}
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-300"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-1">To Date</label>
+                <input
+                  type="date"
+                  value={exportTo}
+                  min={exportFrom}
+                  onChange={(e) => setExportTo(e.target.value)}
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-300"
+                />
+              </div>
+              <p className="text-xs text-gray-400">Exports all PRP & GFC sessions (paid + unpaid) for the selected date range to an Excel file.</p>
+
+              <div className="flex gap-3 pt-1">
+                <button
+                  onClick={() => setShowExportModal(false)}
+                  className="flex-1 py-2.5 border border-gray-200 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-50 transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleExport}
+                  disabled={exporting || !exportFrom || !exportTo}
+                  className="flex-1 py-2.5 bg-emerald-600 text-white rounded-xl text-sm font-semibold hover:bg-emerald-700 transition disabled:opacity-60 flex items-center justify-center gap-2"
+                >
+                  {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                  {exporting ? "Exporting…" : "Download Excel"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ═══════════════════════ ADD SESSION MODAL ═══════════════════════ */}
       {showAddModal && (

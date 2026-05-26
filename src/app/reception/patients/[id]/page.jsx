@@ -278,17 +278,19 @@ const PatientProfile = () => {
       const prpRows = data.afterSurgery.prp
         .map((session, index) => `
           <tr>
-            <td>PRP Session ${session.prpNumber || index + 1}</td>
+            <td>${session.prpNumber || index + 1}</td>
+            <td>${session.type || "PRP"}</td>
             <td>${formatDatePDF(session.date)}</td>
           </tr>
         `)
         .join("");
       prpHTML = `
-        <h3 style="color: #2c5aa0; margin: 20px 0 10px 0;">PRP Sessions</h3>
+        <h3 style="color: #2c5aa0; margin: 20px 0 10px 0;">PRP / GFC Sessions</h3>
         <table>
           <thead>
             <tr>
-              <th>Session Number</th>
+              <th>#</th>
+              <th>Type</th>
               <th>Date</th>
             </tr>
           </thead>
@@ -296,7 +298,7 @@ const PatientProfile = () => {
         </table>
       `;
     } else {
-      prpHTML = '<p style="color: #666; margin-top: 10px;">No PRP sessions scheduled</p>';
+      prpHTML = '<p style="color: #666; margin-top: 10px;">No PRP / GFC sessions scheduled</p>';
     }
 
     // Generate transactions HTML
@@ -1245,14 +1247,17 @@ const PatientProfile = () => {
                   <div>
                     <h3 className="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
                       <Droplet className="text-blue-600" size={20} />
-                      PRP Sessions
+                      PRP / GFC Sessions
                     </h3>
                     <div className="overflow-x-auto">
                       <table className="w-full border-collapse border border-gray-300">
                         <thead>
                           <tr className="bg-gray-100">
                             <th className="border border-gray-300 px-4 py-2 text-left text-sm font-medium text-gray-700">
-                              Session Number
+                              #
+                            </th>
+                            <th className="border border-gray-300 px-4 py-2 text-left text-sm font-medium text-gray-700">
+                              Type
                             </th>
                             <th className="border border-gray-300 px-4 py-2 text-left text-sm font-medium text-gray-700">
                               Date
@@ -1263,7 +1268,16 @@ const PatientProfile = () => {
                           {patientData.afterSurgery.prp.map((session, index) => (
                             <tr key={index} className="hover:bg-gray-50">
                               <td className="border border-gray-300 px-4 py-2 text-sm">
-                                PRP Session {session.prpNumber || index + 1}
+                                {session.prpNumber || index + 1}
+                              </td>
+                              <td className="border border-gray-300 px-4 py-2 text-sm">
+                                <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                                  session.type === "GFC"
+                                    ? "bg-green-100 text-green-700"
+                                    : "bg-blue-100 text-blue-700"
+                                }`}>
+                                  {session.type || "PRP"}
+                                </span>
                               </td>
                               <td className="border border-gray-300 px-4 py-2 text-sm flex items-center gap-1">
                                 <Clock size={14} className="text-gray-500" />
@@ -1278,7 +1292,7 @@ const PatientProfile = () => {
                 ) : (
                   <div className="text-center py-8 bg-gray-50 rounded-lg border border-gray-200">
                     <Droplet className="mx-auto text-gray-400 mb-2" size={32} />
-                    <p className="text-gray-500">No PRP sessions scheduled</p>
+                    <p className="text-gray-500">No PRP / GFC sessions scheduled</p>
                   </div>
                 )}
               </div>

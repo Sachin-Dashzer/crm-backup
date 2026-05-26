@@ -5,7 +5,12 @@
       "Bash(node -e \"const p = require\\('./package.json'\\); console.log\\('mongoose:', p.dependencies?.mongoose || p.devDependencies?.mongoose\\)\")",
       "Bash(Get-ChildItem -Path \"c:\\\\dashzer\\\\ryan-crm\" -Directory)",
       "Bash(Select-Object Name)",
-      "Bash(node -e \"const m = require\\('mongoose'\\); console.log\\(m.version\\)\")"
+      "Bash(node -e \"const m = require\\('mongoose'\\); console.log\\(m.version\\)\")",
+      "Bash(Get-ChildItem -Recurse \"c:\\\\dashzer\\\\ryan-crm\\\\src\\\\app\" -Filter \"*patient*\" -File)",
+      "Bash(Select-Object FullName)",
+      "Read(//mnt/c/dashzer/**)",
+      "Bash(find src/app -name \"*patient*\" -type f)",
+      "Bash(node -e \"const p = require\\('./package.json'\\); const deps = {...p.dependencies, ...p.devDependencies}; const xlsKeys = Object.keys\\(deps\\).filter\\(k => k.includes\\('xlsx'\\) || k.includes\\('excel'\\) || k.includes\\('csv'\\)\\); console.log\\(xlsKeys\\)\")"
     ],
     "additionalDirectories": [
       "c:\\dashzer\\ryan-crm\\src\\app\\api\\reception"

@@ -7,7 +7,7 @@ import Patient from "@/models/Patient";
 
 const PROCEDURES = ["PRP", "GFC"];
 
-// ── GET /api/reception/prp?date=YYYY-MM-DD ───────────────────────────────────
+// ── GET /api/reception/prp?date=YYYY-MM-DD  (or ?from=&to= for range export) ──
 export async function GET(req) {
   try {
     const session = await getServerSession(authOptions);
@@ -18,12 +18,22 @@ export async function GET(req) {
     await connectDB();
 
     const { searchParams } = new URL(req.url);
+    const fromParam = searchParams.get("from");
+    const toParam   = searchParams.get("to");
     const dateParam = searchParams.get("date");
 
-    const dayStart = dateParam ? new Date(dateParam) : new Date();
-    dayStart.setHours(0, 0, 0, 0);
-    const dayEnd = new Date(dayStart);
-    dayEnd.setHours(23, 59, 59, 999);
+    let dayStart, dayEnd;
+    if (fromParam && toParam) {
+      dayStart = new Date(fromParam);
+      dayStart.setHours(0, 0, 0, 0);
+      dayEnd = new Date(toParam);
+      dayEnd.setHours(23, 59, 59, 999);
+    } else {
+      dayStart = dateParam ? new Date(dateParam) : new Date();
+      dayStart.setHours(0, 0, 0, 0);
+      dayEnd = new Date(dayStart);
+      dayEnd.setHours(23, 59, 59, 999);
+    }
 
     const branch = session.user.branch;
     const branchFilter = branch && branch !== "All" ? { branch } : {};

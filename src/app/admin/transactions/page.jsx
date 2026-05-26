@@ -1181,12 +1181,19 @@ export default function AllTransactionsPage() {
           })
         : "";
 
+      const medicineName = t.transactionCategory === "MEDICINE"
+        ? (typeof t.medicineId === "object" ? t.medicineId?.name : "") || t.procedure || ""
+        : "";
+
       return {
         "Date":             formatDateForDisplay(t.date),
         "Patient Name":     t.patient?.personal?.name || t.patientName || "Walk-in Customer",
         "Phone":            t.patient?.personal?.phone || t.patientPhone || "",
         "Branch":           t.branch || "",
+        "Category":         t.transactionCategory || "",
         "Procedure":        t.procedure || "",
+        "Medicine Name":    medicineName,
+        "Quantity":         t.transactionCategory === "MEDICINE" ? (t.quantity || "") : "",
         "Payment Type":     t.paymentType || "",
         "Payment Method":   t.method || "",
         "Original Amount":  originalAmt,
@@ -1209,7 +1216,10 @@ export default function AllTransactionsPage() {
       { wch: 24 }, // Patient Name
       { wch: 14 }, // Phone
       { wch: 12 }, // Branch
+      { wch: 12 }, // Category
       { wch: 18 }, // Procedure
+      { wch: 24 }, // Medicine Name
+      { wch: 10 }, // Quantity
       { wch: 15 }, // Payment Type
       { wch: 16 }, // Payment Method
       { wch: 16 }, // Original Amount
