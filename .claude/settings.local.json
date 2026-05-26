@@ -4,7 +4,8 @@
       "Bash(mkdir -p \"c:\\\\dashzer\\\\ryan-crm\\\\src\\\\app\\\\api\\\\reception\\\\prp\" \"c:\\\\dashzer\\\\ryan-crm\\\\src\\\\app\\\\reception\\\\prp\" && echo \"done\")",
       "Bash(node -e \"const p = require\\('./package.json'\\); console.log\\('mongoose:', p.dependencies?.mongoose || p.devDependencies?.mongoose\\)\")",
       "Bash(Get-ChildItem -Path \"c:\\\\dashzer\\\\ryan-crm\" -Directory)",
-      "Bash(Select-Object Name)"
+      "Bash(Select-Object Name)",
+      "Bash(node -e \"const m = require\\('mongoose'\\); console.log\\(m.version\\)\")"
     ],
     "additionalDirectories": [
       "c:\\dashzer\\ryan-crm\\src\\app\\api\\reception"

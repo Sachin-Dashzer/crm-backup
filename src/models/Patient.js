@@ -184,7 +184,7 @@ const patientSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-patientSchema.pre("save", function (next) {
+patientSchema.pre("save", async function () {
   const patient = this;
   const currentDate = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
@@ -227,8 +227,6 @@ patientSchema.pre("save", function (next) {
   } else {
     patient.ops.status = "NEW";
   }
-
-  next();
 });
 
 patientSchema.index({ "personal.branch": 1, "ops.status": 1 });
