@@ -239,5 +239,5 @@ patientSchema.index({
   "personal.email": "text",
 });
 
-export default mongoose.models.Patient ||
-  mongoose.model("Patient", patientSchema);
+delete mongoose.models["Patient"];
+export default mongoose.model("Patient", patientSchema);
