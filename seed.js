@@ -1,13 +1,14 @@
 /**
- * seed.js — status migration script
+ * seed.js — patient status migration script
  *
- * Recalculates ops.status for every patient using the new rules:
- *   surgeryDate set              → CLOSED
- *   totalAmount > 0 & pending ≤ 0 → SURGERY_BOOKED
- *   amountReceived > 0           → BOOKING_DONE
- *   counsellor set               → CONSULTED
- *   visitDate < now              → NOT_VISITED
- *   otherwise                    → NEW
+ * Recalculates ops.status for every patient using the current rules
+ * (applied low → high priority; each later step overwrites earlier ones):
+ *
+ *   visitDate < now                          → NOT_VISITED
+ *   counsellor set  AND  amountReceived = 0  → NOT_CONVERTED
+ *   amountReceived > 0                       → BOOKING_DONE
+ *   totalAmount > 0  AND  pendingAmount ≤ 0  → SURGERY_BOOKED
+ *   surgeryDate set                          → CLOSED  (highest priority)
  *
  * Run: node seed.js
  */
@@ -44,114 +45,120 @@ const Patient = mongoose.models.Patient || mongoose.model("Patient", patientSche
 
 const now = new Date();
 
-/* ── Status conditions (applied low → high priority so later ones override) ── */
+/* ──────────────────────────────────────────────────────────────
+   Step definitions — applied in order, later steps overwrite.
+   Queries are intentionally simple (no exclusions needed).
+────────────────────────────────────────────────────────────── */
 const STEPS = [
   {
-    status: "NEW",
-    label:  "NEW (baseline — all patients not matched by any rule below)",
-    query:  {
-      "personal.visitDate":       { $gte: now },
-      "counselling.counsellor":   { $in: [null, undefined] },
-      "payments.amountReceived":  { $in: [null, 0] },
-      "surgery.surgeryDate":      { $in: [null, undefined] },
-    },
-  },
-  {
     status: "NOT_VISITED",
-    label:  "NOT_VISITED (visitDate is in the past, nothing else filled)",
-    query:  {
-      "personal.visitDate":      { $lt: now },
-      "counselling.counsellor":  { $in: [null, undefined] },
-      "payments.amountReceived": { $in: [null, 0] },
-      "surgery.surgeryDate":     { $in: [null, undefined] },
-    },
+    label:  "visitDate is in the past",
+    query:  { "personal.visitDate": { $exists: true, $ne: null, $lt: now } },
   },
   {
     status: "NOT_CONVERTED",
-    label:  "NOT_CONVERTED (counsellor assigned, amountReceived = 0, no surgery date)",
+    label:  "counsellor assigned AND amountReceived = 0 / not set",
     query:  {
       "counselling.counsellor":  { $exists: true, $ne: null },
-      "payments.amountReceived": { $in: [null, 0] },
-      "surgery.surgeryDate":     { $in: [null, undefined] },
+      "payments.amountReceived": { $not: { $gt: 0 } },   // matches null, missing, 0
     },
   },
   {
     status: "BOOKING_DONE",
-    label:  "BOOKING_DONE (amountReceived > 0, pending still > 0 or not set)",
-    query:  {
-      "payments.amountReceived": { $gt: 0 },
-      "surgery.surgeryDate":     { $in: [null, undefined] },
-      $or: [
-        { "payments.pendingAmount": { $gt: 0 } },
-        { "payments.pendingAmount": { $exists: false } },
-        { "payments.totalAmount":   { $in: [null, 0] } },
-      ],
-    },
+    label:  "amountReceived > 0  (SURGERY_BOOKED overwrites if fully paid)",
+    query:  { "payments.amountReceived": { $gt: 0 } },
   },
   {
     status: "SURGERY_BOOKED",
-    label:  "SURGERY_BOOKED (totalAmount > 0 and pendingAmount ≤ 0)",
+    label:  "totalAmount > 0  AND  pendingAmount ≤ 0",
     query:  {
       "payments.totalAmount":   { $gt: 0 },
       "payments.pendingAmount": { $lte: 0 },
-      "surgery.surgeryDate":    { $in: [null, undefined] },
     },
   },
   {
     status: "CLOSED",
-    label:  "CLOSED (surgery date is set)",
-    query:  {
-      "surgery.surgeryDate": { $exists: true, $ne: null },
-    },
+    label:  "surgery date is confirmed  (highest priority — overwrites all above)",
+    query:  { "surgery.surgeryDate": { $exists: true, $ne: null } },
   },
 ];
 
-async function printCurrentCounts() {
-  const statuses = ["NEW", "NOT_VISITED", "NOT_CONVERTED", "BOOKING_DONE", "SURGERY_BOOKED", "CLOSED", "CONSULTED"];
-  console.log("  Current status counts:");
-  for (const s of statuses) {
+const ALL_STATUSES = [
+  "NEW", "NOT_VISITED", "NOT_CONVERTED",
+  "BOOKING_DONE", "SURGERY_BOOKED", "CLOSED", "CONSULTED",
+];
+
+async function printCounts(heading) {
+  console.log(`── ${heading}`);
+  let total = 0;
+  for (const s of ALL_STATUSES) {
     const n = await Patient.countDocuments({ "ops.status": s });
-    if (n > 0) console.log(`    ${s.padEnd(16)} : ${n}`);
+    if (n > 0) {
+      console.log(`   ${s.padEnd(16)} : ${n}`);
+      total += n;
+    }
   }
-  const total = await Patient.countDocuments({});
-  console.log(`    ${"TOTAL".padEnd(16)} : ${total}`);
+  // catch any unlisted / legacy status values
+  const grand = await Patient.countDocuments({});
+  const other = grand - total;
+  if (other > 0) console.log(`   ${"(other)".padEnd(16)} : ${other}`);
+  console.log(`   ${"TOTAL".padEnd(16)} : ${grand}\n`);
+}
+
+async function connectWithRetry(retries = 5, delayMs = 3000) {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      console.log(`Connecting to MongoDB (attempt ${attempt}/${retries})...`);
+      await mongoose.connect(MONGODB_URI, {
+        serverSelectionTimeoutMS: 15000,
+        connectTimeoutMS:         15000,
+        maxPoolSize:              1,   // use only 1 connection — avoids Atlas M0 limits
+        minPoolSize:              0,
+      });
+      console.log("Connected.\n");
+      return;
+    } catch (err) {
+      console.error(`  Connection failed: ${err.message}`);
+      if (attempt < retries) {
+        console.log(`  Retrying in ${delayMs / 1000}s...\n`);
+        await new Promise((r) => setTimeout(r, delayMs));
+      } else {
+        console.error("\n  All connection attempts failed.");
+        console.error("  Tip: stop the Next.js dev server (Ctrl+C) before running this script,");
+        console.error("  then run: node seed.js\n");
+        process.exit(1);
+      }
+    }
+  }
 }
 
 async function run() {
-  console.log("Connecting to MongoDB...");
-  await mongoose.connect(MONGODB_URI, { serverSelectionTimeoutMS: 10000 });
-  console.log("Connected.\n");
+  await connectWithRetry();
 
-  const total = await Patient.countDocuments({});
-  console.log(`Total patients in DB: ${total}\n`);
+  await printCounts("Before migration");
 
-  console.log("── Before migration ─────────────────────────────");
-  await printCurrentCounts();
-  console.log("");
-
-  /* ── First pass: reset every patient to NEW ── */
-  console.log("── Step 0: Reset all patients to NEW ...");
+  /* ── Step 0: baseline reset — every patient starts as NEW ── */
+  console.log("── Step 0 · Reset all → NEW");
   const reset = await Patient.updateMany({}, { $set: { "ops.status": "NEW" } });
-  console.log(`   ${reset.modifiedCount} patient(s) reset to NEW.\n`);
+  console.log(`   ${reset.modifiedCount} patient(s) set to NEW\n`);
 
-  /* ── Apply each rule in priority order (low → high, so later ones win) ── */
-  for (const step of STEPS) {
-    if (step.status === "NEW") continue; // already set in reset
-    console.log(`── ${step.label}`);
-    const preview = await Patient.countDocuments(step.query);
-    console.log(`   Matching: ${preview}`);
-    if (preview > 0) {
-      const r = await Patient.updateMany(step.query, { $set: { "ops.status": step.status } });
-      console.log(`   Updated:  ${r.modifiedCount}`);
+  /* ── Steps 1-5: apply rules low → high priority ── */
+  for (let i = 0; i < STEPS.length; i++) {
+    const { status, label, query } = STEPS[i];
+    console.log(`── Step ${i + 1} · ${status}  —  ${label}`);
+    const matching = await Patient.countDocuments(query);
+    console.log(`   Matching : ${matching}`);
+    if (matching > 0) {
+      const r = await Patient.updateMany(query, { $set: { "ops.status": status } });
+      console.log(`   Updated  : ${r.modifiedCount}`);
     }
     console.log("");
   }
 
-  console.log("── After migration ──────────────────────────────");
-  await printCurrentCounts();
+  await printCounts("After migration");
 
   await mongoose.disconnect();
-  console.log("\nDisconnected. Migration complete.");
+  console.log("Disconnected. Done.");
 }
 
 run().catch((err) => {

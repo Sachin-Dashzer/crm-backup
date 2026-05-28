@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
+import Link from "next/link";
 import { maskPhone } from "@/utils/phoneUtils";
 import ReceptionSidebar from "@/components/Sidebars/ReceptionSidebar";
 import {
@@ -657,6 +658,14 @@ const PatientProfile = () => {
                 <Download className="mr-2" size={16} />
                 Download PDF
               </button>
+              <Link
+                href={`/reception/patients/${params.id}/consultation-form`}
+                target="_blank"
+                className="inline-flex items-center px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
+              >
+                <Printer className="mr-2" size={16} />
+                Consultation Form
+              </Link>
             </div>
           </div>
 
@@ -1609,6 +1618,14 @@ const PatientProfile = () => {
               <Download size={20} />
               Download PDF Report
             </button>
+            <Link
+              href={`/reception/patients/${params.id}/consultation-form`}
+              target="_blank"
+              className="px-6 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors flex items-center gap-2"
+            >
+              <Printer size={20} />
+              Print Consultation Form
+            </Link>
             <button
               onClick={() => window.print()}
               className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2"
