@@ -28,11 +28,12 @@ const handler = async (req) => {
     const counsellorName = searchParams.get("counsellor")     || "";
     const agentName      = searchParams.get("agent")          || "";
     const technique      = searchParams.get("technique")      || "";
-    const surgeryDate    = searchParams.get("surgeryDate")    || "";
-    const dateFrom       = searchParams.get("dateFrom")       || "";
-    const dateTo         = searchParams.get("dateTo")         || "";
-    const visited        = searchParams.get("visited")        === "true";
-    const readyForSurgery= searchParams.get("readyForSurgery")=== "true";
+    const surgeryDate      = searchParams.get("surgeryDate")      || "";
+    const surgeryLocations = (searchParams.get("surgeryLocations") || "").split(",").filter(Boolean);
+    const dateFrom         = searchParams.get("dateFrom")         || "";
+    const dateTo          = searchParams.get("dateTo")          || "";
+    const visited         = searchParams.get("visited")         === "true";
+    const readyForSurgery = searchParams.get("readyForSurgery") === "true";
 
     /* ── Build query ── */
     const query = {};
@@ -59,6 +60,8 @@ const handler = async (req) => {
         query["personal.visitDate"].$lte = to;
       }
     }
+
+    if (surgeryLocations.length > 0) query["surgery.location"] = { $in: surgeryLocations };
 
     // Surgery date (exact day)
     if (surgeryDate) {
@@ -113,7 +116,7 @@ const handler = async (req) => {
     }
 
     /* ── Run DB operations in parallel ── */
-    const [patients, total] = await Promise.all([
+    const [patients, total, distinctLocations] = await Promise.all([
       Patient.find(query)
         .sort({ [sortKey]: sortDir })
         .skip(skip)
@@ -126,9 +129,13 @@ const handler = async (req) => {
         .populate("surgery.implanterLeft",  "name")
         .lean(),
       Patient.countDocuments(query),
+      Patient.distinct("surgery.location").then((vals) => vals.filter(Boolean).sort()),
     ]);
 
-    return NextResponse.json({ patients, total, page, limit, success: true }, { status: 200 });
+    return NextResponse.json({
+      patients, total, page, limit, success: true,
+      filterOptions: { surgeryLocations: distinctLocations },
+    }, { status: 200 });
   } catch (error) {
     console.error("Error fetching patients:", error);
     return NextResponse.json({ success: false, error: "Failed to fetch patients" }, { status: 500 });

@@ -155,6 +155,7 @@ const patientSchema = new mongoose.Schema(
           "NOT_CONVERTED",
           "CONSULTED",
           "SURGERY_BOOKED",
+          "BOOKING_DONE",
           "CLOSED",
         ],
         default: "NEW",
@@ -207,21 +208,18 @@ patientSchema.pre("save", async function () {
       patient.payments.discount;
   }
 
-  // Check if doctor array has any entries
-  const hasDoctor =
-    patient.surgery?.doctor && patient.surgery.doctor.length > 0;
+  const amountReceived = patient.payments?.amountReceived || 0;
+  const totalAmount    = patient.payments?.totalAmount    || 0;
+  const pendingAmount  = patient.payments?.pendingAmount;
 
-  if (hasDoctor) {
+  if (patient.surgery?.surgeryDate) {
     patient.ops.status = "CLOSED";
-  } else if (
-    patient.counselling?.counsellor &&
-    patient.counselling?.readyForSurgery === false
-  ) {
-    patient.ops.status = "NOT_CONVERTED";
-  } else if (patient.counselling?.counsellor && patient.surgery?.surgeryDate) {
+  } else if (totalAmount > 0 && pendingAmount != null && pendingAmount <= 0) {
     patient.ops.status = "SURGERY_BOOKED";
-  } else if (patient.counselling?.counsellor) {
-    patient.ops.status = "CONSULTED";
+  } else if (amountReceived > 0) {
+    patient.ops.status = "BOOKING_DONE";
+  } else if (patient.counselling?.counsellor && amountReceived === 0) {
+    patient.ops.status = "NOT_CONVERTED";
   } else if (isVisitDatePast) {
     patient.ops.status = "NOT_VISITED";
   } else {

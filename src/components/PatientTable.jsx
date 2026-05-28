@@ -39,7 +39,7 @@ import {
 /* ─────────────────────────────────────────────
    Constants
 ───────────────────────────────────────────── */
-const STATUS_OPTIONS = ["NEW","NOT_VISITED","CONSULTED","NOT_CONVERTED","SURGERY_BOOKED","CLOSED"];
+const STATUS_OPTIONS = ["NEW","NOT_VISITED","CONSULTED","NOT_CONVERTED","SURGERY_BOOKED","BOOKING_DONE","CLOSED"];
 
 const STATUS_COLORS = {
   NEW:            "bg-blue-50 text-blue-700 border-blue-200",
@@ -47,6 +47,7 @@ const STATUS_COLORS = {
   CONSULTED:      "bg-purple-50 text-purple-700 border-purple-200",
   NOT_CONVERTED:  "bg-red-50 text-red-700 border-red-200",
   SURGERY_BOOKED: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  BOOKING_DONE:   "bg-teal-50 text-teal-700 border-teal-200",
   CLOSED:         "bg-gray-50 text-gray-600 border-gray-200",
 };
 
@@ -156,6 +157,7 @@ export default function PatientTable({ config = {} }) {
   const [filterOptions, setFOpts]   = useState({
     counsellors: [], agents: [], techniques: [],
     doctors: [], seniorTechs: [], implanters: [],
+    surgeryLocations: [],
   });
   const optionsLoaded = useRef(false);
 
@@ -173,8 +175,9 @@ export default function PatientTable({ config = {} }) {
     counsellor:      "",
     agent:           "",
     technique:       "",
-    surgeryDate:     searchParams.get("surgeryDate")      || "",
-    dateFrom:        searchParams.get("dateFrom")         || "",
+    surgeryDate:      searchParams.get("surgeryDate")       || "",
+    surgeryLocations: [],
+    dateFrom:         searchParams.get("dateFrom")         || "",
     dateTo:          searchParams.get("dateTo")           || "",
     visited:         searchParams.get("visited")          === "true",
     readyForSurgery: searchParams.get("readyForSurgery")  === "true",
@@ -212,14 +215,15 @@ export default function PatientTable({ config = {} }) {
         if (filters.counsellor)  p.set("counsellor",      filters.counsellor);
         if (filters.agent)       p.set("agent",           filters.agent);
         if (filters.technique)   p.set("technique",       filters.technique);
-        if (filters.surgeryDate) p.set("surgeryDate",     filters.surgeryDate);
-        if (filters.dateFrom)    p.set("dateFrom",        filters.dateFrom);
-        if (filters.dateTo)      p.set("dateTo",          filters.dateTo);
-        if (filters.visited)     p.set("visited",         "true");
+        if (filters.surgeryDate)              p.set("surgeryDate",      filters.surgeryDate);
+        if (filters.surgeryLocations.length > 0) p.set("surgeryLocations", filters.surgeryLocations.join(","));
+        if (filters.dateFrom)                 p.set("dateFrom",         filters.dateFrom);
+        if (filters.dateTo)          p.set("dateTo",          filters.dateTo);
+        if (filters.visited)         p.set("visited",         "true");
         if (filters.readyForSurgery) p.set("readyForSurgery", "true");
-        if (filters.doctor)      p.set("doctor",          filters.doctor);
-        if (filters.seniorTech)  p.set("seniorTech",      filters.seniorTech);
-        if (filters.implanter)   p.set("implanter",       filters.implanter);
+        if (filters.doctor)          p.set("doctor",          filters.doctor);
+        if (filters.seniorTech)      p.set("seniorTech",      filters.seniorTech);
+        if (filters.implanter)       p.set("implanter",       filters.implanter);
 
         const res  = await fetch(`/api/patients/get-patient?${p.toString()}`);
         if (!res.ok) throw new Error("Failed to fetch patients");
@@ -229,14 +233,15 @@ export default function PatientTable({ config = {} }) {
         setPatients(data.patients || []);
         setTotal(data.total || 0);
 
-        if (!optionsLoaded.current && data.filterOptions) {
+        if (data.filterOptions) {
           setFOpts({
-            counsellors: data.filterOptions.counsellors || [],
-            agents:      data.filterOptions.agents      || [],
-            techniques:  data.filterOptions.techniques  || [],
-            doctors:     data.filterOptions.doctors     || [],
-            seniorTechs: data.filterOptions.seniorTechs || [],
-            implanters:  data.filterOptions.implanters  || [],
+            counsellors:      data.filterOptions.counsellors      || [],
+            agents:           data.filterOptions.agents           || [],
+            techniques:       data.filterOptions.techniques       || [],
+            doctors:          data.filterOptions.doctors          || [],
+            seniorTechs:      data.filterOptions.seniorTechs      || [],
+            implanters:       data.filterOptions.implanters       || [],
+            surgeryLocations: data.filterOptions.surgeryLocations || [],
           });
           optionsLoaded.current = true;
         }
@@ -259,7 +264,7 @@ export default function PatientTable({ config = {} }) {
   const clearFilters = () => {
     setFilters({
       status: "", branch: "", counsellor: "", agent: "", technique: "",
-      surgeryDate: "", dateFrom: "", dateTo: "",
+      surgeryDate: "", surgeryLocations: [], dateFrom: "", dateTo: "",
       visited: false, readyForSurgery: false,
       doctor: "", seniorTech: "", implanter: "",
     });
@@ -288,8 +293,9 @@ export default function PatientTable({ config = {} }) {
       if (filters.counsellor)       p.set("counsellor",      filters.counsellor);
       if (filters.agent)            p.set("agent",           filters.agent);
       if (filters.technique)        p.set("technique",       filters.technique);
-      if (filters.surgeryDate)      p.set("surgeryDate",     filters.surgeryDate);
-      if (filters.dateFrom)         p.set("dateFrom",        filters.dateFrom);
+      if (filters.surgeryDate)                 p.set("surgeryDate",      filters.surgeryDate);
+      if (filters.surgeryLocations.length > 0) p.set("surgeryLocations", filters.surgeryLocations.join(","));
+      if (filters.dateFrom)                    p.set("dateFrom",         filters.dateFrom);
       if (filters.dateTo)           p.set("dateTo",          filters.dateTo);
       if (filters.visited)          p.set("visited",         "true");
       if (filters.readyForSurgery)  p.set("readyForSurgery", "true");
@@ -335,7 +341,8 @@ export default function PatientTable({ config = {} }) {
     filters.counsellor      && { k: "counsellor",      label: `Counsellor: ${filters.counsellor}` },
     filters.agent           && { k: "agent",           label: `Ref: ${filters.agent}` },
     filters.technique       && { k: "technique",       label: `Technique: ${filters.technique}` },
-    filters.surgeryDate     && { k: "surgeryDate",     label: `Surgery: ${fmtDate(filters.surgeryDate)}` },
+    filters.surgeryDate          && { k: "surgeryDate",      label: `Surgery: ${fmtDate(filters.surgeryDate)}` },
+    filters.surgeryLocations.length > 0 && { k: "surgeryLocations", label: `Location: ${filters.surgeryLocations.join(", ")}` },
     filters.dateFrom        && { k: "dateFrom",        label: `From: ${fmtDate(filters.dateFrom)}` },
     filters.dateTo          && { k: "dateTo",          label: `To: ${fmtDate(filters.dateTo)}` },
     filters.visited         && { k: "visited",         label: "Visited Only" },
@@ -347,6 +354,7 @@ export default function PatientTable({ config = {} }) {
 
   const removeChip = (k) => {
     if (k === "visited" || k === "readyForSurgery") applyFilter(k, false);
+    else if (k === "surgeryLocations") applyFilter(k, []);
     else applyFilter(k, "");
   };
 
@@ -749,6 +757,33 @@ export default function PatientTable({ config = {} }) {
                 {filterCfg.showSurgeryDate && (
                   <DrawerField label="Surgery Date">
                     <DDateInput value={filters.surgeryDate} onChange={(v) => applyFilter("surgeryDate", v)} />
+                  </DrawerField>
+                )}
+                {filterCfg.showSurgeryLocation && filterOptions.surgeryLocations.length > 0 && (
+                  <DrawerField label="Surgery Location">
+                    <div className="space-y-1.5 max-h-40 overflow-y-auto border border-gray-200 rounded-lg p-2">
+                      {filterOptions.surgeryLocations.map((loc) => (
+                        <label key={loc} className="flex items-center gap-2.5 px-2 py-1.5 rounded-md hover:bg-gray-50 cursor-pointer transition-colors">
+                          <input
+                            type="checkbox"
+                            checked={filters.surgeryLocations.includes(loc)}
+                            onChange={(e) => {
+                              const next = e.target.checked
+                                ? [...filters.surgeryLocations, loc]
+                                : filters.surgeryLocations.filter((l) => l !== loc);
+                              applyFilter("surgeryLocations", next);
+                            }}
+                            className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                          />
+                          <span className="text-sm text-gray-700">{loc}</span>
+                        </label>
+                      ))}
+                    </div>
+                    {filters.surgeryLocations.length > 0 && (
+                      <button onClick={() => applyFilter("surgeryLocations", [])} className="mt-1.5 text-xs text-red-500 hover:text-red-600 transition-colors">
+                        Clear selection
+                      </button>
+                    )}
                   </DrawerField>
                 )}
                 {(filterCfg.showVisited || filterCfg.showReadyForSurgery) && (

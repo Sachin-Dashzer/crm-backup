@@ -315,6 +315,7 @@ async function generateComprehensivePatientReport(filters) {
     "Surgery Date": p.surgery?.surgeryDate
       ? new Date(p.surgery.surgeryDate).toLocaleDateString()
       : "",
+    "Surgery Location": p.surgery?.location || "",
     "Surgery Technique": p.surgery?.technique || "",
     "Grafts Implanted": p.surgery?.graftsImplanted || "",
     Doctor: p.surgery?.doctor?.name || "",
@@ -798,6 +799,7 @@ async function generateSurgeryScheduleReport(filters) {
     "personal.phone": 1,
     "personal.branch": 1,
     "surgery.surgeryDate": 1,
+    "surgery.location": 1,
     "surgery.technique": 1,
     "surgery.graftsneed": 1,
     "surgery.doctor": 1,
@@ -821,6 +823,7 @@ async function generateSurgeryScheduleReport(filters) {
     "Patient Name": p.personal?.name || "",
     Phone: p.personal?.phone || "",
     Branch: p.personal?.branch || "",
+    "Surgery Location": p.surgery?.location || "",
     Technique: p.surgery?.technique || "",
     "Grafts Needed": p.surgery?.graftsneed || "",
     Doctor: p.surgery?.doctor?.name || "",
@@ -1266,11 +1269,11 @@ async function generateBranchPatientsReport(filters) {
     });
     const scheduled = await Patient.countDocuments({
       ...branchQuery,
-      "ops.status": "SURGERY_SCHEDULED",
+      "ops.status": "SURGERY_BOOKED",
     });
-    const postOp = await Patient.countDocuments({
+    const bookingDone = await Patient.countDocuments({
       ...branchQuery,
-      "ops.status": "POST_OP",
+      "ops.status": "BOOKING_DONE",
     });
     const closed = await Patient.countDocuments({
       ...branchQuery,
@@ -1282,12 +1285,12 @@ async function generateBranchPatientsReport(filters) {
       "Total Patients": totalPatients,
       "New Patients": newPatients,
       Consulted: consulted,
-      "Surgery Scheduled": scheduled,
-      "Post-Op": postOp,
+      "Surgery Booked": scheduled,
+      "Booking Done": bookingDone,
       Closed: closed,
       "Conversion Rate":
         totalPatients > 0
-          ? (((postOp + closed) / totalPatients) * 100).toFixed(1) + "%"
+          ? (((bookingDone + closed) / totalPatients) * 100).toFixed(1) + "%"
           : "0%",
     });
   }

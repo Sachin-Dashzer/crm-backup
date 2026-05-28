@@ -55,7 +55,7 @@ const PAYMENT_TYPES = ["Booking", "Pending", "Full-payment", "Other"];
 
 const PATIENT_STATUSES = [
   "NEW", "NOT_VISITED", "NOT_CONVERTED", "CONSULTED",
-  "SURGERY_BOOKED", "CLOSED",
+  "SURGERY_BOOKED", "BOOKING_DONE", "CLOSED",
 ];
 
 /* ─── Color map ─────────────────────────────────────────────────────────────── */
