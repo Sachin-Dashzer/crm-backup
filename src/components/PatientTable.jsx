@@ -159,9 +159,7 @@ export default function PatientTable({ config = {} }) {
     doctors: [], seniorTechs: [], implanters: [],
     surgeryLocations: [],
   });
-  const optionsLoaded = useRef(false);
-
-  const [loading, setLoading]       = useState(true);
+const [loading, setLoading]       = useState(true);
   const [error, setError]           = useState(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
 
@@ -253,17 +251,11 @@ export default function PatientTable({ config = {} }) {
         setPatients(data.patients || []);
         setTotal(data.total || 0);
 
-        if (data.filterOptions) {
-          setFOpts({
-            counsellors:      data.filterOptions.counsellors      || [],
-            agents:           data.filterOptions.agents           || [],
-            techniques:       data.filterOptions.techniques       || [],
-            doctors:          data.filterOptions.doctors          || [],
-            seniorTechs:      data.filterOptions.seniorTechs      || [],
-            implanters:       data.filterOptions.implanters       || [],
-            surgeryLocations: data.filterOptions.surgeryLocations || [],
-          });
-          optionsLoaded.current = true;
+        if (data.filterOptions?.surgeryLocations) {
+          setFOpts((prev) => ({
+            ...prev,
+            surgeryLocations: data.filterOptions.surgeryLocations,
+          }));
         }
       } catch (e) {
         if (!cancelled) setError(e.message || "Error");
