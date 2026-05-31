@@ -12,9 +12,12 @@ const handler = async (req) => {
       return NextResponse.json({ success: false, error: "Unauthorized." }, { status: 401 });
     }
 
-    const [counsellors, agents, t1, t2, t3] = await Promise.all([
+    const [counsellors, agents, doctors, seniorTechs, implanters, t1, t2, t3] = await Promise.all([
       Employee.distinct("name", { role: "Counsellor", isactive: true }),
-      Employee.distinct("name", { role: "Agent", isactive: true }),
+      Employee.distinct("name", { role: "Agent",      isactive: true }),
+      Employee.distinct("name", { role: "Doctor",     isactive: true }),
+      Employee.distinct("name", { role: "Technician", isactive: true }),
+      Employee.distinct("name", { role: "Implanter",  isactive: true }),
       Patient.distinct("counselling.techniqueSuggested"),
       Patient.distinct("surgery.technique"),
       Patient.distinct("personal.techniqueQuoted"),
@@ -23,8 +26,11 @@ const handler = async (req) => {
     return NextResponse.json({
       success: true,
       counsellors: counsellors.filter(Boolean).sort(),
-      agents: agents.filter(Boolean).sort(),
-      techniques: [...new Set([...t1, ...t2, ...t3].filter(Boolean))].sort(),
+      agents:      agents.filter(Boolean).sort(),
+      doctors:     doctors.filter(Boolean).sort(),
+      seniorTechs: seniorTechs.filter(Boolean).sort(),
+      implanters:  implanters.filter(Boolean).sort(),
+      techniques:  [...new Set([...t1, ...t2, ...t3].filter(Boolean))].sort(),
     });
   } catch (error) {
     console.error("Error fetching filter options:", error);

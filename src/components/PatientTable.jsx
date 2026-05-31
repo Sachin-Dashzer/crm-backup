@@ -197,6 +197,26 @@ export default function PatientTable({ config = {} }) {
     debounceRef.current = setTimeout(() => { setSearch(val); setPage(1); }, 400);
   };
 
+  /* ── Load dropdown options once on mount ── */
+  useEffect(() => {
+    fetch("/api/patients/filter-options")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.success) {
+          setFOpts((prev) => ({
+            ...prev,
+            counsellors: data.counsellors  || [],
+            agents:      data.agents       || [],
+            techniques:  data.techniques   || [],
+            doctors:     data.doctors      || [],
+            seniorTechs: data.seniorTechs  || [],
+            implanters:  data.implanters   || [],
+          }));
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   /* ── Fetch ── */
   useEffect(() => {
     let cancelled = false;
