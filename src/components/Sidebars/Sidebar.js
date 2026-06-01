@@ -13,6 +13,7 @@ import {
   Menu,
   Boxes,
   Archive,
+  Droplets,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -155,6 +156,13 @@ export default function AdminSidebar() {
               href="/admin/transactions"
               icon={Receipt}
               active={isActive("/admin/transactions")}
+              onClick={close}
+            />
+            <NavItem
+              label="PRP & GFC"
+              href="/admin/prp"
+              icon={Droplets}
+              active={isActive("/admin/prp")}
               onClick={close}
             />
             <NavItem
