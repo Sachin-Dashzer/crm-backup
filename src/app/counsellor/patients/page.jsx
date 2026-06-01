@@ -6,6 +6,7 @@ import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { maskPhone } from "@/utils/phoneUtils";
+import MultiSelect from "@/components/MultiSelect";
 import {
   Filter,
   X,
@@ -70,6 +71,22 @@ function PatientDashboardContent() {
   });
   const optionsLoaded = useRef(false);
 
+  useEffect(() => {
+    fetch("/api/patients/filter-options")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.success) {
+          setFilterOptions((prev) => ({
+            ...prev,
+            counsellors: data.counsellors || [],
+            agents:      data.agents      || [],
+            techniques:  data.techniques  || [],
+          }));
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -80,16 +97,16 @@ function PatientDashboardContent() {
   const debounceRef = useRef(null);
 
   const [filters, setFilters] = useState({
-    status: searchParams.get("status") || "",
-    branch: searchParams.get("branch") === "All" ? "" : searchParams.get("branch") || "",
-    counsellor: searchParams.get("counsellor") || "",
-    agent: "",
-    technique: "",
+    status:     searchParams.get("status")     ? [searchParams.get("status")]     : [],
+    branch:     searchParams.get("branch") && searchParams.get("branch") !== "All" ? [searchParams.get("branch")] : [],
+    counsellor: searchParams.get("counsellor") ? [searchParams.get("counsellor")] : [],
+    agent:      [],
+    technique:  [],
     surgeryDate: searchParams.get("surgeryDate") || "",
-    dateFrom: searchParams.get("dateFrom") || "",
-    dateTo: searchParams.get("dateTo") || "",
-    visited: searchParams.get("visited") === "true",
-    readyForSurgery: searchParams.get("readyForSurgery") === "true",
+    dateFrom:    searchParams.get("dateFrom")    || "",
+    dateTo:      searchParams.get("dateTo")      || "",
+    visited:         searchParams.get("visited")          === "true",
+    readyForSurgery: searchParams.get("readyForSurgery")  === "true",
   });
 
   const [sort, setSort] = useState({ key: "personal.visitDate", dir: "desc" });
@@ -119,17 +136,17 @@ function PatientDashboardContent() {
           sortKey: sort.key,
           sortDir: sort.dir,
         });
-        if (search)               params.set("search",          search);
-        if (filters.status)       params.set("status",          filters.status);
-        if (filters.branch)       params.set("branch",          filters.branch);
-        if (filters.counsellor)   params.set("counsellor",      filters.counsellor);
-        if (filters.agent)        params.set("agent",           filters.agent);
-        if (filters.technique)    params.set("technique",       filters.technique);
-        if (filters.surgeryDate)  params.set("surgeryDate",     filters.surgeryDate);
-        if (filters.dateFrom)     params.set("dateFrom",        filters.dateFrom);
-        if (filters.dateTo)       params.set("dateTo",          filters.dateTo);
-        if (filters.visited)      params.set("visited",         "true");
-        if (filters.readyForSurgery) params.set("readyForSurgery", "true");
+        if (search)                    params.set("search",          search);
+        if (filters.status.length)     params.set("status",          filters.status.join(","));
+        if (filters.branch.length)     params.set("branch",          filters.branch.join(","));
+        if (filters.counsellor.length) params.set("counsellor",      filters.counsellor.join(","));
+        if (filters.agent.length)      params.set("agent",           filters.agent.join(","));
+        if (filters.technique.length)  params.set("technique",       filters.technique.join(","));
+        if (filters.surgeryDate)       params.set("surgeryDate",     filters.surgeryDate);
+        if (filters.dateFrom)          params.set("dateFrom",        filters.dateFrom);
+        if (filters.dateTo)            params.set("dateTo",          filters.dateTo);
+        if (filters.visited)           params.set("visited",         "true");
+        if (filters.readyForSurgery)   params.set("readyForSurgery", "true");
 
         const res = await fetch(`/api/patients/get-patient?${params.toString()}`);
         if (!res.ok) throw new Error("Failed to fetch patient data");
@@ -167,11 +184,11 @@ function PatientDashboardContent() {
 
   const clearFilters = () => {
     setFilters({
-      status: "",
-      branch: "",
-      counsellor: "",
-      agent: "",
-      technique: "",
+      status: [],
+      branch: [],
+      counsellor: [],
+      agent: [],
+      technique: [],
       surgeryDate: "",
       dateFrom: "",
       dateTo: "",
@@ -192,20 +209,21 @@ function PatientDashboardContent() {
 
   /* ── Active filter chips ── */
   const activeFilterChips = [];
-  if (filters.status)          activeFilterChips.push({ k: "status",          label: `Status: ${filters.status}` });
-  if (filters.branch)          activeFilterChips.push({ k: "branch",          label: `Branch: ${filters.branch}` });
-  if (filters.counsellor)      activeFilterChips.push({ k: "counsellor",      label: `Counsellor: ${filters.counsellor}` });
-  if (filters.agent)           activeFilterChips.push({ k: "agent",           label: `Reference: ${filters.agent}` });
-  if (filters.technique)       activeFilterChips.push({ k: "technique",       label: `Technique: ${filters.technique}` });
-  if (filters.surgeryDate)     activeFilterChips.push({ k: "surgeryDate",     label: `Surgery: ${formatDate(filters.surgeryDate)}` });
-  if (filters.dateFrom)        activeFilterChips.push({ k: "dateFrom",        label: `From: ${formatDate(filters.dateFrom)}` });
-  if (filters.dateTo)          activeFilterChips.push({ k: "dateTo",          label: `To: ${formatDate(filters.dateTo)}` });
-  if (filters.visited)         activeFilterChips.push({ k: "visited",         label: "Visited Patients" });
-  if (filters.readyForSurgery) activeFilterChips.push({ k: "readyForSurgery", label: "Ready for Surgery" });
+  if (filters.status.length)     activeFilterChips.push({ k: "status",     label: `Status: ${filters.status.map(s => s.replace(/_/g," ")).join(", ")}` });
+  if (filters.branch.length)     activeFilterChips.push({ k: "branch",     label: `Branch: ${filters.branch.join(", ")}` });
+  if (filters.counsellor.length) activeFilterChips.push({ k: "counsellor", label: `Counsellor: ${filters.counsellor.join(", ")}` });
+  if (filters.agent.length)      activeFilterChips.push({ k: "agent",      label: `Reference: ${filters.agent.join(", ")}` });
+  if (filters.technique.length)  activeFilterChips.push({ k: "technique",  label: `Technique: ${filters.technique.join(", ")}` });
+  if (filters.surgeryDate)       activeFilterChips.push({ k: "surgeryDate",label: `Surgery: ${formatDate(filters.surgeryDate)}` });
+  if (filters.dateFrom)          activeFilterChips.push({ k: "dateFrom",   label: `From: ${formatDate(filters.dateFrom)}` });
+  if (filters.dateTo)            activeFilterChips.push({ k: "dateTo",     label: `To: ${formatDate(filters.dateTo)}` });
+  if (filters.visited)           activeFilterChips.push({ k: "visited",    label: "Visited Patients" });
+  if (filters.readyForSurgery)   activeFilterChips.push({ k: "readyForSurgery", label: "Ready for Surgery" });
 
   const removeChip = (k) => {
     if (k === "visited" || k === "readyForSurgery") applyFilter(k, false);
-    else applyFilter(k, "");
+    else if (k === "surgeryDate" || k === "dateFrom" || k === "dateTo") applyFilter(k, "");
+    else applyFilter(k, []);
   };
 
   /* ── Logout ── */
@@ -478,29 +496,19 @@ function PatientDashboardContent() {
                     icon={<Filter className="w-4 h-4" />}
                   >
                     <Field label="Status">
-                      <Select
-                        value={filters.status}
+                      <MultiSelect
+                        values={filters.status}
                         onChange={(v) => applyFilter("status", v)}
-                        options={[
-                          { label: "All Status", value: "" },
-                          ...STATUS_OPTIONS.map((s) => ({
-                            label: s.replace(/_/g, " "),
-                            value: s,
-                          })),
-                        ]}
+                        placeholder="All Statuses"
+                        options={STATUS_OPTIONS.map((s) => ({ label: s.replace(/_/g, " "), value: s }))}
                       />
                     </Field>
                     <Field label="Branch">
-                      <Select
-                        value={filters.branch}
+                      <MultiSelect
+                        values={filters.branch}
                         onChange={(v) => applyFilter("branch", v)}
-                        options={[
-                          { label: "All Branches", value: "" },
-                          ...LOCATION_OPTIONS.map((l) => ({
-                            label: l,
-                            value: l,
-                          })),
-                        ]}
+                        placeholder="All Branches"
+                        options={LOCATION_OPTIONS.map((l) => ({ label: l, value: l }))}
                       />
                     </Field>
 
@@ -536,25 +544,19 @@ function PatientDashboardContent() {
                     icon={<Users className="w-4 h-4" />}
                   >
                     <Field label="Counsellor">
-                      <Select
-                        value={filters.counsellor}
+                      <MultiSelect
+                        values={filters.counsellor}
                         onChange={(v) => applyFilter("counsellor", v)}
-                        options={[
-                          { label: "All Counsellors", value: "" },
-                          ...filterOptions.counsellors.map((c) => ({
-                            label: c,
-                            value: c,
-                          })),
-                        ]}
+                        placeholder="All Counsellors"
+                        options={filterOptions.counsellors.map((c) => ({ label: c, value: c }))}
                       />
                     </Field>
                     <Field label="Reference">
-                      <Select
-                        value={filters.agent}
+                      <MultiSelect
+                        values={filters.agent}
                         onChange={(v) => applyFilter("agent", v)}
-                        options={[
-                          { label: "All References", value: "" },
-                          ...filterOptions.agents.map((a) => ({
+                        placeholder="All References"
+                        options={filterOptions.agents.map((a) => ({
                             label: a,
                             value: a,
                           })),
@@ -569,16 +571,11 @@ function PatientDashboardContent() {
                     icon={<Scissors className="w-4 h-4" />}
                   >
                     <Field label="Technique">
-                      <Select
-                        value={filters.technique}
+                      <MultiSelect
+                        values={filters.technique}
                         onChange={(v) => applyFilter("technique", v)}
-                        options={[
-                          { label: "All Techniques", value: "" },
-                          ...filterOptions.techniques.map((t) => ({
-                            label: t,
-                            value: t,
-                          })),
-                        ]}
+                        placeholder="All Techniques"
+                        options={filterOptions.techniques.map((t) => ({ label: t, value: t }))}
                       />
                     </Field>
 

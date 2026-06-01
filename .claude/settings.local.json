@@ -14,7 +14,10 @@
       "Bash(Get-ChildItem -Path \"c:\\\\dashzer\\\\ryan-crm\\\\src\\\\app\\\\reception\\\\patients\" -Recurse)",
       "Bash(xargs grep -l -i \"bill\\\\|invoice\\\\|receipt\")",
       "Bash(xargs grep -l -i \"all.*patient\\\\|patient.*list\\\\|patients.*page\")",
-      "Bash(xargs grep -l \"prp\\\\|PRP\")"
+      "Bash(xargs grep -l \"prp\\\\|PRP\")",
+      "Bash(Get-ChildItem -Path \"c:\\\\dashzer\\\\ryan-crm\\\\src\" -Directory)",
+      "Bash(Select-Object -ExpandProperty Name)",
+      "Bash(xargs grep -l \"filter\\\\|Select\\\\|select\")"
     ],
     "additionalDirectories": [
       "c:\\dashzer\\ryan-crm\\src\\app\\api\\reception"

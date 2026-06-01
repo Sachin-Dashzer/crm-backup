@@ -5,6 +5,8 @@ import { withDB } from "@/lib/withDB";
 import Patient from "@/models/Patient";
 import Employee from "@/models/Employee";
 
+const split = (v) => (v || "").split(",").filter(Boolean);
+
 const handler = async (req) => {
   try {
     const session = await getServerSession(authOptions);
@@ -21,19 +23,22 @@ const handler = async (req) => {
     const sortKey = searchParams.get("sortKey") || "personal.visitDate";
     const sortDir = searchParams.get("sortDir") === "asc" ? 1 : -1;
 
-    /* ── Filter params ── */
-    const search         = searchParams.get("search")         || "";
-    const status         = searchParams.get("status")         || "";
-    const branch         = searchParams.get("branch")         || "";
-    const counsellorName = searchParams.get("counsellor")     || "";
-    const agentName      = searchParams.get("agent")          || "";
-    const technique      = searchParams.get("technique")      || "";
+    /* ── Filter params (all multi-value via comma-separated) ── */
+    const search          = searchParams.get("search") || "";
+    const statuses        = split(searchParams.get("status"));
+    const branches        = split(searchParams.get("branch"));
+    const counsellorNames = split(searchParams.get("counsellor"));
+    const agentNames      = split(searchParams.get("agent"));
+    const techniques      = split(searchParams.get("technique"));
+    const doctorNames     = split(searchParams.get("doctor"));
+    const seniorTechNames = split(searchParams.get("seniorTech"));
+    const implanterNames  = split(searchParams.get("implanter"));
+    const surgeryLocations = split(searchParams.get("surgeryLocations"));
     const surgeryDate      = searchParams.get("surgeryDate")      || "";
-    const surgeryLocations = (searchParams.get("surgeryLocations") || "").split(",").filter(Boolean);
     const dateFrom         = searchParams.get("dateFrom")         || "";
-    const dateTo          = searchParams.get("dateTo")          || "";
-    const visited         = searchParams.get("visited")         === "true";
-    const readyForSurgery = searchParams.get("readyForSurgery") === "true";
+    const dateTo           = searchParams.get("dateTo")           || "";
+    const visited          = searchParams.get("visited")          === "true";
+    const readyForSurgery  = searchParams.get("readyForSurgery")  === "true";
 
     /* ── Build query ── */
     const query = {};
@@ -43,12 +48,12 @@ const handler = async (req) => {
     const userBranch = session.user.branch;
     if (userBranch && userBranch !== "All") {
       query["personal.branch"] = userBranch;
-    } else if (branch) {
-      query["personal.branch"] = branch;
+    } else if (branches.length) {
+      query["personal.branch"] = branches.length === 1 ? branches[0] : { $in: branches };
     }
 
-    if (status)          query["ops.status"]                    = status;
-    if (readyForSurgery) query["counselling.readyForSurgery"]   = true;
+    if (statuses.length)   query["ops.status"] = statuses.length === 1 ? statuses[0] : { $in: statuses };
+    if (readyForSurgery)   query["counselling.readyForSurgery"] = true;
 
     // Visit date range
     if (dateFrom || dateTo) {
@@ -61,7 +66,7 @@ const handler = async (req) => {
       }
     }
 
-    if (surgeryLocations.length > 0) query["surgery.location"] = { $in: surgeryLocations };
+    if (surgeryLocations.length) query["surgery.location"] = { $in: surgeryLocations };
 
     // Surgery date (exact day)
     if (surgeryDate) {
@@ -71,7 +76,7 @@ const handler = async (req) => {
       query["surgery.surgeryDate"] = { $gte: start, $lte: end };
     }
 
-    // Full-text search across name / phone / email
+    // Full-text search
     if (search) {
       andClauses.push({
         $or: [
@@ -82,37 +87,56 @@ const handler = async (req) => {
       });
     }
 
-    // Technique (stored as string across 3 fields)
-    if (technique) {
+    // Technique (stored across 3 fields)
+    if (techniques.length) {
+      const techMatch = techniques.length === 1 ? techniques[0] : { $in: techniques };
       andClauses.push({
         $or: [
-          { "counselling.techniqueSuggested": technique },
-          { "surgery.technique":              technique },
-          { "personal.techniqueQuoted":       technique },
+          { "counselling.techniqueSuggested": techMatch },
+          { "surgery.technique":              techMatch },
+          { "personal.techniqueQuoted":       techMatch },
         ],
       });
     }
 
-    if (andClauses.length > 0) query.$and = andClauses;
+    if (andClauses.length) query.$and = andClauses;
 
-    /* ── Resolve employee name → ObjectId (only if filter provided) ── */
-    const [counsellorDoc, agentDoc] = await Promise.all([
-      counsellorName ? Employee.findOne({ name: counsellorName }, "_id").lean() : null,
-      agentName      ? Employee.findOne({ name: agentName },      "_id").lean() : null,
+    /* ── Resolve employee names → ObjectIds in parallel ── */
+    const [counsellorDocs, agentDocs, doctorDocs, seniorTechDocs, implanterDocs] = await Promise.all([
+      counsellorNames.length ? Employee.find({ name: { $in: counsellorNames } }, "_id").lean() : [],
+      agentNames.length      ? Employee.find({ name: { $in: agentNames } },      "_id").lean() : [],
+      doctorNames.length     ? Employee.find({ name: { $in: doctorNames } },     "_id").lean() : [],
+      seniorTechNames.length ? Employee.find({ name: { $in: seniorTechNames } }, "_id").lean() : [],
+      implanterNames.length  ? Employee.find({ name: { $in: implanterNames } },  "_id").lean() : [],
     ]);
 
-    if (counsellorName) {
-      // If employee not found return empty
-      if (!counsellorDoc) return NextResponse.json({ patients: [], total: 0, page, limit, filterOptions: {} }, { status: 200 });
-      query["counselling.counsellor"] = counsellorDoc._id;
+    if (counsellorNames.length) {
+      if (!counsellorDocs.length) return NextResponse.json({ patients: [], total: 0, page, limit, filterOptions: {} }, { status: 200 });
+      const ids = counsellorDocs.map((d) => d._id);
+      query["counselling.counsellor"] = ids.length === 1 ? ids[0] : { $in: ids };
     } else if (visited) {
-      // visited = has any counsellor assigned
       query["counselling.counsellor"] = { $exists: true, $ne: null };
     }
 
-    if (agentName) {
-      if (!agentDoc) return NextResponse.json({ patients: [], total: 0, page, limit, filterOptions: {} }, { status: 200 });
-      query["personal.reference"] = agentDoc._id;
+    if (agentNames.length) {
+      if (!agentDocs.length) return NextResponse.json({ patients: [], total: 0, page, limit, filterOptions: {} }, { status: 200 });
+      const ids = agentDocs.map((d) => d._id);
+      query["personal.reference"] = ids.length === 1 ? ids[0] : { $in: ids };
+    }
+
+    if (doctorDocs.length) {
+      const ids = doctorDocs.map((d) => d._id);
+      query["surgery.doctor"] = ids.length === 1 ? ids[0] : { $in: ids };
+    }
+
+    if (seniorTechDocs.length) {
+      const ids = seniorTechDocs.map((d) => d._id);
+      query["surgery.seniorTech"] = ids.length === 1 ? ids[0] : { $in: ids };
+    }
+
+    if (implanterDocs.length) {
+      const ids = implanterDocs.map((d) => d._id);
+      query["surgery.implanterRight"] = ids.length === 1 ? ids[0] : { $in: ids };
     }
 
     /* ── Run DB operations in parallel ── */

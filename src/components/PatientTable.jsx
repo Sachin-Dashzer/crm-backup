@@ -30,6 +30,7 @@ import { useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { maskPhone } from "@/utils/phoneUtils";
+import MultiSelect from "@/components/MultiSelect";
 import {
   Filter, X, ChevronRight, ChevronLeft,
   Eye, SquarePen, Search, Calendar,
@@ -168,20 +169,20 @@ const [loading, setLoading]       = useState(true);
   const debounceRef = useRef(null);
 
   const [filters, setFilters] = useState({
-    status:          searchParams.get("status")           || "",
-    branch:          searchParams.get("branch") === "All" ? "" : (searchParams.get("branch") || ""),
-    counsellor:      "",
-    agent:           "",
-    technique:       "",
-    surgeryDate:      searchParams.get("surgeryDate")       || "",
+    status:          searchParams.get("status")  ? [searchParams.get("status")]  : [],
+    branch:          searchParams.get("branch") && searchParams.get("branch") !== "All" ? [searchParams.get("branch")] : [],
+    counsellor:      [],
+    agent:           [],
+    technique:       [],
+    surgeryDate:      searchParams.get("surgeryDate") || "",
     surgeryLocations: [],
-    dateFrom:         searchParams.get("dateFrom")         || "",
-    dateTo:          searchParams.get("dateTo")           || "",
-    visited:         searchParams.get("visited")          === "true",
-    readyForSurgery: searchParams.get("readyForSurgery")  === "true",
-    doctor:          "",
-    seniorTech:      "",
-    implanter:       "",
+    dateFrom:         searchParams.get("dateFrom")    || "",
+    dateTo:           searchParams.get("dateTo")      || "",
+    visited:          searchParams.get("visited")     === "true",
+    readyForSurgery:  searchParams.get("readyForSurgery") === "true",
+    doctor:           [],
+    seniorTech:       [],
+    implanter:        [],
   });
 
   const [sort, setSort]       = useState({ key: "personal.visitDate", dir: "desc" });
@@ -227,21 +228,21 @@ const [loading, setLoading]       = useState(true);
           sortKey: enableSorting ? sort.key : "personal.visitDate",
           sortDir: enableSorting ? sort.dir : "desc",
         });
-        if (search)              p.set("search",          search);
-        if (filters.status)      p.set("status",          filters.status);
-        if (filters.branch)      p.set("branch",          filters.branch);
-        if (filters.counsellor)  p.set("counsellor",      filters.counsellor);
-        if (filters.agent)       p.set("agent",           filters.agent);
-        if (filters.technique)   p.set("technique",       filters.technique);
-        if (filters.surgeryDate)              p.set("surgeryDate",      filters.surgeryDate);
-        if (filters.surgeryLocations.length > 0) p.set("surgeryLocations", filters.surgeryLocations.join(","));
-        if (filters.dateFrom)                 p.set("dateFrom",         filters.dateFrom);
-        if (filters.dateTo)          p.set("dateTo",          filters.dateTo);
-        if (filters.visited)         p.set("visited",         "true");
-        if (filters.readyForSurgery) p.set("readyForSurgery", "true");
-        if (filters.doctor)          p.set("doctor",          filters.doctor);
-        if (filters.seniorTech)      p.set("seniorTech",      filters.seniorTech);
-        if (filters.implanter)       p.set("implanter",       filters.implanter);
+        if (search)                          p.set("search",          search);
+        if (filters.status.length)           p.set("status",          filters.status.join(","));
+        if (filters.branch.length)           p.set("branch",          filters.branch.join(","));
+        if (filters.counsellor.length)       p.set("counsellor",      filters.counsellor.join(","));
+        if (filters.agent.length)            p.set("agent",           filters.agent.join(","));
+        if (filters.technique.length)        p.set("technique",       filters.technique.join(","));
+        if (filters.surgeryDate)             p.set("surgeryDate",     filters.surgeryDate);
+        if (filters.surgeryLocations.length) p.set("surgeryLocations",filters.surgeryLocations.join(","));
+        if (filters.dateFrom)                p.set("dateFrom",        filters.dateFrom);
+        if (filters.dateTo)                  p.set("dateTo",          filters.dateTo);
+        if (filters.visited)                 p.set("visited",         "true");
+        if (filters.readyForSurgery)         p.set("readyForSurgery", "true");
+        if (filters.doctor.length)           p.set("doctor",          filters.doctor.join(","));
+        if (filters.seniorTech.length)       p.set("seniorTech",      filters.seniorTech.join(","));
+        if (filters.implanter.length)        p.set("implanter",       filters.implanter.join(","));
 
         const res  = await fetch(`/api/patients/get-patient?${p.toString()}`);
         if (!res.ok) throw new Error("Failed to fetch patients");
@@ -275,10 +276,10 @@ const [loading, setLoading]       = useState(true);
 
   const clearFilters = () => {
     setFilters({
-      status: "", branch: "", counsellor: "", agent: "", technique: "",
+      status: [], branch: [], counsellor: [], agent: [], technique: [],
       surgeryDate: "", surgeryLocations: [], dateFrom: "", dateTo: "",
       visited: false, readyForSurgery: false,
-      doctor: "", seniorTech: "", implanter: "",
+      doctor: [], seniorTech: [], implanter: [],
     });
     setPage(1);
   };
@@ -299,21 +300,21 @@ const [loading, setLoading]       = useState(true);
         sortKey: enableSorting ? sort.key : "personal.visitDate",
         sortDir: enableSorting ? sort.dir : "desc",
       });
-      if (search)                   p.set("search",          search);
-      if (filters.status)           p.set("status",          filters.status);
-      if (filters.branch)           p.set("branch",          filters.branch);
-      if (filters.counsellor)       p.set("counsellor",      filters.counsellor);
-      if (filters.agent)            p.set("agent",           filters.agent);
-      if (filters.technique)        p.set("technique",       filters.technique);
-      if (filters.surgeryDate)                 p.set("surgeryDate",      filters.surgeryDate);
-      if (filters.surgeryLocations.length > 0) p.set("surgeryLocations", filters.surgeryLocations.join(","));
-      if (filters.dateFrom)                    p.set("dateFrom",         filters.dateFrom);
-      if (filters.dateTo)           p.set("dateTo",          filters.dateTo);
-      if (filters.visited)          p.set("visited",         "true");
-      if (filters.readyForSurgery)  p.set("readyForSurgery", "true");
-      if (filters.doctor)           p.set("doctor",          filters.doctor);
-      if (filters.seniorTech)       p.set("seniorTech",      filters.seniorTech);
-      if (filters.implanter)        p.set("implanter",       filters.implanter);
+      if (search)                          p.set("search",          search);
+      if (filters.status.length)           p.set("status",          filters.status.join(","));
+      if (filters.branch.length)           p.set("branch",          filters.branch.join(","));
+      if (filters.counsellor.length)       p.set("counsellor",      filters.counsellor.join(","));
+      if (filters.agent.length)            p.set("agent",           filters.agent.join(","));
+      if (filters.technique.length)        p.set("technique",       filters.technique.join(","));
+      if (filters.surgeryDate)             p.set("surgeryDate",     filters.surgeryDate);
+      if (filters.surgeryLocations.length) p.set("surgeryLocations",filters.surgeryLocations.join(","));
+      if (filters.dateFrom)                p.set("dateFrom",        filters.dateFrom);
+      if (filters.dateTo)                  p.set("dateTo",          filters.dateTo);
+      if (filters.visited)                 p.set("visited",         "true");
+      if (filters.readyForSurgery)         p.set("readyForSurgery", "true");
+      if (filters.doctor.length)           p.set("doctor",          filters.doctor.join(","));
+      if (filters.seniorTech.length)       p.set("seniorTech",      filters.seniorTech.join(","));
+      if (filters.implanter.length)        p.set("implanter",       filters.implanter.join(","));
 
       const res = await fetch(`/api/patients/get-patient?${p.toString()}`);
       if (!res.ok) throw new Error("Failed to fetch patients for export");
@@ -348,26 +349,26 @@ const [loading, setLoading]       = useState(true);
 
   /* ── Active filter chips ── */
   const chips = [
-    filters.status          && { k: "status",          label: `Status: ${filters.status.replace(/_/g," ")}` },
-    filters.branch          && { k: "branch",          label: `Branch: ${filters.branch}` },
-    filters.counsellor      && { k: "counsellor",      label: `Counsellor: ${filters.counsellor}` },
-    filters.agent           && { k: "agent",           label: `Ref: ${filters.agent}` },
-    filters.technique       && { k: "technique",       label: `Technique: ${filters.technique}` },
-    filters.surgeryDate          && { k: "surgeryDate",      label: `Surgery: ${fmtDate(filters.surgeryDate)}` },
+    filters.status.length     > 0 && { k: "status",          label: `Status: ${filters.status.map(s => s.replace(/_/g," ")).join(", ")}` },
+    filters.branch.length     > 0 && { k: "branch",          label: `Branch: ${filters.branch.join(", ")}` },
+    filters.counsellor.length > 0 && { k: "counsellor",      label: `Counsellor: ${filters.counsellor.join(", ")}` },
+    filters.agent.length      > 0 && { k: "agent",           label: `Ref: ${filters.agent.join(", ")}` },
+    filters.technique.length  > 0 && { k: "technique",       label: `Technique: ${filters.technique.join(", ")}` },
+    filters.surgeryDate            && { k: "surgeryDate",     label: `Surgery: ${fmtDate(filters.surgeryDate)}` },
     filters.surgeryLocations.length > 0 && { k: "surgeryLocations", label: `Location: ${filters.surgeryLocations.join(", ")}` },
-    filters.dateFrom        && { k: "dateFrom",        label: `From: ${fmtDate(filters.dateFrom)}` },
-    filters.dateTo          && { k: "dateTo",          label: `To: ${fmtDate(filters.dateTo)}` },
-    filters.visited         && { k: "visited",         label: "Visited Only" },
-    filters.readyForSurgery && { k: "readyForSurgery", label: "Ready for Surgery" },
-    filters.doctor          && { k: "doctor",          label: `Doctor: ${filters.doctor}` },
-    filters.seniorTech      && { k: "seniorTech",      label: `Sr Tech: ${filters.seniorTech}` },
-    filters.implanter       && { k: "implanter",       label: `Implanter: ${filters.implanter}` },
+    filters.dateFrom               && { k: "dateFrom",        label: `From: ${fmtDate(filters.dateFrom)}` },
+    filters.dateTo                 && { k: "dateTo",          label: `To: ${fmtDate(filters.dateTo)}` },
+    filters.visited                && { k: "visited",         label: "Visited Only" },
+    filters.readyForSurgery        && { k: "readyForSurgery", label: "Ready for Surgery" },
+    filters.doctor.length     > 0 && { k: "doctor",          label: `Doctor: ${filters.doctor.join(", ")}` },
+    filters.seniorTech.length > 0 && { k: "seniorTech",      label: `Sr Tech: ${filters.seniorTech.join(", ")}` },
+    filters.implanter.length  > 0 && { k: "implanter",       label: `Implanter: ${filters.implanter.join(", ")}` },
   ].filter(Boolean);
 
   const removeChip = (k) => {
     if (k === "visited" || k === "readyForSurgery") applyFilter(k, false);
-    else if (k === "surgeryLocations") applyFilter(k, []);
-    else applyFilter(k, "");
+    else if (k === "surgeryDate" || k === "dateFrom" || k === "dateTo") applyFilter(k, "");
+    else applyFilter(k, []);
   };
 
   /* ── Cell content renderer ── */
@@ -661,23 +662,19 @@ const [loading, setLoading]       = useState(true);
               {/* Basic */}
               <DrawerSection title="Basic" icon={<Filter className="w-4 h-4" />}>
                 <DrawerField label="Status">
-                  <DSelect
-                    value={filters.status}
+                  <MultiSelect
+                    values={filters.status}
                     onChange={(v) => applyFilter("status", v)}
-                    options={[
-                      { label: "All Statuses", value: "" },
-                      ...STATUS_OPTIONS.map((s) => ({ label: s.replace(/_/g, " "), value: s })),
-                    ]}
+                    placeholder="All Statuses"
+                    options={STATUS_OPTIONS.map((s) => ({ label: s.replace(/_/g, " "), value: s }))}
                   />
                 </DrawerField>
                 <DrawerField label="Branch">
-                  <DSelect
-                    value={filters.branch}
+                  <MultiSelect
+                    values={filters.branch}
                     onChange={(v) => applyFilter("branch", v)}
-                    options={[
-                      { label: "All Branches", value: "" },
-                      ...LOCATION_OPTIONS.map((l) => ({ label: l, value: l })),
-                    ]}
+                    placeholder="All Branches"
+                    options={LOCATION_OPTIONS.map((l) => ({ label: l, value: l }))}
                   />
                 </DrawerField>
                 <div className="grid grid-cols-2 gap-3">
@@ -693,48 +690,40 @@ const [loading, setLoading]       = useState(true);
               {/* Staff */}
               <DrawerSection title="Staff & Team" icon={<Users className="w-4 h-4" />}>
                 <DrawerField label="Counsellor">
-                  <DSelect
-                    value={filters.counsellor}
+                  <MultiSelect
+                    values={filters.counsellor}
                     onChange={(v) => applyFilter("counsellor", v)}
-                    options={[
-                      { label: "All Counsellors", value: "" },
-                      ...filterOptions.counsellors.map((c) => ({ label: c, value: c })),
-                    ]}
+                    placeholder="All Counsellors"
+                    options={filterOptions.counsellors.map((c) => ({ label: c, value: c }))}
                   />
                 </DrawerField>
                 <DrawerField label="Reference (Agent)">
-                  <DSelect
-                    value={filters.agent}
+                  <MultiSelect
+                    values={filters.agent}
                     onChange={(v) => applyFilter("agent", v)}
-                    options={[
-                      { label: "All References", value: "" },
-                      ...filterOptions.agents.map((a) => ({ label: a, value: a })),
-                    ]}
+                    placeholder="All References"
+                    options={filterOptions.agents.map((a) => ({ label: a, value: a }))}
                   />
                 </DrawerField>
                 {(filterCfg.showDoctor || filterCfg.showSeniorTech) && (
                   <div className="grid grid-cols-2 gap-3">
                     {filterCfg.showDoctor && (
                       <DrawerField label="Doctor">
-                        <DSelect
-                          value={filters.doctor}
+                        <MultiSelect
+                          values={filters.doctor}
                           onChange={(v) => applyFilter("doctor", v)}
-                          options={[
-                            { label: "All Doctors", value: "" },
-                            ...filterOptions.doctors.map((d) => ({ label: d, value: d })),
-                          ]}
+                          placeholder="All Doctors"
+                          options={filterOptions.doctors.map((d) => ({ label: d, value: d }))}
                         />
                       </DrawerField>
                     )}
                     {filterCfg.showSeniorTech && (
                       <DrawerField label="Senior Tech">
-                        <DSelect
-                          value={filters.seniorTech}
+                        <MultiSelect
+                          values={filters.seniorTech}
                           onChange={(v) => applyFilter("seniorTech", v)}
-                          options={[
-                            { label: "All Techs", value: "" },
-                            ...filterOptions.seniorTechs.map((t) => ({ label: t, value: t })),
-                          ]}
+                          placeholder="All Techs"
+                          options={filterOptions.seniorTechs.map((t) => ({ label: t, value: t }))}
                         />
                       </DrawerField>
                     )}
@@ -742,13 +731,11 @@ const [loading, setLoading]       = useState(true);
                 )}
                 {filterCfg.showImplanter && (
                   <DrawerField label="Implanter">
-                    <DSelect
-                      value={filters.implanter}
+                    <MultiSelect
+                      values={filters.implanter}
                       onChange={(v) => applyFilter("implanter", v)}
-                      options={[
-                        { label: "All Implanters", value: "" },
-                        ...filterOptions.implanters.map((i) => ({ label: i, value: i })),
-                      ]}
+                      placeholder="All Implanters"
+                      options={filterOptions.implanters.map((i) => ({ label: i, value: i }))}
                     />
                   </DrawerField>
                 )}
@@ -757,13 +744,11 @@ const [loading, setLoading]       = useState(true);
               {/* Surgery */}
               <DrawerSection title="Surgery Details" icon={<Scissors className="w-4 h-4" />}>
                 <DrawerField label="Technique">
-                  <DSelect
-                    value={filters.technique}
+                  <MultiSelect
+                    values={filters.technique}
                     onChange={(v) => applyFilter("technique", v)}
-                    options={[
-                      { label: "All Techniques", value: "" },
-                      ...filterOptions.techniques.map((t) => ({ label: t, value: t })),
-                    ]}
+                    placeholder="All Techniques"
+                    options={filterOptions.techniques.map((t) => ({ label: t, value: t }))}
                   />
                 </DrawerField>
                 {filterCfg.showSurgeryDate && (
