@@ -9,9 +9,8 @@ export async function GET(request) {
 
     const { searchParams } = new URL(request.url);
     const type = searchParams.get("type");
-    const period = searchParams.get("period");
-    const startDate = searchParams.get("startDate");
-    const endDate = searchParams.get("endDate");
+    const from = searchParams.get("from");
+    const to = searchParams.get("to");
     const branch = searchParams.get("branch");
     const staffFilter = searchParams.get("staffFilter");
     const techniqueFilter = searchParams.get("techniqueFilter");
@@ -35,29 +34,10 @@ export async function GET(request) {
 
     // Build date filter
     const dateFilter = {};
-    if (period && period !== "all") {
-      const now = new Date();
-      if (period === "daily") {
-        dateFilter.createdAt = {
-          $gte: new Date(now.setHours(0, 0, 0, 0)),
-          $lte: new Date(now.setHours(23, 59, 59, 999)),
-        };
-      } else if (period === "weekly") {
-        const weekStart = new Date(now.setDate(now.getDate() - now.getDay()));
-        dateFilter.createdAt = { $gte: weekStart };
-      } else if (period === "monthly") {
-        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-        dateFilter.createdAt = { $gte: monthStart };
-      } else if (period === "custom" && startDate && endDate) {
-        dateFilter.createdAt = {
-          $gte: new Date(startDate),
-          $lte: new Date(endDate),
-        };
-      }
-    } else if (startDate && endDate) {
+    if (from && to) {
       dateFilter.createdAt = {
-        $gte: new Date(startDate),
-        $lte: new Date(endDate),
+        $gte: new Date(from),
+        $lte: new Date(to),
       };
     }
 
@@ -1005,27 +985,75 @@ async function generateOutstandingPaymentsReport(filters) {
     .limit(5000)
     .lean();
 
-  return patients.map((p) => ({
-    "Patient Name": p.personal?.name || "",
-    Phone: p.personal?.phone || "",
-    Branch: p.personal?.branch || "",
-    Counsellor: p.counselling?.counsellor?.name || "",
-    "Total Amount": p.payments?.totalAmount || 0,
-    "Amount Received": p.payments?.amountReceived || 0,
-    "Pending Amount": p.payments?.pendingAmount || 0,
-    "Payment Percentage": p.payments?.totalAmount
-      ? (
-          ((p.payments.amountReceived || 0) / p.payments.totalAmount) *
-          100
-        ).toFixed(1) + "%"
-      : "0%",
-    Status: p.ops?.status || "",
-    "Days Since Surgery": p.surgery?.surgeryDate
+  const patientIds = patients.map((p) => p._id);
+
+  const transactions = await Transactions.find({
+    patient: { $in: patientIds },
+    costType: "Revenue",
+  })
+    .sort({ patient: 1, date: 1 })
+    .lean();
+
+  const txByPatient = {};
+  transactions.forEach((t) => {
+    const pid = t.patient?.toString();
+    if (!txByPatient[pid]) txByPatient[pid] = [];
+    txByPatient[pid].push(t);
+  });
+
+  const rows = [];
+  patients.forEach((p) => {
+    const pid = p._id.toString();
+    const ptxs = txByPatient[pid] || [];
+    const totalAmount = p.payments?.totalAmount || 0;
+    const amountReceived = p.payments?.amountReceived || 0;
+    const pendingAmount = p.payments?.pendingAmount || 0;
+    const paymentPct = totalAmount
+      ? ((amountReceived / totalAmount) * 100).toFixed(1) + "%"
+      : "0%";
+    const daysSinceSurgery = p.surgery?.surgeryDate
       ? Math.floor(
           (new Date() - new Date(p.surgery.surgeryDate)) / (1000 * 60 * 60 * 24)
         )
-      : "N/A",
-  }));
+      : "N/A";
+
+    const base = {
+      "Patient Name": p.personal?.name || "",
+      Phone: p.personal?.phone || "",
+      Branch: p.personal?.branch || "",
+      Counsellor: p.counselling?.counsellor?.name || "",
+      "Total Amount": totalAmount,
+      "Amount Received": amountReceived,
+      "Pending Amount": pendingAmount,
+      "Payment Percentage": paymentPct,
+      Status: p.ops?.status || "",
+      "Days Since Surgery": daysSinceSurgery,
+    };
+
+    if (ptxs.length === 0) {
+      rows.push({
+        ...base,
+        "Transaction Date": "",
+        "Transaction Amount": "",
+        "Payment Type": "",
+        "Payment Method": "",
+      });
+    } else {
+      ptxs.forEach((t) => {
+        rows.push({
+          ...base,
+          "Transaction Date": t.date
+            ? new Date(t.date).toLocaleDateString("en-IN")
+            : "",
+          "Transaction Amount": t.amount || 0,
+          "Payment Type": t.paymentType || "",
+          "Payment Method": t.method || "",
+        });
+      });
+    }
+  });
+
+  return rows;
 }
 
 async function generatePaymentCollectionReport(filters) {
