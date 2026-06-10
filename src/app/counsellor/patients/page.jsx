@@ -559,8 +559,7 @@ function PatientDashboardContent() {
                         options={filterOptions.agents.map((a) => ({
                             label: a,
                             value: a,
-                          })),
-                        ]}
+                          }))}
                       />
                     </Field>
                   </Section>
