@@ -133,10 +133,12 @@ const BenefitsManager = ({ benefits, onChange, onAdd, onRemove }) => {
   );
 };
 
+const SESSION_TYPES = ["PRP", "GFC", "Canacot", "Biotin"];
+
 const PRPManager = ({ prpSessions, onChange, onAdd, onRemove }) => {
   return (
     <div className="md:col-span-2">
-      <h4 className="text-lg font-semibold text-gray-700 mb-4">PRP Sessions</h4>
+      <h4 className="text-lg font-semibold text-gray-700 mb-4">Sessions (PRP / GFC / Canacot / Biotin)</h4>
       {prpSessions && prpSessions.length > 0 ? (
         <div className="space-y-4">
           {prpSessions.map((session, index) => (
@@ -148,17 +150,17 @@ const PRPManager = ({ prpSessions, onChange, onAdd, onRemove }) => {
                 type="button"
                 onClick={() => onRemove(index)}
                 className="absolute top-4 right-4 text-red-500 hover:text-red-700 p-1"
-                title="Remove PRP Session"
+                title="Remove Session"
               >
                 <X size={20} />
               </button>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pr-12">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pr-12">
                 <InputField
-                  label="PRP Number"
+                  label="Session Number"
                   type="number"
                   value={session.prpNumber || ""}
                   onChange={(e) => onChange(index, "prpNumber", e.target.value)}
-                  placeholder="Enter PRP session number"
+                  placeholder="e.g. 1"
                 />
                 <InputField
                   label="Date"
@@ -166,12 +168,24 @@ const PRPManager = ({ prpSessions, onChange, onAdd, onRemove }) => {
                   value={session.date ? session.date.split("T")[0] : ""}
                   onChange={(e) => onChange(index, "date", e.target.value)}
                 />
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                  <select
+                    value={session.type || "PRP"}
+                    onChange={(e) => onChange(index, "type", e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-sm"
+                  >
+                    {SESSION_TYPES.map((t) => (
+                      <option key={t} value={t}>{t}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
             </div>
           ))}
         </div>
       ) : (
-        <p className="text-gray-500 text-sm mb-4">No PRP sessions added yet</p>
+        <p className="text-gray-500 text-sm mb-4">No sessions added yet</p>
       )}
       <button
         type="button"
@@ -179,7 +193,7 @@ const PRPManager = ({ prpSessions, onChange, onAdd, onRemove }) => {
         onClick={onAdd}
       >
         <Plus size={20} />
-        Add PRP Session
+        Add Session
       </button>
     </div>
   );
@@ -841,6 +855,7 @@ export default function PatientEditDetails() {
           {
             prpNumber: "",
             date: "",
+            type: "PRP",
           },
         ],
       },

@@ -23,26 +23,52 @@ import {
   FlaskConical,
   Filter,
   Download,
+  Pill,
+  Leaf,
 } from "lucide-react";
 import * as XLSX from "xlsx";
 
 // ─── constants ───────────────────────────────────────────────────────────────
 const METHODS = ["cash", "upi", "card", "banking", "Loan", "other"];
 
+const PROCEDURES = ["PRP", "GFC", "Canacot", "Biotin"];
+
 const PROC_CONFIG = {
   PRP: {
     label: "PRP",
-    color: "indigo",
+    gradient: "from-indigo-500 to-indigo-600",
     badgeBg: "bg-indigo-100 text-indigo-700",
     dotBg: "bg-indigo-500",
+    activeBorder: "border-indigo-500 bg-indigo-50 text-indigo-700",
+    saveBtnBg: "bg-indigo-600 hover:bg-indigo-700",
     icon: Droplets,
   },
   GFC: {
     label: "GFC",
-    color: "violet",
+    gradient: "from-violet-500 to-violet-600",
     badgeBg: "bg-violet-100 text-violet-700",
     dotBg: "bg-violet-500",
+    activeBorder: "border-violet-500 bg-violet-50 text-violet-700",
+    saveBtnBg: "bg-violet-600 hover:bg-violet-700",
     icon: FlaskConical,
+  },
+  Canacot: {
+    label: "Canacot",
+    gradient: "from-teal-500 to-teal-600",
+    badgeBg: "bg-teal-100 text-teal-700",
+    dotBg: "bg-teal-500",
+    activeBorder: "border-teal-500 bg-teal-50 text-teal-700",
+    saveBtnBg: "bg-teal-600 hover:bg-teal-700",
+    icon: Pill,
+  },
+  Biotin: {
+    label: "Biotin",
+    gradient: "from-amber-500 to-amber-600",
+    badgeBg: "bg-amber-100 text-amber-700",
+    dotBg: "bg-amber-500",
+    activeBorder: "border-amber-500 bg-amber-50 text-amber-700",
+    saveBtnBg: "bg-amber-600 hover:bg-amber-700",
+    icon: Leaf,
   },
 };
 
@@ -76,8 +102,8 @@ function TypeBadge({ type }) {
 // ─── ProcToggle ──────────────────────────────────────────────────────────────
 function ProcToggle({ value, onChange }) {
   return (
-    <div className="flex gap-2">
-      {["PRP", "GFC"].map((p) => {
+    <div className="grid grid-cols-2 gap-2">
+      {PROCEDURES.map((p) => {
         const cfg = PROC_CONFIG[p];
         const active = value === p;
         return (
@@ -85,12 +111,8 @@ function ProcToggle({ value, onChange }) {
             key={p}
             type="button"
             onClick={() => onChange(p)}
-            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold border-2 transition ${
-              active
-                ? p === "PRP"
-                  ? "border-indigo-500 bg-indigo-50 text-indigo-700"
-                  : "border-violet-500 bg-violet-50 text-violet-700"
-                : "border-gray-200 text-gray-500 hover:border-gray-300"
+            className={`flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold border-2 transition ${
+              active ? cfg.activeBorder : "border-gray-200 text-gray-500 hover:border-gray-300"
             }`}
           >
             <cfg.icon className="w-4 h-4" />
@@ -111,9 +133,7 @@ export default function PRPGFCPage() {
   const [paidList, setPaidList]       = useState([]);
   const [unpaidList, setUnpaidList]   = useState([]);
   const [summary, setSummary]         = useState({
-    total: 0, paid: 0, unpaid: 0, revenue: 0,
-    prpPaid: 0, gfcPaid: 0, prpUnpaid: 0, gfcUnpaid: 0,
-    prpRevenue: 0, gfcRevenue: 0,
+    total: 0, paid: 0, unpaid: 0, revenue: 0, byType: {},
   });
 
   // UI
@@ -128,6 +148,7 @@ export default function PRPGFCPage() {
   const [showAddModal, setShowAddModal]     = useState(false);
   const [addForm, setAddForm] = useState({
     procedure: "PRP",
+    sessionNumber: "",
     patientSearch: "",
     patientId: "",
     patientName: "",
@@ -232,6 +253,7 @@ export default function PRPGFCPage() {
   const resetAddForm = () => {
     setAddForm({
       procedure: "PRP",
+      sessionNumber: "",
       patientSearch: "", patientId: "", patientName: "", patientPhone: "",
       isPaid: true, amount: "", discount: "",
       method: "cash", paymentId: "", remarks: "",
@@ -259,17 +281,18 @@ export default function PRPGFCPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          procedure:    addForm.procedure,
-          patientId:    addForm.patientId   || null,
-          patientName:  addForm.patientName,
-          patientPhone: addForm.patientPhone,
-          date:         selectedDate,
-          isPaid:       addForm.isPaid,
-          amount:       addForm.isPaid ? parseFloat(addForm.amount) : 0,
-          discount:     parseFloat(addForm.discount || 0),
-          method:       addForm.isPaid ? addForm.method : undefined,
-          paymentId:    addForm.paymentId,
-          remarks:      addForm.remarks,
+          procedure:     addForm.procedure,
+          sessionNumber: addForm.sessionNumber ? parseInt(addForm.sessionNumber) : undefined,
+          patientId:     addForm.patientId   || null,
+          patientName:   addForm.patientName,
+          patientPhone:  addForm.patientPhone,
+          date:          selectedDate,
+          isPaid:        addForm.isPaid,
+          amount:        addForm.isPaid ? parseFloat(addForm.amount) : 0,
+          discount:      parseFloat(addForm.discount || 0),
+          method:        addForm.isPaid ? addForm.method : undefined,
+          paymentId:     addForm.paymentId,
+          remarks:       addForm.remarks,
         }),
       });
       const data = await res.json();
@@ -366,33 +389,30 @@ export default function PRPGFCPage() {
 
   // ── stat cards ────────────────────────────────────────────────────────────────
   const stats = [
-    {
-      label: "PRP Today",
-      value: (summary.prpPaid || 0) + (summary.prpUnpaid || 0),
-      sub: `${fmt(summary.prpRevenue || 0)} collected`,
-      bg: "from-indigo-500 to-indigo-600",
-      icon: Droplets,
-    },
-    {
-      label: "GFC Today",
-      value: (summary.gfcPaid || 0) + (summary.gfcUnpaid || 0),
-      sub: `${fmt(summary.gfcRevenue || 0)} collected`,
-      bg: "from-violet-500 to-violet-600",
-      icon: FlaskConical,
-    },
+    ...PROCEDURES.map((proc) => {
+      const cfg = PROC_CONFIG[proc];
+      const d   = summary.byType?.[proc] || {};
+      return {
+        label: `${proc} Today`,
+        value: (d.paid || 0) + (d.unpaid || 0),
+        sub:   `${fmt(d.revenue || 0)} collected`,
+        bg:    cfg.gradient,
+        icon:  cfg.icon,
+      };
+    }),
     {
       label: "Paid",
       value: summary.paid || 0,
-      sub: `${fmt(summary.revenue || 0)} total`,
-      bg: "from-emerald-500 to-emerald-600",
-      icon: CheckCircle2,
+      sub:   `${fmt(summary.revenue || 0)} total`,
+      bg:    "from-emerald-500 to-emerald-600",
+      icon:  CheckCircle2,
     },
     {
       label: "Unpaid",
       value: summary.unpaid || 0,
-      sub: "pending payment",
-      bg: "from-amber-500 to-amber-600",
-      icon: Clock,
+      sub:   "pending payment",
+      bg:    "from-rose-500 to-rose-600",
+      icon:  Clock,
     },
   ];
 
@@ -466,7 +486,7 @@ export default function PRPGFCPage() {
         </div>
 
         {/* ── Stat cards ── */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
           {stats.map((s) => (
             <div
               key={s.label}
@@ -486,20 +506,26 @@ export default function PRPGFCPage() {
         <div className="flex flex-col sm:flex-row gap-3 flex-wrap">
 
           {/* Type filter */}
-          <div className="flex bg-white border border-gray-200 rounded-xl p-1 gap-1 shadow-sm">
+          <div className="flex bg-white border border-gray-200 rounded-xl p-1 gap-1 shadow-sm flex-wrap">
             {[
-              { key: "all", label: `All (${summary.total || 0})` },
-              { key: "PRP", label: `PRP (${(summary.prpPaid || 0) + (summary.prpUnpaid || 0)})` },
-              { key: "GFC", label: `GFC (${(summary.gfcPaid || 0) + (summary.gfcUnpaid || 0)})` },
-            ].map(({ key, label }) => (
+              { key: "all", label: `All (${summary.total || 0})`, activeBg: "bg-gray-700 text-white" },
+              ...PROCEDURES.map((proc) => {
+                const d = summary.byType?.[proc] || {};
+                return {
+                  key: proc,
+                  label: `${proc} (${(d.paid || 0) + (d.unpaid || 0)})`,
+                  activeBg: `bg-${PROC_CONFIG[proc].dotBg.replace("bg-", "")} text-white`,
+                };
+              }),
+            ].map(({ key, label, activeBg }) => (
               <button
                 key={key}
                 onClick={() => setActiveType(key)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
                   activeType === key
-                    ? key === "GFC"
-                      ? "bg-violet-600 text-white shadow-sm"
-                      : "bg-indigo-600 text-white shadow-sm"
+                    ? key === "all"
+                      ? "bg-gray-700 text-white shadow-sm"
+                      : `${PROC_CONFIG[key]?.dotBg} text-white shadow-sm`
                     : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
                 }`}
               >
@@ -551,8 +577,7 @@ export default function PRPGFCPage() {
           {filtered.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 text-gray-400">
               <div className="flex gap-1 mb-3 opacity-30">
-                <Droplets className="w-10 h-10" />
-                <FlaskConical className="w-10 h-10" />
+                {PROCEDURES.map((p) => { const Icon = PROC_CONFIG[p].icon; return <Icon key={p} className="w-8 h-8" />; })}
               </div>
               <p className="font-medium text-gray-500">No sessions found</p>
               <p className="text-sm mt-1">Try a different date or click "Add Session"</p>
@@ -761,6 +786,29 @@ export default function PRPGFCPage() {
                 />
               </div>
 
+              {/* Session number */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                  Session Number
+                  <span className="ml-1.5 text-xs font-normal text-gray-400">(leave blank to auto-assign)</span>
+                </label>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="number"
+                    min={1}
+                    placeholder="e.g. 3"
+                    value={addForm.sessionNumber}
+                    onChange={(e) => setAddForm((f) => ({ ...f, sessionNumber: e.target.value }))}
+                    className="w-28 px-3 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-300 text-center font-semibold"
+                  />
+                  <span className="text-xs text-gray-400">
+                    {addForm.sessionNumber
+                      ? `This is the patient's ${addForm.sessionNumber}${["st","nd","rd"][addForm.sessionNumber - 1] || "th"} ${addForm.procedure} session`
+                      : `Next ${addForm.procedure} session number will be assigned automatically`}
+                  </span>
+                </div>
+              </div>
+
               {/* Patient search */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">
@@ -955,17 +1003,11 @@ export default function PRPGFCPage() {
                 <button
                   onClick={handleAdd}
                   disabled={saving}
-                  className={`flex-1 py-2.5 text-white rounded-xl text-sm font-semibold transition disabled:opacity-60 flex items-center justify-center gap-2 ${
-                    addForm.procedure === "GFC"
-                      ? "bg-violet-600 hover:bg-violet-700"
-                      : "bg-indigo-600 hover:bg-indigo-700"
-                  }`}
+                  className={`flex-1 py-2.5 text-white rounded-xl text-sm font-semibold transition disabled:opacity-60 flex items-center justify-center gap-2 ${PROC_CONFIG[addForm.procedure]?.saveBtnBg || "bg-indigo-600 hover:bg-indigo-700"}`}
                 >
                   {saving
                     ? <Loader2 className="w-4 h-4 animate-spin" />
-                    : addForm.procedure === "GFC"
-                      ? <FlaskConical className="w-4 h-4" />
-                      : <Droplets className="w-4 h-4" />
+                    : (() => { const Icon = PROC_CONFIG[addForm.procedure]?.icon || Droplets; return <Icon className="w-4 h-4" />; })()
                   }
                   {saving ? "Saving…" : `Save ${addForm.procedure}`}
                 </button>

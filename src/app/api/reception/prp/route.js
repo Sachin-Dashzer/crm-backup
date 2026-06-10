@@ -5,7 +5,7 @@ import connectDB from "@/lib/db";
 import Transactions from "@/models/Transactions";
 import Patient from "@/models/Patient";
 
-const PROCEDURES = ["PRP", "GFC"];
+const PROCEDURES = ["PRP", "GFC", "Canacot", "Biotin"];
 
 // ── GET /api/reception/prp?date=YYYY-MM-DD  (or ?from=&to= for range export) ──
 export async function GET(req) {
@@ -115,13 +115,15 @@ export async function GET(req) {
       status: "paid",
     }));
 
-    const prpPaid   = paidList.filter((r) => r.procedure === "PRP").length;
-    const gfcPaid   = paidList.filter((r) => r.procedure === "GFC").length;
-    const prpUnpaid = unpaidSessions.filter((r) => r.procedure === "PRP").length;
-    const gfcUnpaid = unpaidSessions.filter((r) => r.procedure === "GFC").length;
     const totalRevenue = paidList.reduce((s, t) => s + (t.amount || 0), 0);
-    const prpRevenue   = paidList.filter((r) => r.procedure === "PRP").reduce((s, t) => s + t.amount, 0);
-    const gfcRevenue   = paidList.filter((r) => r.procedure === "GFC").reduce((s, t) => s + t.amount, 0);
+    const byType = {};
+    PROCEDURES.forEach((proc) => {
+      byType[proc] = {
+        paid:    paidList.filter((r) => r.procedure === proc).length,
+        unpaid:  unpaidSessions.filter((r) => r.procedure === proc).length,
+        revenue: paidList.filter((r) => r.procedure === proc).reduce((s, t) => s + (t.amount || 0), 0),
+      };
+    });
 
     return NextResponse.json({
       success: true,
@@ -129,16 +131,11 @@ export async function GET(req) {
       paid: paidList,
       unpaid: unpaidSessions,
       summary: {
-        total:      paidList.length + unpaidSessions.length,
-        paid:       paidList.length,
-        unpaid:     unpaidSessions.length,
-        revenue:    totalRevenue,
-        prpPaid,
-        gfcPaid,
-        prpUnpaid,
-        gfcUnpaid,
-        prpRevenue,
-        gfcRevenue,
+        total:   paidList.length + unpaidSessions.length,
+        paid:    paidList.length,
+        unpaid:  unpaidSessions.length,
+        revenue: totalRevenue,
+        byType,
       },
     });
   } catch (error) {
@@ -164,6 +161,7 @@ export async function POST(req) {
       patientName,
       patientPhone,
       procedure = "PRP",
+      sessionNumber: manualSessionNumber,
       date,
       isPaid,
       amount,
@@ -174,7 +172,7 @@ export async function POST(req) {
     } = body;
 
     if (!PROCEDURES.includes(procedure)) {
-      return NextResponse.json({ error: "Invalid procedure. Must be PRP or GFC" }, { status: 400 });
+      return NextResponse.json({ error: `Invalid procedure. Must be one of: ${PROCEDURES.join(", ")}` }, { status: 400 });
     }
 
     if (!patientId && (!patientName || !patientPhone)) {
@@ -197,14 +195,18 @@ export async function POST(req) {
         return NextResponse.json({ error: "Patient not found" }, { status: 404 });
       }
 
-      // Determine next session number for this procedure on this patient
-      const existing = (patient.afterSurgery?.prp || []).filter(
-        (s) => (s.type || "PRP") === procedure
-      );
-      sessionNumber =
-        existing.length > 0
-          ? Math.max(...existing.map((s) => s.prpNumber || 0)) + 1
-          : 1;
+      // Use manual session number if provided, otherwise auto-assign
+      if (manualSessionNumber) {
+        sessionNumber = manualSessionNumber;
+      } else {
+        const existing = (patient.afterSurgery?.prp || []).filter(
+          (s) => (s.type || "PRP") === procedure
+        );
+        sessionNumber =
+          existing.length > 0
+            ? Math.max(...existing.map((s) => s.prpNumber || 0)) + 1
+            : 1;
+      }
 
       if (!patient.afterSurgery) patient.afterSurgery = {};
       if (!patient.afterSurgery.prp) patient.afterSurgery.prp = [];
