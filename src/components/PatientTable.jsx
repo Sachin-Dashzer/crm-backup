@@ -40,15 +40,15 @@ import {
 /* ─────────────────────────────────────────────
    Constants
 ───────────────────────────────────────────── */
-const STATUS_OPTIONS = ["NEW","NOT_VISITED","CONSULTED","NOT_CONVERTED","SURGERY_BOOKED","BOOKING_DONE","CLOSED"];
+const STATUS_OPTIONS = ["NEW","NOT_VISITED","CONSULTED","NOT_CONVERTED","BOOKING_DONE","SURGERY_BOOKED","CLOSED"];
 
 const STATUS_COLORS = {
   NEW:            "bg-blue-50 text-blue-700 border-blue-200",
   NOT_VISITED:    "bg-amber-50 text-amber-700 border-amber-200",
   CONSULTED:      "bg-purple-50 text-purple-700 border-purple-200",
   NOT_CONVERTED:  "bg-red-50 text-red-700 border-red-200",
-  SURGERY_BOOKED: "bg-emerald-50 text-emerald-700 border-emerald-200",
   BOOKING_DONE:   "bg-teal-50 text-teal-700 border-teal-200",
+  SURGERY_BOOKED: "bg-emerald-50 text-emerald-700 border-emerald-200",
   CLOSED:         "bg-gray-50 text-gray-600 border-gray-200",
 };
 
