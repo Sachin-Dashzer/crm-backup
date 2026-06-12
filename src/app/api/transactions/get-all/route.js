@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import connectDB from "@/lib/db";
 import Transactions from "@/models/Transactions";
-import "@/models/Patient";
+import Patient from "@/models/Patient";
 import "@/models/Stock";
 import "@/models/Vendor";
 import "@/models/Employee";
@@ -17,7 +17,7 @@ export async function GET(request) {
 
     const { searchParams } = new URL(request.url);
     const page          = Math.max(1, parseInt(searchParams.get("page")  || "1"));
-    const limit         = Math.min(200, Math.max(1, parseInt(searchParams.get("limit") || "10")));
+    const limit         = Math.min(10000, Math.max(1, parseInt(searchParams.get("limit") || "10")));
     const category      = searchParams.get("category")      || "";
     const branch        = searchParams.get("branch")        || "";
     const dateFrom      = searchParams.get("dateFrom")      || "";
@@ -80,9 +80,18 @@ export async function GET(request) {
       query.procedure = { $regex: new RegExp(`^${procedure}$`, "i") };
     }
 
-    // Text search on stored fields (patientName, paymentId, branch, etc.)
+    // Text search: look up matching Patient IDs first, then OR with direct fields
     if (search) {
       const searchRegex = { $regex: search, $options: "i" };
+
+      // Find patients whose name or phone matches — covers old transactions
+      // that only store a Patient reference (no denormalized patientPhone)
+      const matchingPatients = await Patient.find(
+        { $or: [{ "personal.name": searchRegex }, { "personal.phone": searchRegex }] },
+        { _id: 1 }
+      ).lean();
+      const patientIds = matchingPatients.map((p) => p._id);
+
       const searchClause = [
         { patientName: searchRegex },
         { patientPhone: searchRegex },
@@ -93,8 +102,10 @@ export async function GET(request) {
         { procedure: searchRegex },
         { expense: searchRegex },
         { expenseCategory: searchRegex },
+        ...(patientIds.length ? [{ patient: { $in: patientIds } }] : []),
       ];
-      // Merge with existing $or if present
+
+      // Merge with existing $or (e.g. from TRANSPLANT category filter) using $and
       if (query.$or) {
         query.$and = [{ $or: query.$or }, { $or: searchClause }];
         delete query.$or;

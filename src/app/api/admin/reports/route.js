@@ -2,6 +2,8 @@ import dbConnect from "@/lib/db";
 import Patient from "@/models/Patient";
 import Employee from "@/models/Employee";
 import Transactions from "@/models/Transactions";
+import Stock from "@/models/Stock";
+import Vendor from "@/models/Vendor";
 
 export async function GET(request) {
   try {
@@ -32,20 +34,22 @@ export async function GET(request) {
       technicians: allEmployees.filter(e => e.role === "Technician"),
     };
 
-    // Build date filter
-    const dateFilter = {};
+    // Build separate date filters for patient vs transaction collections.
+    // Patients are filtered by personal.visitDate; transactions by their date field.
+    const patientDateFilter = {};
+    const transactionDateFilter = {};
     if (from && to) {
-      dateFilter.createdAt = {
-        $gte: new Date(from),
-        $lte: new Date(to),
-      };
+      const fromDate = new Date(from);
+      const toDate = new Date(to);
+      patientDateFilter["personal.visitDate"] = { $gte: fromDate, $lte: toDate };
+      transactionDateFilter["date"] = { $gte: fromDate, $lte: toDate };
     }
 
     switch (type) {
       // ==================== PATIENT REPORTS ====================
       case "patients-comprehensive":
         data = await generateComprehensivePatientReport({
-          dateFilter,
+          dateFilter: patientDateFilter,
           branch,
           staffFilter,
           techniqueFilter,
@@ -54,21 +58,49 @@ export async function GET(request) {
         break;
 
       case "patients-demographics":
-        data = await generateDemographicsReport({ dateFilter, branch });
+        data = await generateDemographicsReport({ dateFilter: patientDateFilter, branch });
         break;
 
       case "patients-status":
-        data = await generateStatusReport({ dateFilter, branch, statusFilter });
+        data = await generateStatusReport({ dateFilter: patientDateFilter, branch, statusFilter });
         break;
 
       case "patients-medical":
-        data = await generateMedicalHistoryReport({ dateFilter, branch });
+        data = await generateMedicalHistoryReport({ dateFilter: patientDateFilter, branch });
+        break;
+
+      case "patients-surgery":
+        data = await generateSurgeryScheduleReport({ dateFilter: patientDateFilter, branch, staffFilter });
+        break;
+
+      case "patients-counselling":
+        data = await generateCounsellingOutcomesReport({ dateFilter: patientDateFilter, branch, staffFilter });
+        break;
+
+      case "outstanding-payments":
+        data = await generateOutstandingPaymentsReport({
+          dateFilter: patientDateFilter,
+          branch,
+          statusFilter,
+        });
+        break;
+
+      case "grafts-analysis":
+        data = await generateGraftsAnalysisReport({
+          dateFilter: patientDateFilter,
+          branch,
+          techniqueFilter,
+        });
         break;
 
       // ==================== STAFF REPORTS ====================
+      case "employees-all":
+        data = await generateEmployeesAllReport({ branch, employees: allEmployees });
+        break;
+
       case "counsellors":
         data = await generateCounsellorReport({
-          dateFilter,
+          dateFilter: patientDateFilter,
           branch,
           staffFilter,
           employees: employeesByRole.counsellors,
@@ -76,12 +108,12 @@ export async function GET(request) {
         break;
 
       case "agents":
-        data = await generateAgentReport({ dateFilter, branch, staffFilter, employees: employeesByRole.agents });
+        data = await generateAgentReport({ dateFilter: patientDateFilter, branch, staffFilter, employees: employeesByRole.agents });
         break;
 
       case "doctors":
         data = await generateDoctorReport({
-          dateFilter,
+          dateFilter: patientDateFilter,
           branch,
           staffFilter,
           techniqueFilter,
@@ -91,7 +123,7 @@ export async function GET(request) {
 
       case "implanters":
         data = await generateImplanterReport({
-          dateFilter,
+          dateFilter: patientDateFilter,
           branch,
           staffFilter,
           employees: employeesByRole.implanters,
@@ -100,7 +132,7 @@ export async function GET(request) {
 
       case "technicians":
         data = await generateTechnicianReport({
-          dateFilter,
+          dateFilter: patientDateFilter,
           branch,
           staffFilter,
           employees: employeesByRole.technicians,
@@ -110,7 +142,7 @@ export async function GET(request) {
       // ==================== MEDICAL REPORTS ====================
       case "techniques":
         data = await generateTechniqueReport({
-          dateFilter,
+          dateFilter: patientDateFilter,
           branch,
           techniqueFilter,
         });
@@ -118,23 +150,15 @@ export async function GET(request) {
 
       case "surgery-schedule":
         data = await generateSurgeryScheduleReport({
-          dateFilter,
+          dateFilter: patientDateFilter,
           branch,
           staffFilter,
         });
         break;
 
-      case "grafts-analysis":
-        data = await generateGraftsAnalysisReport({
-          dateFilter,
-          branch,
-          techniqueFilter,
-        });
-        break;
-
       case "counselling-outcomes":
         data = await generateCounsellingOutcomesReport({
-          dateFilter,
+          dateFilter: patientDateFilter,
           branch,
           staffFilter,
         });
@@ -143,7 +167,7 @@ export async function GET(request) {
       // ==================== FINANCIAL REPORTS ====================
       case "revenue":
         data = await generateRevenueReport({
-          dateFilter,
+          dateFilter: transactionDateFilter,
           branch,
           procedureFilter,
           paymentTypeFilter,
@@ -151,29 +175,22 @@ export async function GET(request) {
         break;
 
       case "expenses":
-        data = await generateExpensesReport({ dateFilter, branch });
+        data = await generateExpensesReport({ dateFilter: transactionDateFilter, branch });
         break;
 
       case "transactions":
+      case "transactions-all":
         data = await generateTransactionsReport({
-          dateFilter,
+          dateFilter: transactionDateFilter,
           branch,
           procedureFilter,
           paymentTypeFilter,
         });
         break;
 
-      case "outstanding-payments":
-        data = await generateOutstandingPaymentsReport({
-          dateFilter,
-          branch,
-          statusFilter,
-        });
-        break;
-
       case "payment-collection":
         data = await generatePaymentCollectionReport({
-          dateFilter,
+          dateFilter: transactionDateFilter,
           branch,
           staffFilter,
         });
@@ -181,7 +198,7 @@ export async function GET(request) {
 
       case "procedure-revenue":
         data = await generateProcedureRevenueReport({
-          dateFilter,
+          dateFilter: transactionDateFilter,
           branch,
           procedureFilter,
         });
@@ -189,15 +206,24 @@ export async function GET(request) {
 
       // ==================== BRANCH REPORTS ====================
       case "branch-comparison":
-        data = await generateBranchComparisonReport({ dateFilter });
+        data = await generateBranchComparisonReport({ patientDateFilter, transactionDateFilter });
         break;
 
       case "branch-revenue":
-        data = await generateBranchRevenueReport({ dateFilter, branch });
+        data = await generateBranchRevenueReport({ dateFilter: transactionDateFilter, branch });
         break;
 
       case "branch-patients":
-        data = await generateBranchPatientsReport({ dateFilter, branch });
+        data = await generateBranchPatientsReport({ dateFilter: patientDateFilter, branch });
+        break;
+
+      // ==================== INVENTORY REPORTS ====================
+      case "stocks-all":
+        data = await generateStocksAllReport();
+        break;
+
+      case "vendors-all":
+        data = await generateVendorsAllReport();
         break;
 
       default:
@@ -1158,12 +1184,13 @@ async function generateProcedureRevenueReport(filters) {
 
 async function generateBranchComparisonReport(filters) {
   const branches = ["Delhi", "Mumbai", "Hyderabad"];
-  const query = { ...filters.dateFilter };
+  const patientQuery = { ...filters.patientDateFilter };
+  const txQuery = { ...filters.transactionDateFilter };
 
   const branchData = [];
 
   for (const branch of branches) {
-    const branchQuery = { ...query, "personal.branch": branch };
+    const branchQuery = { ...patientQuery, "personal.branch": branch };
 
     const totalPatients = await Patient.countDocuments(branchQuery);
     const surgeries = await Patient.countDocuments({
@@ -1174,7 +1201,7 @@ async function generateBranchComparisonReport(filters) {
     const revenue = await Transactions.aggregate([
       {
         $match: {
-          ...filters.dateFilter,
+          ...txQuery,
           branch: branch,
           costType: "Revenue",
         },
@@ -1190,7 +1217,7 @@ async function generateBranchComparisonReport(filters) {
     const expenses = await Transactions.aggregate([
       {
         $match: {
-          ...filters.dateFilter,
+          ...txQuery,
           branch: branch,
           costType: "Expenses",
         },
@@ -1324,4 +1351,62 @@ async function generateBranchPatientsReport(filters) {
   }
 
   return branchData;
+}
+
+async function generateEmployeesAllReport({ branch, employees }) {
+  const patientCounts = await Patient.aggregate([
+    ...(branch ? [{ $match: { "personal.branch": branch } }] : []),
+    { $group: { _id: "$counselling.counsellor", count: { $sum: 1 } } },
+  ]);
+  const countMap = {};
+  patientCounts.forEach(({ _id, count }) => {
+    if (_id) countMap[_id.toString()] = count;
+  });
+
+  const filtered = branch
+    ? employees.filter((e) => !e.branch || e.branch === branch)
+    : employees;
+
+  return filtered.map((e) => ({
+    Name: e.name || "",
+    Role: e.role || "",
+    Email: e.email || "",
+    Phone: e.phone || "",
+    Branch: e.branch || "",
+    "Patient Count": countMap[e._id.toString()] || 0,
+    Status: e.isactive ? "Active" : "Inactive",
+  }));
+}
+
+async function generateStocksAllReport() {
+  const stocks = await Stock.find({}).limit(5000).lean();
+
+  return stocks.map((s) => ({
+    "Stock Name": s.name || "",
+    Location: s.location || "",
+    "Total Quantity": s.totalQuantity ?? 0,
+    Unit: s.unit || "",
+    MRP: s.mrp ?? "",
+    "Purchase Amount": s.purchaseAmt ?? "",
+    "Sold Amount": s.soldAmt ?? "",
+    "Stock Value": ((s.totalQuantity || 0) * (s.purchaseAmt || 0)).toFixed(2),
+    "Expiry Date": s.expiry ? new Date(s.expiry).toLocaleDateString() : "",
+    "GST No": s.gstNo || "",
+    "Added By": s.createdBy?.name || "",
+    "Added Branch": s.createdBy?.branch || "",
+  }));
+}
+
+async function generateVendorsAllReport() {
+  const vendors = await Vendor.find({}).limit(5000).lean();
+
+  return vendors.map((v) => ({
+    "Vendor Name": v.name || "",
+    Phone: v.contact ? String(v.contact) : "",
+    Email: v.email || "",
+    Address: v.address || "",
+    "GST Number": v.gstNumber || "",
+    "Deals In": v.DealsIn || "",
+    "Transaction Count": Array.isArray(v.Transactions) ? v.Transactions.length : 0,
+  }));
 }
