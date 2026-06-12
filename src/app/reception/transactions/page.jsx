@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import { maskPhone } from "@/utils/phoneUtils";
 import AdminSidebar from "@/components/Sidebars/ReceptionSidebar";
@@ -1207,288 +1207,69 @@ export default function AllTransactionsPage() {
   const tenantBranches = ["Delhi", "Mumbai", "Hyderabad"];
 
   const router = useRouter();
+  const toast  = useToast();
   const [transactions, setTransactions] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [refreshing, setRefreshing] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [total, setTotal]               = useState(0);
+  const [stats, setStats]               = useState({ TRANSPLANT: { count: 0, total: 0 }, SERVICE: { count: 0, total: 0 }, MEDICINE: { count: 0, total: 0 }, EXPENSE: { count: 0, total: 0 } });
+  const [loading, setLoading]           = useState(true);
+  const [error, setError]               = useState(null);
+  const [refreshing, setRefreshing]     = useState(false);
+  const [sidebarOpen, setSidebarOpen]   = useState(false);
   const [activeCategory, setActiveCategory] = useState("TRANSPLANT");
-  const [filters, setFilters] = useState({
-    branch: "",
-    dateFrom: getTodayDate(),
-    dateTo: getTodayDate(),
-    paymentMethod: "",
-    procedure: "",
-  });
-  const [showFilters, setShowFilters] = useState(false);
-  const [tableSearch, setTableSearch] = useState("");
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [filters, setFilters] = useState({ branch: "", dateFrom: getTodayDate(), dateTo: getTodayDate(), paymentMethod: "", procedure: "" });
+  const [showFilters, setShowFilters]   = useState(false);
+  const [tableSearch, setTableSearch]   = useState("");
+  const [showDeleteConfirm, setShowDeleteConfirm]     = useState(false);
   const [deletingTransaction, setDeletingTransaction] = useState(null);
-  const [showBillGenerator, setShowBillGenerator] = useState(false);
+  const [showBillGenerator, setShowBillGenerator]     = useState(false);
   const [selectedTransactionId, setSelectedTransactionId] = useState(null);
-  const [page, setPage] = useState(1);
+  const [page, setPage]       = useState(1);
   const [perPage, setPerPage] = useState(10);
-  const toast = useToast();
-  const [sortConfig, setSortConfig] = useState({
-    key: "date",
-    direction: "desc",
-  });
+  const [sortConfig, setSortConfig] = useState({ key: "date", direction: "desc" });
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+  const searchDebounceRef = useRef(null);
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const handleSearchChange = (val) => {
+    setTableSearch(val);
+    clearTimeout(searchDebounceRef.current);
+    searchDebounceRef.current = setTimeout(() => { setDebouncedSearch(val); setPage(1); }, 400);
+  };
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async (isRefresh = false) => {
     try {
-      setLoading(true);
+      if (isRefresh) setRefreshing(true); else setLoading(true);
       setError(null);
-      const res = await fetch("/api/transactions/get-all", {
-        credentials: "include",
-      });
-      if (!res.ok) {
-        throw new Error(`HTTP error! status: ${res.status}`);
-      }
+      const p = new URLSearchParams({ page, limit: perPage, category: activeCategory, sortKey: sortConfig.key, sortDir: sortConfig.direction });
+      if (filters.branch)        p.set("branch",        filters.branch);
+      if (filters.dateFrom)      p.set("dateFrom",      filters.dateFrom);
+      if (filters.dateTo)        p.set("dateTo",        filters.dateTo);
+      if (filters.paymentMethod) p.set("paymentMethod", filters.paymentMethod);
+      if (filters.procedure)     p.set("procedure",     filters.procedure);
+      if (debouncedSearch)       p.set("search",        debouncedSearch);
+      const res = await fetch(`/api/transactions/get-all?${p.toString()}`, { credentials: "include" });
+      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       const data = await res.json();
-      if (data.success && data.transactions) {
-        setTransactions(data.transactions);
-      } else {
-        throw new Error(data.message || data.error || "Invalid data format");
-      }
-    } catch (e) {
-      setError(e.message);
-      toast?.error?.("Error loading data: " + e.message);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
+      if (!data.success) throw new Error(data.message || data.error || "Invalid data format");
+      setTransactions(data.transactions || []);
+      setTotal(data.total || 0);
+      if (data.stats) setStats(data.stats);
+    } catch (e) { setError(e.message); toast?.error?.("Error loading data: " + e.message); }
+    finally { setLoading(false); setRefreshing(false); }
+  }, [page, perPage, activeCategory, sortConfig, filters, debouncedSearch]);
 
-  const handleRefresh = async () => {
-    setRefreshing(true);
-    await fetchData();
-  };
+  useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => { setPage(1); }, [filters, activeCategory, debouncedSearch, sortConfig]);
 
-  const filterByDateRange = (items, dateFrom, dateTo) => {
-    if (!dateFrom && !dateTo) return items;
+  const handleRefresh = () => fetchData(true);
+  const handleSort = (key) => { setSortConfig((prev) => ({ key, direction: prev.key === key && prev.direction === "asc" ? "desc" : "asc" })); };
 
-    return items.filter((item) => {
-      const itemDate = new Date(item.date);
-      if (dateFrom) {
-        const fromDate = new Date(dateFrom);
-        fromDate.setHours(0, 0, 0, 0);
-        if (itemDate < fromDate) return false;
-      }
-      if (dateTo) {
-        const toDate = new Date(dateTo);
-        toDate.setHours(23, 59, 59, 999);
-        if (itemDate > toDate) return false;
-      }
-      return true;
-    });
-  };
-
-  // Helper function to check if row matches search
-  const matchesSearch = (row, searchLower) => {
-    // Common fields
-    const commonMatch =
-      row.method?.toLowerCase().includes(searchLower) ||
-      row.branch?.toLowerCase().includes(searchLower) ||
-      row.remarks?.toLowerCase().includes(searchLower) ||
-      row.paymentId?.toLowerCase().includes(searchLower) ||
-      row.amount?.toString().includes(searchLower);
-
-    if (commonMatch) return true;
-
-    // Get category for this row
-    const rowCategory = row.transactionCategory || row.category || "TRANSPLANT";
-
-    // Category-specific fields
-    if (rowCategory === "TRANSPLANT" || rowCategory === "SERVICE") {
-      const patientName = row.patient?.personal?.name || row.patientName || "";
-      const patientPhone =
-        row.patient?.personal?.phone || row.patientPhone || "";
-      return (
-        patientName.toLowerCase().includes(searchLower) ||
-        patientPhone.includes(searchLower) ||
-        row.procedure?.toLowerCase().includes(searchLower)
-      );
-    }
-
-    if (rowCategory === "MEDICINE") {
-      const patientName = row.patient?.personal?.name || row.patientName || "";
-      const patientPhone =
-        row.patient?.personal?.phone || row.patientPhone || "";
-      const medicineName =
-        typeof row.medicineId === "object" ? row.medicineId?.name : "";
-      return (
-        patientName.toLowerCase().includes(searchLower) ||
-        patientPhone.includes(searchLower) ||
-        medicineName?.toLowerCase().includes(searchLower)
-      );
-    }
-
-    if (rowCategory === "EXPENSE") {
-      const expenseName = row.expense || row.expenseCategory || "";
-      const giverName = row.expenseGiver?.name || "";
-      return (
-        expenseName.toLowerCase().includes(searchLower) ||
-        giverName.toLowerCase().includes(searchLower)
-      );
-    }
-
-    return false;
-  };
-
-  // Apply search FIRST on all transactions, then apply other filters
-  const filteredTransactions = useMemo(() => {
-    let list = transactions;
-
-    // Apply search first (searches across ALL transactions)
-    if (tableSearch) {
-      const searchLower = tableSearch.toLowerCase();
-      list = list.filter((row) => matchesSearch(row, searchLower));
-    }
-
-    // If there's no search term, apply category filter
-    if (!tableSearch) {
-      list = list.filter((t) => {
-        const category = t.transactionCategory || t.category;
-        if (activeCategory === "TRANSPLANT") {
-          return category === "TRANSPLANT" || !category || category === "";
-        }
-        return category === activeCategory;
-      });
-    }
-
-    // Apply other filters
-    if (filters.branch) {
-      list = list.filter(
-        (t) => t.branch?.toLowerCase() === filters.branch.toLowerCase(),
-      );
-    }
-
-    if (filters.paymentMethod) {
-      list = list.filter(
-        (t) => t.method?.toLowerCase() === filters.paymentMethod.toLowerCase(),
-      );
-    }
-
-    if (filters.procedure) {
-      list = list.filter(
-        (t) => t.procedure?.toLowerCase() === filters.procedure.toLowerCase(),
-      );
-    }
-
-    list = filterByDateRange(list, filters.dateFrom, filters.dateTo);
-
-    return list;
-  }, [transactions, activeCategory, filters, tableSearch]);
-
-  const categoryStats = useMemo(() => {
-    const stats = {
-      TRANSPLANT: { count: 0, total: 0 },
-      SERVICE: { count: 0, total: 0 },
-      MEDICINE: { count: 0, total: 0 },
-      EXPENSE: { count: 0, total: 0 },
-    };
-
-    let filteredList = transactions;
-
-    if (filters.branch) {
-      filteredList = filteredList.filter(
-        (t) => t.branch?.toLowerCase() === filters.branch.toLowerCase(),
-      );
-    }
-
-    if (filters.paymentMethod) {
-      filteredList = filteredList.filter(
-        (t) => t.method?.toLowerCase() === filters.paymentMethod.toLowerCase(),
-      );
-    }
-
-    if (filters.procedure) {
-      filteredList = filteredList.filter(
-        (t) => t.procedure?.toLowerCase() === filters.procedure.toLowerCase(),
-      );
-    }
-
-    filteredList = filterByDateRange(
-      filteredList,
-      filters.dateFrom,
-      filters.dateTo,
-    );
-
-    filteredList.forEach((t) => {
-      const category = t.transactionCategory || t.category;
-      const actualCategory = category || "TRANSPLANT";
-      if (stats[actualCategory]) {
-        stats[actualCategory].count++;
-        stats[actualCategory].total += calculateNetAmount(t);
-      }
-    });
-
-    return stats;
-  }, [transactions, filters]);
-
-  const sortedRows = useMemo(() => {
-    const sorted = [...filteredTransactions];
-    if (sortConfig.key) {
-      sorted.sort((a, b) => {
-        let aVal = a[sortConfig.key];
-        let bVal = b[sortConfig.key];
-
-        if (sortConfig.key === "patient") {
-          aVal =
-            a.patient?.personal?.name || a.patientName || "Walk-in Customer";
-          bVal =
-            b.patient?.personal?.name || b.patientName || "Walk-in Customer";
-        }
-
-        if (sortConfig.key === "date") {
-          aVal = new Date(aVal);
-          bVal = new Date(bVal);
-        }
-
-        if (aVal < bVal) return sortConfig.direction === "asc" ? -1 : 1;
-        if (aVal > bVal) return sortConfig.direction === "asc" ? 1 : -1;
-        return 0;
-      });
-    }
-    return sorted;
-  }, [filteredTransactions, sortConfig]);
-
-  const handleSort = (key) => {
-    setSortConfig((prev) => ({
-      key,
-      direction: prev.key === key && prev.direction === "asc" ? "desc" : "asc",
-    }));
-  };
-
-  const total = sortedRows.length;
   const pages = Math.max(1, Math.ceil(total / perPage));
   const current = Math.min(page, pages);
   const startIdx = (current - 1) * perPage;
   const endIdx = Math.min(startIdx + perPage, total);
-  const paginatedRows = sortedRows.slice(startIdx, endIdx);
 
-  const clearFilters = () => {
-    setFilters({
-      branch: "",
-      dateFrom: getTodayDate(),
-      dateTo: getTodayDate(),
-      paymentMethod: "",
-      procedure: "",
-    });
-    setTableSearch("");
-    setPage(1);
-  };
-
-  const hasActiveFilters =
-    Object.values(filters).some((value) => value !== "") || tableSearch;
-
-  useEffect(() => {
-    setPage(1);
-  }, [filters, activeCategory, tableSearch]);
+  const clearFilters = () => { setFilters({ branch: "", dateFrom: getTodayDate(), dateTo: getTodayDate(), paymentMethod: "", procedure: "" }); setTableSearch(""); setDebouncedSearch(""); setPage(1); };
+  const hasActiveFilters = filters.branch || filters.paymentMethod || filters.procedure || tableSearch || filters.dateFrom !== getTodayDate() || filters.dateTo !== getTodayDate();
 
   const openDeleteConfirm = (transaction) => {
     setDeletingTransaction(transaction);
@@ -1685,42 +1466,10 @@ export default function AllTransactionsPage() {
         </div>
 
         <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-5 mb-4 sm:mb-6">
-          <StatCard
-            title="Transplants"
-            value={formatCurrency(categoryStats.TRANSPLANT.total)}
-            icon={User}
-            gradient="from-indigo-400 to-purple-500"
-            count={`${categoryStats.TRANSPLANT.count} transactions`}
-            iconBg="bg-indigo-100"
-            iconColor="text-indigo-600"
-          />
-          <StatCard
-            title="Services"
-            value={formatCurrency(categoryStats.SERVICE.total)}
-            icon={User}
-            gradient="from-pink-400 to-rose-500"
-            count={`${categoryStats.SERVICE.count} transactions`}
-            iconBg="bg-pink-100"
-            iconColor="text-pink-600"
-          />
-          <StatCard
-            title="Medicines"
-            value={formatCurrency(categoryStats.MEDICINE.total)}
-            icon={User}
-            gradient="from-emerald-400 to-green-500"
-            count={`${categoryStats.MEDICINE.count} transactions`}
-            iconBg="bg-emerald-100"
-            iconColor="text-emerald-600"
-          />
-          <StatCard
-            title="Expenses"
-            value={formatCurrency(categoryStats.EXPENSE.total)}
-            icon={User}
-            gradient="from-rose-400 to-red-500"
-            count={`${categoryStats.EXPENSE.count} transactions`}
-            iconBg="bg-rose-100"
-            iconColor="text-rose-600"
-          />
+          <StatCard title="Transplants" value={formatCurrency(stats.TRANSPLANT.total)} icon={User} gradient="from-indigo-400 to-purple-500" count={`${stats.TRANSPLANT.count} transactions`} iconBg="bg-indigo-100" iconColor="text-indigo-600" />
+          <StatCard title="Services"    value={formatCurrency(stats.SERVICE.total)}    icon={User} gradient="from-pink-400 to-rose-500"    count={`${stats.SERVICE.count} transactions`}    iconBg="bg-pink-100"    iconColor="text-pink-600"    />
+          <StatCard title="Medicines"   value={formatCurrency(stats.MEDICINE.total)}   icon={User} gradient="from-emerald-400 to-green-500" count={`${stats.MEDICINE.count} transactions`}   iconBg="bg-emerald-100" iconColor="text-emerald-600" />
+          <StatCard title="Expenses"    value={formatCurrency(stats.EXPENSE.total)}    icon={User} gradient="from-rose-400 to-red-500"      count={`${stats.EXPENSE.count} transactions`}    iconBg="bg-rose-100"    iconColor="text-rose-600"    />
         </div>
 
         <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
@@ -1736,7 +1485,7 @@ export default function AllTransactionsPage() {
                       onClick={() => setActiveCategory(cat.value)}
                     >
                       <Icon size={18} />
-                      {cat.label} ({categoryStats[cat.value].count})
+                      {cat.label} ({stats[cat.value].count})
                     </button>
                   );
                 })}
@@ -1749,7 +1498,7 @@ export default function AllTransactionsPage() {
                     type="text"
                     placeholder="Search all transactions..."
                     value={tableSearch}
-                    onChange={(e) => setTableSearch(e.target.value)}
+                    onChange={(e) => handleSearchChange(e.target.value)}
                     className="pl-9 sm:pl-11 pr-4 py-2 sm:py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-100 focus:border-indigo-300 text-sm w-full lg:w-64 transition-all"
                   />
                 </div>
@@ -1875,7 +1624,7 @@ export default function AllTransactionsPage() {
                         Active Filters:
                       </span>
                       <span className="text-xs text-indigo-700">
-                        {sortedRows.length} results
+                        {total} results
                       </span>
                     </div>
                     <div className="flex flex-wrap gap-2">
@@ -1918,24 +1667,13 @@ export default function AllTransactionsPage() {
 
           <DataTable
             category={activeCategory}
-            rows={paginatedRows}
-            onEdit={(row) =>
-              router.push(`/reception/transactions/edit/${row._id}`)
-            }
+            rows={transactions}
+            onEdit={(row) => router.push(`/reception/transactions/edit/${row._id}`)}
             onDelete={openDeleteConfirm}
             onGenerateBill={openBillGenerator}
             onSort={handleSort}
             sortConfig={sortConfig}
-            pagination={{
-              page: current,
-              pages,
-              perPage,
-              setPage,
-              setPerPage,
-              startIdx,
-              endIdx,
-              total,
-            }}
+            pagination={{ page: current, pages, perPage, setPage, setPerPage, startIdx, endIdx, total }}
           />
         </div>
       </main>

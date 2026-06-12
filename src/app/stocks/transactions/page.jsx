@@ -539,7 +539,7 @@ export default function StocksTransactionsPage() {
     try {
       setLoading(true);
       setError(null);
-      const res = await fetch("/api/transactions/get-all", { credentials: "include" });
+      const res = await fetch("/api/transactions/get-all?limit=10000", { credentials: "include" });
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       const data = await res.json();
       if (data.success && data.transactions) {
