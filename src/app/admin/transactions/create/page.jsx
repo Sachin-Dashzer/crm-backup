@@ -27,6 +27,11 @@ const getPaymentIdConfig = (method) => {
 const getTodayIST = () =>
   new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
 
+// Admin users have branch="All" which is not a valid transaction branch enum value.
+// Fall back to "Delhi" for initial form state; admin selects the actual branch via dropdown.
+const resolveDefaultBranch = (branch) =>
+  branch && branch !== "All" ? branch : "Delhi";
+
 export default function AdminCreateTransactionPage() {
   const router = useRouter();
   const { data: session } = useSession();
@@ -50,7 +55,7 @@ export default function AdminCreateTransactionPage() {
     method: "cash",
     paymentId: "",
     date: getTodayIST(),
-    branch: session?.user?.branch || "Delhi",
+    branch: resolveDefaultBranch(session?.user?.branch),
     remarks: "",
   });
 
@@ -63,7 +68,7 @@ export default function AdminCreateTransactionPage() {
     method: "cash",
     paymentId: "",
     date: getTodayIST(),
-    branch: session?.user?.branch || "Delhi",
+    branch: resolveDefaultBranch(session?.user?.branch),
     remarks: "",
   });
 
@@ -80,7 +85,7 @@ export default function AdminCreateTransactionPage() {
     method: "cash",
     paymentId: "",
     date: getTodayIST(),
-    branch: session?.user?.branch || "Delhi",
+    branch: resolveDefaultBranch(session?.user?.branch),
     remarks: "",
   });
 
@@ -97,7 +102,7 @@ export default function AdminCreateTransactionPage() {
     method: "cash",
     paymentId: "",
     date: getTodayIST(),
-    branch: session?.user?.branch || "Delhi",
+    branch: resolveDefaultBranch(session?.user?.branch),
     remarks: "",
   });
 
@@ -159,14 +164,21 @@ export default function AdminCreateTransactionPage() {
     fetchData();
   }, []);
 
+  // When session loads, sync branch across all form states (admin arrives with branch="All")
+  useEffect(() => {
+    if (!session?.user) return;
+    const b = resolveDefaultBranch(session.user.branch);
+    setTransplantData((d) => ({ ...d, branch: b }));
+    setServiceData((d) => ({ ...d, branch: b }));
+    setMedicineData((d) => ({ ...d, branch: b }));
+    setExpenseData((d) => ({ ...d, branch: b }));
+  }, [session]);
+
   const formatCurrency = (amount) =>
     new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(amount || 0);
 
   const formatPatientOption = (patient) =>
     `${patient.personal?.name || "N/A"} - ${maskPhone(patient.personal?.phone, session?.user?.role) || "N/A"} | Package: ${formatCurrency(patient?.payments?.totalAmount)} | Received: ${formatCurrency(patient?.payments?.amountReceived)} | Pending: ${formatCurrency(patient?.payments?.pendingAmount)}`;
-
-  const formatMedicineOption = (medicine) =>
-    `${medicine.name} (Stock: ${medicine.totalQuantity}) - MRP: ${formatCurrency(medicine.mrp)}`;
 
   // TRANSPLANT
   const handleSaveTransplant = async () => {
