@@ -13,7 +13,6 @@ import {
   ChevronRight,
   Search,
   Plus,
-  Edit2,
   User,
   Calendar,
   IndianRupee,
@@ -870,17 +869,6 @@ function DataTable({
                             <Bill size={18} />
                           </button>
                           <button
-                            onClick={() =>
-                              router.push(
-                                `/reception/transactions/edit/${row._id}`,
-                              )
-                            }
-                            className="p-2 hover:bg-indigo-100 rounded-lg transition-colors text-indigo-600 hover:text-indigo-800"
-                            title="Edit record"
-                          >
-                            <Edit2 size={18} />
-                          </button>
-                          <button
                             onClick={() => onDelete(row)}
                             className="p-2 hover:bg-red-100 rounded-lg transition-colors text-red-600 hover:text-red-800"
                             title="Delete record"
@@ -1063,17 +1051,6 @@ function DataTable({
                             >
                               <Bill size={14} />
                               Bill
-                            </button>
-                            <button
-                              onClick={() =>
-                                router.push(
-                                  `/reception/transactions/edit/${row._id}`,
-                                )
-                              }
-                              className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 text-indigo-700 rounded-lg text-sm font-medium hover:bg-indigo-100 transition-colors"
-                            >
-                              <Edit2 size={14} />
-                              Edit
                             </button>
                             <button
                               onClick={() => onDelete(row)}
@@ -1668,7 +1645,6 @@ export default function AllTransactionsPage() {
           <DataTable
             category={activeCategory}
             rows={transactions}
-            onEdit={(row) => router.push(`/reception/transactions/edit/${row._id}`)}
             onDelete={openDeleteConfirm}
             onGenerateBill={openBillGenerator}
             onSort={handleSort}

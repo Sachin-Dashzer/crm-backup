@@ -20,8 +20,13 @@ const getPaymentIdConfig = (method) => {
   if (method === "card") return { placeholder: "Please enter card last no.", required: true };
   if (method?.toLowerCase() === "loan") return { placeholder: "Please add the reference id", required: true };
   if (method === "cash") return { placeholder: "Please add transaction id", required: false };
+  if (method === "including-package") return { placeholder: "N/A — included in package", required: false };
   return { placeholder: "Please add transaction id", required: true };
 };
+
+// Returns today's date in IST (Asia/Kolkata) as YYYY-MM-DD
+const getTodayIST = () =>
+  new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
 
 export default function AllTransactionsPage() {
   const router = useRouter();
@@ -46,7 +51,7 @@ export default function AllTransactionsPage() {
     discount: 0,
     method: "cash",
     paymentId: "",
-    date: new Date().toISOString().split("T")[0],
+    date: getTodayIST(),
     branch: session?.user?.branch || "Delhi",
     remarks: "",
   });
@@ -60,7 +65,7 @@ export default function AllTransactionsPage() {
     discount: 0,
     method: "cash",
     paymentId: "",
-    date: new Date().toISOString().split("T")[0],
+    date: getTodayIST(),
     branch: session?.user?.branch || "Delhi",
     remarks: "",
   });
@@ -84,7 +89,7 @@ export default function AllTransactionsPage() {
     discount: 0,
     method: "cash",
     paymentId: "",
-    date: new Date().toISOString().split("T")[0],
+    date: getTodayIST(),
     branch: session?.user?.branch || "Delhi",
     remarks: "",
   });
@@ -109,7 +114,7 @@ export default function AllTransactionsPage() {
     amount: "",
     method: "cash",
     paymentId: "",
-    date: new Date().toISOString().split("T")[0],
+    date: getTodayIST(),
     branch: session?.user?.branch || "Delhi",
     remarks: "",
   });
@@ -465,7 +470,7 @@ export default function AllTransactionsPage() {
         return;
       }
     }
-    if (medicineData.method !== "cash" && !medicineData.paymentId) {
+    if (medicineData.method !== "cash" && medicineData.method !== "including-package" && !medicineData.paymentId) {
       alert(medicineData.method === "card" ? "Please enter card last no." : medicineData.method?.toLowerCase() === "loan" ? "Please add the reference id" : "Please add transaction id");
       return;
     }
@@ -852,18 +857,13 @@ export default function AllTransactionsPage() {
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Date
+                          Date <span className="text-xs text-gray-400">(auto-set to today)</span>
                         </label>
                         <input
                           type="date"
                           value={transplantData.date}
-                          onChange={(e) =>
-                            setTransplantData({
-                              ...transplantData,
-                              date: e.target.value,
-                            })
-                          }
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                          readOnly
+                          className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-gray-50 cursor-not-allowed text-gray-600"
                         />
                       </div>
                       <div className="md:col-span-2">
@@ -1228,18 +1228,13 @@ export default function AllTransactionsPage() {
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Date
+                          Date <span className="text-xs text-gray-400">(auto-set to today)</span>
                         </label>
                         <input
                           type="date"
                           value={serviceData.date}
-                          onChange={(e) =>
-                            setServiceData({
-                              ...serviceData,
-                              date: e.target.value,
-                            })
-                          }
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                          readOnly
+                          className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-gray-50 cursor-not-allowed text-gray-600"
                         />
                       </div>
                       <div className="md:col-span-2">
@@ -1574,6 +1569,7 @@ export default function AllTransactionsPage() {
                           <option value="upi">UPI</option>
                           <option value="Loan">Loan</option>
                           <option value="banking">Bank Transfer</option>
+                          <option value="including-package">Including Package</option>
                         </select>
                       </div>
                       <div>
@@ -1589,7 +1585,8 @@ export default function AllTransactionsPage() {
                               paymentId: e.target.value,
                             })
                           }
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                          disabled={medicineData.method === "including-package"}
+                          className={`w-full px-3 py-2 border border-gray-300 rounded-lg ${medicineData.method === "including-package" ? "bg-gray-50 cursor-not-allowed text-gray-400" : ""}`}
                           placeholder={getPaymentIdConfig(medicineData.method).placeholder}
                         />
                       </div>
@@ -1614,18 +1611,13 @@ export default function AllTransactionsPage() {
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Date
+                          Date <span className="text-xs text-gray-400">(auto-set to today)</span>
                         </label>
                         <input
                           type="date"
                           value={medicineData.date}
-                          onChange={(e) =>
-                            setMedicineData({
-                              ...medicineData,
-                              date: e.target.value,
-                            })
-                          }
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                          readOnly
+                          className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-gray-50 cursor-not-allowed text-gray-600"
                         />
                       </div>
                       <div className="md:col-span-2">
@@ -1904,18 +1896,13 @@ export default function AllTransactionsPage() {
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Date
+                          Date <span className="text-xs text-gray-400">(auto-set to today)</span>
                         </label>
                         <input
                           type="date"
                           value={expenseData.date}
-                          onChange={(e) =>
-                            setExpenseData({
-                              ...expenseData,
-                              date: e.target.value,
-                            })
-                          }
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                          readOnly
+                          className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-gray-50 cursor-not-allowed text-gray-600"
                         />
                       </div>
                       <div className="md:col-span-2">
