@@ -196,16 +196,19 @@ patientSchema.pre("save", async function () {
     patient.ops = {};
   }
 
-  if (patient.counselling?.finlpackage) {
+  // Only derive totalAmount from finlpackage when it wasn't explicitly set by the caller.
+  // If the admin manually updates payments.totalAmount, isModified returns true and we skip.
+  if (patient.counselling?.finlpackage && !patient.isModified("payments.totalAmount")) {
     patient.payments = patient.payments || {};
     patient.payments.totalAmount = patient.counselling.finlpackage;
   }
-  if (patient.counselling?.finlpackage) {
+  // Same guard for pendingAmount — skip auto-calc when admin sets it directly.
+  if (patient.counselling?.finlpackage && !patient.isModified("payments.pendingAmount")) {
     patient.payments = patient.payments || {};
     patient.payments.pendingAmount =
-      patient.counselling.finlpackage -
-      patient.payments.amountReceived -
-      patient.payments.discount;
+      (patient.payments.totalAmount || patient.counselling.finlpackage) -
+      (patient.payments.amountReceived || 0) -
+      (patient.payments.discount || 0);
   }
 
   const amountReceived = patient.payments?.amountReceived || 0;
