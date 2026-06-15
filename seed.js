@@ -9,8 +9,10 @@
  *   amountReceived > 0                       → BOOKING_DONE
  *   totalAmount > 0  AND  pendingAmount ≤ 0  → SURGERY_BOOKED
  *   surgeryDate set                          → CLOSED  (highest priority)
+ *   visitDate = 01-Jan-2025                  → CLOSED  (old-prp fallback entries)
  *
- * Run: node seed.js
+ * Run full migration:       node seed.js
+ * Fix old-prp entries only: node seed.js --fix-old-prp
  */
 
 import { readFileSync } from "fs";
@@ -81,6 +83,16 @@ const STEPS = [
     label:  "surgery date is confirmed  (highest priority — overwrites all above)",
     query:  { "surgery.surgeryDate": { $exists: true, $ne: null } },
   },
+  {
+    status: "CLOSED",
+    label:  "old-prp fallback entries — visitDate = 01-Jan-2025 forced to CLOSED",
+    query:  {
+      "personal.visitDate": {
+        $gte: new Date("2025-01-01T00:00:00.000Z"),
+        $lt:  new Date("2025-01-02T00:00:00.000Z"),
+      },
+    },
+  },
 ];
 
 const ALL_STATUSES = [
@@ -132,6 +144,32 @@ async function connectWithRetry(retries = 5, delayMs = 3000) {
   }
 }
 
+async function fixOldPrpEntries() {
+  await connectWithRetry();
+
+  const query = {
+    "personal.visitDate": {
+      $gte: new Date("2025-01-01T00:00:00.000Z"),
+      $lt:  new Date("2025-01-02T00:00:00.000Z"),
+    },
+    "ops.status": { $ne: "CLOSED" },
+  };
+
+  const count = await Patient.countDocuments(query);
+  console.log(`── Fix old-prp entries (visitDate = 01-Jan-2025, status ≠ CLOSED)`);
+  console.log(`   Matching : ${count}`);
+
+  if (count > 0) {
+    const r = await Patient.updateMany(query, { $set: { "ops.status": "CLOSED" } });
+    console.log(`   Updated  : ${r.modifiedCount}`);
+  } else {
+    console.log("   Nothing to fix.");
+  }
+
+  await mongoose.disconnect();
+  console.log("\nDone.");
+}
+
 async function run() {
   await connectWithRetry();
 
@@ -142,7 +180,7 @@ async function run() {
   const reset = await Patient.updateMany({}, { $set: { "ops.status": "NEW" } });
   console.log(`   ${reset.modifiedCount} patient(s) set to NEW\n`);
 
-  /* ── Steps 1-5: apply rules low → high priority ── */
+  /* ── Steps 1-6: apply rules low → high priority ── */
   for (let i = 0; i < STEPS.length; i++) {
     const { status, label, query } = STEPS[i];
     console.log(`── Step ${i + 1} · ${status}  —  ${label}`);
@@ -161,7 +199,10 @@ async function run() {
   console.log("Disconnected. Done.");
 }
 
-run().catch((err) => {
+const mode = process.argv[2];
+const fn   = mode === "--fix-old-prp" ? fixOldPrpEntries : run;
+
+fn().catch((err) => {
   console.error("Script failed:", err);
   mongoose.disconnect();
   process.exit(1);

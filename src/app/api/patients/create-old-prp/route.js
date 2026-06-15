@@ -39,7 +39,7 @@ const handler = async (req) => {
         visitDate: surgery?.surgeryDate ? new Date(surgery.surgeryDate) : FALLBACK_DATE,
       },
       surgery: {
-        surgeryDate: surgery?.surgeryDate ? new Date(surgery.surgeryDate) : null,
+        surgeryDate: surgery?.surgeryDate ? new Date(surgery.surgeryDate) : FALLBACK_DATE,
         technique: surgery?.technique || "",
         graftsneed: surgery?.graftsneed || 0,
         graftsImplanted: surgery?.graftsImplanted || 0,
