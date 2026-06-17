@@ -6,12 +6,12 @@ import { Mic, MicOff, Send, Sparkles, Volume2, VolumeX, Trash2, Bot, Radio } fro
 const WAKE_PHRASES = ["hi saniya", "hii saniya", "hey saniya", "hello saniya"];
 const fmtTime = (d) => new Date(d).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
 
-// ─── TTS: called after user gesture so voices are guaranteed loaded ───
+
 function speak(text, enabled) {
   if (!enabled || typeof window === "undefined" || !window.speechSynthesis) return;
   window.speechSynthesis.cancel();
   const u = new SpeechSynthesisUtterance(text.replace(/[*_#•\[\]]/g, "").slice(0, 450));
-  // en-IN works more reliably than hi-IN on most devices
+  
   u.lang  = "en-IN";
   u.rate  = 1.0;
   u.pitch = 1.1;
@@ -28,18 +28,18 @@ export default function SaniyaPage() {
   const [input, setInput]         = useState("");
   const [loading, setLoading]     = useState(false);
   const [ttsOn, setTtsOn]         = useState(true);
-  const [phase, setPhase]         = useState("idle"); // idle | wake | listening
+  const [phase, setPhase]         = useState("idle"); 
   const [liveText, setLiveText]   = useState("");
   const [status, setStatus]       = useState("Type below or tap the mic");
 
-  // ── Refs (never stale inside callbacks) ──────────────────────────
+  
   const chatRef      = useRef(null);
   const historyRef   = useRef([]);
   const phaseRef     = useRef("idle");
   const ttsRef       = useRef(true);
   const loadingRef   = useRef(false);
-  const recogRef     = useRef(null);   // current SR instance
-  // sendMessage needs to be a ref so wake-word onresult never closes over stale state
+  const recogRef     = useRef(null);   
+  
   const sendRef      = useRef(null);
 
   const setPhaseSync = (v) => { phaseRef.current = v; setPhase(v); };
@@ -54,7 +54,7 @@ export default function SaniyaPage() {
   }, [messages]);
   useEffect(() => { chatRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, liveText]);
 
-  // ── Greeting ──────────────────────────────────────────────────────
+  
   useEffect(() => {
     setMessages([{
       id: 1, role: "assistant", time: new Date(),
@@ -62,7 +62,7 @@ export default function SaniyaPage() {
     }]);
   }, []);
 
-  // ── Kill any running recognition ──────────────────────────────────
+  
   const killRecog = useCallback(() => {
     if (recogRef.current) {
       try { recogRef.current.abort(); } catch {}
@@ -73,7 +73,7 @@ export default function SaniyaPage() {
     setStatus("Type below or tap the mic");
   }, []);
 
-  // ── Send to API ───────────────────────────────────────────────────
+  
   const sendMessage = useCallback(async (text) => {
     const q = (typeof text === "string" ? text : input).trim();
     if (!q || loadingRef.current) return;
@@ -102,18 +102,18 @@ export default function SaniyaPage() {
       loadingRef.current = false;
       setStatus("Type below or tap the mic");
     }
-  }, [input]); // input needed only for text box path
+  }, [input]); 
 
-  // Keep sendRef always pointing to latest sendMessage
+  
   useEffect(() => { sendRef.current = sendMessage; }, [sendMessage]);
 
-  // ── Build a SpeechRecognition instance ────────────────────────────
+  
   const makeSR = useCallback((opts = {}) => {
     const SR = typeof window !== "undefined"
       && (window.SpeechRecognition || window.webkitSpeechRecognition);
     if (!SR) return null;
     const r = new SR();
-    // en-IN catches Hinglish far better than hi-IN in Chrome
+    
     r.lang            = "en-IN";
     r.continuous      = opts.continuous || false;
     r.interimResults  = true;
@@ -121,7 +121,7 @@ export default function SaniyaPage() {
     return r;
   }, []);
 
-  // ── ACTIVE listening (single-shot, auto-sends on silence) ─────────
+  
   const startListening = useCallback(() => {
     killRecog();
     const r = makeSR();
@@ -163,7 +163,7 @@ export default function SaniyaPage() {
     try { r.start(); } catch { killRecog(); }
   }, [killRecog, makeSR]);
 
-  // ── WAKE WORD mode (continuous, restarts itself) ──────────────────
+  
   const startWakeMode = useCallback(() => {
     killRecog();
 
@@ -173,7 +173,7 @@ export default function SaniyaPage() {
       recogRef.current = r;
 
       r.onstart = () => {
-        // Only update status if we're still in wake phase
+        
         if (phaseRef.current === "wake") setStatus('🟠 Boliye "Hii Saniya"...');
       };
 
@@ -189,19 +189,19 @@ export default function SaniyaPage() {
         }
       };
 
-      // Chrome kills continuous after ~60s silence — rebuild silently
+      
       r.onend = () => {
-        if (phaseRef.current !== "wake") return; // manually stopped
+        if (phaseRef.current !== "wake") return; 
         recogRef.current = null;
         setTimeout(() => { if (phaseRef.current === "wake") build(); }, 300);
       };
 
       r.onerror = (e) => {
-        if (e.error === "no-speech") return; // expected — ignore
+        if (e.error === "no-speech") return; 
         if (e.error === "not-allowed") {
           setStatus("⚠️ Mic permission denied."); killRecog(); return;
         }
-        // Restart on other errors too
+        
         recogRef.current = null;
         setTimeout(() => { if (phaseRef.current === "wake") build(); }, 500);
       };
@@ -213,10 +213,10 @@ export default function SaniyaPage() {
     build();
   }, [killRecog, makeSR, startListening]);
 
-  // ── Mic button click handler ──────────────────────────────────────
+  
   const onMicClick = useCallback(() => {
     if (phaseRef.current === "listening") {
-      // Stop → triggers onend → sends captured text
+      
       if (recogRef.current) { try { recogRef.current.stop(); } catch {} }
     } else if (phaseRef.current === "wake") {
       killRecog();
@@ -225,7 +225,7 @@ export default function SaniyaPage() {
     }
   }, [killRecog, startListening]);
 
-  // Cleanup
+  
   useEffect(() => () => {
     killRecog();
     if (typeof window !== "undefined") window.speechSynthesis?.cancel();

@@ -54,7 +54,7 @@ const transactionSchema = new mongoose.Schema(
 
     method: {
       type: String,
-      enum: ["upi", "cash", "card", "banking", "Loan", "other"],
+      enum: ["upi", "cash", "card", "banking", "Loan", "other", "including-package"],
     },
 
     patient: {
@@ -214,5 +214,5 @@ transactionSchema.index({ branch: 1, date: -1 });
 transactionSchema.index({ branch: 1, costType: 1, date: -1 });
 transactionSchema.index({ patient: 1 });
 
-export default mongoose.models.Transactions ||
-  mongoose.model("Transactions", transactionSchema);
+delete mongoose.models["Transactions"];
+export default mongoose.model("Transactions", transactionSchema);
