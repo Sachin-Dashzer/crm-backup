@@ -907,7 +907,7 @@ export async function POST(req) {
 
     
     const openaiRes = await fetch(
-      "https:
+      "https://api.openai.com/v1/chat/completions",
       {
         method: "POST",
         headers: {
