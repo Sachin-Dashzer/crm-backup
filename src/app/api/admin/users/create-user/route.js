@@ -47,10 +47,10 @@ export async function POST(req) {
     }
 
     // Valid branches
-    const validBranches = ['Delhi', 'Mumbai', 'Hyderabad', 'All'];
+    const validBranches = ['Delhi', 'Mumbai', 'Hyderabad', 'Noida', 'All'];
     if (branch && !validBranches.includes(branch)) {
       return NextResponse.json(
-        { success: false, message: "Invalid branch. Must be: Delhi, Mumbai, Hyderabad, or All" },
+        { success: false, message: "Invalid branch. Must be: Delhi, Mumbai, Hyderabad, Noida, or All" },
         { status: 400 }
       );
     }

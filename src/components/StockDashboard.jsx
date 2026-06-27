@@ -8,7 +8,7 @@ import {
   Search, X, Plus, ShoppingCart, Eye, Pencil, RefreshCw, ChevronRight, Boxes,
 } from "lucide-react";
 
-const BRANCHES = ["All", "Delhi", "Mumbai", "Hyderabad"];
+const BRANCHES = ["All", "Delhi", "Mumbai", "Hyderabad", "Noida"];
 
 const fmt = (n) =>
   new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(n || 0);

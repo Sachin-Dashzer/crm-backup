@@ -1,18 +1,8 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { ChevronDown, X, Check } from "lucide-react";
 
-/**
- * MultiSelect — dropdown with checkboxes for selecting multiple options.
- *
- * Props:
- *   values      string[]              — currently selected values
- *   onChange    (string[]) => void    — called with new selection
- *   options     { label, value }[]    — available choices
- *   placeholder string                — shown when nothing selected
- *   className   string                — extra wrapper classes
- */
 export default function MultiSelect({
   values = [],
   onChange,
@@ -21,15 +11,56 @@ export default function MultiSelect({
   className = "",
 }) {
   const [open, setOpen] = useState(false);
-  const ref = useRef(null);
+  const [dropdownStyle, setDropdownStyle] = useState({});
+  const triggerRef = useRef(null);
+  const dropdownRef = useRef(null);
+
+  const computePosition = useCallback(() => {
+    if (!triggerRef.current) return;
+    const rect = triggerRef.current.getBoundingClientRect();
+    const viewportHeight = window.innerHeight;
+    const dropdownHeight = Math.min(options.length * 40 + 56, 280); // estimate
+    const spaceBelow = viewportHeight - rect.bottom;
+    const openUpward = spaceBelow < dropdownHeight && rect.top > dropdownHeight;
+
+    setDropdownStyle({
+      position: "fixed",
+      left: rect.left,
+      width: rect.width,
+      zIndex: 9999,
+      ...(openUpward
+        ? { bottom: viewportHeight - rect.top, top: "auto" }
+        : { top: rect.bottom + 2, bottom: "auto" }),
+    });
+  }, [options.length]);
 
   useEffect(() => {
-    const handler = (e) => {
-      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    if (open) computePosition();
+  }, [open, computePosition]);
+
+  useEffect(() => {
+    const closeOnOutside = (e) => {
+      if (
+        triggerRef.current && !triggerRef.current.contains(e.target) &&
+        dropdownRef.current && !dropdownRef.current.contains(e.target)
+      ) {
+        setOpen(false);
+      }
     };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
+    const closeOnScroll = () => setOpen(false);
+    const closeOnResize = () => setOpen(false);
+
+    if (open) {
+      document.addEventListener("mousedown", closeOnOutside);
+      document.addEventListener("scroll", closeOnScroll, true);
+      window.addEventListener("resize", closeOnResize);
+    }
+    return () => {
+      document.removeEventListener("mousedown", closeOnOutside);
+      document.removeEventListener("scroll", closeOnScroll, true);
+      window.removeEventListener("resize", closeOnResize);
+    };
+  }, [open]);
 
   const toggle = (val) => {
     onChange(
@@ -45,7 +76,7 @@ export default function MultiSelect({
       : `${values.length} selected`;
 
   return (
-    <div ref={ref} className={`relative ${className}`}>
+    <div ref={triggerRef} className={`relative ${className}`}>
       {/* Trigger button */}
       <button
         type="button"
@@ -74,10 +105,14 @@ export default function MultiSelect({
         </div>
       </button>
 
-      {/* Dropdown */}
+      {/* Dropdown — fixed positioned to escape overflow:hidden/auto parents */}
       {open && (
-        <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
-          {/* Header actions */}
+        <div
+          ref={dropdownRef}
+          style={dropdownStyle}
+          className="bg-white border border-gray-200 rounded-xl shadow-2xl overflow-hidden"
+        >
+          {/* Header */}
           <div className="flex items-center justify-between px-3 py-1.5 border-b border-gray-100 bg-gray-50">
             <button
               type="button"
@@ -98,7 +133,7 @@ export default function MultiSelect({
           </div>
 
           {/* Options list */}
-          <div className="max-h-52 overflow-y-auto">
+          <div className="max-h-64 overflow-y-auto">
             {options.length === 0 ? (
               <p className="px-3 py-4 text-xs text-gray-400 text-center">No options available</p>
             ) : (
@@ -110,7 +145,7 @@ export default function MultiSelect({
                     role="option"
                     aria-selected={checked}
                     onClick={() => toggle(o.value)}
-                    className={`flex items-center gap-2.5 px-3 py-2 cursor-pointer transition-colors select-none ${
+                    className={`flex items-center gap-2.5 px-3 py-2.5 cursor-pointer transition-colors select-none ${
                       checked ? "bg-indigo-50" : "hover:bg-gray-50"
                     }`}
                   >

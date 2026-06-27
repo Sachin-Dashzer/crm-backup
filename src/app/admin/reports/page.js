@@ -26,10 +26,13 @@ import {
   Loader2,
   CheckCircle2,
   AlertCircle,
+  ShieldAlert,
+  Trash2,
+  History,
 } from "lucide-react";
 
 /* ─── Constants ─────────────────────────────────────────────────────────────── */
-const BRANCHES = ["All", "Delhi", "Mumbai", "Hyderabad"];
+const BRANCHES = ["All", "Delhi", "Mumbai", "Hyderabad", "Noida"];
 
 const DATE_PRESETS = [
   { label: "Today", value: "today" },
@@ -38,6 +41,7 @@ const DATE_PRESETS = [
   { label: "Last 30 Days", value: "last30" },
   { label: "This Month", value: "thisMonth" },
   { label: "Last Month", value: "lastMonth" },
+  { label: "All Time", value: "allTime" },
   { label: "Custom", value: "custom" },
 ];
 
@@ -227,6 +231,32 @@ const REPORTS = [
     icon: Briefcase, color: "teal",
     filters: [],
   },
+
+  // Audit Log Reports
+  {
+    id: 23, type: "transaction-changes-log", category: "Audit Logs",
+    name: "Transaction Changes Log",
+    description: "Full audit trail of transaction edits — field-by-field changes, previous & new values, editor details",
+    icon: History, color: "blue",
+    filters: [],
+    apiPath: "/api/admin/logs",
+  },
+  {
+    id: 24, type: "stock-changes-log", category: "Audit Logs",
+    name: "Stock Changes Log",
+    description: "Complete history of stock item edits — quantity, price, expiry changes with timestamps and editor info",
+    icon: Package, color: "orange",
+    filters: [],
+    apiPath: "/api/admin/logs",
+  },
+  {
+    id: 25, type: "patient-changes-log", category: "Audit Logs",
+    name: "Patient Changes Log",
+    description: "All patient record modifications — created and updated events with who made changes and when",
+    icon: ShieldAlert, color: "purple",
+    filters: [],
+    apiPath: "/api/admin/logs",
+  },
 ];
 
 const CATEGORIES = ["All", ...new Set(REPORTS.map((r) => r.category))];
@@ -271,6 +301,7 @@ function buildDateRange(preset, custom) {
     to.setHours(23, 59, 59, 999);
     return { from: from.toISOString(), to: to.toISOString() };
   }
+  // "allTime" or unrecognized — no date filter
   return { from: null, to: null };
 }
 
@@ -485,7 +516,7 @@ export default function AdminReportsPage() {
     filters.technique,
     filters.procedure,
     filters.paymentType,
-    datePreset !== "last30" && datePreset,
+    datePreset !== "last30" && datePreset !== "allTime" && datePreset,
   ].filter(Boolean).length;
 
   const handleDownload = async (report) => {
@@ -493,18 +524,25 @@ export default function AdminReportsPage() {
 
     try {
       const { from, to } = buildDateRange(datePreset, customDates);
+      const isLogReport = !!report.apiPath;
 
       const params = new URLSearchParams({ type: report.type });
+
+      // Always send dates — strict filtering for all report types
       if (from) params.append("from", from);
       if (to) params.append("to", to);
-      if (filters.branch && filters.branch !== "All") params.append("branch", filters.branch);
-      if (filters.status) params.append("statusFilter", filters.status);
-      if (filters.technique) params.append("techniqueFilter", filters.technique);
-      if (filters.staff) params.append("staffFilter", filters.staff);
-      if (filters.procedure) params.append("procedureFilter", filters.procedure);
-      if (filters.paymentType) params.append("paymentTypeFilter", filters.paymentType);
 
-      const res = await fetch(`/api/admin/reports?${params.toString()}`, {
+      if (filters.branch && filters.branch !== "All") params.append("branch", filters.branch);
+      if (!isLogReport) {
+        if (filters.status) params.append("statusFilter", filters.status);
+        if (filters.technique) params.append("techniqueFilter", filters.technique);
+        if (filters.staff) params.append("staffFilter", filters.staff);
+        if (filters.procedure) params.append("procedureFilter", filters.procedure);
+        if (filters.paymentType) params.append("paymentTypeFilter", filters.paymentType);
+      }
+
+      const endpoint = report.apiPath || "/api/admin/reports";
+      const res = await fetch(`${endpoint}?${params.toString()}`, {
         credentials: "include",
       });
       const result = await res.json();
@@ -582,7 +620,7 @@ export default function AdminReportsPage() {
                   <h1 className="text-2xl font-bold text-gray-900">Reports Center</h1>
                 </div>
                 <p className="text-sm text-gray-500 ml-12">
-                  Generate and download {REPORTS.length} report types across all modules
+                  Generate and download {REPORTS.length} report & log types across all modules
                 </p>
               </div>
 
@@ -900,6 +938,7 @@ export default function AdminReportsPage() {
                   { label: "Staff Reports",     count: 6, color: "bg-purple-50 text-purple-700 border-purple-200", icon: Users,       cat: "Staff Reports" },
                   { label: "Financial Reports", count: 6, color: "bg-emerald-50 text-emerald-700 border-emerald-200", icon: IndianRupee, cat: "Financial Reports" },
                   { label: "Inventory Reports", count: 2, color: "bg-orange-50 text-orange-700 border-orange-200",  icon: Package,     cat: "Inventory Reports" },
+                  { label: "Audit Logs",        count: 4, color: "bg-red-50 text-red-700 border-red-200",           icon: ShieldAlert, cat: "Audit Logs" },
                 ].map((item) => (
                   <button
                     key={item.label}

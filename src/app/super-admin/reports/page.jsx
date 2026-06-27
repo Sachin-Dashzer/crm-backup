@@ -27,10 +27,14 @@ import {
   Loader2,
   CheckCircle2,
   AlertCircle,
+  ShieldAlert,
+  Trash2,
+  History,
+  UserX,
 } from "lucide-react";
 
 /* ─── Constants ─────────────────────────────────────────────────────────────── */
-const BRANCHES = ["All", "Delhi", "Mumbai", "Hyderabad"];
+const BRANCHES = ["All", "Delhi", "Mumbai", "Hyderabad", "Noida"];
 
 const DATE_PRESETS = [
   { label: "Today", value: "today" },
@@ -39,6 +43,7 @@ const DATE_PRESETS = [
   { label: "Last 30 Days", value: "last30" },
   { label: "This Month", value: "thisMonth" },
   { label: "Last Month", value: "lastMonth" },
+  { label: "All Time", value: "allTime" },
   { label: "Custom", value: "custom" },
 ];
 
@@ -242,6 +247,32 @@ const REPORTS = [
     filters: [],
   },
 
+  // Audit Log Reports
+  {
+    id: 30, type: "transaction-changes-log", category: "Audit Logs",
+    name: "Transaction Changes Log",
+    description: "Full audit trail of transaction edits — field-by-field changes, previous & new values, and editor details",
+    icon: History, color: "blue",
+    filters: ["branch"],
+    apiPath: "/api/super-admin/logs",
+  },
+  {
+    id: 31, type: "stock-changes-log", category: "Audit Logs",
+    name: "Stock Changes Log",
+    description: "Complete history of stock item edits — quantity, price, expiry changes with timestamps and editor info",
+    icon: Package, color: "orange",
+    filters: ["branch"],
+    apiPath: "/api/super-admin/logs",
+  },
+  {
+    id: 32, type: "patient-changes-log", category: "Audit Logs",
+    name: "Patient Changes Log",
+    description: "All patient record modifications — created and updated events with who made changes and when",
+    icon: ShieldAlert, color: "purple",
+    filters: ["branch"],
+    apiPath: "/api/super-admin/logs",
+  },
+
   // HR Reports
   {
     id: 23, type: "hr-interviews-all", category: "HR Reports",
@@ -329,7 +360,7 @@ function buildDateRange(preset, custom) {
     to.setHours(23, 59, 59, 999);
     return { from: from.toISOString(), to: to.toISOString() };
   }
-  // "all time" — no date filter
+  // "allTime" or unrecognized — no date filter
   return { from: null, to: null };
 }
 
@@ -562,7 +593,7 @@ export default function SuperAdminReportsPage() {
     filters.procedure,
     filters.paymentType,
     filters.hrStatus,
-    datePreset !== "last30" && datePreset,
+    datePreset !== "last30" && datePreset !== "allTime" && datePreset,
   ].filter(Boolean).length;
 
   /* download handler */
@@ -571,19 +602,26 @@ export default function SuperAdminReportsPage() {
 
     try {
       const { from, to } = buildDateRange(datePreset, customDates);
+      const isLogReport = !!report.apiPath;
 
       const params = new URLSearchParams({ type: report.type });
+
+      // Always send dates — strict filtering for all report types
       if (from) params.append("from", from);
       if (to) params.append("to", to);
-      if (filters.branch && filters.branch !== "All") params.append("branch", filters.branch);
-      if (filters.status) params.append("statusFilter", filters.status);
-      if (filters.technique) params.append("techniqueFilter", filters.technique);
-      if (filters.staff) params.append("staffFilter", filters.staff);
-      if (filters.procedure) params.append("procedureFilter", filters.procedure);
-      if (filters.paymentType) params.append("paymentTypeFilter", filters.paymentType);
-      if (filters.hrStatus) params.append("hrStatus", filters.hrStatus);
 
-      const res = await fetch(`/api/super-admin/reports?${params.toString()}`);
+      if (filters.branch && filters.branch !== "All") params.append("branch", filters.branch);
+      if (!isLogReport) {
+        if (filters.status) params.append("statusFilter", filters.status);
+        if (filters.technique) params.append("techniqueFilter", filters.technique);
+        if (filters.staff) params.append("staffFilter", filters.staff);
+        if (filters.procedure) params.append("procedureFilter", filters.procedure);
+        if (filters.paymentType) params.append("paymentTypeFilter", filters.paymentType);
+        if (filters.hrStatus) params.append("hrStatus", filters.hrStatus);
+      }
+
+      const endpoint = report.apiPath || "/api/super-admin/reports";
+      const res = await fetch(`${endpoint}?${params.toString()}`);
       const result = await res.json();
 
       if (!res.ok || !result.success) {
@@ -670,7 +708,7 @@ export default function SuperAdminReportsPage() {
                   <h1 className="text-2xl font-bold text-gray-900">Reports Center</h1>
                 </div>
                 <p className="text-sm text-gray-500 ml-12">
-                  Generate and download {REPORTS.length} report types across all modules
+                  Generate and download {REPORTS.length} report & log types across all modules
                 </p>
               </div>
 
@@ -1008,6 +1046,7 @@ export default function SuperAdminReportsPage() {
                   { label: "Financial Reports", count: 6, color: "bg-emerald-50 text-emerald-700 border-emerald-200", icon: IndianRupee },
                   { label: "HR Reports", count: 6, color: "bg-amber-50 text-amber-700 border-amber-200", icon: Briefcase },
                   { label: "Leads & Inventory", count: 3, color: "bg-pink-50 text-pink-700 border-pink-200", icon: Package },
+                  { label: "Audit Logs", count: 4, color: "bg-red-50 text-red-700 border-red-200", icon: ShieldAlert },
                 ].map((item) => (
                   <button
                     key={item.label}

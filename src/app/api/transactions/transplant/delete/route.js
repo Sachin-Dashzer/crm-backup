@@ -5,6 +5,7 @@ import connectDB from "@/lib/db";
 import Transactions from "@/models/Transactions";
 import Patient from "@/models/Patient";
 import Audit from "@/models/Audit";
+import DeleteLog from "@/models/DeleteLog";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import mongoose from "mongoose";
@@ -82,6 +83,27 @@ export async function DELETE(req) {
     });
 
     await auditData.save();
+
+    // Log the deletion
+    await DeleteLog.create({
+      entityType: "Transaction",
+      entityId: transactionId,
+      entityName: transactionToDelete.patientName || "Unknown Patient",
+      entityDetails: {
+        category: transactionToDelete.transactionCategory,
+        procedure: transactionToDelete.procedure,
+        amount: transactionToDelete.amount,
+        method: transactionToDelete.method,
+        branch: transactionToDelete.branch,
+        date: transactionToDelete.date,
+      },
+      deletedBy: {
+        name: session.user.name,
+        email: session.user.email,
+        branch: session.user.branch,
+      },
+      branch: transactionToDelete.branch,
+    });
 
     // Delete the transaction
     const deletedTransaction = await Transactions.findByIdAndDelete(transactionId);

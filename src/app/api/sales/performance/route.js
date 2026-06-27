@@ -84,7 +84,7 @@ export async function GET(request) {
 
     // 2. Revenue by Branch
     const branchFilter = { costType: "Revenue", ...dateFilter };
-    const branches = ["Delhi", "Mumbai", "Hyderabad"];
+    const branches = ["Delhi", "Mumbai", "Hyderabad", "Noida"];
 
     const revenueByBranch = await Promise.all(
       branches.map(async (branchName) => {

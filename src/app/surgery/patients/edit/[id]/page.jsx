@@ -900,6 +900,7 @@ export default function PatientEditDetails() {
                       { value: "Delhi", label: "Delhi" },
                       { value: "Mumbai", label: "Mumbai" },
                       { value: "Hyderabad", label: "Hyderabad" },
+                      { value: "Noida", label: "Noida" },
                     ]}
                   />
 

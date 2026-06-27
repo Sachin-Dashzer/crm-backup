@@ -11,6 +11,7 @@ const BRANCH_LOGO = {
   Delhi:     LogoDelhi.src,
   Hyderabad: LogoDelhi.src,
   Mumbai:    LogoMumbai.src,
+  Noida:     LogoDelhi.src,
 };
 
 /* ──────────── Design Tokens ──────────── */

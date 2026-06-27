@@ -39,7 +39,7 @@ const auditSchema = new mongoose.Schema({
   paymentId: String,
   branch: {
     type: String,
-    enum: ["Delhi", "Mumbai", "Hyderabad"],
+    enum: ["Delhi", "Mumbai", "Hyderabad", "Noida"],
   },
   expense: String,
   discount: {

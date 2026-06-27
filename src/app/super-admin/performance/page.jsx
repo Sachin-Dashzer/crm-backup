@@ -17,7 +17,7 @@ import {
 import SuperAdminSidebar from "@/components/Sidebars/SuperAdminSidebar";
 
 /* ─── Constants ──────────────────────────────────────────────────────────── */
-const BRANCHES    = ["All", "Delhi", "Mumbai", "Hyderabad"];
+const BRANCHES    = ["All", "Delhi", "Mumbai", "Hyderabad", "Noida"];
 const DATE_RANGES = ["Today", "Yesterday", "Last 7 Days", "Last 30 Days", "Custom"];
 
 const PALETTE = [
@@ -29,6 +29,7 @@ const BRANCH_COLORS = {
   Delhi:     "#f59e0b",
   Mumbai:    "#3b82f6",
   Hyderabad: "#10b981",
+  Noida:     "#ec4899",
   Unknown:   "#9ca3af",
 };
 

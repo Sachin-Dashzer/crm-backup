@@ -98,7 +98,7 @@ export async function POST(req) {
     }
 
     if (branch) {
-      const validBranches = ['Delhi', 'Mumbai', 'Hyderabad', 'All'];
+      const validBranches = ['Delhi', 'Mumbai', 'Hyderabad', 'Noida', 'All'];
       if (!validBranches.includes(branch)) {
         return NextResponse.json(
           { success: false, message: "Invalid branch" },

@@ -853,6 +853,7 @@ export default function AllTransactionsPage() {
                           <option value="Delhi">Delhi</option>
                           <option value="Mumbai">Mumbai</option>
                           <option value="Hyderabad">Hyderabad</option>
+                          <option value="Noida">Noida</option>
                         </select>
                       </div>
                       <div>
@@ -1224,6 +1225,7 @@ export default function AllTransactionsPage() {
                           <option value="Delhi">Delhi</option>
                           <option value="Mumbai">Mumbai</option>
                           <option value="Hyderabad">Hyderabad</option>
+                          <option value="Noida">Noida</option>
                         </select>
                       </div>
                       <div>
@@ -1607,6 +1609,7 @@ export default function AllTransactionsPage() {
                           <option value="Delhi">Delhi</option>
                           <option value="Mumbai">Mumbai</option>
                           <option value="Hyderabad">Hyderabad</option>
+                          <option value="Noida">Noida</option>
                         </select>
                       </div>
                       <div>
@@ -1892,6 +1895,7 @@ export default function AllTransactionsPage() {
                           <option value="Delhi">Delhi</option>
                           <option value="Mumbai">Mumbai</option>
                           <option value="Hyderabad">Hyderabad</option>
+                          <option value="Noida">Noida</option>
                         </select>
                       </div>
                       <div>

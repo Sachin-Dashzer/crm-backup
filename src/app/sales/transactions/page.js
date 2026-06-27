@@ -399,7 +399,7 @@ function DataTable({ category, rows, onDelete, onSort, sortConfig, pagination, o
 
 // ========== MAIN COMPONENT ==========
 export default function SalesTransactionsPage() {
-  const tenantBranches = ["Delhi", "Mumbai", "Hyderabad"];
+  const tenantBranches = ["Delhi", "Mumbai", "Hyderabad", "Noida"];
 
   const router = useRouter();
   const [transactions, setTransactions] = useState([]);

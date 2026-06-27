@@ -4,7 +4,7 @@ import Patient from "@/models/Patient";
 import Transactions from "@/models/Transactions";
 import Employee from "@/models/Employee";
 
-const VALID_BRANCHES = ["All", "Delhi", "Mumbai", "Hyderabad"];
+const VALID_BRANCHES = ["All", "Delhi", "Mumbai", "Hyderabad", "Noida"];
 
 const getISTStartOfDay = (date = null) => {
   const d = date ? new Date(date) : new Date();

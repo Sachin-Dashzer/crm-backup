@@ -33,6 +33,20 @@ export async function POST(req) {
       remarks,
     } = await req.json();
 
+    // Back-date entry prevention — only admin/super-admin can enter past dates
+    if (date) {
+      const todayStart = new Date();
+      todayStart.setUTCHours(0, 0, 0, 0);
+      const inputDate = new Date(date);
+      inputDate.setUTCHours(0, 0, 0, 0);
+      if (inputDate < todayStart && !["admin", "super-admin"].includes(session.user.role)) {
+        return NextResponse.json(
+          { success: false, message: "Back-dated entries are not allowed for your role" },
+          { status: 403 }
+        );
+      }
+    }
+
     // Basic validations
     if (!patientId || !procedure || !amount || !method) {
       return NextResponse.json(

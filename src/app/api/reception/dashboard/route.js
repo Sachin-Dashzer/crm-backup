@@ -6,7 +6,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
 
-const VALID_BRANCHES = ["All", "Delhi", "Mumbai", "Hyderabad"];
+const VALID_BRANCHES = ["All", "Delhi", "Mumbai", "Hyderabad", "Noida"];
 
 // Improved date helpers that work consistently across timezones
 const getISTStartOfDay = (date = null) => {

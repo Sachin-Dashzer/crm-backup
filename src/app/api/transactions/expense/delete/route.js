@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import connectDB from "@/lib/db";
 import Transactions from "@/models/Transactions";
 import Vendor from "@/models/Vendor";
+import DeleteLog from "@/models/DeleteLog";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
@@ -127,6 +128,27 @@ export async function DELETE(req) {
         }
       }
     }
+
+    // Log the deletion
+    await DeleteLog.create({
+      entityType: "Transaction",
+      entityId: transactionId,
+      entityName: transaction.expense || transaction.expenseGiverOld || "Expense",
+      entityDetails: {
+        category: "EXPENSE",
+        expense: transaction.expense,
+        amount: transaction.amount,
+        method: transaction.method,
+        branch: transaction.branch,
+        date: transaction.date,
+      },
+      deletedBy: {
+        name: session.user.name,
+        email: session.user.email,
+        branch: session.user.branch,
+      },
+      branch: transaction.branch,
+    });
 
     // Delete the transaction
     await Transactions.findByIdAndDelete(transactionId);

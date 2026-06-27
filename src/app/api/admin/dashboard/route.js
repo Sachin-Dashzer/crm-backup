@@ -3,7 +3,7 @@ import { withDB } from "@/lib/withDB";
 import Patient from "@/models/Patient";
 import Transactions from "@/models/Transactions";
 
-const VALID_BRANCHES = ["All", "Delhi", "Mumbai", "Hyderabad"];
+const VALID_BRANCHES = ["All", "Delhi", "Mumbai", "Hyderabad", "Noida"];
 
 const handler = async (req) => {
   try {

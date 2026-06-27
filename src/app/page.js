@@ -148,6 +148,7 @@ const branches = [
   { icon: "🏛️", city: "Delhi", desc: "National Capital Region — Primary hub with full operational footprint and HQ reporting integration.", accent: "from-[#9a6f2a] to-[#b8862e]" },
   { icon: "🌊", city: "Mumbai", desc: "Financial capital operations — High-volume patient processing with dedicated branch analytics.", accent: "from-[#0a8f63] to-[#34d399]" },
   { icon: "💎", city: "Hyderabad", desc: "Tech city presence — Rapidly growing branch with advanced surgical capability tracking.", accent: "from-[#818cf8] to-[#a78bfa]" },
+  { icon: "🌟", city: "Noida", desc: "NCR expansion — Newest branch with full CRM integration and cross-branch patient tracking.", accent: "from-[#ec4899] to-[#f43f5e]" },
 ];
 
 const plans = [
@@ -747,7 +748,7 @@ export default function LandingPage() {
               Ready to run your clinic<br />with <em className="not-italic text-[#b8862e]">total clarity?</em>
             </h2>
             <p className="text-[#f8f5ef]/60 text-lg max-w-120 mx-auto mb-10 leading-[1.7]">
-              Join clinics across Delhi, Mumbai, and Hyderabad who've replaced spreadsheets and scattered tools with RyanCRM.
+              Join clinics across Delhi, Mumbai, Hyderabad, and Noida who've replaced spreadsheets and scattered tools with RyanCRM.
             </p>
             <div className="flex flex-wrap items-center justify-center gap-4">
               <Link href="/login" className="no-underline inline-flex items-center gap-2 px-8 py-3.5 rounded-xl bg-linear-to-r from-[#9a6f2a] to-[#7a5218] text-white font-bold tracking-wide hover:shadow-xl hover:shadow-[#9a6f2a]/30 hover:-translate-y-0.5 transition-all duration-300">
@@ -774,7 +775,7 @@ export default function LandingPage() {
                 <span className="font-cormorant text-2xl font-bold text-[#1a1510]">Lear<span className="text-[#9a6f2a]">CRM</span></span>
               </div>
               <p className="text-sm text-[#6b5f4e] leading-[1.75] max-w-75 mb-4">The complete operating system for hair transplant clinics. Built with Next.js, MongoDB, and Tailwind CSS.</p>
-              <div className="text-xs text-[#a8998a]">📍 Delhi · Mumbai · Hyderabad</div>
+              <div className="text-xs text-[#a8998a]">📍 Delhi · Mumbai · Hyderabad · Noida</div>
             </div>
             {[
               { heading: "Product", links: [{ label: "Features", href: "#features" }, { label: "Patient Workflow", href: "#workflow" }, { label: "Role Access", href: "#roles" }, { label: "Pricing", href: "#pricing" }] },

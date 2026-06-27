@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import connectDB from "@/lib/db";
 import Transaction from "@/models/Transactions";
 import Stock from "@/models/Stock";
+import DeleteLog from "@/models/DeleteLog";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
@@ -108,11 +109,35 @@ export async function DELETE(req) {
       });
     }
 
+    // Log the deletions
+    for (const tx of transactionsToDelete) {
+      await DeleteLog.create({
+        entityType: "Transaction",
+        entityId: tx._id.toString(),
+        entityName: tx.patientName || "Medicine Sale",
+        entityDetails: {
+          category: "MEDICINE",
+          quantity: tx.quantity,
+          amount: tx.amount,
+          method: tx.method,
+          branch: tx.branch,
+          date: tx.date,
+          batchId: tx.batchId,
+        },
+        deletedBy: {
+          name: session.user.name,
+          email: session.user.email,
+          branch: session.user.branch,
+        },
+        branch: tx.branch,
+      });
+    }
+
     // Delete the transaction(s)
     if (batchId) {
-      await Transaction.deleteMany({ 
+      await Transaction.deleteMany({
         batchId,
-        transactionCategory: "MEDICINE" 
+        transactionCategory: "MEDICINE"
       });
     } else {
       await Transaction.findByIdAndDelete(transactionId);

@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 
 /* ── Constants ─────────────────────────────────────────────────────────────── */
-const BRANCHES = ["Delhi", "Mumbai", "Hyderabad"];
+const BRANCHES = ["Delhi", "Mumbai", "Hyderabad", "Noida"];
 const GENDERS  = ["MALE", "FEMALE", "OTHER"];
 const TECHNIQUES = [
   "Sapphire FUE", "DHI", "Turkish DHI", "Beard Transplant",

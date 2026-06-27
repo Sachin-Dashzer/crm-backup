@@ -88,7 +88,7 @@ const transactionSchema = new mongoose.Schema(
 
     branch: {
       type: String,
-      enum: ["Delhi", "Mumbai", "Hyderabad"],
+      enum: ["Delhi", "Mumbai", "Hyderabad", "Noida"],
     },
 
     expense: String,

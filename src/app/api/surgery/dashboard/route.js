@@ -8,7 +8,7 @@ import {
   getDateRangeFromFilter 
 } from "@/lib/dateHelpers.js";
 
-const VALID_BRANCHES = ["All", "Delhi", "Mumbai", "Hyderabad"];
+const VALID_BRANCHES = ["All", "Delhi", "Mumbai", "Hyderabad", "Noida"];
 
 const handler = async (req) => {
   try {

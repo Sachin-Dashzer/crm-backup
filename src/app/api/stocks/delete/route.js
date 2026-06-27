@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
 import Stock from "@/models/Stock";
+import DeleteLog from "@/models/DeleteLog";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
@@ -67,6 +68,26 @@ export async function DELETE(req) {
         { status: 400 }
       );
     }
+
+    // Log the deletion
+    await DeleteLog.create({
+      entityType: "Stock",
+      entityId: stock._id.toString(),
+      entityName: stock.name,
+      entityDetails: {
+        location: stock.location,
+        totalQuantity: stock.totalQuantity,
+        unit: stock.unit,
+        mrp: stock.mrp,
+        purchaseAmt: stock.purchaseAmt,
+      },
+      deletedBy: {
+        name: session.user.name,
+        email: session.user.email,
+        branch: session.user.branch,
+      },
+      branch: stock.location,
+    });
 
     // Delete stock
     await Stock.findByIdAndDelete(id);

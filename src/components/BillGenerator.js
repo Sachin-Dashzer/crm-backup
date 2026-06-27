@@ -40,6 +40,15 @@ const CLINIC_BRANCHES = {
     website: "https://clinicryan.com",
     gstin: "07LYSP2547H2ZI",
   },
+  Noida: {
+    img: Logo,
+    name: "RYAN CLINIC",
+    address: "Ryan Clinic, Noida",
+    city: "Noida, Uttar Pradesh",
+    phone: "",
+    website: "https://clinicryan.com",
+    gstin: "",
+  },
 };
 
 const formatDateForDisplay = (date) => {

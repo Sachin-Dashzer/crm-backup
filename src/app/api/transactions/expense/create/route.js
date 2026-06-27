@@ -26,6 +26,20 @@ export async function POST(req) {
       remarks,
     } = await req.json();
 
+    // Back-date entry prevention — only admin/super-admin can enter past dates
+    if (date) {
+      const todayStart = new Date();
+      todayStart.setUTCHours(0, 0, 0, 0);
+      const inputDate = new Date(date);
+      inputDate.setUTCHours(0, 0, 0, 0);
+      if (inputDate < todayStart && !["admin", "super-admin"].includes(session.user.role)) {
+        return NextResponse.json(
+          { error: "Back-dated entries are not allowed for your role" },
+          { status: 403 }
+        );
+      }
+    }
+
     // Validation
     if (!expenseCategory || !amount || !expenseGiver) {
       return NextResponse.json(

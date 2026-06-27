@@ -1183,7 +1183,7 @@ async function generateProcedureRevenueReport(filters) {
 }
 
 async function generateBranchComparisonReport(filters) {
-  const branches = ["Delhi", "Mumbai", "Hyderabad"];
+  const branches = ["Delhi", "Mumbai", "Hyderabad", "Noida"];
   const patientQuery = { ...filters.patientDateFilter };
   const txQuery = { ...filters.transactionDateFilter };
 
@@ -1303,7 +1303,7 @@ async function generateBranchRevenueReport(filters) {
 }
 
 async function generateBranchPatientsReport(filters) {
-  const branches = ["Delhi", "Mumbai", "Hyderabad"];
+  const branches = ["Delhi", "Mumbai", "Hyderabad", "Noida"];
   const query = { ...filters.dateFilter };
 
   const branchData = [];

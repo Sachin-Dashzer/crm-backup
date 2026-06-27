@@ -57,6 +57,7 @@ const BRANCH_COLORS = {
   Delhi:     "bg-violet-100 text-violet-800",
   Mumbai:    "bg-orange-100 text-orange-800",
   Hyderabad: "bg-teal-100 text-teal-800",
+  Noida:     "bg-pink-100 text-pink-800",
 };
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -637,6 +638,7 @@ export default function TransactionTable({ config = {} }) {
                       <option>Delhi</option>
                       <option>Mumbai</option>
                       <option>Hyderabad</option>
+                      <option>Noida</option>
                     </select>
                   </div>
                 )}

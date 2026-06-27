@@ -16,7 +16,7 @@ import {
 import AdminSidebar from "@/components/Sidebars/Sidebar";
 
 /* ─── Constants ─────────────────────────────────────────────────────────── */
-const BRANCHES    = ["All", "Delhi", "Mumbai", "Hyderabad"];
+const BRANCHES    = ["All", "Delhi", "Mumbai", "Hyderabad", "Noida"];
 const DATE_RANGES = ["Today", "Yesterday", "Last 7 Days", "Last 30 Days", "Custom"];
 
 const PALETTE = [

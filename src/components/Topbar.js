@@ -14,7 +14,7 @@ export default function Topbar({
   setCustomDates,
 }) {
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const branches = ["All", "Delhi", "Mumbai", "Hyderabad"];
+  const branches = ["All", "Delhi", "Mumbai", "Hyderabad", "Noida"];
   const timeRanges = ["Today", "Yesterday", "Last 7 Days", "Custom"];
 
   const handleCustomDateChange = (field, value) => {

@@ -1024,7 +1024,7 @@ async function generateProcedureRevenueReport({
 }
 
 async function generateBranchComparisonReport({ visitDateFilter, txDateFilter }) {
-  const branches = ["Delhi", "Mumbai", "Hyderabad"];
+  const branches = ["Delhi", "Mumbai", "Hyderabad", "Noida"];
   const result = [];
 
   for (const b of branches) {

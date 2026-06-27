@@ -38,7 +38,7 @@ const STATUS_COLORS = {
   CLOSED: "bg-gray-100 text-gray-800",
 };
 
-const LOCATION_OPTIONS = ["Delhi", "Mumbai", "Hyderabad"];
+const LOCATION_OPTIONS = ["Delhi", "Mumbai", "Hyderabad", "Noida"];
 
 /* ─────────────────────────────────────────────
    Helpers

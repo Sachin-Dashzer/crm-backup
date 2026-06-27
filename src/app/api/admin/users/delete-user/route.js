@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import connectDB from "@/lib/db";
 import User from "@/models/User";
+import DeleteLog from "@/models/DeleteLog";
 
 export async function POST(req) {
   try {
@@ -63,6 +64,24 @@ export async function POST(req) {
 
     const userName = user.name;
     const userEmail = user.email;
+
+    // Log the deletion
+    await DeleteLog.create({
+      entityType: "Patient",
+      entityId: userId,
+      entityName: userName,
+      entityDetails: {
+        email: userEmail,
+        role: user.role,
+        branch: user.branch,
+      },
+      deletedBy: {
+        name: session.user.name,
+        email: session.user.email,
+        branch: session.user.branch,
+      },
+      branch: user.branch,
+    });
 
     // Delete user
     await User.findByIdAndDelete(userId);

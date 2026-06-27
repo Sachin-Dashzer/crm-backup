@@ -116,6 +116,7 @@ export default function NotVisitedPatients() {
               <option value="Delhi">Delhi</option>
               <option value="Mumbai">Mumbai</option>
               <option value="Hyderabad">Hyderabad</option>
+              <option value="Noida">Noida</option>
             </select>
           </div>
 

@@ -18,6 +18,7 @@ const handler = async (req) => {
     const delhiCount = await Transactions.countDocuments({ branch: "Delhi" });
     const mumbaiCount = await Transactions.countDocuments({ branch: "Mumbai" });
     const hyderabadCount = await Transactions.countDocuments({ branch: "Hyderabad" });
+    const noidaCount = await Transactions.countDocuments({ branch: "Noida" });
 
     // Get transactions with dates
     const withDates = await Transactions.countDocuments({ date: { $exists: true, $ne: null } });
@@ -57,6 +58,7 @@ const handler = async (req) => {
           Delhi: delhiCount,
           Mumbai: mumbaiCount,
           Hyderabad: hyderabadCount,
+          Noida: noidaCount,
           unassigned: await Transactions.countDocuments({ 
             $or: [
               { branch: { $exists: false } },
