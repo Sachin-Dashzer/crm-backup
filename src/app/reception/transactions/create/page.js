@@ -18,7 +18,7 @@ import {
 
 const getPaymentIdConfig = (method) => {
   if (method === "card") return { placeholder: "Please enter card last no.", required: true };
-  if (method?.toLowerCase() === "loan") return { placeholder: "Please add the reference id", required: true };
+  if (method?.toLowerCase() === "bajaj_loan" || method?.toLowerCase() === "fibe_loan") return { placeholder: "Please add the reference id", required: true };
   if (method === "cash") return { placeholder: "Please add transaction id", required: false };
   if (method === "including-package") return { placeholder: "N/A — included in package", required: false };
   return { placeholder: "Please add transaction id", required: true };
@@ -159,6 +159,28 @@ export default function AllTransactionsPage() {
     fetchData();
   }, []);
 
+  // useSession() resolves asynchronously, so session?.user?.branch is still
+  // undefined when the branch fields above are initialized, leaving every
+  // form defaulted to "Delhi" regardless of the logged-in user's actual
+  // branch. Sync it in once the session loads, unless the user already
+  // picked a branch manually.
+  const branchTouchedRef = useRef({
+    transplant: false,
+    service: false,
+    medicine: false,
+    expense: false,
+  });
+
+  useEffect(() => {
+    const userBranch = session?.user?.branch;
+    if (!userBranch || userBranch === "All") return;
+    const touched = branchTouchedRef.current;
+    if (!touched.transplant) setTransplantData((d) => ({ ...d, branch: userBranch }));
+    if (!touched.service) setServiceData((d) => ({ ...d, branch: userBranch }));
+    if (!touched.medicine) setMedicineData((d) => ({ ...d, branch: userBranch }));
+    if (!touched.expense) setExpenseData((d) => ({ ...d, branch: userBranch }));
+  }, [session?.user?.branch]);
+
   const fetchData = async () => {
     setFetchLoading(true);
     try {
@@ -229,7 +251,7 @@ export default function AllTransactionsPage() {
       return;
     }
     if (transplantData.method !== "cash" && !transplantData.paymentId) {
-      alert(transplantData.method === "card" ? "Please enter card last no." : transplantData.method?.toLowerCase() === "loan" ? "Please add the reference id" : "Please add transaction id");
+      alert(transplantData.method === "card" ? "Please enter card last no." : transplantData.method?.toLowerCase() === "bajaj_loan" || transplantData.method?.toLowerCase() === "fibe_loan" ? "Please add the reference id" : "Please add transaction id");
       return;
     }
 
@@ -341,7 +363,7 @@ export default function AllTransactionsPage() {
       }
     }
     if (serviceData.method !== "cash" && !serviceData.paymentId) {
-      alert(serviceData.method === "card" ? "Please enter card last no." : serviceData.method?.toLowerCase() === "loan" ? "Please add the reference id" : "Please add transaction id");
+      alert(serviceData.method === "card" ? "Please enter card last no." : serviceData.method?.toLowerCase() === "bajaj_loan" || serviceData.method?.toLowerCase() === "fibe_loan" ? "Please add the reference id" : "Please add transaction id");
       return;
     }
 
@@ -471,7 +493,7 @@ export default function AllTransactionsPage() {
       }
     }
     if (medicineData.method !== "cash" && medicineData.method !== "including-package" && !medicineData.paymentId) {
-      alert(medicineData.method === "card" ? "Please enter card last no." : medicineData.method?.toLowerCase() === "loan" ? "Please add the reference id" : "Please add transaction id");
+      alert(medicineData.method === "card" ? "Please enter card last no." : medicineData.method?.toLowerCase() === "bajaj_loan" || medicineData.method?.toLowerCase() === "fibe_loan" ? "Please add the reference id" : "Please add transaction id");
       return;
     }
 
@@ -537,7 +559,7 @@ export default function AllTransactionsPage() {
       return;
     }
     if (expenseData.method !== "cash" && !expenseData.paymentId) {
-      alert(expenseData.method === "card" ? "Please enter card last no." : expenseData.method?.toLowerCase() === "loan" ? "Please add the reference id" : "Please add transaction id");
+      alert(expenseData.method === "card" ? "Please enter card last no." : expenseData.method?.toLowerCase() === "bajaj_loan" || expenseData.method?.toLowerCase() === "fibe_loan" ? "Please add the reference id" : "Please add transaction id");
       return;
     }
 
@@ -814,8 +836,8 @@ export default function AllTransactionsPage() {
                           <option value="cash">Cash</option>
                           <option value="card">Card</option>
                           <option value="upi">UPI</option>
-                          <option value="Loan">Loan</option>
-
+                          <option value="bajaj_loan">Bajaj Loan</option>
+                          <option value="fibe_loan">Fibe Loan</option>
                           <option value="banking">Bank Transfer</option>
                         </select>
                       </div>
@@ -842,12 +864,13 @@ export default function AllTransactionsPage() {
                         </label>
                         <select
                           value={transplantData.branch}
-                          onChange={(e) =>
+                          onChange={(e) => {
+                            branchTouchedRef.current.transplant = true;
                             setTransplantData({
                               ...transplantData,
                               branch: e.target.value,
-                            })
-                          }
+                            });
+                          }}
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                         >
                           <option value="Delhi">Delhi</option>
@@ -1187,7 +1210,8 @@ export default function AllTransactionsPage() {
                           <option value="cash">Cash</option>
                           <option value="card">Card</option>
                           <option value="upi">UPI</option>
-                          <option value="Loan">Loan</option>
+                          <option value="bajaj_loan">Bajaj Loan</option>
+                          <option value="fibe_loan">Fibe Loan</option>
                           <option value="banking">Bank Transfer</option>
                         </select>
                       </div>
@@ -1214,12 +1238,13 @@ export default function AllTransactionsPage() {
                         </label>
                         <select
                           value={serviceData.branch}
-                          onChange={(e) =>
+                          onChange={(e) => {
+                            branchTouchedRef.current.service = true;
                             setServiceData({
                               ...serviceData,
                               branch: e.target.value,
-                            })
-                          }
+                            });
+                          }}
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                         >
                           <option value="Delhi">Delhi</option>
@@ -1569,7 +1594,8 @@ export default function AllTransactionsPage() {
                           <option value="cash">Cash</option>
                           <option value="card">Card</option>
                           <option value="upi">UPI</option>
-                          <option value="Loan">Loan</option>
+                          <option value="bajaj_loan">Bajaj Loan</option>
+                          <option value="fibe_loan">Fibe Loan</option>
                           <option value="banking">Bank Transfer</option>
                           <option value="including-package">Including Package</option>
                         </select>
@@ -1598,12 +1624,13 @@ export default function AllTransactionsPage() {
                         </label>
                         <select
                           value={medicineData.branch}
-                          onChange={(e) =>
+                          onChange={(e) => {
+                            branchTouchedRef.current.medicine = true;
                             setMedicineData({
                               ...medicineData,
                               branch: e.target.value,
-                            })
-                          }
+                            });
+                          }}
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                         >
                           <option value="Delhi">Delhi</option>
@@ -1856,8 +1883,8 @@ export default function AllTransactionsPage() {
                           <option value="cash">Cash</option>
                           <option value="card">Card</option>
                           <option value="upi">UPI</option>
-                          <option value="Loan">Loan</option>
-
+                          <option value="bajaj_loan">Bajaj Loan</option>
+                          <option value="fibe_loan">Fibe Loan</option>
                           <option value="banking">Bank Transfer</option>
                         </select>
                       </div>
@@ -1884,12 +1911,13 @@ export default function AllTransactionsPage() {
                         </label>
                         <select
                           value={expenseData.branch}
-                          onChange={(e) =>
+                          onChange={(e) => {
+                            branchTouchedRef.current.expense = true;
                             setExpenseData({
                               ...expenseData,
                               branch: e.target.value,
-                            })
-                          }
+                            });
+                          }}
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                         >
                           <option value="Delhi">Delhi</option>

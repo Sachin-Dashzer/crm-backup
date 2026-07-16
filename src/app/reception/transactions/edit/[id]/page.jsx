@@ -19,7 +19,7 @@ import {
 
 const getPaymentIdConfig = (method) => {
   if (method === "card") return { placeholder: "Please enter card last no.", required: true };
-  if (method?.toLowerCase() === "loan") return { placeholder: "Please add the reference id", required: true };
+  if (method?.toLowerCase() === "bajaj_loan" || method?.toLowerCase() === "fibe_loan") return { placeholder: "Please add the reference id", required: true };
   if (method === "cash") return { placeholder: "Please add transaction id", required: false };
   return { placeholder: "Please add transaction id", required: true };
 };
@@ -387,7 +387,7 @@ export default function EditTransactionPage() {
       return;
     }
     if (transplantData.method !== "cash" && !transplantData.paymentId) {
-      showToast(transplantData.method === "card" ? "Please enter card last no." : transplantData.method?.toLowerCase() === "loan" ? "Please add the reference id" : "Please add transaction id", "error");
+      showToast(transplantData.method === "card" ? "Please enter card last no." : transplantData.method?.toLowerCase() === "bajaj_loan" || transplantData.method?.toLowerCase() === "fibe_loan" ? "Please add the reference id" : "Please add transaction id", "error");
       return;
     }
 
@@ -450,7 +450,7 @@ export default function EditTransactionPage() {
       return;
     }
     if (serviceData.method !== "cash" && !serviceData.paymentId) {
-      showToast(serviceData.method === "card" ? "Please enter card last no." : serviceData.method?.toLowerCase() === "loan" ? "Please add the reference id" : "Please add transaction id", "error");
+      showToast(serviceData.method === "card" ? "Please enter card last no." : serviceData.method?.toLowerCase() === "bajaj_loan" || serviceData.method?.toLowerCase() === "fibe_loan" ? "Please add the reference id" : "Please add transaction id", "error");
       return;
     }
 
@@ -527,7 +527,7 @@ export default function EditTransactionPage() {
       return;
     }
     if (medicineData.method !== "cash" && !medicineData.paymentId) {
-      showToast(medicineData.method === "card" ? "Please enter card last no." : medicineData.method?.toLowerCase() === "loan" ? "Please add the reference id" : "Please add transaction id", "error");
+      showToast(medicineData.method === "card" ? "Please enter card last no." : medicineData.method?.toLowerCase() === "bajaj_loan" || medicineData.method?.toLowerCase() === "fibe_loan" ? "Please add the reference id" : "Please add transaction id", "error");
       return;
     }
 
@@ -591,7 +591,7 @@ export default function EditTransactionPage() {
       return;
     }
     if (expenseData.method !== "cash" && !expenseData.paymentId) {
-      showToast(expenseData.method === "card" ? "Please enter card last no." : expenseData.method?.toLowerCase() === "loan" ? "Please add the reference id" : "Please add transaction id", "error");
+      showToast(expenseData.method === "card" ? "Please enter card last no." : expenseData.method?.toLowerCase() === "bajaj_loan" || expenseData.method?.toLowerCase() === "fibe_loan" ? "Please add the reference id" : "Please add transaction id", "error");
       return;
     }
 
@@ -921,7 +921,8 @@ export default function EditTransactionPage() {
                           <option value="cash">Cash</option>
                           <option value="card">Card</option>
                           <option value="upi">UPI</option>
-                          <option value="loan">Loan</option>
+                          <option value="bajaj_loan">Bajaj Loan</option>
+                          <option value="fibe_loan">Fibe Loan</option>
                           <option value="banking">Bank Transfer</option>
                         </select>
                       </div>
@@ -1238,8 +1239,8 @@ export default function EditTransactionPage() {
                           <option value="cash">Cash</option>
                           <option value="card">Card</option>
                           <option value="upi">UPI</option>
-                                                    <option value="loan">Loan</option>
-
+                          <option value="bajaj_loan">Bajaj Loan</option>
+                          <option value="fibe_loan">Fibe Loan</option>
                           <option value="banking">Bank Transfer</option>
                         </select>
                       </div>
@@ -1549,8 +1550,8 @@ export default function EditTransactionPage() {
                           <option value="cash">Cash</option>
                           <option value="card">Card</option>
                           <option value="upi">UPI</option>
-                                                    <option value="loan">Loan</option>
-
+                          <option value="bajaj_loan">Bajaj Loan</option>
+                          <option value="fibe_loan">Fibe Loan</option>
                           <option value="banking">Bank Transfer</option>
                         </select>
                       </div>
@@ -1807,7 +1808,8 @@ export default function EditTransactionPage() {
                           <option value="upi">UPI</option>
                           <option value="card">Card</option>
                           <option value="banking">Bank Transfer</option>
-                          <option value="Loan">Loan</option>
+                          <option value="bajaj_loan">Bajaj Loan</option>
+                          <option value="fibe_loan">Fibe Loan</option>
                           <option value="other">Other</option>
                         </select>
                       </div>

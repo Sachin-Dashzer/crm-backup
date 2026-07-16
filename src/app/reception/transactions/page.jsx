@@ -64,7 +64,7 @@ const formatCurrency = (amount) => {
 };
 
 // const BRANCHES = tenantBranches;
-const PAYMENT_METHODS = ["upi", "cash", "card", "banking", "Loan", "other"];
+const PAYMENT_METHODS = ["upi", "cash", "card", "banking", "bajaj_loan", "fibe_loan", "other"];
 const TRANSPLANT_PROCEDURES = [
   "Sapphire FUE",
   "DHI",
@@ -460,7 +460,8 @@ function DataTable({
       upi: "bg-blue-100 text-blue-700 border-blue-200",
       card: "bg-purple-100 text-purple-700 border-purple-200",
       banking: "bg-indigo-100 text-indigo-700 border-indigo-200",
-      loan: "bg-orange-100 text-orange-700 border-orange-200",
+      bajaj_loan: "bg-orange-100 text-orange-700 border-orange-200",
+      fibe_loan: "bg-amber-100 text-amber-700 border-amber-200",
     };
     return (
       colors[method?.toLowerCase()] ||
@@ -639,7 +640,7 @@ function DataTable({
                             <span
                               className={`inline-flex px-2 py-1 rounded-lg text-xs font-semibold border ${getMethodColor(row.method)}`}
                             >
-                              {row.method?.toUpperCase()}
+                              {row.method?.replace(/_/g, " ").toUpperCase()}
                             </span>
                           </div>
                           <div className="px-2 py-3">
@@ -707,7 +708,7 @@ function DataTable({
                             <span
                               className={`inline-flex px-2 py-1 rounded-lg text-xs font-semibold border ${getMethodColor(row.method)}`}
                             >
-                              {row.method?.toUpperCase()}
+                              {row.method?.replace(/_/g, " ").toUpperCase()}
                             </span>
                           </div>
                           <div className="px-2 py-3">
@@ -785,7 +786,7 @@ function DataTable({
                             <span
                               className={`inline-flex px-2 py-1 rounded-lg text-xs font-semibold border ${getMethodColor(row.method)}`}
                             >
-                              {row.method?.toUpperCase()}
+                              {row.method?.replace(/_/g, " ").toUpperCase()}
                             </span>
                           </div>
                           <div className="px-2 py-3">
@@ -838,7 +839,7 @@ function DataTable({
                             <span
                               className={`inline-flex px-2 py-1 rounded-lg text-xs font-semibold border ${getMethodColor(row.method)}`}
                             >
-                              {row.method?.toUpperCase()}
+                              {row.method?.replace(/_/g, " ").toUpperCase()}
                             </span>
                           </div>
                           <div className="px-2 py-3">
@@ -908,7 +909,7 @@ function DataTable({
                               <span
                                 className={`px-2 py-1 rounded text-xs font-semibold ${getMethodColor(row.method)}`}
                               >
-                                {row.method?.toUpperCase()}
+                                {row.method?.replace(/_/g, " ").toUpperCase()}
                               </span>
                               {hasUndefinedCategory(row) && (
                                 <span className="inline-flex items-center gap-1 px-2 py-1 bg-amber-100 text-amber-700 rounded text-xs font-semibold border border-amber-200">
@@ -1570,7 +1571,7 @@ export default function AllTransactionsPage() {
                       { value: "", label: "All Methods" },
                       ...PAYMENT_METHODS.map((m) => ({
                         value: m,
-                        label: m.toUpperCase(),
+                        label: m.replace(/_/g, " ").toUpperCase(),
                       })),
                     ]}
                     icon={CreditCard}
@@ -1622,7 +1623,7 @@ export default function AllTransactionsPage() {
                       )}
                       {filters.paymentMethod && (
                         <span className="px-2 py-1 bg-white text-indigo-700 rounded-md text-xs font-medium border border-indigo-200">
-                          Method: {filters.paymentMethod.toUpperCase()}
+                          Method: {filters.paymentMethod.replace(/_/g, " ").toUpperCase()}
                         </span>
                       )}
                       {filters.procedure && (

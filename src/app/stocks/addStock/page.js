@@ -352,7 +352,8 @@ export default function StockPurchasePage() {
                       <option value="upi">UPI</option>
                       <option value="card">Card</option>
                       <option value="banking">Net Banking</option>
-                      <option value="loan">Loan</option>
+                      <option value="bajaj_loan">Bajaj Loan</option>
+                      <option value="fibe_loan">Fibe Loan</option>
                       <option value="other">Other</option>
                     </select>
                   </div>

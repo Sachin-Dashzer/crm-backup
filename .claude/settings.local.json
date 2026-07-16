@@ -23,7 +23,14 @@
       "Bash(Get-ChildItem -Path \"c:\\\\dashzer\\\\ryan-crm\\\\src\\\\app\" -Directory)",
       "Bash(Find-ChildItem -Path \"c:\\\\dashzer\\\\ryan-crm\" -Filter \"*patient*\" -Type f)",
       "Bash(Select-Object -First 20)",
-      "Bash(xargs grep -l \"prpNumber\")"
+      "Bash(xargs grep -l \"prpNumber\")",
+      "Bash(node -e \"require\\('@babel/core'\\)\")",
+      "Bash(npx --no-install next lint --file src/app/reception/transactions/create/page.js)",
+      "Bash(npx --no-install eslint src/app/reception/transactions/create/page.js)",
+      "Bash(npx --no-install eslint src/app/reception/transactions src/app/admin/transactions src/app/admin/dashboard/page.jsx src/app/admin/prp/page.jsx src/app/reception/prp/page.jsx src/app/sales/transactions/page.js src/app/super-admin/transactions/page.jsx src/app/super-admin/performance/page.jsx src/app/super-admin/dashboard/page.jsx src/app/stocks/transactions src/app/stocks/addStock/page.js src/components/TransactionTable.jsx src/utils/transactionHelpers.js src/models/Transactions.js src/models/Audit.js src/app/page.js)",
+      "Bash(npx --no-install eslint src/app/reception/transactions/create/page.js src/app/reception/transactions/edit/[id]/page.jsx src/app/reception/transactions/page.jsx src/app/admin/transactions/create/page.jsx src/app/admin/transactions/edit/[id]/page.jsx src/app/admin/transactions/page.jsx src/app/admin/dashboard/page.jsx src/app/admin/prp/page.jsx src/app/reception/prp/page.jsx src/app/sales/transactions/page.js src/app/super-admin/transactions/page.jsx src/app/super-admin/performance/page.jsx src/app/super-admin/dashboard/page.jsx src/app/stocks/transactions/create/page.js src/app/stocks/transactions/edit/[id]/page.jsx src/app/stocks/transactions/page.jsx src/app/stocks/addStock/page.js src/components/TransactionTable.jsx src/utils/transactionHelpers.js src/models/Transactions.js src/models/Audit.js src/app/page.js)",
+      "Bash(node --env-file=.env scripts/migrate-loan-to-bajaj.js)",
+      "Bash(node --env-file=.env scripts/migrate-loan-to-bajaj.js --apply)"
     ],
     "additionalDirectories": [
       "c:\\dashzer\\ryan-crm\\src\\app\\api\\reception"

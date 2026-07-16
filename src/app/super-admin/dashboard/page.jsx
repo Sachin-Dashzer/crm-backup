@@ -25,7 +25,7 @@ const PALETTE = [
 ];
 
 const METHOD_ICONS = {
-  upi: "📲", cash: "💵", card: "💳", banking: "🏦", Loan: "📄", other: "💰",
+  upi: "📲", cash: "💵", card: "💳", banking: "🏦", bajaj_loan: "📄", fibe_loan: "📄", other: "💰",
 };
 
 /* ─────────────────────────────────────────────
@@ -575,7 +575,7 @@ export default function SuperAdminDashboard() {
                         >
                           <p className="text-2xl mb-2">{METHOD_ICONS[item.method] || "💰"}</p>
                           <p className="text-sm font-bold text-gray-900">{rupee(item.total)}</p>
-                          <p className="text-[11px] font-semibold text-gray-500 mt-0.5 capitalize">{item.method}</p>
+                          <p className="text-[11px] font-semibold text-gray-500 mt-0.5 capitalize">{item.method?.replace(/_/g, " ")}</p>
                           <p className="text-[10px] text-gray-400 mt-0.5">{item.count} transactions</p>
                         </div>
                       ))}

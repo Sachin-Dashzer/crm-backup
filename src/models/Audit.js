@@ -9,7 +9,7 @@ const auditSchema = new mongoose.Schema({
   },
   method: {
     type: String,
-    enum: ["upi", "cash", "card", "banking", "Loan", "other"],
+    enum: ["upi", "cash", "card", "banking", "bajaj_loan", "fibe_loan", "other"],
   },
   patient: {
     type: mongoose.Schema.Types.ObjectId,

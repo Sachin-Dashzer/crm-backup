@@ -29,7 +29,7 @@ import {
 import * as XLSX from "xlsx";
 
 // ─── constants ───────────────────────────────────────────────────────────────
-const METHODS = ["cash", "upi", "card", "banking", "Loan", "other"];
+const METHODS = ["cash", "upi", "card", "banking", "bajaj_loan", "fibe_loan", "other"];
 
 const PROCEDURES = ["PRP", "GFC", "Canacot", "Biotin"];
 
@@ -958,7 +958,7 @@ export default function PRPGFCPage() {
                         className="w-full pl-9 pr-8 py-2.5 border border-gray-200 rounded-xl text-sm appearance-none bg-white focus:outline-none focus:ring-2 focus:ring-indigo-300"
                       >
                         {METHODS.map((m) => (
-                          <option key={m} value={m}>{m.charAt(0).toUpperCase() + m.slice(1)}</option>
+                          <option key={m} value={m}>{m.split("_").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ")}</option>
                         ))}
                       </select>
                       <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
@@ -1092,7 +1092,7 @@ export default function PRPGFCPage() {
                     className="w-full pl-9 pr-8 py-2.5 border border-gray-200 rounded-xl text-sm appearance-none bg-white focus:outline-none focus:ring-2 focus:ring-indigo-300"
                   >
                     {METHODS.map((m) => (
-                      <option key={m} value={m}>{m.charAt(0).toUpperCase() + m.slice(1)}</option>
+                      <option key={m} value={m}>{m.split("_").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ")}</option>
                     ))}
                   </select>
                   <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />

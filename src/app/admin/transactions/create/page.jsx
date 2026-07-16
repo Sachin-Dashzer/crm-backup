@@ -18,7 +18,8 @@ import {
 
 const getPaymentIdConfig = (method) => {
   if (method === "card") return { placeholder: "Please enter card last no.", required: true };
-  if (method?.toLowerCase() === "loan") return { placeholder: "Please add the reference id", required: true };
+  if (method?.toLowerCase() === "bajaj_loan") return { placeholder: "Please add the reference id", required: true };
+  if (method?.toLowerCase() === "fibe_loan") return { placeholder: "Please add the reference id", required: true };
   if (method === "cash") return { placeholder: "Please add transaction id", required: false };
   if (method === "including-package") return { placeholder: "N/A — included in package", required: false };
   return { placeholder: "Please add transaction id", required: true };
@@ -185,7 +186,7 @@ export default function AdminCreateTransactionPage() {
     if (!transplantData.patient) { alert("Please select a patient"); return; }
     if (!transplantData.amount) { alert("Please enter amount"); return; }
     if (transplantData.method !== "cash" && !transplantData.paymentId) {
-      alert(transplantData.method === "card" ? "Please enter card last no." : transplantData.method?.toLowerCase() === "loan" ? "Please add the reference id" : "Please add transaction id");
+      alert(transplantData.method === "card" ? "Please enter card last no." : transplantData.method?.toLowerCase() === "bajaj_loan" || transplantData.method?.toLowerCase() === "fibe_loan" ? "Please add the reference id" : "Please add transaction id");
       return;
     }
     setLoading(true);
@@ -239,7 +240,7 @@ export default function AdminCreateTransactionPage() {
       if (!item.perSessionCost || parseFloat(item.perSessionCost) <= 0) { alert("Please enter valid per session cost for all services"); return; }
     }
     if (serviceData.method !== "cash" && !serviceData.paymentId) {
-      alert(serviceData.method === "card" ? "Please enter card last no." : serviceData.method?.toLowerCase() === "loan" ? "Please add the reference id" : "Please add transaction id");
+      alert(serviceData.method === "card" ? "Please enter card last no." : serviceData.method?.toLowerCase() === "bajaj_loan" || serviceData.method?.toLowerCase() === "fibe_loan" ? "Please add the reference id" : "Please add transaction id");
       return;
     }
     setLoading(true);
@@ -298,7 +299,7 @@ export default function AdminCreateTransactionPage() {
       if (!item.perUnitCost || parseFloat(item.perUnitCost) <= 0) { alert("Please enter valid price for all medicines"); return; }
     }
     if (medicineData.method !== "cash" && medicineData.method !== "including-package" && !medicineData.paymentId) {
-      alert(medicineData.method === "card" ? "Please enter card last no." : medicineData.method?.toLowerCase() === "loan" ? "Please add the reference id" : "Please add transaction id");
+      alert(medicineData.method === "card" ? "Please enter card last no." : medicineData.method?.toLowerCase() === "bajaj_loan" || medicineData.method?.toLowerCase() === "fibe_loan" ? "Please add the reference id" : "Please add transaction id");
       return;
     }
     setLoading(true);
@@ -332,7 +333,7 @@ export default function AdminCreateTransactionPage() {
     if (!expenseData.isVendor && !expenseData.expenseGiverName) { alert("Please enter payee name"); return; }
     if (!expenseData.amount) { alert("Please enter amount"); return; }
     if (expenseData.method !== "cash" && !expenseData.paymentId) {
-      alert(expenseData.method === "card" ? "Please enter card last no." : expenseData.method?.toLowerCase() === "loan" ? "Please add the reference id" : "Please add transaction id");
+      alert(expenseData.method === "card" ? "Please enter card last no." : expenseData.method?.toLowerCase() === "bajaj_loan" || expenseData.method?.toLowerCase() === "fibe_loan" ? "Please add the reference id" : "Please add transaction id");
       return;
     }
     setLoading(true);
@@ -468,7 +469,8 @@ export default function AdminCreateTransactionPage() {
                           <option value="cash">Cash</option>
                           <option value="card">Card</option>
                           <option value="upi">UPI</option>
-                          <option value="Loan">Loan</option>
+                          <option value="bajaj_loan">Bajaj Loan</option>
+                          <option value="fibe_loan">Fibe Loan</option>
                           <option value="banking">Bank Transfer</option>
                         </select>
                       </div>
@@ -605,7 +607,8 @@ export default function AdminCreateTransactionPage() {
                           <option value="cash">Cash</option>
                           <option value="card">Card</option>
                           <option value="upi">UPI</option>
-                          <option value="Loan">Loan</option>
+                          <option value="bajaj_loan">Bajaj Loan</option>
+                          <option value="fibe_loan">Fibe Loan</option>
                           <option value="banking">Bank Transfer</option>
                         </select>
                       </div>
@@ -736,7 +739,8 @@ export default function AdminCreateTransactionPage() {
                           <option value="cash">Cash</option>
                           <option value="card">Card</option>
                           <option value="upi">UPI</option>
-                          <option value="Loan">Loan</option>
+                          <option value="bajaj_loan">Bajaj Loan</option>
+                          <option value="fibe_loan">Fibe Loan</option>  
                           <option value="banking">Bank Transfer</option>
                           <option value="including-package">Including Package</option>
                         </select>
@@ -857,7 +861,8 @@ export default function AdminCreateTransactionPage() {
                           <option value="cash">Cash</option>
                           <option value="card">Card</option>
                           <option value="upi">UPI</option>
-                          <option value="Loan">Loan</option>
+                          <option value="bajaj_loan">Bajaj Loan</option>
+                          <option value="fibe_loan">Fibe Loan</option>
                           <option value="banking">Bank Transfer</option>
                         </select>
                       </div>

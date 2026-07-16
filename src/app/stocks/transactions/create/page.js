@@ -18,7 +18,7 @@ import {
 
 const getPaymentIdConfig = (method) => {
   if (method === "card") return { placeholder: "Please enter card last no.", required: true };
-  if (method?.toLowerCase() === "loan") return { placeholder: "Please add the reference id", required: true };
+  if (method?.toLowerCase() === "bajaj_loan" || method?.toLowerCase() === "fibe_loan") return { placeholder: "Please add the reference id", required: true };
   if (method === "cash") return { placeholder: "Please add transaction id", required: false };
   return { placeholder: "Please add transaction id", required: true };
 };
@@ -194,7 +194,7 @@ export default function AllTransactionsPage() {
       return;
     }
     if (transplantData.method !== "cash" && !transplantData.paymentId) {
-      alert(transplantData.method === "card" ? "Please enter card last no." : transplantData.method?.toLowerCase() === "loan" ? "Please add the reference id" : "Please add transaction id");
+      alert(transplantData.method === "card" ? "Please enter card last no." : transplantData.method?.toLowerCase() === "bajaj_loan" || transplantData.method?.toLowerCase() === "fibe_loan" ? "Please add the reference id" : "Please add transaction id");
       return;
     }
 
@@ -306,7 +306,7 @@ export default function AllTransactionsPage() {
       }
     }
     if (serviceData.method !== "cash" && !serviceData.paymentId) {
-      alert(serviceData.method === "card" ? "Please enter card last no." : serviceData.method?.toLowerCase() === "loan" ? "Please add the reference id" : "Please add transaction id");
+      alert(serviceData.method === "card" ? "Please enter card last no." : serviceData.method?.toLowerCase() === "bajaj_loan" || serviceData.method?.toLowerCase() === "fibe_loan" ? "Please add the reference id" : "Please add transaction id");
       return;
     }
 
@@ -436,7 +436,7 @@ export default function AllTransactionsPage() {
       }
     }
     if (medicineData.method !== "cash" && !medicineData.paymentId) {
-      alert(medicineData.method === "card" ? "Please enter card last no." : medicineData.method?.toLowerCase() === "loan" ? "Please add the reference id" : "Please add transaction id");
+      alert(medicineData.method === "card" ? "Please enter card last no." : medicineData.method?.toLowerCase() === "bajaj_loan" || medicineData.method?.toLowerCase() === "fibe_loan" ? "Please add the reference id" : "Please add transaction id");
       return;
     }
 
@@ -502,7 +502,7 @@ export default function AllTransactionsPage() {
       return;
     }
     if (expenseData.method !== "cash" && !expenseData.paymentId) {
-      alert(expenseData.method === "card" ? "Please enter card last no." : expenseData.method?.toLowerCase() === "loan" ? "Please add the reference id" : "Please add transaction id");
+      alert(expenseData.method === "card" ? "Please enter card last no." : expenseData.method?.toLowerCase() === "bajaj_loan" || expenseData.method?.toLowerCase() === "fibe_loan" ? "Please add the reference id" : "Please add transaction id");
       return;
     }
 
@@ -779,7 +779,8 @@ export default function AllTransactionsPage() {
                           <option value="cash">Cash</option>
                           <option value="card">Card</option>
                           <option value="upi">UPI</option>
-                                                    <option value="loan">Loan</option>
+                                                    <option value="bajaj_loan">Bajaj Loan</option>
+                                                    <option value="fibe_loan">Fibe Loan</option>
 
                           <option value="banking">Bank Transfer</option>
                         </select>
@@ -1153,7 +1154,8 @@ export default function AllTransactionsPage() {
                           <option value="cash">Cash</option>
                           <option value="card">Card</option>
                           <option value="upi">UPI</option>
-                                                    <option value="loan">Loan</option>
+                                                    <option value="bajaj_loan">Bajaj Loan</option>
+                                                    <option value="fibe_loan">Fibe Loan</option>
 
                           <option value="banking">Bank Transfer</option>
                         </select>
@@ -1541,7 +1543,8 @@ export default function AllTransactionsPage() {
                           <option value="cash">Cash</option>
                           <option value="card">Card</option>
                           <option value="upi">UPI</option>
-                                                    <option value="loan">Loan</option>
+                                                    <option value="bajaj_loan">Bajaj Loan</option>
+                                                    <option value="fibe_loan">Fibe Loan</option>
 
                           <option value="banking">Bank Transfer</option>
                         </select>
@@ -1832,7 +1835,8 @@ export default function AllTransactionsPage() {
                           <option value="cash">Cash</option>
                           <option value="card">Card</option>
                           <option value="upi">UPI</option>
-                                                    <option value="loan">Loan</option>
+                                                    <option value="bajaj_loan">Bajaj Loan</option>
+                                                    <option value="fibe_loan">Fibe Loan</option>
 
                           <option value="banking">Bank Transfer</option>
                         </select>

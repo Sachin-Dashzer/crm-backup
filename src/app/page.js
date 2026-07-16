@@ -23,7 +23,7 @@ const features = [
     icon: "💰",
     color: "gold",
     title: "Financial Engine",
-    desc: "Comprehensive transaction management across 4 categories — Transplant, Service, Medicine, and Expense — with full payment tracking, discounts, and multi-method support (UPI, Cash, Card, Banking, Loan). Generate invoices with multiple layout formats.",
+    desc: "Comprehensive transaction management across 4 categories — Transplant, Service, Medicine, and Expense — with full payment tracking, discounts, and multi-method support (UPI, Cash, Card, Banking, Bajaj Loan, Fibe Loan). Generate invoices with multiple layout formats.",
     featured: true,
   },
   {

@@ -54,7 +54,7 @@ const transactionSchema = new mongoose.Schema(
 
     method: {
       type: String,
-      enum: ["upi", "cash", "card", "banking", "Loan", "other", "including-package"],
+      enum: ["upi", "cash", "card", "banking", "bajaj_loan", "fibe_loan", "other", "including-package"],
     },
 
     patient: {

@@ -29,7 +29,8 @@ const METHOD_META = {
   cash:    { label: "Cash",    color: "#10b981", icon: "💵" },
   card:    { label: "Card",    color: "#3b82f6", icon: "💳" },
   banking: { label: "Banking", color: "#8b5cf6", icon: "🏦" },
-  Loan:    { label: "Loan",    color: "#f97316", icon: "📄" },
+  bajaj_loan: { label: "Bajaj Loan", color: "#f97316", icon: "📄" },
+  fibe_loan: { label: "Fibe Loan", color: "#f97316", icon: "📄" },
   other:   { label: "Other",   color: "#9ca3af", icon: "💰" },
 };
 

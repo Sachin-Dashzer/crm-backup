@@ -59,7 +59,8 @@ export const getPaymentMethodName = (method) => {
     cash: 'Cash',
     card: 'Card',
     banking: 'Net Banking',
-    Loan: 'Loan',
+    bajaj_loan: 'Bajaj Loan',
+    fibe_loan: 'Fibe Loan',
     other: 'Other',
   };
   return names[method] || method;

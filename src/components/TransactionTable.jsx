@@ -38,12 +38,13 @@ const PROCEDURE_COLORS = {
 };
 
 const METHOD_COLORS = {
-  upi:     "bg-purple-500 text-white",
-  cash:    "bg-green-500 text-white",
-  card:    "bg-sky-500 text-white",
-  banking: "bg-blue-500 text-white",
-  Loan:    "bg-orange-500 text-white",
-  other:   "bg-gray-400 text-white",
+  upi:            "bg-purple-500 text-white",
+  cash:           "bg-green-500 text-white",
+  card:           "bg-sky-500 text-white",
+  banking:        "bg-blue-500 text-white",
+  bajaj_loan:     "bg-orange-500 text-white",
+  fibe_loan:      "bg-amber-500 text-white",
+  other:          "bg-gray-400 text-white",
 };
 
 const PAYMENT_COLORS = {
@@ -611,7 +612,8 @@ export default function TransactionTable({ config = {} }) {
                       <option value="cash">Cash</option>
                       <option value="card">Card</option>
                       <option value="banking">Banking</option>
-                      <option value="Loan">Loan</option>
+                      <option value="bajaj_loan">Bajaj Loan</option>
+                      <option value="fibe_loan">Fibe Loan</option>
                       <option value="other">Other</option>
                     </select>
                   </div>
