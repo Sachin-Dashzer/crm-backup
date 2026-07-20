@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import connectDB from "@/lib/db";
 import User from "@/models/User";
+import { MAIN_BRANCHES } from "@/lib/branches";
 
 export async function POST(req) {
   try {
@@ -38,7 +39,7 @@ export async function POST(req) {
     // }
 
     // Valid roles for creation
-    const validRoles = ['super-admin', 'admin', 'sales', 'reception', 'surgery', 'counsellor', 'stock', 'hr'];
+    const validRoles = ['super-admin', 'admin', 'sales', 'reception', 'collab', 'surgery', 'counsellor', 'stock', 'hr'];
     if (!validRoles.includes(newRole)) {
       return NextResponse.json(
         { success: false, message: "Invalid role" },
@@ -46,11 +47,11 @@ export async function POST(req) {
       );
     }
 
-    // Valid branches
-    const validBranches = ['Delhi', 'Mumbai', 'Hyderabad', 'Noida', 'All'];
+    // Valid branches: a main branch, "Collab" (shared account for the 8 collab-city panel), or "All"
+    const validBranches = [...MAIN_BRANCHES, 'Collab', 'All'];
     if (branch && !validBranches.includes(branch)) {
       return NextResponse.json(
-        { success: false, message: "Invalid branch. Must be: Delhi, Mumbai, Hyderabad, Noida, or All" },
+        { success: false, message: `Invalid branch. Must be one of: ${validBranches.join(', ')}` },
         { status: 400 }
       );
     }

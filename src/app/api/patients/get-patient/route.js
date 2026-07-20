@@ -4,6 +4,7 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { withDB } from "@/lib/withDB";
 import Patient from "@/models/Patient";
 import Employee from "@/models/Employee";
+import { COLLAB_BRANCHES } from "@/lib/branches";
 
 const split = (v) => (v || "").split(",").filter(Boolean);
 
@@ -46,7 +47,10 @@ const handler = async (req) => {
 
     // Branch: session-level restriction takes priority
     const userBranch = session.user.branch;
-    if (userBranch && userBranch !== "All") {
+    if (userBranch === "Collab") {
+      const requested = branches.filter((b) => COLLAB_BRANCHES.includes(b));
+      query["personal.branch"] = { $in: requested.length ? requested : COLLAB_BRANCHES };
+    } else if (userBranch && userBranch !== "All") {
       query["personal.branch"] = userBranch;
     } else if (branches.length) {
       query["personal.branch"] = branches.length === 1 ? branches[0] : { $in: branches };

@@ -9,6 +9,7 @@ import Stock from "@/models/Stock";
 import Leads from "@/models/Leads";
 import Interviewer from "@/models/Interviewer";
 import Vendor from "@/models/Vendor";
+import { ALL_BRANCHES } from "@/lib/branches";
 
 export async function GET(request) {
   try {
@@ -1024,7 +1025,7 @@ async function generateProcedureRevenueReport({
 }
 
 async function generateBranchComparisonReport({ visitDateFilter, txDateFilter }) {
-  const branches = ["Delhi", "Mumbai", "Hyderabad", "Noida"];
+  const branches = ALL_BRANCHES;
   const result = [];
 
   for (const b of branches) {

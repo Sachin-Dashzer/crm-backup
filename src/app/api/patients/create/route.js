@@ -89,7 +89,7 @@ const handler = async (req) => {
         email: personal.email?.trim() || "",
         age: personal.age || null,
         gender: personal.gender || "MALE",
-        branch: personal.branch || userBranch || "",
+        branch: personal.branch || (userBranch === "Collab" ? "" : userBranch) || "",
         address: personal.address || "",
         profession: personal.profession || "",
         visitDate: personal.visitDate || new Date(),

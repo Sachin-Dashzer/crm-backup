@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import connectDB from "@/lib/db";
 import User from "@/models/User";
+import { MAIN_BRANCHES } from "@/lib/branches";
 
 export async function POST(req) {
   try {
@@ -87,7 +88,7 @@ export async function POST(req) {
     }
 
     if (role) {
-      const validRoles = ['super-admin', 'admin', 'sales', 'reception', 'surgery', 'counsellor', 'stock', 'hr'];
+      const validRoles = ['super-admin', 'admin', 'sales', 'reception', 'collab', 'surgery', 'counsellor', 'stock', 'hr'];
       if (!validRoles.includes(role)) {
         return NextResponse.json(
           { success: false, message: "Invalid role" },
@@ -98,7 +99,7 @@ export async function POST(req) {
     }
 
     if (branch) {
-      const validBranches = ['Delhi', 'Mumbai', 'Hyderabad', 'Noida', 'All'];
+      const validBranches = [...MAIN_BRANCHES, 'Collab', 'All'];
       if (!validBranches.includes(branch)) {
         return NextResponse.json(
           { success: false, message: "Invalid branch" },

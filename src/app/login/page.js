@@ -50,6 +50,7 @@ export default function LoginPage() {
           sales: '/sales/dashboard',
           counsellor: '/counsellor/patients',
           reception: '/reception/dashboard',
+          collab: '/collab/dashboard',
           surgery: '/surgery/dashboard',
           stock: '/stocks/dashboard',
           hr: '/hr/dashboard',

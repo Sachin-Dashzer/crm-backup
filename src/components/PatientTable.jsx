@@ -146,6 +146,7 @@ export default function PatientTable({ config = {} }) {
     enableSorting    = true,
     formatCurrency: useCurrency = false,
     filters: filterCfg = {},
+    locationOptions = LOCATION_OPTIONS,
   } = config;
 
   const searchParams = useSearchParams();
@@ -674,7 +675,7 @@ const [loading, setLoading]       = useState(true);
                     values={filters.branch}
                     onChange={(v) => applyFilter("branch", v)}
                     placeholder="All Branches"
-                    options={LOCATION_OPTIONS.map((l) => ({ label: l, value: l }))}
+                    options={locationOptions.map((l) => ({ label: l, value: l }))}
                   />
                 </DrawerField>
                 <div className="grid grid-cols-2 gap-3">

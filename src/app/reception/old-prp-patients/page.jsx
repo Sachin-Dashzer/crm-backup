@@ -230,7 +230,7 @@ export default function OldPRPPatientsPage() {
 
             {/* Header */}
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-md">
+              <div className="w-10 h-10 rounded-xl bg-linear-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-md">
                 <Droplets className="w-5 h-5 text-white" />
               </div>
               <div>
@@ -494,7 +494,7 @@ export default function OldPRPPatientsPage() {
                 className={`w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-bold transition-all shadow-md ${
                   loading
                     ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                    : "bg-gradient-to-r from-indigo-500 to-purple-600 text-white hover:opacity-90 hover:shadow-lg active:scale-[0.98]"
+                    : "bg-linear-to-r from-indigo-500 to-purple-600 text-white hover:opacity-90 hover:shadow-lg active:scale-[0.98]"
                 }`}
               >
                 {loading ? (

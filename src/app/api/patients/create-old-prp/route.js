@@ -8,7 +8,8 @@ const FALLBACK_DATE = new Date("2025-01-01T00:00:00.000Z");
 
 const handler = async (req) => {
   const session = await getServerSession(authOptions);
-  const userBranch = session?.user?.branch || null;
+  const rawUserBranch = session?.user?.branch || null;
+  const userBranch = rawUserBranch === "Collab" ? null : rawUserBranch;
 
   const body = await req.json();
   const { personal, surgery, afterSurgery, payments } = body;

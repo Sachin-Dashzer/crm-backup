@@ -2,8 +2,9 @@ import { NextResponse } from "next/server";
 import { withDB } from "@/lib/withDB";
 import Patient from "@/models/Patient";
 import Transactions from "@/models/Transactions";
+import { ALL_BRANCHES } from "@/lib/branches";
 
-const VALID_BRANCHES = ["All", "Delhi", "Mumbai", "Hyderabad", "Noida"];
+const VALID_BRANCHES = ["All", ...ALL_BRANCHES];
 
 const handler = async (req) => {
   try {

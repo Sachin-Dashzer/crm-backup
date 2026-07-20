@@ -34,6 +34,7 @@ export default function ProtectedRoute({ children, allowedRoles = [] }) {
           admin: '/admin/dashboard',
           sales: '/sales/dashboard',
           reception: '/reception/dashboard',
+          collab: '/collab/dashboard',
           surgery: '/surgery/dashboard',
         };
         router.push(roleRoutes[userRole] || '/login');

@@ -48,6 +48,11 @@ export const ROLE_PERMISSIONS = {
     permissions: ['appointments', 'patients', 'transactions', 'bills'],
     canAccessAllBranches: false,
   },
+  collab: {
+    routes: ['/collab'],
+    permissions: ['appointments', 'patients', 'transactions', 'bills'],
+    canAccessAllBranches: false,
+  },
   surgery: {
     routes: ['/surgery'],
     permissions: ['patients', 'surgeries'],

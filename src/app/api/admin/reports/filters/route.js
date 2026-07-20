@@ -14,11 +14,13 @@ const handler = async (req) => {
     const revenueCount = await Transactions.countDocuments({ costType: "Revenue" });
     const expensesCount = await Transactions.countDocuments({ costType: "Expenses" });
 
-    // Get transactions by branch
-    const delhiCount = await Transactions.countDocuments({ branch: "Delhi" });
-    const mumbaiCount = await Transactions.countDocuments({ branch: "Mumbai" });
-    const hyderabadCount = await Transactions.countDocuments({ branch: "Hyderabad" });
-    const noidaCount = await Transactions.countDocuments({ branch: "Noida" });
+    // Get transactions by branch (dynamic — picks up any branch value present in the data)
+    const distinctBranches = (await Transactions.distinct("branch")).filter(Boolean);
+    const branchCounts = Object.fromEntries(
+      await Promise.all(
+        distinctBranches.map(async (b) => [b, await Transactions.countDocuments({ branch: b })])
+      )
+    );
 
     // Get transactions with dates
     const withDates = await Transactions.countDocuments({ date: { $exists: true, $ne: null } });
@@ -55,11 +57,8 @@ const handler = async (req) => {
         revenue: revenueCount,
         expenses: expensesCount,
         byBranch: {
-          Delhi: delhiCount,
-          Mumbai: mumbaiCount,
-          Hyderabad: hyderabadCount,
-          Noida: noidaCount,
-          unassigned: await Transactions.countDocuments({ 
+          ...branchCounts,
+          unassigned: await Transactions.countDocuments({
             $or: [
               { branch: { $exists: false } },
               { branch: null },

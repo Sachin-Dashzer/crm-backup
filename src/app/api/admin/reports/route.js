@@ -1,19 +1,53 @@
+import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import dbConnect from "@/lib/db";
 import Patient from "@/models/Patient";
 import Employee from "@/models/Employee";
 import Transactions from "@/models/Transactions";
 import Stock from "@/models/Stock";
 import Vendor from "@/models/Vendor";
+import { ALL_BRANCHES, COLLAB_BRANCHES } from "@/lib/branches";
+
+// Whether `branchName` (a plain branch string) is covered by `branchFilter`, which may be
+// undefined/empty (no restriction), a plain string (exact match), or a Mongo `{ $in: [...] }`.
+function branchAllowed(branchFilter, branchName) {
+  if (!branchFilter) return true;
+  if (typeof branchFilter === "string") return branchFilter === branchName;
+  if (branchFilter.$in) return branchFilter.$in.includes(branchName);
+  return true;
+}
 
 export async function GET(request) {
   try {
     await dbConnect();
 
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized. Please login." }, { status: 401 });
+    }
+
     const { searchParams } = new URL(request.url);
     const type = searchParams.get("type");
     const from = searchParams.get("from");
     const to = searchParams.get("to");
-    const branch = searchParams.get("branch");
+    const requestedBranch = searchParams.get("branch");
+
+    // Scope the branch filter to what this role/session is allowed to see.
+    // admin/super-admin: unrestricted (whatever was requested, or none).
+    // collab: always limited to the 8 collab-city set.
+    // reception (and any other single-branch role): pinned to their own branch.
+    let branch = requestedBranch || undefined;
+    const role = session.user.role;
+    const userBranch = session.user.branch;
+    if (role === "collab") {
+      branch = requestedBranch && COLLAB_BRANCHES.includes(requestedBranch)
+        ? requestedBranch
+        : { $in: COLLAB_BRANCHES };
+    } else if (!["admin", "super-admin"].includes(role) && userBranch && userBranch !== "All") {
+      branch = userBranch;
+    }
+
     const staffFilter = searchParams.get("staffFilter");
     const techniqueFilter = searchParams.get("techniqueFilter");
     const statusFilter = searchParams.get("statusFilter");
@@ -206,7 +240,7 @@ export async function GET(request) {
 
       // ==================== BRANCH REPORTS ====================
       case "branch-comparison":
-        data = await generateBranchComparisonReport({ patientDateFilter, transactionDateFilter });
+        data = await generateBranchComparisonReport({ patientDateFilter, transactionDateFilter, branch });
         break;
 
       case "branch-revenue":
@@ -1183,13 +1217,14 @@ async function generateProcedureRevenueReport(filters) {
 }
 
 async function generateBranchComparisonReport(filters) {
-  const branches = ["Delhi", "Mumbai", "Hyderabad", "Noida"];
   const patientQuery = { ...filters.patientDateFilter };
   const txQuery = { ...filters.transactionDateFilter };
 
   const branchData = [];
 
-  for (const branch of branches) {
+  for (const branch of ALL_BRANCHES) {
+    if (!branchAllowed(filters.branch, branch)) continue;
+
     const branchQuery = { ...patientQuery, "personal.branch": branch };
 
     const totalPatients = await Patient.countDocuments(branchQuery);
@@ -1303,13 +1338,12 @@ async function generateBranchRevenueReport(filters) {
 }
 
 async function generateBranchPatientsReport(filters) {
-  const branches = ["Delhi", "Mumbai", "Hyderabad", "Noida"];
   const query = { ...filters.dateFilter };
 
   const branchData = [];
 
-  for (const branch of branches) {
-    if (filters.branch && filters.branch !== branch) continue;
+  for (const branch of ALL_BRANCHES) {
+    if (!branchAllowed(filters.branch, branch)) continue;
 
     const branchQuery = { ...query, "personal.branch": branch };
 

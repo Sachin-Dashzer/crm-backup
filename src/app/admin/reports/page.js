@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import AdminSidebar from "@/components/Sidebars/Sidebar";
+import { ALL_BRANCHES } from "@/lib/branches";
 import {
   Download,
   Filter,
@@ -32,7 +33,7 @@ import {
 } from "lucide-react";
 
 /* ─── Constants ─────────────────────────────────────────────────────────────── */
-const BRANCHES = ["All", "Delhi", "Mumbai", "Hyderabad", "Noida"];
+const BRANCHES = ["All", ...ALL_BRANCHES];
 
 const DATE_PRESETS = [
   { label: "Today", value: "today" },

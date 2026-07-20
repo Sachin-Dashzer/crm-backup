@@ -4,6 +4,7 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import connectDB from "@/lib/db";
 import Transactions from "@/models/Transactions";
 import Patient from "@/models/Patient";
+import { resolveBranchFilter } from "@/lib/branches";
 import "@/models/Stock";
 import "@/models/Vendor";
 import "@/models/Employee";
@@ -30,17 +31,10 @@ export async function GET(request) {
 
     await connectDB();
 
-    const userBranch = session.user.branch;
+    const branchFilter = resolveBranchFilter(session, branch);
 
     // Build the main query
-    const query = {};
-
-    // Branch restriction: session branch overrides filter unless "All"
-    if (userBranch && userBranch !== "All") {
-      query.branch = userBranch;
-    } else if (branch) {
-      query.branch = branch;
-    }
+    const query = { ...branchFilter };
 
     // Category filter
     if (category) {
@@ -115,12 +109,7 @@ export async function GET(request) {
     }
 
     // Stats aggregation query: same filters except category (to show totals for all categories)
-    const statsQuery = {};
-    if (userBranch && userBranch !== "All") {
-      statsQuery.branch = userBranch;
-    } else if (branch) {
-      statsQuery.branch = branch;
-    }
+    const statsQuery = { ...branchFilter };
     if (query.date)        statsQuery.date   = query.date;
     if (query.method)      statsQuery.method = query.method;
     if (query.procedure)   statsQuery.procedure = query.procedure;

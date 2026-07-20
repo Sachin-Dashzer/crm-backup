@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { ALL_BRANCHES } from "@/lib/branches";
 
 const transactionSchema = new mongoose.Schema(
   {
@@ -88,7 +89,7 @@ const transactionSchema = new mongoose.Schema(
 
     branch: {
       type: String,
-      enum: ["Delhi", "Mumbai", "Hyderabad", "Noida"],
+      enum: ALL_BRANCHES,
     },
 
     expense: String,

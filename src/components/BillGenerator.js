@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Logo from "@/../public/logo-2.png";
 import Logo2 from "@/../public/logo.png";
+import { COLLAB_BRANCHES } from "@/lib/branches";
 import {
   Loader2,
   Printer,
@@ -49,6 +50,22 @@ const CLINIC_BRANCHES = {
     website: "https://clinicryan.com",
     gstin: "",
   },
+  // Placeholder entries for the new collab-panel cities — real clinic address/GSTIN
+  // per city still needs to be filled in for legally correct invoices.
+  ...Object.fromEntries(
+    COLLAB_BRANCHES.map((city) => [
+      city,
+      {
+        img: Logo,
+        name: "RYAN CLINIC",
+        address: "",
+        city,
+        phone: "",
+        website: "https://clinicryan.com",
+        gstin: "",
+      },
+    ])
+  ),
 };
 
 const formatDateForDisplay = (date) => {

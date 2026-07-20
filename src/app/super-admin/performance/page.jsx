@@ -15,9 +15,10 @@ import {
   Megaphone, UserCheck, UserX, Scissors, CreditCard,
 } from "lucide-react";
 import SuperAdminSidebar from "@/components/Sidebars/SuperAdminSidebar";
+import { ALL_BRANCHES } from "@/lib/branches";
 
 /* ─── Constants ──────────────────────────────────────────────────────────── */
-const BRANCHES    = ["All", "Delhi", "Mumbai", "Hyderabad", "Noida"];
+const BRANCHES    = ["All", ...ALL_BRANCHES];
 const DATE_RANGES = ["Today", "Yesterday", "Last 7 Days", "Last 30 Days", "Custom"];
 
 const PALETTE = [

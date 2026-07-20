@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import Patient from "./Patient";
+import { ALL_BRANCHES } from "@/lib/branches";
 
 const auditSchema = new mongoose.Schema({
   costType: {
@@ -39,7 +40,7 @@ const auditSchema = new mongoose.Schema({
   paymentId: String,
   branch: {
     type: String,
-    enum: ["Delhi", "Mumbai", "Hyderabad", "Noida"],
+    enum: ALL_BRANCHES,
   },
   expense: String,
   discount: {

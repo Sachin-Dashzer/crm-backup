@@ -7,6 +7,7 @@ const ROLE_HOME = {
   admin:         "/admin/dashboard",
   sales:         "/sales/dashboard",
   reception:     "/reception/dashboard",
+  collab:        "/collab/dashboard",
   surgery:       "/surgery/dashboard",
   counsellor:    "/counsellor/patients",
   stock:         "/stocks/dashboard",
@@ -15,10 +16,11 @@ const ROLE_HOME = {
 
 // Which top-level paths each role is allowed to access
 const ROLE_ALLOWED_PREFIXES = {
-  "super-admin": ["/super-admin", "/admin", "/sales", "/reception", "/surgery", "/counsellor", "/stocks", "/hr"],
+  "super-admin": ["/super-admin", "/admin", "/sales", "/reception", "/collab", "/surgery", "/counsellor", "/stocks", "/hr"],
   admin:         ["/admin", "/stocks"],
   sales:         ["/sales"],
   reception:     ["/reception"],
+  collab:        ["/collab"],
   surgery:       ["/surgery"],
   counsellor:    ["/counsellor"],
   stock:         ["/stocks"],
@@ -59,6 +61,7 @@ export const config = {
     "/super-admin/:path*",
     "/sales/:path*",
     "/reception/:path*",
+    "/collab/:path*",
     "/surgery/:path*",
     "/counsellor/:path*",
     "/stocks/:path*",
