@@ -28,10 +28,11 @@ const getPaymentIdConfig = (method) => {
 const getTodayIST = () =>
   new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
 
-// Admin users have branch="All" which is not a valid transaction branch enum value.
-// Fall back to "Delhi" for initial form state; admin selects the actual branch via dropdown.
+// Admin users have branch="All" and Collab accounts have branch="Collab" —
+// neither is a valid transaction branch enum value.
+// Fall back to "Delhi" for initial form state; user selects the actual branch via dropdown.
 const resolveDefaultBranch = (branch) =>
-  branch && branch !== "All" ? branch : "Delhi";
+  branch && branch !== "All" && branch !== "Collab" ? branch : "Delhi";
 
 export default function AdminCreateTransactionPage() {
   const router = useRouter();

@@ -28,6 +28,14 @@ const getPaymentIdConfig = (method) => {
 const getTodayIST = () =>
   new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
 
+// useSession() can resolve synchronously on mount if the session is already
+// cached, so the initial useState() calls below can't just fall back to
+// "Delhi" only when branch is falsy — a Collab account's "Collab" sentinel
+// (not a real city) would slip through and fail the Transaction model's
+// branch enum. Treat it like the "All" case and require an explicit pick.
+const resolveInitialBranch = (branch) =>
+  branch && branch !== "All" && branch !== "Collab" ? branch : "Delhi";
+
 export default function AllTransactionsPage() {
   const router = useRouter();
   const { data: session } = useSession();
@@ -52,7 +60,7 @@ export default function AllTransactionsPage() {
     method: "cash",
     paymentId: "",
     date: getTodayIST(),
-    branch: session?.user?.branch || "Delhi",
+    branch: resolveInitialBranch(session?.user?.branch),
     remarks: "",
   });
 
@@ -66,7 +74,7 @@ export default function AllTransactionsPage() {
     method: "cash",
     paymentId: "",
     date: getTodayIST(),
-    branch: session?.user?.branch || "Delhi",
+    branch: resolveInitialBranch(session?.user?.branch),
     remarks: "",
   });
 
@@ -90,7 +98,7 @@ export default function AllTransactionsPage() {
     method: "cash",
     paymentId: "",
     date: getTodayIST(),
-    branch: session?.user?.branch || "Delhi",
+    branch: resolveInitialBranch(session?.user?.branch),
     remarks: "",
   });
 
@@ -115,7 +123,7 @@ export default function AllTransactionsPage() {
     method: "cash",
     paymentId: "",
     date: getTodayIST(),
-    branch: session?.user?.branch || "Delhi",
+    branch: resolveInitialBranch(session?.user?.branch),
     remarks: "",
   });
 
@@ -164,6 +172,8 @@ export default function AllTransactionsPage() {
   // form defaulted to "Delhi" regardless of the logged-in user's actual
   // branch. Sync it in once the session loads, unless the user already
   // picked a branch manually.
+  // Collab accounts carry the "Collab" sentinel (not a real city), so it's
+  // excluded — it would otherwise fail the Transaction model's branch enum.
   const branchTouchedRef = useRef({
     transplant: false,
     service: false,
@@ -173,7 +183,7 @@ export default function AllTransactionsPage() {
 
   useEffect(() => {
     const userBranch = session?.user?.branch;
-    if (!userBranch || userBranch === "All") return;
+    if (!userBranch || userBranch === "All" || userBranch === "Collab") return;
     const touched = branchTouchedRef.current;
     if (!touched.transplant) setTransplantData((d) => ({ ...d, branch: userBranch }));
     if (!touched.service) setServiceData((d) => ({ ...d, branch: userBranch }));

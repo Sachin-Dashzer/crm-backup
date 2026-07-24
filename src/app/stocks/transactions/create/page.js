@@ -23,6 +23,14 @@ const getPaymentIdConfig = (method) => {
   return { placeholder: "Please add transaction id", required: true };
 };
 
+// useSession() can resolve synchronously on mount if the session is already
+// cached, so falling back to "Delhi" only when branch is falsy isn't enough —
+// a Collab account's "Collab" sentinel (not a real city) would slip through
+// and fail the Transaction model's branch enum. Treat it like "All" and
+// require an explicit pick.
+const resolveInitialBranch = (branch) =>
+  branch && branch !== "All" && branch !== "Collab" ? branch : "Delhi";
+
 export default function AllTransactionsPage() {
   const router = useRouter();
   const { data: session } = useSession();
@@ -44,7 +52,7 @@ export default function AllTransactionsPage() {
     method: "cash",
     paymentId: "",
     date: new Date().toISOString().split("T")[0],
-    branch: session?.user?.branch || "Delhi",
+    branch: resolveInitialBranch(session?.user?.branch),
     remarks: "",
   });
 
@@ -58,7 +66,7 @@ export default function AllTransactionsPage() {
     method: "cash",
     paymentId: "",
     date: new Date().toISOString().split("T")[0],
-    branch: session?.user?.branch || "Delhi",
+    branch: resolveInitialBranch(session?.user?.branch),
     remarks: "",
   });
 
@@ -82,7 +90,7 @@ export default function AllTransactionsPage() {
     method: "cash",
     paymentId: "",
     date: new Date().toISOString().split("T")[0],
-    branch: session?.user?.branch || "Delhi",
+    branch: resolveInitialBranch(session?.user?.branch),
     remarks: "",
   });
 
@@ -107,7 +115,7 @@ export default function AllTransactionsPage() {
     method: "cash",
     paymentId: "",
     date: new Date().toISOString().split("T")[0],
-    branch: session?.user?.branch || "Delhi",
+    branch: resolveInitialBranch(session?.user?.branch),
     remarks: "",
   });
 

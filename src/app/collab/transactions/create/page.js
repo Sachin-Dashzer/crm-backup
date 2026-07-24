@@ -873,6 +873,7 @@ export default function AllTransactionsPage() {
                           }}
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                         >
+                          <option value="">Choose a branch</option>
                           <option value="Patna">Patna</option>
                           <option value="Kolkata">Kolkata</option>
                           <option value="Ahmedabad">Ahmedabad</option>
@@ -1251,6 +1252,7 @@ export default function AllTransactionsPage() {
                           }}
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                         >
+                          <option value="">Choose a branch</option>
                           <option value="Patna">Patna</option>
                           <option value="Kolkata">Kolkata</option>
                           <option value="Ahmedabad">Ahmedabad</option>
@@ -1641,6 +1643,7 @@ export default function AllTransactionsPage() {
                           }}
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                         >
+                          <option value="">Choose a branch</option>
                           <option value="Patna">Patna</option>
                           <option value="Kolkata">Kolkata</option>
                           <option value="Ahmedabad">Ahmedabad</option>
@@ -1932,6 +1935,7 @@ export default function AllTransactionsPage() {
                           }}
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                         >
+                          <option value="">Choose a branch</option>
                           <option value="Patna">Patna</option>
                           <option value="Kolkata">Kolkata</option>
                           <option value="Ahmedabad">Ahmedabad</option>
