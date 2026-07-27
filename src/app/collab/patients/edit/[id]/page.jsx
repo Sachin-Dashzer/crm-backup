@@ -249,6 +249,8 @@ const TransactionManager = ({ transactions, onChange, onAdd, onRemove }) => (
               { value: "Pune", label: "Pune" },
               { value: "Lucknow", label: "Lucknow" },
               { value: "Chennai", label: "Chennai" },
+              { value: "Jammu", label: "Jammu" },
+              { value: "Kashmir", label: "Kashmir" },
             ]}
           />
           <InputField
@@ -1326,6 +1328,8 @@ export default function PatientEditDetails() {
                       { value: "Pune", label: "Pune" },
                       { value: "Lucknow", label: "Lucknow" },
                       { value: "Chennai", label: "Chennai" },
+                      { value: "Jammu", label: "Jammu" },
+                      { value: "Kashmir", label: "Kashmir" },
                     ]}
                   />
 

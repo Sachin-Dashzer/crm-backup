@@ -1027,6 +1027,8 @@ export default function PatientRegistration() {
                       { value: "Pune", label: "Pune" },
                       { value: "Lucknow", label: "Lucknow" },
                       { value: "Chennai", label: "Chennai" },
+                      { value: "Jammu", label: "Jammu" },
+                      { value: "Kashmir", label: "Kashmir" },
                     ]}
                   />
 

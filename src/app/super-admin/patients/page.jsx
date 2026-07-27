@@ -3,6 +3,7 @@
 import { Suspense } from "react";
 import Sidebar from "@/components/Sidebars/SuperAdminSidebar";
 import PatientTable from "@/components/PatientTable";
+import { ALL_BRANCHES } from "@/lib/branches";
 
 const CONFIG = {
   basePath:        "/admin/patients",
@@ -16,6 +17,7 @@ const CONFIG = {
   pageSizeOptions: [10, 25, 50, 100],
   enableSorting:   true,
   formatCurrency:  false,
+  locationOptions: ALL_BRANCHES,
   filters: {
     showSurgeryDate:     true,
     showVisited:         true,

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useToast } from "@/components/Toast";
 import { useParams } from "next/navigation";
 import InputField from "@/components/InputField";
+import { ALL_BRANCHES } from "@/lib/branches";
 import {
   Upload,
   X,
@@ -240,12 +241,7 @@ const TransactionManager = ({ transactions, onChange, onAdd, onRemove }) => (
             type="select"
             value={transaction.branch || ""}
             onChange={(e) => onChange(index, "branch", e.target.value)}
-            options={[
-              { value: "Delhi", label: "Delhi" },
-              { value: "Mumbai", label: "Mumbai" },
-              { value: "Hyderabad", label: "Hyderabad" },
-              { value: "Noida", label: "Noida" },
-            ]}
+            options={ALL_BRANCHES.map((b) => ({ value: b, label: b }))}
           />
           <InputField
             label="Purpose"
@@ -1329,12 +1325,7 @@ export default function PatientEditDetails() {
                     type="select"
                     value={formData.personal.branch}
                     onChange={createChangeHandler("personal", "branch")}
-                    options={[
-                      { value: "Delhi", label: "Delhi" },
-                      { value: "Mumbai", label: "Mumbai" },
-                      { value: "Hyderabad", label: "Hyderabad" },
-              { value: "Noida", label: "Noida" },
-                    ]}
+                    options={ALL_BRANCHES.map((b) => ({ value: b, label: b }))}
                   />
                   <InputField
                     label="Purpose"

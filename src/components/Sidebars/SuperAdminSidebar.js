@@ -162,6 +162,13 @@ export default function SuperAdminSidebar() {
               active={isActive("/super-admin/interviews")}
               onClick={close}
             />
+            <NavItem
+              label="Lead Funnel"
+              href="/super-admin/lead-funnel"
+              icon={TrendingUp}
+              active={isActive("/super-admin/lead-funnel")}
+              onClick={close}
+            />
           </NavSection>
 
           <NavSection title="Management">

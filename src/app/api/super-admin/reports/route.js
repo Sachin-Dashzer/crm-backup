@@ -62,6 +62,14 @@ export async function GET(request) {
       };
     }
 
+    const surgeryDateFilter = {};
+    if (from && to) {
+      surgeryDateFilter["surgery.surgeryDate"] = {
+        $gte: new Date(from),
+        $lte: new Date(to),
+      };
+    }
+
     switch (type) {
       // ── PATIENT REPORTS ────────────────────────────────────────────
       case "patients-comprehensive":
@@ -88,7 +96,7 @@ export async function GET(request) {
 
       case "patients-surgery":
         data = await generateSurgeryScheduleReport({
-          visitDateFilter,
+          surgeryDateFilter,
           branch,
           staffFilter,
         });
@@ -408,11 +416,17 @@ async function generateMedicalHistoryReport({ visitDateFilter, branch }) {
 }
 
 async function generateSurgeryScheduleReport({
-  visitDateFilter,
+  surgeryDateFilter,
   branch,
   staffFilter,
 }) {
   const query = { "surgery.surgeryDate": { $exists: true, $ne: null } };
+  if (surgeryDateFilter?.["surgery.surgeryDate"]) {
+    query["surgery.surgeryDate"] = {
+      ...query["surgery.surgeryDate"],
+      ...surgeryDateFilter["surgery.surgeryDate"],
+    };
+  }
   if (branch && branch !== "All") query["personal.branch"] = branch;
 
   const patients = await Patient.find(query)
@@ -420,40 +434,92 @@ async function generateSurgeryScheduleReport({
     .populate("surgery.seniorTech", "name")
     .populate("surgery.implanterRight", "name")
     .populate("surgery.implanterLeft", "name")
+    .populate("surgery.graftingPerson", "name")
+    .populate("surgery.helper", "name")
     .populate("counselling.counsellor", "name")
+    .populate("personal.reference", "name")
     .sort({ "surgery.surgeryDate": -1 })
     .lean();
 
+  // doctor/seniorTech/implanterRight/implanterLeft/graftingPerson/helper are
+  // all arrays on the schema (a surgery can have more than one of each) —
+  // join every populated name rather than reading .name off the array itself.
+  const namesOf = (arr) => (arr || []).map((e) => e?.name).filter(Boolean).join(", ");
+
   let filtered = patients;
   if (staffFilter) {
-    filtered = patients.filter(
-      (p) =>
-        p.surgery?.doctor?.name === staffFilter ||
-        p.surgery?.seniorTech?.name === staffFilter
-    );
+    filtered = patients.filter((p) => {
+      const allStaff = [
+        ...(p.surgery?.doctor || []),
+        ...(p.surgery?.seniorTech || []),
+        ...(p.surgery?.implanterRight || []),
+        ...(p.surgery?.implanterLeft || []),
+        ...(p.surgery?.graftingPerson || []),
+        ...(p.surgery?.helper || []),
+      ];
+      return allStaff.some((e) => e?.name === staffFilter);
+    });
   }
 
-  return filtered.map((p) => ({
-    "Surgery Date": p.surgery?.surgeryDate
-      ? new Date(p.surgery.surgeryDate).toLocaleDateString("en-IN")
-      : "",
-    "Patient Name": p.personal?.name || "",
-    Phone: p.personal?.phone || "",
-    Branch: p.personal?.branch || "",
-    Technique: p.surgery?.technique || "",
-    OT: p.surgery?.OT || "",
-    "Grafts Needed": p.surgery?.graftsneed || "",
-    "Grafts Implanted": p.surgery?.graftsImplanted || "",
-    Doctor: p.surgery?.doctor?.name || "",
-    "Senior Tech": p.surgery?.seniorTech?.name || "",
-    "Implanter Right": p.surgery?.implanterRight?.name || "",
-    "Implanter Left": p.surgery?.implanterLeft?.name || "",
-    Counsellor: p.counselling?.counsellor?.name || "",
-    "Total Amount": p.payments?.totalAmount || 0,
-    "Amount Received": p.payments?.amountReceived || 0,
-    "Pending Amount": p.payments?.pendingAmount || 0,
-    Status: p.ops?.status || "",
-  }));
+  return filtered.map((p) => {
+    const prpSessions = (p.afterSurgery?.prp || [])
+      .map(
+        (s) =>
+          `#${s.prpNumber ?? "—"} ${s.type || "PRP"} (${
+            s.date ? new Date(s.date).toLocaleDateString("en-IN") : "—"
+          })`
+      )
+      .join("; ");
+
+    return {
+      "Surgery Date": p.surgery?.surgeryDate
+        ? new Date(p.surgery.surgeryDate).toLocaleDateString("en-IN")
+        : "",
+      "Patient Name": p.personal?.name || "",
+      Phone: p.personal?.phone || "",
+      Email: p.personal?.email || "",
+      Age: p.personal?.age || "",
+      Gender: p.personal?.gender || "",
+      Branch: p.personal?.branch || "",
+      Address: p.personal?.address || "",
+      "Referred By": p.personal?.reference?.name || "",
+      Location: p.surgery?.location || "",
+      Technique: p.surgery?.technique || "",
+      OT: p.surgery?.OT || "",
+      "Grafts Needed": p.surgery?.graftsneed || "",
+      "Grafts Implanted": p.surgery?.graftsImplanted || "",
+      "Donor Condition": p.surgery?.donorCondition || "",
+      Doctor: namesOf(p.surgery?.doctor),
+      "Senior Tech": namesOf(p.surgery?.seniorTech),
+      "Implanter Right": namesOf(p.surgery?.implanterRight),
+      "Implanter Left": namesOf(p.surgery?.implanterLeft),
+      "Grafting Person": namesOf(p.surgery?.graftingPerson),
+      Helper: namesOf(p.surgery?.helper),
+      Counsellor: p.counselling?.counsellor?.name || "",
+      "Headwash Date": p.afterSurgery?.headwashDate
+        ? new Date(p.afterSurgery.headwashDate).toLocaleDateString("en-IN")
+        : "",
+      "Bandage Removal Date": p.afterSurgery?.bandageRemovalDate
+        ? new Date(p.afterSurgery.bandageRemovalDate).toLocaleDateString("en-IN")
+        : "",
+      "PRP Sessions": prpSessions,
+      "Blood Group": p.medical?.bloodGroup || "",
+      Allergies: p.medical?.allergies || "",
+      "Medical History": p.medical?.medicalHistory || "",
+      Sugar: p.medical?.sugar || "",
+      BP: p.medical?.bp || "",
+      Pulse: p.medical?.pulse || "",
+      Weight: p.medical?.weight || "",
+      HIV: p.medical?.hiv || "",
+      HCV: p.medical?.hcv || "",
+      "Total Amount": p.payments?.totalAmount || 0,
+      "Amount Received": p.payments?.amountReceived || 0,
+      "Pending Amount": p.payments?.pendingAmount || 0,
+      Discount: p.payments?.discount || 0,
+      "Medicine Amount": p.payments?.medicineAmount || 0,
+      Status: p.ops?.status || "",
+    };
+  });
 }
 
 async function generateCounsellingOutcomesReport({

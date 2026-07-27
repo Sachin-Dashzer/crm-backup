@@ -486,6 +486,16 @@ export default function AdminCreateTransactionPage() {
                           <option value="Mumbai">Mumbai</option>
                           <option value="Hyderabad">Hyderabad</option>
                           <option value="Noida">Noida</option>
+                          <option value="Patna">Patna</option>
+                          <option value="Kolkata">Kolkata</option>
+                          <option value="Ahmedabad">Ahmedabad</option>
+                          <option value="Jaipur">Jaipur</option>
+                          <option value="Bengaluru">Bengaluru</option>
+                          <option value="Pune">Pune</option>
+                          <option value="Lucknow">Lucknow</option>
+                          <option value="Chennai">Chennai</option>
+                          <option value="Jammu">Jammu</option>
+                          <option value="Kashmir">Kashmir</option>
                         </select>
                       </div>
                       <div>
@@ -624,6 +634,16 @@ export default function AdminCreateTransactionPage() {
                           <option value="Mumbai">Mumbai</option>
                           <option value="Hyderabad">Hyderabad</option>
                           <option value="Noida">Noida</option>
+                          <option value="Patna">Patna</option>
+                          <option value="Kolkata">Kolkata</option>
+                          <option value="Ahmedabad">Ahmedabad</option>
+                          <option value="Jaipur">Jaipur</option>
+                          <option value="Bengaluru">Bengaluru</option>
+                          <option value="Pune">Pune</option>
+                          <option value="Lucknow">Lucknow</option>
+                          <option value="Chennai">Chennai</option>
+                          <option value="Jammu">Jammu</option>
+                          <option value="Kashmir">Kashmir</option>
                         </select>
                       </div>
                       <div>
@@ -766,6 +786,16 @@ export default function AdminCreateTransactionPage() {
                           <option value="Mumbai">Mumbai</option>
                           <option value="Hyderabad">Hyderabad</option>
                           <option value="Noida">Noida</option>
+                          <option value="Patna">Patna</option>
+                          <option value="Kolkata">Kolkata</option>
+                          <option value="Ahmedabad">Ahmedabad</option>
+                          <option value="Jaipur">Jaipur</option>
+                          <option value="Bengaluru">Bengaluru</option>
+                          <option value="Pune">Pune</option>
+                          <option value="Lucknow">Lucknow</option>
+                          <option value="Chennai">Chennai</option>
+                          <option value="Jammu">Jammu</option>
+                          <option value="Kashmir">Kashmir</option>
                         </select>
                       </div>
                       <div>
@@ -878,6 +908,16 @@ export default function AdminCreateTransactionPage() {
                           <option value="Mumbai">Mumbai</option>
                           <option value="Hyderabad">Hyderabad</option>
                           <option value="Noida">Noida</option>
+                          <option value="Patna">Patna</option>
+                          <option value="Kolkata">Kolkata</option>
+                          <option value="Ahmedabad">Ahmedabad</option>
+                          <option value="Jaipur">Jaipur</option>
+                          <option value="Bengaluru">Bengaluru</option>
+                          <option value="Pune">Pune</option>
+                          <option value="Lucknow">Lucknow</option>
+                          <option value="Chennai">Chennai</option>
+                          <option value="Jammu">Jammu</option>
+                          <option value="Kashmir">Kashmir</option>
                         </select>
                       </div>
                       <div>

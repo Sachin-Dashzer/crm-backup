@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import SuperAdminSidebar from "@/components/Sidebars/SuperAdminSidebar";
 import { useToast } from "@/components/Toast";
 import BillGenerator from "@/components/BillGenerator";
+import { ALL_BRANCHES } from "@/lib/branches";
 import {
   Filter,
   X,
@@ -395,7 +396,7 @@ function DataTable({ category, rows, onDelete, onSort, sortConfig, pagination, o
 
 // ========== MAIN COMPONENT ==========
 export default function SuperAdminTransactionsPage() {
-  const tenantBranches = ["Delhi", "Mumbai", "Hyderabad", "Noida"];
+  const tenantBranches = ALL_BRANCHES;
 
   const router = useRouter();
   const toast  = useToast();

@@ -109,7 +109,7 @@ const REPORTS = [
   {
     id: 4, type: "patients-surgery", category: "Patient Reports",
     name: "Surgery Schedule Report",
-    description: "All surgeries with doctor, technician, implanter, technique, and graft details",
+    description: "Every surgery detail — full surgical team, technique, grafts, donor condition, location, aftercare (headwash/bandage/PRP), medical readiness, and payments",
     icon: Stethoscope, color: "purple",
     filters: ["branch", "staff"],
   },

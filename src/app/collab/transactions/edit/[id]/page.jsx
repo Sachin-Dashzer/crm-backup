@@ -965,6 +965,8 @@ export default function EditTransactionPage() {
                           <option value="Pune">Pune</option>
                           <option value="Lucknow">Lucknow</option>
                           <option value="Chennai">Chennai</option>
+                          <option value="Jammu">Jammu</option>
+                          <option value="Kashmir">Kashmir</option>
                         </select>
                       </div>
                       <div>
@@ -1287,6 +1289,8 @@ export default function EditTransactionPage() {
                           <option value="Pune">Pune</option>
                           <option value="Lucknow">Lucknow</option>
                           <option value="Chennai">Chennai</option>
+                          <option value="Jammu">Jammu</option>
+                          <option value="Kashmir">Kashmir</option>
                         </select>
                       </div>
                       <div>
@@ -1602,6 +1606,8 @@ export default function EditTransactionPage() {
                           <option value="Pune">Pune</option>
                           <option value="Lucknow">Lucknow</option>
                           <option value="Chennai">Chennai</option>
+                          <option value="Jammu">Jammu</option>
+                          <option value="Kashmir">Kashmir</option>
                         </select>
                       </div>
                       <div>
@@ -1857,6 +1863,8 @@ export default function EditTransactionPage() {
                           <option value="Pune">Pune</option>
                           <option value="Lucknow">Lucknow</option>
                           <option value="Chennai">Chennai</option>
+                          <option value="Jammu">Jammu</option>
+                          <option value="Kashmir">Kashmir</option>
                         </select>
                       </div>
 
