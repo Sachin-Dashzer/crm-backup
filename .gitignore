@@ -36,6 +36,9 @@ yarn-error.log*
 # vercel
 .vercel
 
+# generated patient reports (contain PII, never commit)
+/downloads/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

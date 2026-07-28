@@ -422,6 +422,10 @@ export default function BookAppointment() {
                         { value: "Chennai", label: "Chennai" },
                         { value: "Jammu", label: "Jammu" },
                         { value: "Kashmir", label: "Kashmir" },
+                        { value: "Ranchi", label: "Ranchi" },
+                        { value: "Prayagraj", label: "Prayagraj" },
+                        { value: "Chandigarh", label: "Chandigarh" },
+                        { value: "Jalandhar", label: "Jalandhar" },
                       ]}
                     />
 

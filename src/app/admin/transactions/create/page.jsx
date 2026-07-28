@@ -496,6 +496,10 @@ export default function AdminCreateTransactionPage() {
                           <option value="Chennai">Chennai</option>
                           <option value="Jammu">Jammu</option>
                           <option value="Kashmir">Kashmir</option>
+                          <option value="Ranchi">Ranchi</option>
+                          <option value="Prayagraj">Prayagraj</option>
+                          <option value="Chandigarh">Chandigarh</option>
+                          <option value="Jalandhar">Jalandhar</option>
                         </select>
                       </div>
                       <div>
@@ -644,6 +648,10 @@ export default function AdminCreateTransactionPage() {
                           <option value="Chennai">Chennai</option>
                           <option value="Jammu">Jammu</option>
                           <option value="Kashmir">Kashmir</option>
+                          <option value="Ranchi">Ranchi</option>
+                          <option value="Prayagraj">Prayagraj</option>
+                          <option value="Chandigarh">Chandigarh</option>
+                          <option value="Jalandhar">Jalandhar</option>
                         </select>
                       </div>
                       <div>
@@ -796,6 +804,10 @@ export default function AdminCreateTransactionPage() {
                           <option value="Chennai">Chennai</option>
                           <option value="Jammu">Jammu</option>
                           <option value="Kashmir">Kashmir</option>
+                          <option value="Ranchi">Ranchi</option>
+                          <option value="Prayagraj">Prayagraj</option>
+                          <option value="Chandigarh">Chandigarh</option>
+                          <option value="Jalandhar">Jalandhar</option>
                         </select>
                       </div>
                       <div>
@@ -918,6 +930,10 @@ export default function AdminCreateTransactionPage() {
                           <option value="Chennai">Chennai</option>
                           <option value="Jammu">Jammu</option>
                           <option value="Kashmir">Kashmir</option>
+                          <option value="Ranchi">Ranchi</option>
+                          <option value="Prayagraj">Prayagraj</option>
+                          <option value="Chandigarh">Chandigarh</option>
+                          <option value="Jalandhar">Jalandhar</option>
                         </select>
                       </div>
                       <div>
