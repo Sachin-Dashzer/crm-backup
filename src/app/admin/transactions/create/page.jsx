@@ -1795,17 +1795,68 @@ export default function AdminCreateTransactionPage() {
                         >
                           <option value="">Select Category</option>
                           <option value="Salary">Salary</option>
-                          <option value="Medicine Purchase">
-                            Medicine Purchase
-                          </option>
-                          <option value="Equipment Purchase">
-                            Equipment Purchase
-                          </option>
                           <option value="Rent">Rent</option>
+                          <option value="Staff Welfare">Staff Welfare</option>
+                          <option value="Patient Meals">Patient Meals</option>
+                          <option value="Medical Consumables">
+                            Medical Consumables
+                          </option>
+                          <option value="Office Exp.">Office Exp.</option>
+                          <option value="Lab Expenses">Lab Expenses</option>
+                          <option value="Repairs and Maintainence">
+                            Repairs and Maintainence
+                          </option>
                           <option value="Incentive">Incentive</option>
-                          <option value="Utilities">Utilities</option>
+                          <option value="Commision">Commision</option>
+                          <option value="Pantry Expenses">
+                            Pantry Expenses
+                          </option>
+                          <option value="PATIENT EMI">PATIENT EMI</option>
+                          <option value="Interest Expenses">
+                            Interest Expenses
+                          </option>
                           <option value="Marketing">Marketing</option>
-                          <option value="Maintenance">Maintenance</option>
+                          <option value="GST">GST</option>
+                          <option value="Collabration">Collabration</option>
+                          <option value="Vehicle maintainance">
+                            Vehicle maintainance
+                          </option>
+                          <option value="Patient Refund">Patient Refund</option>
+                          <option value="Tds">Tds</option>
+                          <option value="Security & Deposits">
+                            Security & Deposits
+                          </option>
+                          <option value="Ai Sensy">Ai Sensy</option>
+                          <option value="Printing & stationery">
+                            Printing & stationery
+                          </option>
+                          <option value="Conveyance/Freight">
+                            Conveyance/Freight
+                          </option>
+                          <option value="Meta ads">Meta ads</option>
+                          <option value="Google ads">Google ads</option>
+                          <option value="On Call Staff">On Call Staff</option>
+                          <option value="Electricity Bill">
+                            Electricity Bill
+                          </option>
+                          <option value="Travelling Expenses">
+                            Travelling Expenses
+                          </option>
+                          <option value="Hotel Charges">Hotel Charges</option>
+                          <option value="Professional Services">
+                            Professional Services
+                          </option>
+                          <option value="Staff Meals">Staff Meals</option>
+                          <option value="software expenses">
+                            software expenses
+                          </option>
+                          <option value="RECHARGE">RECHARGE</option>
+                          <option value="Bank charges">Bank charges</option>
+                          <option value="Handover">Handover</option>
+                          <option value="Drawings">Drawings</option>
+                          <option value="Forex Conversion and Fluctuation Charges">
+                            Forex Conversion and Fluctuation Charges
+                          </option>{" "}
                           <option value="Other">Other</option>
                         </select>
                       </div>
@@ -1855,6 +1906,9 @@ export default function AdminCreateTransactionPage() {
                           <option value="bajaj_loan">Bajaj Loan</option>
                           <option value="fibe_loan">Fibe Loan</option>
                           <option value="banking">Bank Transfer</option>
+                          <option value="hdfc_skin_bank_transfer">HDFC Skin Bank Transfer</option>
+                          <option value="hdfc_ryan_medihub_bank_transfer">HDFC Ryan Medihub Bank Transfer</option>
+                          <option value="icici_medihub_bank_transfer">ICICI Medihub Bank Transfer</option>
                         </select>
                       </div>
                       <div>

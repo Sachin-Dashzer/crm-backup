@@ -67,7 +67,7 @@ const formatCurrency = (amount) => {
 };
 
 // const BRANCHES = tenantBranches;
-const PAYMENT_METHODS = ["upi", "cash", "card", "banking", "bajaj_loan", "fibe_loan", "other"];
+const PAYMENT_METHODS = ["upi", "cash", "card", "banking", "bajaj_loan", "fibe_loan", "hdfc_skin_bank_transfer", "hdfc_ryan_medihub_bank_transfer", "icici_medihub_bank_transfer", "other"];
 const TRANSPLANT_PROCEDURES = [
   "Sapphire FUE",
   "DHI",
@@ -487,6 +487,9 @@ function DataTable({
       banking: "bg-indigo-100 text-indigo-700 border-indigo-200",
       bajaj_loan: "bg-orange-100 text-orange-700 border-orange-200",
       fibe_loan: "bg-amber-100 text-amber-700 border-amber-200",
+      hdfc_skin_bank_transfer: "bg-sky-100 text-sky-700 border-sky-200",
+      hdfc_ryan_medihub_bank_transfer: "bg-teal-100 text-teal-700 border-teal-200",
+      icici_medihub_bank_transfer: "bg-rose-100 text-rose-700 border-rose-200",
     };
     return (
       colors[method?.toLowerCase()] ||

@@ -33,7 +33,8 @@
       "Bash(node --env-file=.env scripts/migrate-loan-to-bajaj.js --apply)",
       "Bash(node --experimental-modules -e ' *)",
       "Bash(npx --no-install eslint src/app/reception/transactions/page.jsx)",
-      "Bash(node -e ' *)"
+      "Bash(node -e ' *)",
+      "Bash(node -e \"require\\('./src/models/Transactions.js'\\)\")"
     ],
     "additionalDirectories": [
       "c:\\dashzer\\ryan-crm\\src\\app\\api\\reception"

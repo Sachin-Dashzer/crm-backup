@@ -48,7 +48,7 @@ const formatDateForDisplay = (date) => {
 const formatCurrency = (amount) =>
   new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(parseFloat(amount) || 0);
 
-const PAYMENT_METHODS = ["upi", "cash", "card", "banking", "bajaj_loan", "fibe_loan", "other"];
+const PAYMENT_METHODS = ["upi", "cash", "card", "banking", "bajaj_loan", "fibe_loan", "hdfc_skin_bank_transfer", "hdfc_ryan_medihub_bank_transfer", "icici_medihub_bank_transfer", "other"];
 const TRANSPLANT_PROCEDURES = ["Sapphire FUE", "DHI", "Turkish DHI", "Beard Transplant"];
 const SERVICE_PROCEDURES = ["PRP", "GFC", "Alopecia", "Headwash", "Canacot"];
 const TRANSACTION_CATEGORIES = [
@@ -231,7 +231,7 @@ function DataTable({ category, rows, onDelete, onSort, sortConfig, pagination, o
   };
 
   const getMethodColor = (method) => {
-    const colors = { cash: "bg-emerald-100 text-emerald-700 border-emerald-200", upi: "bg-blue-100 text-blue-700 border-blue-200", card: "bg-purple-100 text-purple-700 border-purple-200", banking: "bg-indigo-100 text-indigo-700 border-indigo-200", bajaj_loan: "bg-orange-100 text-orange-700 border-orange-200", fibe_loan: "bg-amber-100 text-amber-700 border-amber-200" };
+    const colors = { cash: "bg-emerald-100 text-emerald-700 border-emerald-200", upi: "bg-blue-100 text-blue-700 border-blue-200", card: "bg-purple-100 text-purple-700 border-purple-200", banking: "bg-indigo-100 text-indigo-700 border-indigo-200", bajaj_loan: "bg-orange-100 text-orange-700 border-orange-200", fibe_loan: "bg-amber-100 text-amber-700 border-amber-200", hdfc_skin_bank_transfer: "bg-sky-100 text-sky-700 border-sky-200", hdfc_ryan_medihub_bank_transfer: "bg-teal-100 text-teal-700 border-teal-200", icici_medihub_bank_transfer: "bg-rose-100 text-rose-700 border-rose-200" };
     return colors[method?.toLowerCase()] || "bg-gray-100 text-gray-700 border-gray-200";
   };
 

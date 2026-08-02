@@ -61,6 +61,9 @@ export const getPaymentMethodName = (method) => {
     banking: 'Net Banking',
     bajaj_loan: 'Bajaj Loan',
     fibe_loan: 'Fibe Loan',
+    hdfc_skin_bank_transfer: 'HDFC Skin Bank Transfer',
+    hdfc_ryan_medihub_bank_transfer: 'HDFC Ryan Medihub Bank Transfer',
+    icici_medihub_bank_transfer: 'ICICI Medihub Bank Transfer',
     other: 'Other',
   };
   return names[method] || method;

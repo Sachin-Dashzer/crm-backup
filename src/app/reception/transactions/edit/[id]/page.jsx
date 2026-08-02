@@ -18,9 +18,15 @@ import {
 } from "lucide-react";
 
 const getPaymentIdConfig = (method) => {
-  if (method === "card") return { placeholder: "Please enter card last no.", required: true };
-  if (method?.toLowerCase() === "bajaj_loan" || method?.toLowerCase() === "fibe_loan") return { placeholder: "Please add the reference id", required: true };
-  if (method === "cash") return { placeholder: "Please add transaction id", required: false };
+  if (method === "card")
+    return { placeholder: "Please enter card last no.", required: true };
+  if (
+    method?.toLowerCase() === "bajaj_loan" ||
+    method?.toLowerCase() === "fibe_loan"
+  )
+    return { placeholder: "Please add the reference id", required: true };
+  if (method === "cash")
+    return { placeholder: "Please add transaction id", required: false };
   return { placeholder: "Please add transaction id", required: true };
 };
 
@@ -128,12 +134,15 @@ export default function EditTransactionPage() {
   };
 
   const addToPatientCache = (patientObj) => {
-    if (patientObj) setPatientCache((prev) => ({ ...prev, [patientObj._id]: patientObj }));
+    if (patientObj)
+      setPatientCache((prev) => ({ ...prev, [patientObj._id]: patientObj }));
   };
 
   const patientOptions = useMemo(() => {
     const resultIds = new Set(patients.map((p) => p._id));
-    const cached = Object.values(patientCache).filter((p) => !resultIds.has(p._id));
+    const cached = Object.values(patientCache).filter(
+      (p) => !resultIds.has(p._id),
+    );
     return [...cached, ...patients];
   }, [patients, patientCache]);
 
@@ -219,12 +228,23 @@ export default function EditTransactionPage() {
           )
         ) {
           category = "TRANSPLANT";
-        } else if (["PRP", "GFC", "Alopecia", "ALOPECIA", "Canacot", "CANACOT", "Headwash", "HEADWASH", "Other"].includes(trans.procedure)) {
+        } else if (
+          [
+            "PRP",
+            "GFC",
+            "Alopecia",
+            "ALOPECIA",
+            "Canacot",
+            "CANACOT",
+            "Headwash",
+            "HEADWASH",
+            "Other",
+          ].includes(trans.procedure)
+        ) {
           category = "SERVICE";
         } else if (trans.procedure === "Medicine" || trans.medicineId) {
           category = "MEDICINE";
         }
-
       } else if (
         trans.costType === "Expense" ||
         trans.costType === "Expenses"
@@ -242,7 +262,11 @@ export default function EditTransactionPage() {
       typeof trans.patient === "object" && trans.patient !== null
         ? trans.patient._id
         : trans.patient || "";
-    if (typeof trans.patient === "object" && trans.patient !== null && patientId) {
+    if (
+      typeof trans.patient === "object" &&
+      trans.patient !== null &&
+      patientId
+    ) {
       addToPatientCache(trans.patient);
     }
 
@@ -387,7 +411,15 @@ export default function EditTransactionPage() {
       return;
     }
     if (transplantData.method !== "cash" && !transplantData.paymentId) {
-      showToast(transplantData.method === "card" ? "Please enter card last no." : transplantData.method?.toLowerCase() === "bajaj_loan" || transplantData.method?.toLowerCase() === "fibe_loan" ? "Please add the reference id" : "Please add transaction id", "error");
+      showToast(
+        transplantData.method === "card"
+          ? "Please enter card last no."
+          : transplantData.method?.toLowerCase() === "bajaj_loan" ||
+              transplantData.method?.toLowerCase() === "fibe_loan"
+            ? "Please add the reference id"
+            : "Please add transaction id",
+        "error",
+      );
       return;
     }
 
@@ -450,7 +482,15 @@ export default function EditTransactionPage() {
       return;
     }
     if (serviceData.method !== "cash" && !serviceData.paymentId) {
-      showToast(serviceData.method === "card" ? "Please enter card last no." : serviceData.method?.toLowerCase() === "bajaj_loan" || serviceData.method?.toLowerCase() === "fibe_loan" ? "Please add the reference id" : "Please add transaction id", "error");
+      showToast(
+        serviceData.method === "card"
+          ? "Please enter card last no."
+          : serviceData.method?.toLowerCase() === "bajaj_loan" ||
+              serviceData.method?.toLowerCase() === "fibe_loan"
+            ? "Please add the reference id"
+            : "Please add transaction id",
+        "error",
+      );
       return;
     }
 
@@ -527,7 +567,15 @@ export default function EditTransactionPage() {
       return;
     }
     if (medicineData.method !== "cash" && !medicineData.paymentId) {
-      showToast(medicineData.method === "card" ? "Please enter card last no." : medicineData.method?.toLowerCase() === "bajaj_loan" || medicineData.method?.toLowerCase() === "fibe_loan" ? "Please add the reference id" : "Please add transaction id", "error");
+      showToast(
+        medicineData.method === "card"
+          ? "Please enter card last no."
+          : medicineData.method?.toLowerCase() === "bajaj_loan" ||
+              medicineData.method?.toLowerCase() === "fibe_loan"
+            ? "Please add the reference id"
+            : "Please add transaction id",
+        "error",
+      );
       return;
     }
 
@@ -591,7 +639,15 @@ export default function EditTransactionPage() {
       return;
     }
     if (expenseData.method !== "cash" && !expenseData.paymentId) {
-      showToast(expenseData.method === "card" ? "Please enter card last no." : expenseData.method?.toLowerCase() === "bajaj_loan" || expenseData.method?.toLowerCase() === "fibe_loan" ? "Please add the reference id" : "Please add transaction id", "error");
+      showToast(
+        expenseData.method === "card"
+          ? "Please enter card last no."
+          : expenseData.method?.toLowerCase() === "bajaj_loan" ||
+              expenseData.method?.toLowerCase() === "fibe_loan"
+            ? "Please add the reference id"
+            : "Please add transaction id",
+        "error",
+      );
       return;
     }
 
@@ -785,7 +841,6 @@ export default function EditTransactionPage() {
               </div>
             </div>
 
-
             {/* TRANSPLANT TAB */}
             {activeTab === "transplant" && (
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -804,7 +859,10 @@ export default function EditTransactionPage() {
                         value={transplantData.patient}
                         onChange={(value, obj) => {
                           addToPatientCache(obj);
-                          setTransplantData({ ...transplantData, patient: value });
+                          setTransplantData({
+                            ...transplantData,
+                            patient: value,
+                          });
                         }}
                         placeholder="Search and select a patient..."
                         valueKey="_id"
@@ -928,7 +986,11 @@ export default function EditTransactionPage() {
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Transaction ID{getPaymentIdConfig(transplantData.method).required && <span className="text-red-500 ml-1">*</span>}
+                          Transaction ID
+                          {getPaymentIdConfig(transplantData.method)
+                            .required && (
+                            <span className="text-red-500 ml-1">*</span>
+                          )}
                         </label>
                         <input
                           type="text"
@@ -940,7 +1002,10 @@ export default function EditTransactionPage() {
                             })
                           }
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                          placeholder={getPaymentIdConfig(transplantData.method).placeholder}
+                          placeholder={
+                            getPaymentIdConfig(transplantData.method)
+                              .placeholder
+                          }
                         />
                       </div>
                       <div>
@@ -1246,7 +1311,10 @@ export default function EditTransactionPage() {
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Transaction ID{getPaymentIdConfig(serviceData.method).required && <span className="text-red-500 ml-1">*</span>}
+                          Transaction ID
+                          {getPaymentIdConfig(serviceData.method).required && (
+                            <span className="text-red-500 ml-1">*</span>
+                          )}
                         </label>
                         <input
                           type="text"
@@ -1258,7 +1326,9 @@ export default function EditTransactionPage() {
                             })
                           }
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                          placeholder={getPaymentIdConfig(serviceData.method).placeholder}
+                          placeholder={
+                            getPaymentIdConfig(serviceData.method).placeholder
+                          }
                         />
                       </div>
                       <div>
@@ -1445,7 +1515,10 @@ export default function EditTransactionPage() {
                           value={medicineData.patient}
                           onChange={(value, obj) => {
                             addToPatientCache(obj);
-                            setMedicineData({ ...medicineData, patient: value });
+                            setMedicineData({
+                              ...medicineData,
+                              patient: value,
+                            });
                           }}
                           placeholder="Search and select a patient..."
                           valueKey="_id"
@@ -1557,7 +1630,10 @@ export default function EditTransactionPage() {
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Transaction ID{getPaymentIdConfig(medicineData.method).required && <span className="text-red-500 ml-1">*</span>}
+                          Transaction ID
+                          {getPaymentIdConfig(medicineData.method).required && (
+                            <span className="text-red-500 ml-1">*</span>
+                          )}
                         </label>
                         <input
                           type="text"
@@ -1569,7 +1645,9 @@ export default function EditTransactionPage() {
                             })
                           }
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                          placeholder={getPaymentIdConfig(medicineData.method).placeholder}
+                          placeholder={
+                            getPaymentIdConfig(medicineData.method).placeholder
+                          }
                         />
                       </div>
                       <div>
@@ -1686,40 +1764,86 @@ export default function EditTransactionPage() {
             {activeTab === "expense" && (
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-2 space-y-6">
-
                   {/* Expense Category & Payee */}
                   <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Expense Details</h3>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                      Expense Details
+                    </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="md:col-span-2">
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Expense Category <span className="text-red-500">*</span>
+                          Expense Category{" "}
+                          <span className="text-red-500">*</span>
                         </label>
                         <select
                           value={expenseData.expenseCategory}
-                          onChange={(e) => setExpenseData({ ...expenseData, expenseCategory: e.target.value })}
+                          onChange={(e) =>
+                            setExpenseData({
+                              ...expenseData,
+                              expenseCategory: e.target.value,
+                            })
+                          }
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 outline-none"
                         >
                           <option value="">Select category…</option>
                           <option>Salary</option>
                           <option>Rent</option>
-                          <option>Utilities</option>
+                          <option>Staff Welfare</option>
+                          <option>Patient Meals</option>
+                          <option>Medical Consumables</option>
+                          <option>Office Exp.</option>
+                          <option>Lab Expenses</option>
+                          <option>Repairs and Maintainence</option>
+                          <option>Incentive</option>
+                          <option>Commision</option>
+                          <option>Pantry Expenses</option>
+                          <option>PATIENT EMI</option>
+                          <option>Interest Expenses</option>
                           <option>Marketing</option>
-                          <option>Equipment</option>
-                          <option>Medical Supplies</option>
-                          <option>Transportation</option>
-                          <option>Maintenance</option>
+                          <option>GST</option>
+                          <option>Collabration</option>
+                          <option>Vehicle maintainance</option>
+                          <option>Patient Refund</option>
+                          <option>Tds</option>
+                          <option>Security & Deposits</option>
+                          <option>Ai Sensy</option>
+                          <option>Printing & stationery</option>
+                          <option>Conveyance/Freight</option>
+                          <option>Meta ads</option>
+                          <option>Google ads</option>
+                          <option>On Call Staff</option>
+                          <option>Electricity Bill</option>
+                          <option>Travelling Expenses</option>
+                          <option>Hotel Charges</option>
+                          <option>Professional Services</option>
+                          <option>Staff Meals</option>
+                          <option>software expenses</option>
+                          <option>RECHARGE</option>
+                          <option>Bank charges</option>
+                          <option>Handover</option>
+                          <option>Drawings</option>
+                          <option>
+                            Forex Conversion and Fluctuation Charges
+                          </option>
                           <option>Other</option>
                         </select>
                       </div>
 
                       {/* Payee type toggle */}
                       <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Payee Type</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Payee Type
+                        </label>
                         <div className="flex gap-3">
                           <button
                             type="button"
-                            onClick={() => setExpenseData({ ...expenseData, isVendor: true, expenseGiverName: "" })}
+                            onClick={() =>
+                              setExpenseData({
+                                ...expenseData,
+                                isVendor: true,
+                                expenseGiverName: "",
+                              })
+                            }
                             className={`flex-1 py-2 px-4 rounded-lg border text-sm font-medium transition-colors ${
                               expenseData.isVendor
                                 ? "bg-indigo-600 text-white border-indigo-600"
@@ -1730,7 +1854,13 @@ export default function EditTransactionPage() {
                           </button>
                           <button
                             type="button"
-                            onClick={() => setExpenseData({ ...expenseData, isVendor: false, vendorId: "" })}
+                            onClick={() =>
+                              setExpenseData({
+                                ...expenseData,
+                                isVendor: false,
+                                vendorId: "",
+                              })
+                            }
                             className={`flex-1 py-2 px-4 rounded-lg border text-sm font-medium transition-colors ${
                               !expenseData.isVendor
                                 ? "bg-indigo-600 text-white border-indigo-600"
@@ -1746,20 +1876,31 @@ export default function EditTransactionPage() {
                       {expenseData.isVendor ? (
                         <div className="md:col-span-2">
                           <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Select Vendor <span className="text-red-500">*</span>
+                            Select Vendor{" "}
+                            <span className="text-red-500">*</span>
                           </label>
                           <select
                             value={expenseData.vendorId}
-                            onChange={(e) => setExpenseData({ ...expenseData, vendorId: e.target.value })}
+                            onChange={(e) =>
+                              setExpenseData({
+                                ...expenseData,
+                                vendorId: e.target.value,
+                              })
+                            }
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 outline-none"
                           >
                             <option value="">Select a vendor…</option>
                             {vendors.map((v) => (
-                              <option key={v._id} value={v._id}>{v.name}</option>
+                              <option key={v._id} value={v._id}>
+                                {v.name}
+                              </option>
                             ))}
                           </select>
                           {vendors.length === 0 && (
-                            <p className="text-xs text-gray-400 mt-1">No vendors found. Add vendors from the Vendors section.</p>
+                            <p className="text-xs text-gray-400 mt-1">
+                              No vendors found. Add vendors from the Vendors
+                              section.
+                            </p>
                           )}
                         </div>
                       ) : (
@@ -1770,7 +1911,12 @@ export default function EditTransactionPage() {
                           <input
                             type="text"
                             value={expenseData.expenseGiverName}
-                            onChange={(e) => setExpenseData({ ...expenseData, expenseGiverName: e.target.value })}
+                            onChange={(e) =>
+                              setExpenseData({
+                                ...expenseData,
+                                expenseGiverName: e.target.value,
+                              })
+                            }
                             placeholder="Enter payee name"
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 outline-none"
                           />
@@ -1781,7 +1927,9 @@ export default function EditTransactionPage() {
 
                   {/* Payment Details */}
                   <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Payment Details</h3>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                      Payment Details
+                    </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1790,7 +1938,12 @@ export default function EditTransactionPage() {
                         <input
                           type="number"
                           value={expenseData.amount}
-                          onChange={(e) => setExpenseData({ ...expenseData, amount: e.target.value })}
+                          onChange={(e) =>
+                            setExpenseData({
+                              ...expenseData,
+                              amount: e.target.value,
+                            })
+                          }
                           min="0"
                           placeholder="0"
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 outline-none"
@@ -1798,10 +1951,18 @@ export default function EditTransactionPage() {
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Payment Method</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Payment Method
+                        </label>
                         <select
                           value={expenseData.method}
-                          onChange={(e) => setExpenseData({ ...expenseData, method: e.target.value, paymentId: "" })}
+                          onChange={(e) =>
+                            setExpenseData({
+                              ...expenseData,
+                              method: e.target.value,
+                              paymentId: "",
+                            })
+                          }
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 outline-none"
                         >
                           <option value="cash">Cash</option>
@@ -1810,6 +1971,9 @@ export default function EditTransactionPage() {
                           <option value="banking">Bank Transfer</option>
                           <option value="bajaj_loan">Bajaj Loan</option>
                           <option value="fibe_loan">Fibe Loan</option>
+                          <option value="hdfc_skin_bank_transfer">HDFC Skin Bank Transfer</option>
+                          <option value="hdfc_ryan_medihub_bank_transfer">HDFC Ryan Medihub Bank Transfer</option>
+                          <option value="icici_medihub_bank_transfer">ICICI Medihub Bank Transfer</option>
                           <option value="other">Other</option>
                         </select>
                       </div>
@@ -1824,17 +1988,31 @@ export default function EditTransactionPage() {
                         <input
                           type="text"
                           value={expenseData.paymentId}
-                          onChange={(e) => setExpenseData({ ...expenseData, paymentId: e.target.value })}
-                          placeholder={getPaymentIdConfig(expenseData.method).placeholder}
+                          onChange={(e) =>
+                            setExpenseData({
+                              ...expenseData,
+                              paymentId: e.target.value,
+                            })
+                          }
+                          placeholder={
+                            getPaymentIdConfig(expenseData.method).placeholder
+                          }
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 outline-none"
                         />
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Branch</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Branch
+                        </label>
                         <select
                           value={expenseData.branch}
-                          onChange={(e) => setExpenseData({ ...expenseData, branch: e.target.value })}
+                          onChange={(e) =>
+                            setExpenseData({
+                              ...expenseData,
+                              branch: e.target.value,
+                            })
+                          }
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 outline-none"
                         >
                           <option value="Delhi">Delhi</option>
@@ -1845,20 +2023,34 @@ export default function EditTransactionPage() {
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Date</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Date
+                        </label>
                         <input
                           type="date"
                           value={expenseData.date}
-                          onChange={(e) => setExpenseData({ ...expenseData, date: e.target.value })}
+                          onChange={(e) =>
+                            setExpenseData({
+                              ...expenseData,
+                              date: e.target.value,
+                            })
+                          }
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 outline-none"
                         />
                       </div>
 
                       <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Remarks</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Remarks
+                        </label>
                         <textarea
                           value={expenseData.remarks}
-                          onChange={(e) => setExpenseData({ ...expenseData, remarks: e.target.value })}
+                          onChange={(e) =>
+                            setExpenseData({
+                              ...expenseData,
+                              remarks: e.target.value,
+                            })
+                          }
                           rows="2"
                           placeholder="Optional notes…"
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 outline-none resize-none"
@@ -1871,31 +2063,43 @@ export default function EditTransactionPage() {
                 {/* Summary sidebar */}
                 <div>
                   <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 sticky top-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Expense Summary</h3>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                      Expense Summary
+                    </h3>
                     <div className="space-y-3">
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-600">Category:</span>
-                        <span className="font-semibold text-gray-900">{expenseData.expenseCategory || "—"}</span>
+                        <span className="font-semibold text-gray-900">
+                          {expenseData.expenseCategory || "—"}
+                        </span>
                       </div>
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-600">Payee:</span>
                         <span className="font-semibold text-gray-900 text-right max-w-37.5 truncate">
                           {expenseData.isVendor
-                            ? (vendors.find((v) => v._id === expenseData.vendorId)?.name || "—")
-                            : (expenseData.expenseGiverName || "—")}
+                            ? vendors.find(
+                                (v) => v._id === expenseData.vendorId,
+                              )?.name || "—"
+                            : expenseData.expenseGiverName || "—"}
                         </span>
                       </div>
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-600">Method:</span>
-                        <span className="font-semibold text-gray-900 capitalize">{expenseData.method || "—"}</span>
+                        <span className="font-semibold text-gray-900 capitalize">
+                          {expenseData.method || "—"}
+                        </span>
                       </div>
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-600">Branch:</span>
-                        <span className="font-semibold text-gray-900">{expenseData.branch || "—"}</span>
+                        <span className="font-semibold text-gray-900">
+                          {expenseData.branch || "—"}
+                        </span>
                       </div>
                       <div className="border-t border-gray-200 pt-3 mt-3">
                         <div className="flex justify-between items-center">
-                          <span className="text-lg font-bold text-gray-900">Total:</span>
+                          <span className="text-lg font-bold text-gray-900">
+                            Total:
+                          </span>
                           <span className="text-2xl font-bold text-red-600">
                             {formatCurrency(calculateExpenseTotal())}
                           </span>

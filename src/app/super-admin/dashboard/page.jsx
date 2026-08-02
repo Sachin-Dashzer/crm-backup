@@ -26,7 +26,9 @@ const PALETTE = [
 ];
 
 const METHOD_ICONS = {
-  upi: "📲", cash: "💵", card: "💳", banking: "🏦", bajaj_loan: "📄", fibe_loan: "📄", other: "💰",
+  upi: "📲", cash: "💵", card: "💳", banking: "🏦", bajaj_loan: "📄", fibe_loan: "📄",
+  hdfc_skin_bank_transfer: "🏦", hdfc_ryan_medihub_bank_transfer: "🏦", icici_medihub_bank_transfer: "🏦",
+  other: "💰",
 };
 
 /* ─────────────────────────────────────────────

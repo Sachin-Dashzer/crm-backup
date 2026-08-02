@@ -17,10 +17,17 @@ import {
 } from "lucide-react";
 
 const getPaymentIdConfig = (method) => {
-  if (method === "card") return { placeholder: "Please enter card last no.", required: true };
-  if (method?.toLowerCase() === "bajaj_loan" || method?.toLowerCase() === "fibe_loan") return { placeholder: "Please add the reference id", required: true };
-  if (method === "cash") return { placeholder: "Please add transaction id", required: false };
-  if (method === "including-package") return { placeholder: "N/A — included in package", required: false };
+  if (method === "card")
+    return { placeholder: "Please enter card last no.", required: true };
+  if (
+    method?.toLowerCase() === "bajaj_loan" ||
+    method?.toLowerCase() === "fibe_loan"
+  )
+    return { placeholder: "Please add the reference id", required: true };
+  if (method === "cash")
+    return { placeholder: "Please add transaction id", required: false };
+  if (method === "including-package")
+    return { placeholder: "N/A — included in package", required: false };
   return { placeholder: "Please add transaction id", required: true };
 };
 
@@ -153,13 +160,16 @@ export default function AllTransactionsPage() {
 
   // Cache selected patient so it stays visible even when search results change
   const addToPatientCache = (patientObj) => {
-    if (patientObj) setPatientCache((prev) => ({ ...prev, [patientObj._id]: patientObj }));
+    if (patientObj)
+      setPatientCache((prev) => ({ ...prev, [patientObj._id]: patientObj }));
   };
 
   // Merge cache + current search results (cache entries not in current results come first)
   const patientOptions = useMemo(() => {
     const resultIds = new Set(patients.map((p) => p._id));
-    const cached = Object.values(patientCache).filter((p) => !resultIds.has(p._id));
+    const cached = Object.values(patientCache).filter(
+      (p) => !resultIds.has(p._id),
+    );
     return [...cached, ...patients];
   }, [patients, patientCache]);
 
@@ -185,9 +195,11 @@ export default function AllTransactionsPage() {
     const userBranch = session?.user?.branch;
     if (!userBranch || userBranch === "All" || userBranch === "Collab") return;
     const touched = branchTouchedRef.current;
-    if (!touched.transplant) setTransplantData((d) => ({ ...d, branch: userBranch }));
+    if (!touched.transplant)
+      setTransplantData((d) => ({ ...d, branch: userBranch }));
     if (!touched.service) setServiceData((d) => ({ ...d, branch: userBranch }));
-    if (!touched.medicine) setMedicineData((d) => ({ ...d, branch: userBranch }));
+    if (!touched.medicine)
+      setMedicineData((d) => ({ ...d, branch: userBranch }));
     if (!touched.expense) setExpenseData((d) => ({ ...d, branch: userBranch }));
   }, [session?.user?.branch]);
 
@@ -261,7 +273,14 @@ export default function AllTransactionsPage() {
       return;
     }
     if (transplantData.method !== "cash" && !transplantData.paymentId) {
-      alert(transplantData.method === "card" ? "Please enter card last no." : transplantData.method?.toLowerCase() === "bajaj_loan" || transplantData.method?.toLowerCase() === "fibe_loan" ? "Please add the reference id" : "Please add transaction id");
+      alert(
+        transplantData.method === "card"
+          ? "Please enter card last no."
+          : transplantData.method?.toLowerCase() === "bajaj_loan" ||
+              transplantData.method?.toLowerCase() === "fibe_loan"
+            ? "Please add the reference id"
+            : "Please add transaction id",
+      );
       return;
     }
 
@@ -373,7 +392,14 @@ export default function AllTransactionsPage() {
       }
     }
     if (serviceData.method !== "cash" && !serviceData.paymentId) {
-      alert(serviceData.method === "card" ? "Please enter card last no." : serviceData.method?.toLowerCase() === "bajaj_loan" || serviceData.method?.toLowerCase() === "fibe_loan" ? "Please add the reference id" : "Please add transaction id");
+      alert(
+        serviceData.method === "card"
+          ? "Please enter card last no."
+          : serviceData.method?.toLowerCase() === "bajaj_loan" ||
+              serviceData.method?.toLowerCase() === "fibe_loan"
+            ? "Please add the reference id"
+            : "Please add transaction id",
+      );
       return;
     }
 
@@ -502,8 +528,19 @@ export default function AllTransactionsPage() {
         return;
       }
     }
-    if (medicineData.method !== "cash" && medicineData.method !== "including-package" && !medicineData.paymentId) {
-      alert(medicineData.method === "card" ? "Please enter card last no." : medicineData.method?.toLowerCase() === "bajaj_loan" || medicineData.method?.toLowerCase() === "fibe_loan" ? "Please add the reference id" : "Please add transaction id");
+    if (
+      medicineData.method !== "cash" &&
+      medicineData.method !== "including-package" &&
+      !medicineData.paymentId
+    ) {
+      alert(
+        medicineData.method === "card"
+          ? "Please enter card last no."
+          : medicineData.method?.toLowerCase() === "bajaj_loan" ||
+              medicineData.method?.toLowerCase() === "fibe_loan"
+            ? "Please add the reference id"
+            : "Please add transaction id",
+      );
       return;
     }
 
@@ -569,7 +606,14 @@ export default function AllTransactionsPage() {
       return;
     }
     if (expenseData.method !== "cash" && !expenseData.paymentId) {
-      alert(expenseData.method === "card" ? "Please enter card last no." : expenseData.method?.toLowerCase() === "bajaj_loan" || expenseData.method?.toLowerCase() === "fibe_loan" ? "Please add the reference id" : "Please add transaction id");
+      alert(
+        expenseData.method === "card"
+          ? "Please enter card last no."
+          : expenseData.method?.toLowerCase() === "bajaj_loan" ||
+              expenseData.method?.toLowerCase() === "fibe_loan"
+            ? "Please add the reference id"
+            : "Please add transaction id",
+      );
       return;
     }
 
@@ -729,7 +773,10 @@ export default function AllTransactionsPage() {
                         value={transplantData.patient}
                         onChange={(value, obj) => {
                           addToPatientCache(obj);
-                          setTransplantData({ ...transplantData, patient: value });
+                          setTransplantData({
+                            ...transplantData,
+                            patient: value,
+                          });
                         }}
                         placeholder="Search and select a patient..."
                         valueKey="_id"
@@ -853,7 +900,11 @@ export default function AllTransactionsPage() {
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Transaction ID{getPaymentIdConfig(transplantData.method).required && <span className="text-red-500 ml-1">*</span>}
+                          Transaction ID
+                          {getPaymentIdConfig(transplantData.method)
+                            .required && (
+                            <span className="text-red-500 ml-1">*</span>
+                          )}
                         </label>
                         <input
                           type="text"
@@ -865,7 +916,10 @@ export default function AllTransactionsPage() {
                             })
                           }
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                          placeholder={getPaymentIdConfig(transplantData.method).placeholder}
+                          placeholder={
+                            getPaymentIdConfig(transplantData.method)
+                              .placeholder
+                          }
                         />
                       </div>
                       <div>
@@ -891,7 +945,10 @@ export default function AllTransactionsPage() {
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Date <span className="text-xs text-gray-400">(auto-set to today)</span>
+                          Date{" "}
+                          <span className="text-xs text-gray-400">
+                            (auto-set to today)
+                          </span>
                         </label>
                         <input
                           type="date"
@@ -1227,7 +1284,10 @@ export default function AllTransactionsPage() {
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Transaction ID{getPaymentIdConfig(serviceData.method).required && <span className="text-red-500 ml-1">*</span>}
+                          Transaction ID
+                          {getPaymentIdConfig(serviceData.method).required && (
+                            <span className="text-red-500 ml-1">*</span>
+                          )}
                         </label>
                         <input
                           type="text"
@@ -1239,7 +1299,9 @@ export default function AllTransactionsPage() {
                             })
                           }
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                          placeholder={getPaymentIdConfig(serviceData.method).placeholder}
+                          placeholder={
+                            getPaymentIdConfig(serviceData.method).placeholder
+                          }
                         />
                       </div>
                       <div>
@@ -1265,7 +1327,10 @@ export default function AllTransactionsPage() {
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Date <span className="text-xs text-gray-400">(auto-set to today)</span>
+                          Date{" "}
+                          <span className="text-xs text-gray-400">
+                            (auto-set to today)
+                          </span>
                         </label>
                         <input
                           type="date"
@@ -1433,7 +1498,10 @@ export default function AllTransactionsPage() {
                           value={medicineData.patient}
                           onChange={(value, obj) => {
                             addToPatientCache(obj);
-                            setMedicineData({ ...medicineData, patient: value });
+                            setMedicineData({
+                              ...medicineData,
+                              patient: value,
+                            });
                           }}
                           placeholder="Search and select a patient..."
                           valueKey="_id"
@@ -1607,12 +1675,17 @@ export default function AllTransactionsPage() {
                           <option value="bajaj_loan">Bajaj Loan</option>
                           <option value="fibe_loan">Fibe Loan</option>
                           <option value="banking">Bank Transfer</option>
-                          <option value="including-package">Including Package</option>
+                          <option value="including-package">
+                            Including Package
+                          </option>
                         </select>
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Transaction ID{getPaymentIdConfig(medicineData.method).required && <span className="text-red-500 ml-1">*</span>}
+                          Transaction ID
+                          {getPaymentIdConfig(medicineData.method).required && (
+                            <span className="text-red-500 ml-1">*</span>
+                          )}
                         </label>
                         <input
                           type="text"
@@ -1625,7 +1698,9 @@ export default function AllTransactionsPage() {
                           }
                           disabled={medicineData.method === "including-package"}
                           className={`w-full px-3 py-2 border border-gray-300 rounded-lg ${medicineData.method === "including-package" ? "bg-gray-50 cursor-not-allowed text-gray-400" : ""}`}
-                          placeholder={getPaymentIdConfig(medicineData.method).placeholder}
+                          placeholder={
+                            getPaymentIdConfig(medicineData.method).placeholder
+                          }
                         />
                       </div>
                       <div>
@@ -1651,7 +1726,10 @@ export default function AllTransactionsPage() {
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Date <span className="text-xs text-gray-400">(auto-set to today)</span>
+                          Date{" "}
+                          <span className="text-xs text-gray-400">
+                            (auto-set to today)
+                          </span>
                         </label>
                         <input
                           type="date"
@@ -1836,18 +1914,70 @@ export default function AllTransactionsPage() {
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                         >
                           <option value="">Select Category</option>
+
                           <option value="Salary">Salary</option>
-                          <option value="Medicine Purchase">
-                            Medicine Purchase
-                          </option>
-                          <option value="Equipment Purchase">
-                            Equipment Purchase
-                          </option>
                           <option value="Rent">Rent</option>
-<option value="Incentive">Incentive</option>
-                          <option value="Utilities">Utilities</option>
+                          <option value="Staff Welfare">Staff Welfare</option>
+                          <option value="Patient Meals">Patient Meals</option>
+                          <option value="Medical Consumables">
+                            Medical Consumables
+                          </option>
+                          <option value="Office Exp.">Office Exp.</option>
+                          <option value="Lab Expenses">Lab Expenses</option>
+                          <option value="Repairs and Maintainence">
+                            Repairs and Maintainence
+                          </option>
+                          <option value="Incentive">Incentive</option>
+                          <option value="Commision">Commision</option>
+                          <option value="Pantry Expenses">
+                            Pantry Expenses
+                          </option>
+                          <option value="PATIENT EMI">PATIENT EMI</option>
+                          <option value="Interest Expenses">
+                            Interest Expenses
+                          </option>
                           <option value="Marketing">Marketing</option>
-                          <option value="Maintenance">Maintenance</option>
+                          <option value="GST">GST</option>
+                          <option value="Collabration">Collabration</option>
+                          <option value="Vehicle maintainance">
+                            Vehicle maintainance
+                          </option>
+                          <option value="Patient Refund">Patient Refund</option>
+                          <option value="Tds">Tds</option>
+                          <option value="Security & Deposits">
+                            Security & Deposits
+                          </option>
+                          <option value="Ai Sensy">Ai Sensy</option>
+                          <option value="Printing & stationery">
+                            Printing & stationery
+                          </option>
+                          <option value="Conveyance/Freight">
+                            Conveyance/Freight
+                          </option>
+                          <option value="Meta ads">Meta ads</option>
+                          <option value="Google ads">Google ads</option>
+                          <option value="On Call Staff">On Call Staff</option>
+                          <option value="Electricity Bill">
+                            Electricity Bill
+                          </option>
+                          <option value="Travelling Expenses">
+                            Travelling Expenses
+                          </option>
+                          <option value="Hotel Charges">Hotel Charges</option>
+                          <option value="Professional Services">
+                            Professional Services
+                          </option>
+                          <option value="Staff Meals">Staff Meals</option>
+                          <option value="software expenses">
+                            software expenses
+                          </option>
+                          <option value="RECHARGE">RECHARGE</option>
+                          <option value="Bank charges">Bank charges</option>
+                          <option value="Handover">Handover</option>
+                          <option value="Drawings">Drawings</option>
+                          <option value="Forex Conversion and Fluctuation Charges">
+                            Forex Conversion and Fluctuation Charges
+                          </option>
                           <option value="Other">Other</option>
                         </select>
                       </div>
@@ -1897,11 +2027,17 @@ export default function AllTransactionsPage() {
                           <option value="bajaj_loan">Bajaj Loan</option>
                           <option value="fibe_loan">Fibe Loan</option>
                           <option value="banking">Bank Transfer</option>
+                          <option value="hdfc_skin_bank_transfer">HDFC Skin Bank Transfer</option>
+                          <option value="hdfc_ryan_medihub_bank_transfer">HDFC Ryan Medihub Bank Transfer</option>
+                          <option value="icici_medihub_bank_transfer">ICICI Medihub Bank Transfer</option>
                         </select>
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Transaction ID{getPaymentIdConfig(expenseData.method).required && <span className="text-red-500 ml-1">*</span>}
+                          Transaction ID
+                          {getPaymentIdConfig(expenseData.method).required && (
+                            <span className="text-red-500 ml-1">*</span>
+                          )}
                         </label>
                         <input
                           type="text"
@@ -1913,7 +2049,9 @@ export default function AllTransactionsPage() {
                             })
                           }
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                          placeholder={getPaymentIdConfig(expenseData.method).placeholder}
+                          placeholder={
+                            getPaymentIdConfig(expenseData.method).placeholder
+                          }
                         />
                       </div>
                       <div>
@@ -1939,7 +2077,10 @@ export default function AllTransactionsPage() {
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Date <span className="text-xs text-gray-400">(auto-set to today)</span>
+                          Date{" "}
+                          <span className="text-xs text-gray-400">
+                            (auto-set to today)
+                          </span>
                         </label>
                         <input
                           type="date"

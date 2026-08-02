@@ -44,6 +44,9 @@ const METHOD_COLORS = {
   banking:        "bg-blue-500 text-white",
   bajaj_loan:     "bg-orange-500 text-white",
   fibe_loan:      "bg-amber-500 text-white",
+  hdfc_skin_bank_transfer:            "bg-blue-700 text-white",
+  hdfc_ryan_medihub_bank_transfer:    "bg-indigo-700 text-white",
+  icici_medihub_bank_transfer:        "bg-rose-700 text-white",
   other:          "bg-gray-400 text-white",
 };
 
@@ -614,6 +617,9 @@ export default function TransactionTable({ config = {} }) {
                       <option value="banking">Banking</option>
                       <option value="bajaj_loan">Bajaj Loan</option>
                       <option value="fibe_loan">Fibe Loan</option>
+                      <option value="hdfc_skin_bank_transfer">HDFC Skin Bank Transfer</option>
+                      <option value="hdfc_ryan_medihub_bank_transfer">HDFC Ryan Medihub Bank Transfer</option>
+                      <option value="icici_medihub_bank_transfer">ICICI Medihub Bank Transfer</option>
                       <option value="other">Other</option>
                     </select>
                   </div>

@@ -1920,6 +1920,9 @@ export default function AllTransactionsPage() {
                           <option value="bajaj_loan">Bajaj Loan</option>
                           <option value="fibe_loan">Fibe Loan</option>
                           <option value="banking">Bank Transfer</option>
+                          <option value="hdfc_skin_bank_transfer">HDFC Skin Bank Transfer</option>
+                          <option value="hdfc_ryan_medihub_bank_transfer">HDFC Ryan Medihub Bank Transfer</option>
+                          <option value="icici_medihub_bank_transfer">ICICI Medihub Bank Transfer</option>
                         </select>
                       </div>
                       <div>

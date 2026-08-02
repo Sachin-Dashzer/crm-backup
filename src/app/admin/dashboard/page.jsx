@@ -32,6 +32,9 @@ const METHOD_META = {
   banking: { label: "Banking", color: "#8b5cf6", icon: "🏦" },
   bajaj_loan: { label: "Bajaj Loan", color: "#f97316", icon: "📄" },
   fibe_loan: { label: "Fibe Loan", color: "#f97316", icon: "📄" },
+  hdfc_skin_bank_transfer: { label: "HDFC Skin Bank Transfer", color: "#0ea5e9", icon: "🏦" },
+  hdfc_ryan_medihub_bank_transfer: { label: "HDFC Ryan Medihub Bank Transfer", color: "#0d9488", icon: "🏦" },
+  icici_medihub_bank_transfer: { label: "ICICI Medihub Bank Transfer", color: "#e11d48", icon: "🏦" },
   other:   { label: "Other",   color: "#9ca3af", icon: "💰" },
 };
 
