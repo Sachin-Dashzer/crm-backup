@@ -2065,7 +2065,7 @@ export default function EditTransactionPage() {
                       </div>
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-600">Payee:</span>
-                        <span className="font-semibold text-gray-900 text-right max-w-[150px] truncate">
+                        <span className="font-semibold text-gray-900 text-right max-w-37.5 truncate">
                           {expenseData.isVendor
                             ? vendors.find(
                                 (v) => v._id === expenseData.vendorId,
