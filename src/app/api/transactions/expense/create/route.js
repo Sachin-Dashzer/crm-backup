@@ -5,6 +5,7 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import connectDB from "@/lib/db";
 import Transactions from "@/models/Transactions";
 import Vendor from "@/models/Vendor";
+import { sendExpenseApprovalRequest } from "@/lib/whatsapp";
 
 export async function POST(req) {
   try {
@@ -76,7 +77,9 @@ export async function POST(req) {
       }
     }
 
-    // Create transaction
+    // Create transaction — held as PENDING until a WhatsApp admin approves it.
+    // Vendor linking is deferred to approval time (see whatsapp webhook), so a
+    // rejected expense never touches the vendor's transaction reference.
     const transaction = new Transactions({
       transactionCategory: "EXPENSE",
       costType: "Expenses",
@@ -93,6 +96,7 @@ export async function POST(req) {
       date: date ? new Date(date) : new Date(),
       remarks: remarks || "",
       vendor: expenseGiver.type === "VENDOR" ? expenseGiver.vendorId : null,
+      approvalStatus: "PENDING",
       createdBy: {
         name: session.user.name,
         email: session.user.email,
@@ -103,31 +107,21 @@ export async function POST(req) {
 
     await transaction.save();
 
-    // Update vendor with transaction reference if it's a vendor expense
-    if (expenseGiver.type === "VENDOR" && vendorDoc) {
-      vendorDoc.Transactions = transaction._id;
-      
-      // Add editor information
-      vendorDoc.editors.push({
-        name: session.user.name,
-        email: session.user.email,
-        branch: session.user.branch,
-        date: new Date(),
-        updatedFields: [
-          {
-            name: "Transactions",
-            previousValue: vendorDoc.Transactions?.toString() || "null",
-            newValue: transaction._id.toString(),
-          },
-        ],
-      });
-
-      await vendorDoc.save();
+    // Fail-safe: WhatsApp outages must not crash transaction creation — the
+    // transaction already exists as PENDING regardless of whether this succeeds.
+    try {
+      const sent = await sendExpenseApprovalRequest(transaction);
+      if (sent.length > 0) {
+        transaction.whatsappApprovalMessages = sent;
+        await transaction.save();
+      }
+    } catch (waError) {
+      console.error("Failed to send WhatsApp expense approval request:", waError);
     }
 
     return NextResponse.json(
       {
-        message: "Expense transaction created successfully",
+        message: "Expense transaction submitted for admin approval via WhatsApp",
         transaction,
       },
       { status: 201 }

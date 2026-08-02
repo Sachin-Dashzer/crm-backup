@@ -26,6 +26,7 @@ export async function GET(request) {
     const search        = searchParams.get("search")        || "";
     const paymentMethod = searchParams.get("paymentMethod") || "";
     const procedure     = searchParams.get("procedure")     || "";
+    const approvalStatus = searchParams.get("approvalStatus") || "";
     const sortKey       = searchParams.get("sortKey")       || "date";
     const sortDir       = searchParams.get("sortDir") === "asc" ? 1 : -1;
 
@@ -47,6 +48,15 @@ export async function GET(request) {
       } else {
         query.transactionCategory = category;
       }
+    }
+
+    // Approval status — dashboards must never show unapproved money by default,
+    // so PENDING/REJECTED expenses are excluded unless explicitly requested
+    // (e.g. a dedicated "Pending Approvals" view passing ?approvalStatus=PENDING).
+    if (approvalStatus === "PENDING" || approvalStatus === "REJECTED") {
+      query.approvalStatus = approvalStatus;
+    } else {
+      query.approvalStatus = { $nin: ["PENDING", "REJECTED"] };
     }
 
     // Date range
@@ -108,8 +118,10 @@ export async function GET(request) {
       }
     }
 
-    // Stats aggregation query: same filters except category (to show totals for all categories)
-    const statsQuery = { ...branchFilter };
+    // Stats aggregation query: same filters except category (to show totals for all categories).
+    // Always excludes PENDING/REJECTED regardless of the approvalStatus param — dashboard
+    // totals must reflect approved money only, even when viewing a Pending Approvals list.
+    const statsQuery = { ...branchFilter, approvalStatus: { $nin: ["PENDING", "REJECTED"] } };
     if (query.date)        statsQuery.date   = query.date;
     if (query.method)      statsQuery.method = query.method;
     if (query.procedure)   statsQuery.procedure = query.procedure;

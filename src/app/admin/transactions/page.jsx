@@ -27,6 +27,8 @@ import {
   Package,
   FileText as Bill,
   FileDown,
+  Clock,
+  XCircle,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -63,6 +65,25 @@ const getCategoryGradientClass = (categoryValue, isActive) => {
   };
   return gradients[categoryValue] || "bg-gray-50 text-gray-600";
 };
+
+// ========== APPROVAL BADGE (EXPENSE rows) ==========
+function ApprovalBadge({ status }) {
+  if (status === "PENDING") {
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold bg-amber-100 text-amber-700 border border-amber-200">
+        <Clock className="w-3 h-3" />Pending Approval
+      </span>
+    );
+  }
+  if (status === "REJECTED") {
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold bg-gray-100 text-gray-600 border border-gray-200">
+        <XCircle className="w-3 h-3" />Rejected
+      </span>
+    );
+  }
+  return null;
+}
 
 // ========== STAT CARD ==========
 function StatCard({ title, value, icon: Icon, gradient, count, iconBg, iconColor }) {
@@ -220,6 +241,7 @@ function DataTable({ category, rows, onDelete, onSort, sortConfig, pagination, o
         { key: "method",      label: "Method",   sortable: true,  width: "110px" },
         { key: "paymentId",   label: "Trans ID", sortable: true,  width: "150px" },
         { key: "branch",      label: "Branch",   sortable: true,  width: "110px" },
+        { key: "approvalStatus", label: "Status", sortable: false, width: "140px" },
         { key: "actions",     label: "Actions",  sortable: false, width: "120px" },
       ];
       default: return base;
@@ -384,6 +406,7 @@ function DataTable({ category, rows, onDelete, onSort, sortConfig, pagination, o
                       <div className="px-2 py-3"><span className={`inline-flex px-2 py-1 rounded-lg text-xs font-semibold border ${getMethodColor(row.method)}`}>{row.method?.replace(/_/g, " ").toUpperCase()}</span></div>
                       <div className="px-2 py-3">{row.paymentId ? <div className="bg-slate-100 px-2 py-1 rounded text-xs font-mono text-slate-700 truncate">{row.paymentId}</div> : <span className="text-xs text-slate-400">-</span>}</div>
                       <div className="px-2 py-3"><span className="inline-flex px-2 py-1 rounded-lg text-xs font-semibold bg-purple-100 text-purple-700 border border-purple-200">{row.branch}</span></div>
+                      <div className="px-2 py-3"><ApprovalBadge status={row.approvalStatus} /></div>
                     </>)}
 
                     {/* Actions */}
@@ -406,6 +429,7 @@ function DataTable({ category, rows, onDelete, onSort, sortConfig, pagination, o
                               {rowCategory === "MEDICINE" ? getMedicineName(row) : rowCategory === "EXPENSE" ? (row.expense || row.expenseCategory || "Expense") : row.procedure}
                             </span>
                             <span className={`px-2 py-1 rounded text-xs font-semibold ${getMethodColor(row.method)}`}>{row.method?.replace(/_/g, " ").toUpperCase()}</span>
+                            {rowCategory === "EXPENSE" && <ApprovalBadge status={row.approvalStatus} />}
                           </div>
                           <h4 className="text-base font-bold text-slate-900">{rowCategory !== "EXPENSE" ? getPatientName(row) : getExpenseGiverName(row)}</h4>
                           {rowCategory !== "EXPENSE" && <p className="text-sm text-slate-600 font-medium">{getPatientPhone(row)}</p>}
@@ -499,6 +523,7 @@ export default function AllTransactionsPage() {
   });
   const [tableSearch, setTableSearch]   = useState("");
   const [showFilters, setShowFilters]   = useState(false);
+  const [pendingOnly, setPendingOnly]   = useState(false);
   const [page, setPage]                 = useState(1);
   const [perPage, setPerPage]           = useState(10);
   const [sortConfig, setSortConfig]     = useState({ key: "date", direction: "desc" });
@@ -535,6 +560,7 @@ export default function AllTransactionsPage() {
       if (filters.paymentMethod) p.set("paymentMethod",  filters.paymentMethod);
       if (filters.procedure)     p.set("procedure",      filters.procedure);
       if (debouncedSearch)       p.set("search",         debouncedSearch);
+      if (activeCategory === "EXPENSE" && pendingOnly) p.set("approvalStatus", "PENDING");
 
       const res = await fetch(`/api/transactions/get-all?${p.toString()}`, { credentials: "include" });
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
@@ -551,12 +577,15 @@ export default function AllTransactionsPage() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [page, perPage, activeCategory, sortConfig, filters, debouncedSearch]);
+  }, [page, perPage, activeCategory, sortConfig, filters, debouncedSearch, pendingOnly]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
   // Reset to page 1 when filters or category change
-  useEffect(() => { setPage(1); }, [filters, activeCategory, debouncedSearch, sortConfig]);
+  useEffect(() => { setPage(1); }, [filters, activeCategory, debouncedSearch, sortConfig, pendingOnly]);
+
+  // The Pending Approvals toggle only makes sense on the EXPENSE tab
+  useEffect(() => { if (activeCategory !== "EXPENSE") setPendingOnly(false); }, [activeCategory]);
 
   const handleRefresh = () => fetchData(true);
 
@@ -809,6 +838,16 @@ export default function AllTransactionsPage() {
                     className="pl-9 sm:pl-11 pr-4 py-2 sm:py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-100 focus:border-indigo-300 text-sm w-full lg:w-64 transition-all"
                   />
                 </div>
+                {activeCategory === "EXPENSE" && (
+                  <button
+                    onClick={() => setPendingOnly((v) => !v)}
+                    className={`px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl transition-all shrink-0 flex items-center gap-2 text-sm font-semibold whitespace-nowrap ${pendingOnly ? "bg-amber-500 text-white shadow-md" : "bg-amber-50 text-amber-700 hover:bg-amber-100"}`}
+                  >
+                    <Clock className="w-4 h-4" />
+                    <span className="hidden sm:inline">Pending Approvals</span>
+                    <span className="sm:hidden">Pending</span>
+                  </button>
+                )}
                 <button
                   onClick={() => setShowFilters(!showFilters)}
                   className={`p-2 sm:p-2.5 rounded-xl transition-all shrink-0 flex items-center gap-2 ${showFilters ? "bg-indigo-50 text-indigo-600 ring-2 ring-indigo-200" : "bg-gray-50 hover:bg-gray-100 text-gray-600"}`}

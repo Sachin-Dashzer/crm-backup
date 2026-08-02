@@ -588,7 +588,7 @@ export default function AllTransactionsPage() {
       });
 
       if (res.ok) {
-        alert("Expense transaction saved successfully!");
+        alert("Expense submitted — pending admin approval via WhatsApp!");
         router.push("/collab/transactions");
       } else {
         const data = await res.json();
@@ -1867,6 +1867,7 @@ export default function AllTransactionsPage() {
                             Equipment Purchase
                           </option>
                           <option value="Rent">Rent</option>
+<option value="Incentive">Incentive</option>
                           <option value="Utilities">Utilities</option>
                           <option value="Marketing">Marketing</option>
                           <option value="Maintenance">Maintenance</option>

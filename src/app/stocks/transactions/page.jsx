@@ -28,6 +28,8 @@ import {
   ChevronDown,
   Package,
   FileText as Bill,
+  Clock,
+  XCircle,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -195,6 +197,25 @@ function Select({ label, value, onChange, options, required, icon: Icon }) {
   );
 }
 
+// ========== APPROVAL BADGE COMPONENT ==========
+function ApprovalBadge({ status }) {
+  if (status === "PENDING") {
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold bg-amber-100 text-amber-700 border border-amber-200">
+        <Clock className="w-3 h-3" />Pending Approval
+      </span>
+    );
+  }
+  if (status === "REJECTED") {
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold bg-gray-100 text-gray-600 border border-gray-200">
+        <XCircle className="w-3 h-3" />Rejected
+      </span>
+    );
+  }
+  return null;
+}
+
 // ========== DATA TABLE COMPONENT ==========
 function DataTable({ category, rows, onDelete, onSort, sortConfig, pagination, onGenerateBill }) {
   const router = useRouter();
@@ -250,6 +271,7 @@ function DataTable({ category, rows, onDelete, onSort, sortConfig, pagination, o
         { key: "method", label: "Method", sortable: true, width: "110px" },
         { key: "paymentId", label: "Trans ID", sortable: true, width: "150px" },
         { key: "branch", label: "Branch", sortable: true, width: "110px" },
+        { key: "status", label: "Status", sortable: false, width: "140px" },
         { key: "actions", label: "Actions", sortable: false, width: "120px" },
       ];
       default: return base;
@@ -405,6 +427,7 @@ function DataTable({ category, rows, onDelete, onSort, sortConfig, pagination, o
                         <div className="px-2 py-3"><span className={`inline-flex px-2 py-1 rounded-lg text-xs font-semibold border ${getMethodColor(row.method)}`}>{row.method?.replace(/_/g, " ").toUpperCase()}</span></div>
                         <div className="px-2 py-3">{row.paymentId ? <div className="bg-slate-100 px-2 py-1 rounded text-xs font-mono text-slate-700 truncate">{row.paymentId}</div> : <span className="text-xs text-slate-400">-</span>}</div>
                         <div className="px-2 py-3"><span className="inline-flex px-2 py-1 rounded-lg text-xs font-semibold bg-purple-100 text-purple-700 border border-purple-200">{row.branch}</span></div>
+                        <div className="px-2 py-3"><ApprovalBadge status={row.approvalStatus} /></div>
                       </>)}
 
                       <div className="px-2 py-3">
@@ -427,6 +450,7 @@ function DataTable({ category, rows, onDelete, onSort, sortConfig, pagination, o
                               </span>
                               <span className={`px-2 py-1 rounded text-xs font-semibold ${getMethodColor(row.method)}`}>{row.method?.replace(/_/g, " ").toUpperCase()}</span>
                               {hasUndefinedCategory(row) && (<span className="inline-flex items-center gap-1 px-2 py-1 bg-amber-100 text-amber-700 rounded text-xs font-semibold border border-amber-200"><AlertCircle className="w-3 h-3" />Uncategorized</span>)}
+                              {rowCategory === "EXPENSE" && <ApprovalBadge status={row.approvalStatus} />}
                             </div>
                             <h4 className="text-base font-bold text-slate-900">{rowCategory !== "EXPENSE" ? getPatientName(row) : getExpenseGiverName(row)}</h4>
                             {rowCategory !== "EXPENSE" && <p className="text-sm text-slate-600 font-medium">{getPatientPhone(row)}</p>}
@@ -531,16 +555,20 @@ export default function StocksTransactionsPage() {
   const [selectedTransactionId, setSelectedTransactionId] = useState(null);
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
+  const [pendingOnly, setPendingOnly] = useState(false);
   const toast = useToast();
   const [sortConfig, setSortConfig] = useState({ key: "date", direction: "desc" });
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => { fetchData(); }, [pendingOnly]);
+
+  useEffect(() => { if (activeCategory !== "EXPENSE" && pendingOnly) setPendingOnly(false); }, [activeCategory]);
 
   const fetchData = async () => {
     try {
       setLoading(true);
       setError(null);
-      const res = await fetch("/api/transactions/get-all?limit=10000", { credentials: "include" });
+      const approvalQuery = pendingOnly ? "&approvalStatus=PENDING" : "";
+      const res = await fetch(`/api/transactions/get-all?limit=10000${approvalQuery}`, { credentials: "include" });
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       const data = await res.json();
       if (data.success && data.transactions) {
@@ -766,6 +794,16 @@ export default function StocksTransactionsPage() {
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 sm:w-5 sm:h-5" />
                   <input type="text" placeholder="Search all transactions..." value={tableSearch} onChange={(e) => setTableSearch(e.target.value)} className="pl-9 sm:pl-11 pr-4 py-2 sm:py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-100 focus:border-indigo-300 text-sm w-full lg:w-64 transition-all" />
                 </div>
+                {activeCategory === "EXPENSE" && (
+                  <button
+                    onClick={() => setPendingOnly((v) => !v)}
+                    className={`px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl transition-all shrink-0 flex items-center gap-2 text-sm font-semibold whitespace-nowrap ${pendingOnly ? "bg-amber-500 text-white shadow-md" : "bg-amber-50 text-amber-700 hover:bg-amber-100"}`}
+                  >
+                    <Clock className="w-4 h-4" />
+                    <span className="hidden sm:inline">Pending Approvals</span>
+                    <span className="sm:hidden">Pending</span>
+                  </button>
+                )}
                 <button onClick={() => setShowFilters(!showFilters)} className={`p-2 sm:p-2.5 rounded-xl transition-all shrink-0 flex items-center gap-2 ${showFilters ? "bg-indigo-50 text-indigo-600 ring-2 ring-indigo-200" : "bg-gray-50 hover:bg-gray-100 text-gray-600"}`}>
                   <Filter className="w-4 h-4 sm:w-5 sm:h-5" />
                   <ChevronDown className={`w-4 h-4 hidden sm:block ${showFilters ? "rotate-180" : ""}`} />

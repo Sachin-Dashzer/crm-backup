@@ -113,6 +113,34 @@ const transactionSchema = new mongoose.Schema(
 
     remarks: String,
 
+    // WhatsApp approval workflow — only meaningful for EXPENSE transactions.
+    // Every other category defaults to "APPROVED" so the get-all listing/stats
+    // filters can apply a blanket approvalStatus exclusion without branching on category.
+    approvalStatus: {
+      type: String,
+      enum: ["PENDING", "APPROVED", "REJECTED"],
+      default: "APPROVED",
+    },
+
+    approvalActionBy: {
+      name: String,
+      phone: String,
+      date: Date,
+    },
+
+    // wamid + admin phone for each approval request sent out, so the webhook
+    // can tell the other admins "already actioned" once one of them responds.
+    whatsappApprovalMessages: [
+      {
+        phone: String,
+        messageId: String,
+        sentAt: {
+          type: Date,
+          default: Date.now,
+        },
+      },
+    ],
+
     stock: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Stock",
@@ -214,6 +242,7 @@ transactionSchema.index({ costType: 1, date: -1 });
 transactionSchema.index({ branch: 1, date: -1 });
 transactionSchema.index({ branch: 1, costType: 1, date: -1 });
 transactionSchema.index({ patient: 1 });
+transactionSchema.index({ approvalStatus: 1, date: -1 });
 
 delete mongoose.models["Transactions"];
 export default mongoose.model("Transactions", transactionSchema);

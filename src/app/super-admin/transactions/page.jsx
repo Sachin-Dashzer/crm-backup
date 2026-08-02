@@ -27,6 +27,8 @@ import {
   ChevronDown,
   Package,
   FileText as Bill,
+  Clock,
+  XCircle,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -147,6 +149,24 @@ function Select({ label, value, onChange, options, required, icon: Icon }) {
   );
 }
 
+function ApprovalBadge({ status }) {
+  if (status === "PENDING") {
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold bg-amber-100 text-amber-700 border border-amber-200">
+        <Clock className="w-3 h-3" />Pending Approval
+      </span>
+    );
+  }
+  if (status === "REJECTED") {
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold bg-gray-100 text-gray-600 border border-gray-200">
+        <XCircle className="w-3 h-3" />Rejected
+      </span>
+    );
+  }
+  return null;
+}
+
 function DataTable({ category, rows, onDelete, onSort, sortConfig, pagination, onGenerateBill }) {
   const router = useRouter();
 
@@ -192,6 +212,7 @@ function DataTable({ category, rows, onDelete, onSort, sortConfig, pagination, o
       case "EXPENSE": return [...base,
         { key: "expense", label: "Expense", sortable: true, width: "160px" },
         { key: "expenseGiver", label: "Paid To", sortable: false, width: "160px" },
+        { key: "approvalStatus", label: "Status", sortable: false, width: "140px" },
         { key: "amount", label: "Amount", sortable: true, width: "130px" },
         { key: "method", label: "Method", sortable: true, width: "110px" },
         { key: "paymentId", label: "Trans ID", sortable: true, width: "150px" },
@@ -299,6 +320,7 @@ function DataTable({ category, rows, onDelete, onSort, sortConfig, pagination, o
                       {rowCategory === "EXPENSE" && (<>
                         <div className="px-2 py-3"><div className="text-sm font-semibold text-slate-900 truncate">{row.expense || row.expenseCategory || "N/A"}</div></div>
                         <div className="px-2 py-3"><div className="text-sm text-slate-900 truncate">{getExpenseGiverName(row)}</div></div>
+                        <div className="px-2 py-3"><ApprovalBadge status={row.approvalStatus} /></div>
                         <div className="px-2 py-3 text-right"><div className="text-sm font-bold text-rose-600">{formatCurrency(row.amount)}</div></div>
                         <div className="px-2 py-3"><span className={`inline-flex px-2 py-1 rounded-lg text-xs font-semibold border ${getMethodColor(row.method)}`}>{row.method?.replace(/_/g, " ").toUpperCase()}</span></div>
                         <div className="px-2 py-3">{row.paymentId ? <div className="bg-slate-100 px-2 py-1 rounded text-xs font-mono text-slate-700 truncate">{row.paymentId}</div> : <span className="text-xs text-slate-400">-</span>}</div>
@@ -324,6 +346,7 @@ function DataTable({ category, rows, onDelete, onSort, sortConfig, pagination, o
                               </span>
                               <span className={`px-2 py-1 rounded text-xs font-semibold ${getMethodColor(row.method)}`}>{row.method?.replace(/_/g, " ").toUpperCase()}</span>
                               {hasUndefinedCategory(row) && <span className="inline-flex items-center gap-1 px-2 py-1 bg-amber-100 text-amber-700 rounded text-xs font-semibold border border-amber-200"><AlertCircle className="w-3 h-3" />Uncategorized</span>}
+                              {rowCategory === "EXPENSE" && <ApprovalBadge status={row.approvalStatus} />}
                             </div>
                             <h4 className="text-base font-bold text-slate-900">{rowCategory !== "EXPENSE" ? getPatientName(row) : getExpenseGiverName(row)}</h4>
                             {rowCategory !== "EXPENSE" && <p className="text-sm text-slate-600 font-medium">{getPatientPhone(row)}</p>}
@@ -407,6 +430,7 @@ export default function SuperAdminTransactionsPage() {
   const [error, setError]               = useState(null);
   const [refreshing, setRefreshing]     = useState(false);
   const [activeCategory, setActiveCategory] = useState("TRANSPLANT");
+  const [pendingOnly, setPendingOnly] = useState(false);
   const [filters, setFilters] = useState({ branch: "", dateFrom: getTodayDate(), dateTo: getTodayDate(), paymentMethod: "", procedure: "" });
   const [showFilters, setShowFilters]   = useState(false);
   const [tableSearch, setTableSearch]   = useState("");
@@ -437,6 +461,7 @@ export default function SuperAdminTransactionsPage() {
       if (filters.paymentMethod) p.set("paymentMethod", filters.paymentMethod);
       if (filters.procedure)     p.set("procedure",     filters.procedure);
       if (debouncedSearch)       p.set("search",        debouncedSearch);
+      if (activeCategory === "EXPENSE" && pendingOnly) p.set("approvalStatus", "PENDING");
       const res = await fetch(`/api/transactions/get-all?${p.toString()}`, { credentials: "include" });
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       const data = await res.json();
@@ -446,10 +471,11 @@ export default function SuperAdminTransactionsPage() {
       if (data.stats) setStats(data.stats);
     } catch (e) { setError(e.message); toast?.error?.("Error loading data: " + e.message); }
     finally { setLoading(false); setRefreshing(false); }
-  }, [page, perPage, activeCategory, sortConfig, filters, debouncedSearch]);
+  }, [page, perPage, activeCategory, sortConfig, filters, debouncedSearch, pendingOnly]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
-  useEffect(() => { setPage(1); }, [filters, activeCategory, debouncedSearch, sortConfig]);
+  useEffect(() => { setPage(1); }, [filters, activeCategory, debouncedSearch, sortConfig, pendingOnly]);
+  useEffect(() => { if (activeCategory !== "EXPENSE") setPendingOnly(false); }, [activeCategory]);
 
   const handleRefresh = () => fetchData(true);
   const handleSort = (key) => { setSortConfig((prev) => ({ key, direction: prev.key === key && prev.direction === "asc" ? "desc" : "asc" })); };
@@ -567,6 +593,13 @@ export default function SuperAdminTransactionsPage() {
                   <Filter className="w-4 h-4 sm:w-5 sm:h-5" />
                   <ChevronDown className={`w-4 h-4 hidden sm:block ${showFilters ? "rotate-180" : ""}`} />
                 </button>
+                {activeCategory === "EXPENSE" && (
+                  <button onClick={() => setPendingOnly((v) => !v)} className={`px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl transition-all shrink-0 flex items-center gap-2 text-sm font-semibold whitespace-nowrap ${pendingOnly ? "bg-amber-500 text-white shadow-md" : "bg-amber-50 text-amber-700 hover:bg-amber-100"}`}>
+                    <Clock className="w-4 h-4" />
+                    <span className="hidden sm:inline">Pending Approvals</span>
+                    <span className="sm:hidden">Pending</span>
+                  </button>
+                )}
                 {hasActiveFilters && (
                   <button onClick={clearFilters} className="px-3 sm:px-4 py-2 sm:py-2.5 text-sm bg-gray-50 hover:bg-gray-100 text-gray-700 rounded-xl transition-all font-medium flex items-center gap-1 sm:gap-2 whitespace-nowrap shrink-0">
                     <X className="w-4 h-4" /><span className="hidden xs:inline">Clear</span>
