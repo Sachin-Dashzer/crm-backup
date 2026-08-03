@@ -62,6 +62,7 @@ function buildApprovalBody(transaction) {
   return (
     `🧾 *New Expense Approval Needed*\n\n` +
     `Category: ${transaction.expense || "N/A"}\n` +
+    `Type: ${transaction.expenseType || "N/A"}\n` +
     `Paid To: ${payee}\n` +
     `Amount: ${formatCurrency(transaction.amount)}\n` +
     `Branch: ${transaction.branch || "N/A"}\n` +

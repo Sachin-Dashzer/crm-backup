@@ -28,6 +28,7 @@ const handler = async (req) => {
       paymentType: transaction.paymentType,
       paymentId: transaction.paymentId,
       expense: transaction.expense,
+      expenseType: transaction.expenseType,
       method: transaction.method,
       amount: transaction.amount,
       discount: transaction.discount || 0,

@@ -6,6 +6,7 @@ import Sidebar from "@/components/Sidebars/StockSidebar";
 import SearchableSelect from "@/components/SearchableSelect";
 import { useSession } from "next-auth/react";
 import { maskPhone } from "@/utils/phoneUtils";
+import { EXPENSE_CATEGORIES, getExpenseTypes } from "@/constants/expenseCategories";
 import {
   ArrowLeft,
   Save,
@@ -100,6 +101,7 @@ export default function EditTransactionPage() {
   // EXPENSE DATA
   const [expenseData, setExpenseData] = useState({
     expenseCategory: "",
+    expenseType: "",
     isVendor: true,
     vendorId: "",
     expenseGiverName: "",
@@ -348,6 +350,7 @@ export default function EditTransactionPage() {
 
         setExpenseData({
           expenseCategory: trans.expense || trans.expenseCategory || "",
+          expenseType: trans.expenseType || "",
           isVendor: isVendor,
           vendorId: vendorIdValue,
           expenseGiverName: !isVendor ? trans.expenseGiver?.name || "" : "",
@@ -618,6 +621,13 @@ export default function EditTransactionPage() {
       showToast("Please select expense category", "error");
       return;
     }
+    if (
+      getExpenseTypes(expenseData.expenseCategory).length > 0 &&
+      !expenseData.expenseType
+    ) {
+      showToast("Please select expense type", "error");
+      return;
+    }
     if (expenseData.isVendor && !expenseData.vendorId) {
       showToast("Please select a vendor", "error");
       return;
@@ -652,6 +662,7 @@ export default function EditTransactionPage() {
         body: JSON.stringify({
           transactionId: transactionId,
           expenseCategory: expenseData.expenseCategory,
+          expenseType: expenseData.expenseType,
           expenseGiver: {
             type: expenseData.isVendor ? "VENDOR" : "MANUAL",
             vendorId: expenseData.isVendor ? expenseData.vendorId : "",
@@ -1760,7 +1771,7 @@ export default function EditTransactionPage() {
                       Expense Details
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="md:col-span-2">
+                      <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           Expense Category{" "}
                           <span className="text-red-500">*</span>
@@ -1771,51 +1782,59 @@ export default function EditTransactionPage() {
                             setExpenseData({
                               ...expenseData,
                               expenseCategory: e.target.value,
+                              expenseType: "",
                             })
                           }
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 outline-none"
                         >
                           <option value="">Select category…</option>
-                          <option>Salary</option>
-                          <option>Rent</option>
-                          <option>Staff Welfare</option>
-                          <option>Patient Meals</option>
-                          <option>Medical Consumables</option>
-                          <option>Office Exp.</option>
-                          <option>Lab Expenses</option>
-                          <option>Repairs and Maintainence</option>
-                          <option>Incentive</option>
-                          <option>Commision</option>
-                          <option>Pantry Expenses</option>
-                          <option>PATIENT EMI</option>
-                          <option>Interest Expenses</option>
-                          <option>Marketing</option>
-                          <option>GST</option>
-                          <option>Collabration</option>
-                          <option>Vehicle maintainance</option>
-                          <option>Patient Refund</option>
-                          <option>Tds</option>
-                          <option>Security & Deposits</option>
-                          <option>Ai Sensy</option>
-                          <option>Printing & stationery</option>
-                          <option>Conveyance/Freight</option>
-                          <option>Meta ads</option>
-                          <option>Google ads</option>
-                          <option>On Call Staff</option>
-                          <option>Electricity Bill</option>
-                          <option>Travelling Expenses</option>
-                          <option>Hotel Charges</option>
-                          <option>Professional Services</option>
-                          <option>Staff Meals</option>
-                          <option>software expenses</option>
-                          <option>RECHARGE</option>
-                          <option>Bank charges</option>
-                          <option>Handover</option>
-                          <option>Drawings</option>
-                          <option>
-                            Forex Conversion and Fluctuation Charges
-                          </option>{" "}
-                          <option>Other</option>
+                          {expenseData.expenseCategory &&
+                            !EXPENSE_CATEGORIES.includes(
+                              expenseData.expenseCategory,
+                            ) && (
+                              <option value={expenseData.expenseCategory}>
+                                {expenseData.expenseCategory} (existing)
+                              </option>
+                            )}
+                          {EXPENSE_CATEGORIES.map((cat) => (
+                            <option key={cat} value={cat}>
+                              {cat}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Expense Type{" "}
+                          <span className="text-red-500">*</span>
+                        </label>
+                        <select
+                          value={expenseData.expenseType}
+                          onChange={(e) =>
+                            setExpenseData({
+                              ...expenseData,
+                              expenseType: e.target.value,
+                            })
+                          }
+                          disabled={!expenseData.expenseCategory}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 outline-none disabled:bg-gray-100"
+                        >
+                          <option value="">Select type…</option>
+                          {expenseData.expenseType &&
+                            !getExpenseTypes(
+                              expenseData.expenseCategory,
+                            ).includes(expenseData.expenseType) && (
+                              <option value={expenseData.expenseType}>
+                                {expenseData.expenseType} (existing)
+                              </option>
+                            )}
+                          {getExpenseTypes(expenseData.expenseCategory).map(
+                            (type) => (
+                              <option key={type} value={type}>
+                                {type}
+                              </option>
+                            ),
+                          )}
                         </select>
                       </div>
 
@@ -2061,6 +2080,12 @@ export default function EditTransactionPage() {
                         <span className="text-gray-600">Category:</span>
                         <span className="font-semibold text-gray-900">
                           {expenseData.expenseCategory || "—"}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Type:</span>
+                        <span className="font-semibold text-gray-900">
+                          {expenseData.expenseType || "—"}
                         </span>
                       </div>
                       <div className="flex justify-between text-sm">

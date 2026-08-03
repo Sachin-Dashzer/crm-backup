@@ -5,6 +5,7 @@ import AdminSidebar from "@/components/Sidebars/Sidebar";
 import SearchableSelect from "@/components/SearchableSelect";
 import { useSession } from "next-auth/react";
 import { maskPhone } from "@/utils/phoneUtils";
+import { EXPENSE_CATEGORIES, getExpenseTypes } from "@/constants/expenseCategories";
 import {
   ArrowLeft,
   Plus,
@@ -115,6 +116,7 @@ export default function AdminCreateTransactionPage() {
 
   const [expenseData, setExpenseData] = useState({
     expenseCategory: "",
+    expenseType: "",
     isVendor: true,
     vendorId: "",
     expenseGiverName: "",
@@ -498,6 +500,13 @@ export default function AdminCreateTransactionPage() {
       alert("Please select expense category");
       return;
     }
+    if (
+      getExpenseTypes(expenseData.expenseCategory).length > 0 &&
+      !expenseData.expenseType
+    ) {
+      alert("Please select expense type");
+      return;
+    }
     if (expenseData.isVendor && !expenseData.vendorId) {
       alert("Please select a vendor");
       return;
@@ -529,6 +538,7 @@ export default function AdminCreateTransactionPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           expenseCategory: expenseData.expenseCategory,
+          expenseType: expenseData.expenseType,
           expenseGiver: {
             type: expenseData.isVendor ? "VENDOR" : "MANUAL",
             vendorId: expenseData.isVendor ? expenseData.vendorId : "",
@@ -545,7 +555,7 @@ export default function AdminCreateTransactionPage() {
         }),
       });
       if (res.ok) {
-        alert("Expense submitted — pending admin approval via WhatsApp!");
+        alert("Expense transaction created successfully!");
         router.push("/admin/transactions");
       } else {
         const d = await res.json();
@@ -1789,75 +1799,43 @@ export default function AdminCreateTransactionPage() {
                             setExpenseData({
                               ...expenseData,
                               expenseCategory: e.target.value,
+                              expenseType: "",
                             })
                           }
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                         >
                           <option value="">Select Category</option>
-                          <option value="Salary">Salary</option>
-                          <option value="Rent">Rent</option>
-                          <option value="Staff Welfare">Staff Welfare</option>
-                          <option value="Patient Meals">Patient Meals</option>
-                          <option value="Medical Consumables">
-                            Medical Consumables
-                          </option>
-                          <option value="Office Exp.">Office Exp.</option>
-                          <option value="Lab Expenses">Lab Expenses</option>
-                          <option value="Repairs and Maintainence">
-                            Repairs and Maintainence
-                          </option>
-                          <option value="Incentive">Incentive</option>
-                          <option value="Commision">Commision</option>
-                          <option value="Pantry Expenses">
-                            Pantry Expenses
-                          </option>
-                          <option value="PATIENT EMI">PATIENT EMI</option>
-                          <option value="Interest Expenses">
-                            Interest Expenses
-                          </option>
-                          <option value="Marketing">Marketing</option>
-                          <option value="GST">GST</option>
-                          <option value="Collabration">Collabration</option>
-                          <option value="Vehicle maintainance">
-                            Vehicle maintainance
-                          </option>
-                          <option value="Patient Refund">Patient Refund</option>
-                          <option value="Tds">Tds</option>
-                          <option value="Security & Deposits">
-                            Security & Deposits
-                          </option>
-                          <option value="Ai Sensy">Ai Sensy</option>
-                          <option value="Printing & stationery">
-                            Printing & stationery
-                          </option>
-                          <option value="Conveyance/Freight">
-                            Conveyance/Freight
-                          </option>
-                          <option value="Meta ads">Meta ads</option>
-                          <option value="Google ads">Google ads</option>
-                          <option value="On Call Staff">On Call Staff</option>
-                          <option value="Electricity Bill">
-                            Electricity Bill
-                          </option>
-                          <option value="Travelling Expenses">
-                            Travelling Expenses
-                          </option>
-                          <option value="Hotel Charges">Hotel Charges</option>
-                          <option value="Professional Services">
-                            Professional Services
-                          </option>
-                          <option value="Staff Meals">Staff Meals</option>
-                          <option value="software expenses">
-                            software expenses
-                          </option>
-                          <option value="RECHARGE">RECHARGE</option>
-                          <option value="Bank charges">Bank charges</option>
-                          <option value="Handover">Handover</option>
-                          <option value="Drawings">Drawings</option>
-                          <option value="Forex Conversion and Fluctuation Charges">
-                            Forex Conversion and Fluctuation Charges
-                          </option>{" "}
-                          <option value="Other">Other</option>
+                          {EXPENSE_CATEGORIES.map((cat) => (
+                            <option key={cat} value={cat}>
+                              {cat}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Expense Type{" "}
+                          <span className="text-red-500">*</span>
+                        </label>
+                        <select
+                          value={expenseData.expenseType}
+                          onChange={(e) =>
+                            setExpenseData({
+                              ...expenseData,
+                              expenseType: e.target.value,
+                            })
+                          }
+                          disabled={!expenseData.expenseCategory}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg disabled:bg-gray-100"
+                        >
+                          <option value="">Select Type</option>
+                          {getExpenseTypes(expenseData.expenseCategory).map(
+                            (type) => (
+                              <option key={type} value={type}>
+                                {type}
+                              </option>
+                            ),
+                          )}
                         </select>
                       </div>
                       <div>

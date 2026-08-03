@@ -214,6 +214,7 @@ function DataTable({ category, rows, onDelete, onSort, sortConfig, pagination, o
       ];
       case "EXPENSE": return [...base,
         { key: "expense", label: "Expense", sortable: true, width: "160px" },
+        { key: "expenseType", label: "Type", sortable: true, width: "150px" },
         { key: "expenseGiver", label: "Paid To", sortable: false, width: "160px" },
         { key: "amount", label: "Amount", sortable: true, width: "130px" },
         { key: "method", label: "Method", sortable: true, width: "110px" },
@@ -322,6 +323,7 @@ function DataTable({ category, rows, onDelete, onSort, sortConfig, pagination, o
 
                       {rowCategory === "EXPENSE" && (<>
                         <div className="px-2 py-3"><div className="text-sm font-semibold text-slate-900 truncate">{row.expense || row.expenseCategory || "N/A"}</div></div>
+                        <div className="px-2 py-3"><div className="text-sm text-slate-900 truncate">{row.expenseType || "-"}</div></div>
                         <div className="px-2 py-3"><div className="text-sm text-slate-900 truncate">{getExpenseGiverName(row)}</div></div>
                         <div className="px-2 py-3 text-right"><div className="text-sm font-bold text-rose-600">{formatCurrency(row.amount)}</div></div>
                         <div className="px-2 py-3"><span className={`inline-flex px-2 py-1 rounded-lg text-xs font-semibold border ${getMethodColor(row.method)}`}>{row.method?.replace(/_/g, " ").toUpperCase()}</span></div>
@@ -352,7 +354,7 @@ function DataTable({ category, rows, onDelete, onSort, sortConfig, pagination, o
                             </div>
                             <h4 className="text-base font-bold text-slate-900">{rowCategory !== "EXPENSE" ? getPatientName(row) : getExpenseGiverName(row)}</h4>
                             {rowCategory !== "EXPENSE" && <p className="text-sm text-slate-600 font-medium">{getPatientPhone(row)}</p>}
-                            {rowCategory === "EXPENSE" && <p className="text-sm text-slate-600 font-medium">{row.expense || row.expenseCategory || "General Expense"}</p>}
+                            {rowCategory === "EXPENSE" && <p className="text-sm text-slate-600 font-medium">{[row.expense || row.expenseCategory || "General Expense", row.expenseType].filter(Boolean).join(" • ")}</p>}
                           </div>
                           <div className="text-right">
                             <div className={`text-lg font-bold ${rowCategory === "EXPENSE" ? "text-rose-600" : "text-emerald-700"}`}>{formatCurrency(netAmount)}</div>
@@ -362,7 +364,8 @@ function DataTable({ category, rows, onDelete, onSort, sortConfig, pagination, o
                         <div className="grid grid-cols-2 gap-3">
                           {(rowCategory === "SERVICE" || rowCategory === "MEDICINE") && (<><div><p className="text-xs text-slate-500 mb-1">{rowCategory === "SERVICE" ? "Sessions" : "Quantity"}</p><p className="text-sm font-semibold text-indigo-700">{row.quantity || 1}</p></div><div><p className="text-xs text-slate-500 mb-1">{rowCategory === "SERVICE" ? "Per Session" : "Per Unit"}</p><p className="text-sm font-semibold text-slate-700">{formatCurrency(rowCategory === "SERVICE" ? row.perSessionCost : row.perUnitCost)}</p></div></>)}
                           {rowCategory === "TRANSPLANT" && <div><p className="text-xs text-slate-500 mb-1">Payment Type</p><p className="text-sm font-semibold text-blue-700">{row.paymentType || "N/A"}</p></div>}
-                          {rowCategory === "EXPENSE" && <div><p className="text-xs text-slate-500 mb-1">Expense Type</p><p className="text-sm font-semibold text-rose-700">{row.expense || row.expenseCategory || "N/A"}</p></div>}
+                          {rowCategory === "EXPENSE" && <div><p className="text-xs text-slate-500 mb-1">Expense Category</p><p className="text-sm font-semibold text-rose-700">{row.expense || row.expenseCategory || "N/A"}</p></div>}
+                          {rowCategory === "EXPENSE" && <div><p className="text-xs text-slate-500 mb-1">Expense Type</p><p className="text-sm font-semibold text-rose-700">{row.expenseType || "N/A"}</p></div>}
                           {rowCategory === "EXPENSE" && (row.approvalStatus === "PENDING" || row.approvalStatus === "REJECTED") && <div><p className="text-xs text-slate-500 mb-1">Approval</p><ApprovalBadge status={row.approvalStatus} /></div>}
                           <div><p className="text-xs text-slate-500 mb-1">Branch</p><p className="text-sm font-semibold text-purple-700">{row.branch}</p></div>
                           <div><p className="text-xs text-slate-500 mb-1">Transaction ID</p><p className="text-sm font-mono text-slate-700 truncate">{row.paymentId || "-"}</p></div>
@@ -476,7 +479,7 @@ export default function SalesTransactionsPage() {
     const rowCategory = row.transactionCategory || row.category || "TRANSPLANT";
     if (rowCategory === "TRANSPLANT" || rowCategory === "SERVICE") { const pn = row.patient?.personal?.name || row.patientName || ""; const pp = row.patient?.personal?.phone || row.patientPhone || ""; return pn.toLowerCase().includes(searchLower) || pp.includes(searchLower) || row.procedure?.toLowerCase().includes(searchLower); }
     if (rowCategory === "MEDICINE") { const pn = row.patient?.personal?.name || row.patientName || ""; const pp = row.patient?.personal?.phone || row.patientPhone || ""; const mn = typeof row.medicineId === "object" ? row.medicineId?.name : ""; return pn.toLowerCase().includes(searchLower) || pp.includes(searchLower) || mn?.toLowerCase().includes(searchLower); }
-    if (rowCategory === "EXPENSE") { const en = row.expense || row.expenseCategory || ""; const gn = row.expenseGiver?.name || ""; return en.toLowerCase().includes(searchLower) || gn.toLowerCase().includes(searchLower); }
+    if (rowCategory === "EXPENSE") { const en = row.expense || row.expenseCategory || ""; const et = row.expenseType || ""; const gn = row.expenseGiver?.name || ""; return en.toLowerCase().includes(searchLower) || et.toLowerCase().includes(searchLower) || gn.toLowerCase().includes(searchLower); }
     return false;
   };
 

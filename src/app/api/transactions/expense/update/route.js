@@ -4,6 +4,7 @@ import { authOptions } from "../../../auth/[...nextauth]/route";
 import Transaction from "@/models/Transactions";
 import Vendor from "@/models/Vendor";
 import connectDB from "@/lib/db";
+import { getExpenseTypes } from "@/constants/expenseCategories";
 
 export async function PUT(req) {
   try {
@@ -18,6 +19,7 @@ export async function PUT(req) {
     const {
       transactionId,
       expenseCategory,
+      expenseType,
       expenseGiver,
       amount,
       method,
@@ -31,6 +33,13 @@ export async function PUT(req) {
     if (!transactionId || !expenseCategory || !expenseGiver || !amount) {
       return NextResponse.json(
         { error: "Missing required fields" },
+        { status: 400 }
+      );
+    }
+
+    if (getExpenseTypes(expenseCategory).length > 0 && !expenseType) {
+      return NextResponse.json(
+        { error: "Expense type is required for this category" },
         { status: 400 }
       );
     }
@@ -80,6 +89,7 @@ export async function PUT(req) {
     };
 
     trackField("expenseCategory", existingTransaction.expense, expenseCategory);
+    trackField("expenseType", existingTransaction.expenseType, expenseType);
     trackField("expenseGiverType", existingTransaction.expenseGiver?.type, expenseGiver.type);
     trackField("expenseGiverName", existingTransaction.expenseGiver?.name, expenseGiver.name);
     if (expenseGiver.type === "VENDOR") {
@@ -156,6 +166,7 @@ export async function PUT(req) {
 
     // Update transaction
     existingTransaction.expense = expenseCategory;
+    existingTransaction.expenseType = expenseType || "";
     existingTransaction.expenseGiver = {
       type: expenseGiver.type,
       vendorId: expenseGiver.type === "VENDOR" ? expenseGiver.vendorId : null,

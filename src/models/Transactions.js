@@ -92,7 +92,11 @@ const transactionSchema = new mongoose.Schema(
       enum: ALL_BRANCHES,
     },
 
+    // Expense Category — top-level (e.g. "Marketing", "Incentive"). Only used for EXPENSE transactions.
     expense: String,
+    // Transaction Type — sub-category under expense (e.g. "Meta ads" under "Marketing").
+    // Left blank for categories with no sub-types. See src/constants/expenseCategories.js.
+    expenseType: String,
 
     discount: {
       type: Number,

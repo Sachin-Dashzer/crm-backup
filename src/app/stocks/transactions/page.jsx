@@ -266,6 +266,7 @@ function DataTable({ category, rows, onDelete, onSort, sortConfig, pagination, o
       ];
       case "EXPENSE": return [...base,
         { key: "expense", label: "Expense", sortable: true, width: "160px" },
+        { key: "expenseType", label: "Type", sortable: true, width: "150px" },
         { key: "expenseGiver", label: "Paid To", sortable: false, width: "160px" },
         { key: "amount", label: "Amount", sortable: true, width: "130px" },
         { key: "method", label: "Method", sortable: true, width: "110px" },
@@ -425,6 +426,7 @@ function DataTable({ category, rows, onDelete, onSort, sortConfig, pagination, o
 
                       {rowCategory === "EXPENSE" && (<>
                         <div className="px-2 py-3"><div className="text-sm font-semibold text-slate-900 truncate">{row.expense || row.expenseCategory || "N/A"}</div></div>
+                        <div className="px-2 py-3"><div className="text-sm text-slate-900 truncate">{row.expenseType || "-"}</div></div>
                         <div className="px-2 py-3"><div className="text-sm text-slate-900 truncate">{getExpenseGiverName(row)}</div></div>
                         <div className="px-2 py-3 text-right"><div className="text-sm font-bold text-rose-600">{formatCurrency(row.amount)}</div></div>
                         <div className="px-2 py-3"><span className={`inline-flex px-2 py-1 rounded-lg text-xs font-semibold border ${getMethodColor(row.method)}`}>{row.method?.replace(/_/g, " ").toUpperCase()}</span></div>
@@ -457,7 +459,7 @@ function DataTable({ category, rows, onDelete, onSort, sortConfig, pagination, o
                             </div>
                             <h4 className="text-base font-bold text-slate-900">{rowCategory !== "EXPENSE" ? getPatientName(row) : getExpenseGiverName(row)}</h4>
                             {rowCategory !== "EXPENSE" && <p className="text-sm text-slate-600 font-medium">{getPatientPhone(row)}</p>}
-                            {rowCategory === "EXPENSE" && <p className="text-sm text-slate-600 font-medium">{row.expense || row.expenseCategory || "General Expense"}</p>}
+                            {rowCategory === "EXPENSE" && <p className="text-sm text-slate-600 font-medium">{[row.expense || row.expenseCategory || "General Expense", row.expenseType].filter(Boolean).join(" • ")}</p>}
                           </div>
                           <div className="text-right">
                             <div className={`text-lg font-bold ${rowCategory === "EXPENSE" ? "text-rose-600" : "text-emerald-700"}`}>{formatCurrency(netAmount)}</div>
@@ -471,7 +473,8 @@ function DataTable({ category, rows, onDelete, onSort, sortConfig, pagination, o
                             <div><p className="text-xs text-slate-500 mb-1">{rowCategory === "SERVICE" ? "Per Session" : "Per Unit"}</p><p className="text-sm font-semibold text-slate-700">{formatCurrency(rowCategory === "SERVICE" ? row.perSessionCost : row.perUnitCost)}</p></div>
                           </>)}
                           {rowCategory === "TRANSPLANT" && <div><p className="text-xs text-slate-500 mb-1">Payment Type</p><p className="text-sm font-semibold text-blue-700">{row.paymentType || "N/A"}</p></div>}
-                          {rowCategory === "EXPENSE" && <div><p className="text-xs text-slate-500 mb-1">Expense Type</p><p className="text-sm font-semibold text-rose-700">{row.expense || row.expenseCategory || "N/A"}</p></div>}
+                          {rowCategory === "EXPENSE" && <div><p className="text-xs text-slate-500 mb-1">Expense Category</p><p className="text-sm font-semibold text-rose-700">{row.expense || row.expenseCategory || "N/A"}</p></div>}
+                          {rowCategory === "EXPENSE" && <div><p className="text-xs text-slate-500 mb-1">Expense Type</p><p className="text-sm font-semibold text-rose-700">{row.expenseType || "N/A"}</p></div>}
                           <div><p className="text-xs text-slate-500 mb-1">Branch</p><p className="text-sm font-semibold text-purple-700">{row.branch}</p></div>
                           <div><p className="text-xs text-slate-500 mb-1">Transaction ID</p><p className="text-sm font-mono text-slate-700 truncate">{row.paymentId || "-"}</p></div>
                           {row.batchId && <div className="col-span-2"><p className="text-xs text-slate-500 mb-1">Batch ID</p><p className="text-sm font-mono text-indigo-700">{row.batchId.slice(-8)}</p></div>}
@@ -617,8 +620,9 @@ export default function StocksTransactionsPage() {
     }
     if (rowCategory === "EXPENSE") {
       const expenseName = row.expense || row.expenseCategory || "";
+      const expenseType = row.expenseType || "";
       const giverName = row.expenseGiver?.name || "";
-      return expenseName.toLowerCase().includes(searchLower) || giverName.toLowerCase().includes(searchLower);
+      return expenseName.toLowerCase().includes(searchLower) || expenseType.toLowerCase().includes(searchLower) || giverName.toLowerCase().includes(searchLower);
     }
     return false;
   };

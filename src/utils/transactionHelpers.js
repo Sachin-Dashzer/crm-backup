@@ -1,6 +1,7 @@
 /**
  * Utility functions for transaction management
  */
+import { getExpenseTypes } from '@/constants/expenseCategories';
 
 // Format currency
 export const formatCurrency = (amount) => {
@@ -178,6 +179,8 @@ export const validateExpenseTransaction = (data) => {
 
   if (!data.expenseCategory) {
     errors.expenseCategory = 'Expense category is required';
+  } else if (getExpenseTypes(data.expenseCategory).length > 0 && !data.expenseType) {
+    errors.expenseType = 'Transaction type is required for this category';
   }
 
   if (!data.expenseGiver?.type) {
@@ -238,7 +241,7 @@ export const exportTransactionsToCSV = (transactions, category) => {
       headers = ['Date', 'Patient Name', 'Phone', 'Medicine', 'Quantity', 'Per Unit Cost', 'Amount', 'Discount', 'Method', 'Branch', ...headers.slice(7)];
       break;
     case 'EXPENSE':
-      headers = ['Date', 'Expense Category', 'Payee', 'Amount', 'Method', 'Branch', ...headers.slice(7)];
+      headers = ['Date', 'Expense Category', 'Expense Type', 'Payee', 'Amount', 'Method', 'Branch', ...headers.slice(7)];
       break;
   }
 
@@ -298,7 +301,8 @@ export const exportTransactionsToCSV = (transactions, category) => {
       case 'EXPENSE':
         row = [
           formatDate(txn.date),
-          txn.expenseCategory || '',
+          txn.expense || '',
+          txn.expenseType || '',
           txn.expenseGiver?.name || '',
           txn.amount || 0,
           txn.method || '',

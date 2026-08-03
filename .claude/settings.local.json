@@ -34,7 +34,9 @@
       "Bash(node --experimental-modules -e ' *)",
       "Bash(npx --no-install eslint src/app/reception/transactions/page.jsx)",
       "Bash(node -e ' *)",
-      "Bash(node -e \"require\\('./src/models/Transactions.js'\\)\")"
+      "Bash(node -e \"require\\('./src/models/Transactions.js'\\)\")",
+      "Bash(echo \"exit:$?\")",
+      "Bash(node --env-file=.env src/scripts/delete-expense-transactions.js)"
     ],
     "additionalDirectories": [
       "c:\\dashzer\\ryan-crm\\src\\app\\api\\reception"

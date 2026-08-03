@@ -5,7 +5,7 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import connectDB from "@/lib/db";
 import Transactions from "@/models/Transactions";
 import Vendor from "@/models/Vendor";
-import { sendExpenseApprovalRequest } from "@/lib/whatsapp";
+import { getExpenseTypes } from "@/constants/expenseCategories";
 
 export async function POST(req) {
   try {
@@ -18,6 +18,7 @@ export async function POST(req) {
 
     const {
       expenseCategory,
+      expenseType,
       expenseGiver,
       amount,
       method,
@@ -45,6 +46,13 @@ export async function POST(req) {
     if (!expenseCategory || !amount || !expenseGiver) {
       return NextResponse.json(
         { error: "Missing required fields" },
+        { status: 400 }
+      );
+    }
+
+    if (getExpenseTypes(expenseCategory).length > 0 && !expenseType) {
+      return NextResponse.json(
+        { error: "Expense type is required for this category" },
         { status: 400 }
       );
     }
@@ -77,13 +85,12 @@ export async function POST(req) {
       }
     }
 
-    // Create transaction — held as PENDING until a WhatsApp admin approves it.
-    // Vendor linking is deferred to approval time (see whatsapp webhook), so a
-    // rejected expense never touches the vendor's transaction reference.
+    // WhatsApp approval step is temporarily disabled — expenses are auto-approved on creation.
     const transaction = new Transactions({
       transactionCategory: "EXPENSE",
       costType: "Expenses",
       expense: expenseCategory,
+      expenseType: expenseType || "",
       expenseGiver: {
         type: expenseGiver.type,
         vendorId: expenseGiver.vendorId || null,
@@ -96,7 +103,7 @@ export async function POST(req) {
       date: date ? new Date(date) : new Date(),
       remarks: remarks || "",
       vendor: expenseGiver.type === "VENDOR" ? expenseGiver.vendorId : null,
-      approvalStatus: "PENDING",
+      approvalStatus: "APPROVED",
       createdBy: {
         name: session.user.name,
         email: session.user.email,
@@ -107,21 +114,24 @@ export async function POST(req) {
 
     await transaction.save();
 
-    // Fail-safe: WhatsApp outages must not crash transaction creation — the
-    // transaction already exists as PENDING regardless of whether this succeeds.
-    try {
-      const sent = await sendExpenseApprovalRequest(transaction);
-      if (sent.length > 0) {
-        transaction.whatsappApprovalMessages = sent;
-        await transaction.save();
-      }
-    } catch (waError) {
-      console.error("Failed to send WhatsApp expense approval request:", waError);
+    if (vendorDoc) {
+      const previousValue = vendorDoc.Transactions?.toString() || "null";
+      vendorDoc.Transactions = transaction._id;
+      vendorDoc.editors.push({
+        name: session.user.name,
+        email: session.user.email,
+        branch: session.user.branch,
+        date: new Date(),
+        updatedFields: [
+          { name: "Transactions", previousValue, newValue: transaction._id.toString() },
+        ],
+      });
+      await vendorDoc.save();
     }
 
     return NextResponse.json(
       {
-        message: "Expense transaction submitted for admin approval via WhatsApp",
+        message: "Expense transaction created successfully",
         transaction,
       },
       { status: 201 }

@@ -5,6 +5,7 @@ import Sidebar from "@/components/Sidebars/CollabSidebar";
 import SearchableSelect from "@/components/SearchableSelect";
 import { useSession } from "next-auth/react";
 import { maskPhone } from "@/utils/phoneUtils";
+import { EXPENSE_CATEGORIES, getExpenseTypes } from "@/constants/expenseCategories";
 import {
   ArrowLeft,
   Plus,
@@ -108,6 +109,7 @@ export default function AllTransactionsPage() {
   // EXPENSE DATA
   const [expenseData, setExpenseData] = useState({
     expenseCategory: "",
+    expenseType: "",
     isVendor: true,
     vendorId: "",
     expenseGiverName: "",
@@ -546,6 +548,13 @@ export default function AllTransactionsPage() {
       alert("Please select expense category");
       return;
     }
+    if (
+      getExpenseTypes(expenseData.expenseCategory).length > 0 &&
+      !expenseData.expenseType
+    ) {
+      alert("Please select expense type");
+      return;
+    }
     if (expenseData.isVendor && !expenseData.vendorId) {
       alert("Please select a vendor");
       return;
@@ -571,6 +580,7 @@ export default function AllTransactionsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           expenseCategory: expenseData.expenseCategory,
+          expenseType: expenseData.expenseType,
           expenseGiver: {
             type: expenseData.isVendor ? "VENDOR" : "MANUAL",
             vendorId: expenseData.isVendor ? expenseData.vendorId : "",
@@ -588,7 +598,7 @@ export default function AllTransactionsPage() {
       });
 
       if (res.ok) {
-        alert("Expense submitted — pending admin approval via WhatsApp!");
+        alert("Expense transaction created successfully!");
         router.push("/collab/transactions");
       } else {
         const data = await res.json();
@@ -1854,24 +1864,43 @@ export default function AllTransactionsPage() {
                             setExpenseData({
                               ...expenseData,
                               expenseCategory: e.target.value,
+                              expenseType: "",
                             })
                           }
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                         >
                           <option value="">Select Category</option>
-                          <option value="Salary">Salary</option>
-                          <option value="Medicine Purchase">
-                            Medicine Purchase
-                          </option>
-                          <option value="Equipment Purchase">
-                            Equipment Purchase
-                          </option>
-                          <option value="Rent">Rent</option>
-<option value="Incentive">Incentive</option>
-                          <option value="Utilities">Utilities</option>
-                          <option value="Marketing">Marketing</option>
-                          <option value="Maintenance">Maintenance</option>
-                          <option value="Other">Other</option>
+                          {EXPENSE_CATEGORIES.map((cat) => (
+                            <option key={cat} value={cat}>
+                              {cat}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Expense Type{" "}
+                          <span className="text-red-500">*</span>
+                        </label>
+                        <select
+                          value={expenseData.expenseType}
+                          onChange={(e) =>
+                            setExpenseData({
+                              ...expenseData,
+                              expenseType: e.target.value,
+                            })
+                          }
+                          disabled={!expenseData.expenseCategory}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg disabled:bg-gray-100"
+                        >
+                          <option value="">Select Type</option>
+                          {getExpenseTypes(expenseData.expenseCategory).map(
+                            (type) => (
+                              <option key={type} value={type}>
+                                {type}
+                              </option>
+                            ),
+                          )}
                         </select>
                       </div>
                       <div>

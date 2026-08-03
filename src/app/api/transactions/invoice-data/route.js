@@ -148,6 +148,7 @@ const handler = async (req) => {
           perUnitCost: t.perUnitCost,
           medicineName: t.medicineId?.name || "N/A",
           expense: t.expense,
+          expenseType: t.expenseType,
         })),
         patient: patientDetails,
         consultant,

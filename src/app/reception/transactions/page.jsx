@@ -434,6 +434,7 @@ function DataTable({
         return [
           ...baseColumns,
           { key: "expense", label: "Expense", sortable: true, width: "160px" },
+          { key: "expenseType", label: "Type", sortable: true, width: "150px" },
           {
             key: "expenseGiver",
             label: "Paid To",
@@ -854,6 +855,11 @@ function DataTable({
                           </div>
                           <div className="px-2 py-3">
                             <div className="text-sm text-slate-900 truncate">
+                              {row.expenseType || "-"}
+                            </div>
+                          </div>
+                          <div className="px-2 py-3">
+                            <div className="text-sm text-slate-900 truncate">
                               {getExpenseGiverName(row)}
                             </div>
                           </div>
@@ -963,9 +969,14 @@ function DataTable({
                             )}
                             {rowCategory === "EXPENSE" && (
                               <p className="text-sm text-slate-600 font-medium">
-                                {row.expense ||
-                                  row.expenseCategory ||
-                                  "General Expense"}
+                                {[
+                                  row.expense ||
+                                    row.expenseCategory ||
+                                    "General Expense",
+                                  row.expenseType,
+                                ]
+                                  .filter(Boolean)
+                                  .join(" • ")}
                               </p>
                             )}
                           </div>
@@ -1030,10 +1041,20 @@ function DataTable({
                           {rowCategory === "EXPENSE" && (
                             <div>
                               <p className="text-xs text-slate-500 mb-1">
-                                Expense Type
+                                Expense Category
                               </p>
                               <p className="text-sm font-semibold text-rose-700">
                                 {row.expense || row.expenseCategory || "N/A"}
+                              </p>
+                            </div>
+                          )}
+                          {rowCategory === "EXPENSE" && (
+                            <div>
+                              <p className="text-xs text-slate-500 mb-1">
+                                Expense Type
+                              </p>
+                              <p className="text-sm font-semibold text-rose-700">
+                                {row.expenseType || "N/A"}
                               </p>
                             </div>
                           )}

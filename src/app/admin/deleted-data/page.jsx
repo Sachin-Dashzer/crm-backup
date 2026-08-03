@@ -74,6 +74,7 @@ const applyFilters = (data, filters) => {
         item.patient?.name?.toLowerCase().includes(searchLower) ||
         item.remarks?.toLowerCase().includes(searchLower) ||
         item.expense?.toLowerCase().includes(searchLower) ||
+        item.expenseType?.toLowerCase().includes(searchLower) ||
         item.paymentId?.toLowerCase().includes(searchLower) ||
         item.branch?.toLowerCase().includes(searchLower) ||
         item.procedure?.toLowerCase().includes(searchLower);
@@ -209,7 +210,8 @@ const DeletedData = () => {
       'Payment Method': item.method || 'N/A',
       'Payment Type': item.paymentType || 'N/A',
       'Payment ID': item.paymentId || 'N/A',
-      'Expense': item.expense || 'N/A',
+      'Expense Category': item.expense || 'N/A',
+      'Expense Type': item.expenseType || 'N/A',
       'Discount': item.discount || 0,
       'Remarks': item.remarks || 'No remarks',
       'Created By': item.createdBy?.name || 'N/A',
@@ -497,6 +499,12 @@ const DeletedData = () => {
                                     <div className="flex justify-between py-1">
                                       <span className="text-gray-600">Expense:</span>
                                       <span className="font-medium">{item.expense}</span>
+                                    </div>
+                                  )}
+                                  {item.expenseType && (
+                                    <div className="flex justify-between py-1">
+                                      <span className="text-gray-600">Expense Type:</span>
+                                      <span className="font-medium">{item.expenseType}</span>
                                     </div>
                                   )}
                                   {item.discount > 0 && (
