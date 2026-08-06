@@ -248,5 +248,5 @@ transactionSchema.index({ branch: 1, costType: 1, date: -1 });
 transactionSchema.index({ patient: 1 });
 transactionSchema.index({ approvalStatus: 1, date: -1 });
 
-delete mongoose.models["Transactions"];
-export default mongoose.model("Transactions", transactionSchema);
+export default mongoose.models.Transactions ||
+  mongoose.model("Transactions", transactionSchema);
