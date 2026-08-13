@@ -11,6 +11,7 @@ export const EXPENSE_CATEGORY_TREE = {
   "Rent": [
     "Rent-Backend Basement",
     "Rent-Backend upper ground floor",
+    "Rent-Backend ground floor",
     "Rent-Backend 1st Floor",
     "Rent-Backend 4th floor / Top floor",
     "Rent-CD Clinic",
@@ -38,10 +39,12 @@ export const EXPENSE_CATEGORY_TREE = {
     "On Call Staff",
     "Legal Consultant Fee",
     "Finance Consultant Fee",
+    "Freelancer Fee",
   ],
   "Electricity Bill": [
     "Electricity Exp-Backend basement",
     "Electricity Exp-Backend upper ground floor",
+    "Electricity Exp-Backend ground floor",
     "Electricity Exp-Backend 1st Floor",
     "Electricity Exp-Backend 4th floor / Top floor",
     "Electricity Exp-CD Clinic",
@@ -83,28 +86,127 @@ export const EXPENSE_CATEGORY_TREE = {
     "Printing & stationery",
     "Conveyance/Freight",
   ],
-  "Lab Expenses": ["Lab Expenses"],
-  "Patient Related Expenses": ["Patient Meals", "Patient Refunds", "PATIENT EMI"],
+  "Lab Expenses": ["Lab Expenses", "Lab Consumables"],
+  "Patient Related Expenses": [
+    "Patient Meals",
+    "Patient Refunds",
+    "PATIENT EMI",
+    "PATIENT TREATMENT CHARGES",
+  ],
   "Interest Expenses": ["Interest Expenses"],
-  "Taxes": ["GST", "ROC", "TDS", "Income Tax"],
+  // Original four kept — historical rows reference them and Q3 said keep them fully active.
+  // The sixteen below are the new sheet's entries, additive alongside the originals.
+  "Taxes": [
+    "GST",
+    "ROC",
+    "TDS",
+    "Income Tax",
+    "GST Ryan Skin",
+    "ROC Ryan Medihub",
+    "TDS on Rent Ryan Medihub",
+    "TDS on Rent Ryan Skin",
+    "TDS on Professional Service Ryan Medihub",
+    "TDS on Professional Service Ryan Skin",
+    "TDS on Salary Service Ryan Medihub",
+    "TDS on Salary Service Ryan Skin",
+    "TDS on Contractor Ryan Medihub",
+    "TDS on Contractor Ryan Skin",
+    "TDS on Commission Ryan Medihub",
+    "TDS on Commission Ryan Skin",
+    "TDS on others Ryan Medihub",
+    "TDS on others Ryan Skin",
+    "Income Tax Ryan Medihub",
+    "Income Tax Ryan Skin",
+  ],
   "Software Rental Expenses": ["Software Rental Expenses"],
   "Hardware Rental Expenses": [
     "AC Rent",
     "Laptop/System Rent",
     "Printer Rental Expenses",
+    "Rental Others",
   ],
   "Travelling Expenses": ["Travelling Expenses"],
   "Hotel Charges": ["Hotel Charges"],
   "Telephone Expenses": ["Staff Recharge", "Mobile Repairing", "Interenet Recharge/Wifi"],
-  "Bank Charges": ["Bank Charges"],
+  "Bank Charges": ["Bank Charges", "External Charges"],
   "Forex Conversion and Fluctuation Charges": ["Forex Conversion and Fluctuation Charges"],
   "Asset Based Payment": [
     "Hardware-Laptop/Computer/Mobile etc",
     "Security & Deposits",
   ],
-  "Drawings": ["Personal Payments", "Handover to Family", "Handover to Backend"],
+  "Drawings": [
+    "Personal Payments",
+    "Handover to Family",
+    "Handover to Backend",
+    "Loan Repayment",
+  ],
+  "Collab Clinic Payment": ["Collab Clinic Payment"],
 };
 
 export const EXPENSE_CATEGORIES = Object.keys(EXPENSE_CATEGORY_TREE);
 
 export const getExpenseTypes = (category) => EXPENSE_CATEGORY_TREE[category] || [];
+
+// Categories that get the create-payable / record-payment flow (Payable Expenses section).
+// Salary and Incentive are owned by the Employees section, and Commision by the Patient
+// section — they're payable, but excluded from the Payable Expenses dropdown so the same
+// expense can't be entered from two places. See PAYABLE_EXPENSE_DROPDOWN_CATEGORIES below.
+export const PAYABLE_EXPENSE_CATEGORIES = [
+  "Salary",
+  "Rent",
+  "Medical Consumables",
+  "Medicine Procurement",
+  "Professional Expenses",
+  "Electricity Bill",
+  "Incentive",
+  "Commision",
+  "Lab Expenses",
+  "Interest Expenses",
+  "Taxes",
+  "Software Rental Expenses",
+  "Hardware Rental Expenses",
+];
+
+// Categories already owned by a dedicated section's own tab/flow — excluded from the
+// Payable Expenses tab's category dropdown to avoid double-entry.
+const PAYABLE_CATEGORIES_OWNED_ELSEWHERE = ["Salary", "Incentive", "Commision"];
+
+export const PAYABLE_EXPENSE_DROPDOWN_CATEGORIES = PAYABLE_EXPENSE_CATEGORIES.filter(
+  (cat) => !PAYABLE_CATEGORIES_OWNED_ELSEWHERE.includes(cat),
+);
+
+// Everything else in EXPENSE_CATEGORY_TREE — paid in full when logged, no payable.
+// Collab Clinic Payment is deliberately excluded: it keeps its own Collab tab.
+export const DIRECT_PAYMENT_CATEGORIES = [
+  "Marketing",
+  "Welfare Expenses",
+  "Office Exp.",
+  "Travelling Expenses",
+  "Hotel Charges",
+  "Telephone Expenses",
+  "Bank Charges",
+  "Forex Conversion and Fluctuation Charges",
+  "Asset Based Payment",
+  "Drawings",
+  "Patient Related Expenses",
+];
+
+// The sixteen new Taxes entries from the sheet, for the "Include TDS" category picker (§4.4).
+export const TDS_TAX_TYPES = [
+  "GST Ryan Skin",
+  "ROC Ryan Medihub",
+  "TDS on Rent Ryan Medihub",
+  "TDS on Rent Ryan Skin",
+  "TDS on Professional Service Ryan Medihub",
+  "TDS on Professional Service Ryan Skin",
+  "TDS on Salary Service Ryan Medihub",
+  "TDS on Salary Service Ryan Skin",
+  "TDS on Contractor Ryan Medihub",
+  "TDS on Contractor Ryan Skin",
+  "TDS on Commission Ryan Medihub",
+  "TDS on Commission Ryan Skin",
+  "TDS on others Ryan Medihub",
+  "TDS on others Ryan Skin",
+  "Income Tax Ryan Medihub",
+  "Income Tax Ryan Skin",
+];

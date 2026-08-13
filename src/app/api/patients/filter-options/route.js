@@ -4,6 +4,7 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { withDB } from "@/lib/withDB";
 import Patient from "@/models/Patient";
 import Employee from "@/models/Employee";
+import { byName } from "@/lib/sortOptions";
 
 const handler = async (req) => {
   try {
@@ -25,12 +26,12 @@ const handler = async (req) => {
 
     return NextResponse.json({
       success: true,
-      counsellors: counsellors.filter(Boolean).sort(),
-      agents:      agents.filter(Boolean).sort(),
-      doctors:     doctors.filter(Boolean).sort(),
-      seniorTechs: seniorTechs.filter(Boolean).sort(),
-      implanters:  implanters.filter(Boolean).sort(),
-      techniques:  [...new Set([...t1, ...t2, ...t3].filter(Boolean))].sort(),
+      counsellors: counsellors.filter(Boolean).sort(byName),
+      agents:      agents.filter(Boolean).sort(byName),
+      doctors:     doctors.filter(Boolean).sort(byName),
+      seniorTechs: seniorTechs.filter(Boolean).sort(byName),
+      implanters:  implanters.filter(Boolean).sort(byName),
+      techniques:  [...new Set([...t1, ...t2, ...t3].filter(Boolean))].sort(byName),
     });
   } catch (error) {
     console.error("Error fetching filter options:", error);

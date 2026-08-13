@@ -5,6 +5,7 @@ import connectDB from "@/lib/db";
 import Transactions from "@/models/Transactions";
 import Patient from "@/models/Patient";
 import { resolveBranchFilter } from "@/lib/branches";
+import { UNSETTLED_METHODS } from "@/constants/bankRouting";
 import "@/models/Stock";
 import "@/models/Vendor";
 import "@/models/Employee";
@@ -27,6 +28,8 @@ export async function GET(request) {
     const paymentMethod = searchParams.get("paymentMethod") || "";
     const procedure     = searchParams.get("procedure")     || "";
     const approvalStatus = searchParams.get("approvalStatus") || "";
+    const payableId      = searchParams.get("payableId")      || "";
+    const receivableId   = searchParams.get("receivableId")   || "";
     const sortKey       = searchParams.get("sortKey")       || "date";
     const sortDir       = searchParams.get("sortDir") === "asc" ? 1 : -1;
 
@@ -36,6 +39,14 @@ export async function GET(request) {
 
     // Build the main query
     const query = { ...branchFilter };
+
+    if (payableId) {
+      query.payableId = payableId;
+    }
+
+    if (receivableId) {
+      query.receivableId = receivableId;
+    }
 
     // Category filter
     if (category) {
@@ -123,8 +134,14 @@ export async function GET(request) {
     // totals must reflect approved money only, even when viewing a Pending Approvals list.
     const statsQuery = { ...branchFilter, approvalStatus: { $nin: ["PENDING", "REJECTED"] } };
     if (query.date)        statsQuery.date   = query.date;
-    if (query.method)      statsQuery.method = query.method;
     if (query.procedure)   statsQuery.procedure = query.procedure;
+    // These are TOTALS (the category tab chips), not a list — paid_to_external/paid_by_other
+    // rows must never count here even though they still show in the list below. Combined with
+    // an explicit paymentMethod filter via $and, since both constrain the same `method` field.
+    statsQuery.$and = [
+      { method: { $nin: UNSETTLED_METHODS } },
+      ...(query.method ? [{ method: query.method }] : []),
+    ];
 
     const allowedSortKeys = new Set(["date", "amount", "method", "branch", "procedure", "patientName"]);
     const safeSortKey = allowedSortKeys.has(sortKey) ? sortKey : "date";

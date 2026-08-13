@@ -6,6 +6,13 @@ import connectDB from "@/lib/db";
 import Transactions from "@/models/Transactions";
 import Patient from "@/models/Patient";
 import mongoose from "mongoose";
+import {
+  withExternalPartyLink,
+  withDbTransaction,
+  createExternalReceivable,
+  validateExternalParty,
+} from "@/lib/externalPartyDerivation";
+import { resolveReceivableAllocations } from "@/lib/receivableAllocation";
 
 export async function POST(req) {
   try {
@@ -31,6 +38,11 @@ export async function POST(req) {
       branch,
       date,
       remarks,
+      receiptMode,
+      furtherMode,
+      receipts,
+      receivableAllocationChoice,
+      externalParty,
     } = await req.json();
 
     // Back-date entry prevention — only admin/super-admin can enter past dates
@@ -88,8 +100,23 @@ export async function POST(req) {
       );
     }
 
-    // Create transaction
-    const newTransaction = await Transactions.create({
+    // "Paid to External" — someone else physically received the cash on our behalf.
+    // The sale still books in full here; a Receivable tracks what they owe us.
+    if (method === "paid_to_external") {
+      const partyError = validateExternalParty(externalParty, "RECEIVED_BY");
+      if (partyError) {
+        return NextResponse.json({ success: false, message: partyError }, { status: 400 });
+      }
+    }
+
+    const resolvedBranch = branch || session.user.branch;
+    const createdBy = {
+      name: session.user.name,
+      email: session.user.email,
+      branch: session.user.branch,
+      date: new Date(),
+    };
+    const txnData = {
       transactionCategory: "TRANSPLANT",
       costType: "Revenue",
       patient: patientId,
@@ -99,17 +126,79 @@ export async function POST(req) {
       discount: discount || 0,
       method,
       paymentId: paymentId || "",
-      branch: branch || session.user.branch,
+      branch: resolvedBranch,
       date: date ? new Date(date) : new Date(),
       remarks: remarks || "",
-      createdBy: {
-        name: session.user.name,
-        email: session.user.email,
-        branch: session.user.branch,
-        date: new Date(),
-      },
+      receiptMode: receiptMode || "",
+      furtherMode: furtherMode || "",
+      receipts: receipts || [],
+      createdBy,
       editors: [],
-    });
+    };
+
+    let newTransaction;
+    if (method === "paid_to_external") {
+      newTransaction = await withExternalPartyLink(async (dbSession) => {
+        const [txn] = await Transactions.create(
+          [
+            {
+              ...txnData,
+              receivableId: null,
+              receivableAllocations: [],
+              externalParty: {
+                direction: "RECEIVED_BY",
+                name: externalParty.name,
+                method: externalParty.method,
+                partyKind: externalParty.partyKind || "MANUAL",
+                partyRefId: externalParty.partyKind && externalParty.partyKind !== "MANUAL" ? externalParty.partyRefId : null,
+              },
+            },
+          ],
+          { session: dbSession },
+        );
+        const receivable = await createExternalReceivable({
+          session: dbSession,
+          amount: txnData.amount,
+          name: externalParty.name,
+          method: externalParty.method,
+          partyKind: externalParty.partyKind || "MANUAL",
+          partyRefId: externalParty.partyRefId,
+          branch: resolvedBranch,
+          transactionCategory: "TRANSPLANT",
+          relatedPatient: patientId,
+          actor: createdBy,
+        });
+        txn.externalParty.linkedReceivableId = receivable._id;
+        await txn.save({ session: dbSession });
+        return txn;
+      });
+    } else {
+      // Auto-allocation (or an explicit override) happens server-side, inside the same
+      // transaction as the write — see src/lib/receivableAllocation.js. Two concurrent
+      // payments against the same receivable can't both allocate the same headroom.
+      try {
+        newTransaction = await withDbTransaction(async (dbSession) => {
+          const [{ receivableId: resolvedReceivableId, receivableAllocations }] =
+            await resolveReceivableAllocations({
+              patientId,
+              method,
+              itemAmounts: [txnData.amount],
+              choice: receivableAllocationChoice,
+              session: dbSession,
+            });
+          const [txn] = await Transactions.create(
+            [{ ...txnData, receivableId: resolvedReceivableId, receivableAllocations }],
+            { session: dbSession },
+          );
+          return txn;
+        });
+      } catch (allocationError) {
+        return NextResponse.json(
+          { success: false, message: allocationError.message },
+          { status: 400 },
+        );
+      }
+    }
 
     // Update patient payments (TRANSPLANT-specific logic)
     const patient = await Patient.findById(patientId);

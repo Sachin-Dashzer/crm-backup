@@ -5,6 +5,8 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import Transactions from "@/models/Transactions";
 import Patient from "@/models/Patient";
 import connectDB from "@/lib/db";
+import { periodLockResponse } from "@/lib/periodLock";
+import { withDbTransaction, syncExternalPartyOnUpdate } from "@/lib/externalPartyDerivation";
 import mongoose from "mongoose";
 
 export async function PUT(req) {
@@ -45,6 +47,16 @@ export async function PUT(req) {
         { success: false, message: "Not a transplant transaction" },
         { status: 400 }
       );
+    }
+
+    // Closed-period guard. Checks both where this transaction currently sits and where the
+    // edit would move it, so a change can neither leave nor enter a frozen period.
+    const locked = await periodLockResponse(existingTransaction, {
+      date: data.date,
+      furtherMode: data.furtherMode,
+    });
+    if (locked) {
+      return NextResponse.json({ ...locked.body, message: locked.body.error }, { status: locked.status });
     }
 
     // Basic validations
@@ -144,15 +156,38 @@ export async function PUT(req) {
       updatedFields: updatedFields,
     };
 
-    // Update the transaction with editor
-    const updatedTransaction = await Transactions.findByIdAndUpdate(
-      data.transactionId,
-      {
-        $set: updateData,
-        $push: { editors: editorEntry },
-      },
-      { new: true, runValidators: true }
-    );
+    // Editing into / out of / within "Paid to External" has to move the linked Receivable with
+    // it, or the amount leaves the books entirely — see syncExternalPartyOnUpdate. Wrapped in a
+    // session so the receivable write and this transaction write commit or roll back together.
+    let updatedTransaction;
+    try {
+      updatedTransaction = await withDbTransaction(async (dbSession) => {
+        const patch = await syncExternalPartyOnUpdate({
+          session: dbSession,
+          transaction: existingTransaction,
+          nextMethod: updateData.method !== undefined ? updateData.method : existingTransaction.method,
+          nextAmount: updateData.amount !== undefined ? updateData.amount : existingTransaction.amount,
+          nextExternalParty: data.externalParty,
+          branch: updateData.branch || existingTransaction.branch,
+          transactionCategory: "TRANSPLANT",
+          relatedPatient: updateData.patient || existingTransaction.patient,
+          actor: { name: session.user.name, email: session.user.email, branch: session.user.branch },
+        });
+
+        return Transactions.findByIdAndUpdate(
+          data.transactionId,
+          {
+            $set: { ...updateData, ...(patch || {}) },
+            $push: { editors: editorEntry },
+          },
+          { new: true, runValidators: true, session: dbSession },
+        );
+      });
+    } catch (syncError) {
+      // These are deliberate refusals (money already settled against the linked receivable),
+      // not faults — surface the reason rather than a generic 500.
+      return NextResponse.json({ success: false, message: syncError.message }, { status: 400 });
+    }
 
     // Function to recalculate patient payments for TRANSPLANT
     const recalculatePatientPayments = async (patientId) => {

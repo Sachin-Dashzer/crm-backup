@@ -5,6 +5,7 @@ import { withDB } from "@/lib/withDB";
 import Patient from "@/models/Patient";
 import Employee from "@/models/Employee";
 import { COLLAB_BRANCHES } from "@/lib/branches";
+import { byName } from "@/lib/sortOptions";
 
 const split = (v) => (v || "").split(",").filter(Boolean);
 
@@ -157,7 +158,7 @@ const handler = async (req) => {
         .populate("surgery.implanterLeft",  "name")
         .lean(),
       Patient.countDocuments(query),
-      Patient.distinct("surgery.location").then((vals) => vals.filter(Boolean).sort()),
+      Patient.distinct("surgery.location").then((vals) => vals.filter(Boolean).sort(byName)),
     ]);
 
     return NextResponse.json({

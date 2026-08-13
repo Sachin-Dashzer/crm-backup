@@ -21,6 +21,7 @@ import {
   BarChart3,
 } from "lucide-react";
 import SalesSidebar from "@/components/Sidebars/SalesSidebar";
+import { byName } from "@/lib/sortOptions";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function AgentDashboard() {
@@ -73,7 +74,7 @@ export default function AgentDashboard() {
         agent.techniques ? Object.keys(agent.techniques) : []
       )
     )
-  ).sort();
+  ).sort(byName);
 
   // Filter + sort agents
   const filteredAgents = agentsData

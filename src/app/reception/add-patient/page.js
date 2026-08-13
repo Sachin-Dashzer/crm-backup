@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useToast } from "@/components/Toast";
 import InputField from "@/components/InputField";
 import ReceptionSidebar from "@/components/Sidebars/ReceptionSidebar";
+import { prepareFileForUpload, formatBytes } from "@/utils/compressImage";
 import {
   Eye, Download, Plus,
   Upload,
@@ -640,9 +641,17 @@ export default function PatientRegistration() {
     setUploadingFiles((prev) => ({ ...prev, [section]: true }));
 
     try {
+      const compressionNotes = [];
       const uploadPromises = Array.from(files).map(async (file) => {
+        const { file: preparedFile, wasCompressed, originalSize, compressedSize, warning } =
+          await prepareFileForUpload(file);
+        if (warning) toast.error(warning);
+        if (wasCompressed) {
+          compressionNotes.push(`${file.name}: ${formatBytes(originalSize)} → ${formatBytes(compressedSize)}`);
+        }
+
         const formDataUpload = new FormData();
-        formDataUpload.append("file", file);
+        formDataUpload.append("file", preparedFile);
         formDataUpload.append("section", section);
         formDataUpload.append("patientId", "temp");
 
@@ -669,7 +678,9 @@ export default function PatientRegistration() {
         },
       }));
 
-      toast.success(`Successfully uploaded ${uploadedPaths.length} file(s)`);
+      toast.success(
+        [`Successfully uploaded ${uploadedPaths.length} file(s)`, ...compressionNotes].join(" · "),
+      );
     } catch (error) {
       toast.error("Failed to upload some files. Please try again.");
     } finally {

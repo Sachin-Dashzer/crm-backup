@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useToast } from "@/components/Toast";
 import { useParams } from "next/navigation";
 import InputField from "@/components/InputField";
+import { prepareFileForUpload, formatBytes } from "@/utils/compressImage";
 import {
   Upload,
   X,
@@ -874,9 +875,17 @@ export default function PatientEditDetails() {
     setUploadingFiles((prev) => ({ ...prev, [section]: true }));
 
     try {
+      const compressionNotes = [];
       const uploadPromises = Array.from(files).map(async (file) => {
+        const { file: preparedFile, wasCompressed, originalSize, compressedSize, warning } =
+          await prepareFileForUpload(file);
+        if (warning) compressionNotes.push(warning);
+        if (wasCompressed) {
+          compressionNotes.push(`${file.name}: ${formatBytes(originalSize)} → ${formatBytes(compressedSize)}`);
+        }
+
         const formDataToSend = new FormData();
-        formDataToSend.append("file", file);
+        formDataToSend.append("file", preparedFile);
         formDataToSend.append("section", section);
         formDataToSend.append("patientId", id);
 
@@ -906,7 +915,7 @@ export default function PatientEditDetails() {
 
       setUpdateStatus({
         type: "success",
-        message: `Successfully uploaded ${uploadedPaths.length} file(s)`,
+        message: [`Successfully uploaded ${uploadedPaths.length} file(s)`, ...compressionNotes].join(" · "),
       });
 
       setTimeout(() => setUpdateStatus(null), 3000);

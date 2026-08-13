@@ -8,6 +8,7 @@ import Transactions from "@/models/Transactions";
 import Stock from "@/models/Stock";
 import Vendor from "@/models/Vendor";
 import { ALL_BRANCHES, COLLAB_BRANCHES } from "@/lib/branches";
+import { UNSETTLED_METHODS } from "@/constants/bankRouting";
 
 // Whether `branchName` (a plain branch string) is covered by `branchFilter`, which may be
 // undefined/empty (no restriction), a plain string (exact match), or a Mongo `{ $in: [...] }`.
@@ -1122,6 +1123,8 @@ async function generatePaymentCollectionReport(filters) {
   const query = {
     ...filters.dateFilter,
     costType: "Revenue",
+    // "Total Collections" is a total — paid_to_external money isn't collected yet.
+    method: { $nin: UNSETTLED_METHODS },
   };
   if (filters.branch) query.branch = filters.branch;
 
@@ -1183,6 +1186,7 @@ async function generateProcedureRevenueReport(filters) {
   const query = {
     ...filters.dateFilter,
     costType: "Revenue",
+    method: { $nin: UNSETTLED_METHODS },
   };
   if (filters.branch) query.branch = filters.branch;
   if (filters.procedureFilter) query.procedure = filters.procedureFilter;
@@ -1241,6 +1245,7 @@ async function generateBranchComparisonReport(filters) {
           ...txQuery,
           branch: branch,
           costType: "Revenue",
+          method: { $nin: UNSETTLED_METHODS },
         },
       },
       {
@@ -1257,6 +1262,7 @@ async function generateBranchComparisonReport(filters) {
           ...txQuery,
           branch: branch,
           costType: "Expenses",
+          method: { $nin: UNSETTLED_METHODS },
         },
       },
       {
@@ -1294,6 +1300,7 @@ async function generateBranchRevenueReport(filters) {
   const query = {
     ...filters.dateFilter,
     costType: "Revenue",
+    method: { $nin: UNSETTLED_METHODS },
   };
   if (filters.branch) query.branch = filters.branch;
 

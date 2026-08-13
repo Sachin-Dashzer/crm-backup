@@ -8,6 +8,7 @@ import Employee from "@/models/Employee";
 import Stock from "@/models/Stock";
 import Leads from "@/models/Leads";
 import Interviewer from "@/models/Interviewer";
+import { UNSETTLED_METHODS } from "@/constants/bankRouting";
 
 export async function POST(req) {
   try {
@@ -87,16 +88,20 @@ export async function POST(req) {
         },
       },
       {
+        // Every branch below excludes UNSETTLED_METHODS — it's a total — EXCEPT byMethod,
+        // which stays unfiltered on purpose (see the §2.4 report: totals hide the
+        // paid_to_external/paid_by_other bucket, a breakdown BY method shows it).
         $facet: {
           totalAmount: [
+            { $match: { method: { $nin: UNSETTLED_METHODS } } },
             { $group: { _id: null, total: { $sum: "$amount" } } },
           ],
           medicineAmount: [
-            { $match: { transactionCategory: "MEDICINE" } },
+            { $match: { transactionCategory: "MEDICINE", method: { $nin: UNSETTLED_METHODS } } },
             { $group: { _id: null, total: { $sum: "$amount" } } },
           ],
           techniqueWise: [
-            { $match: { procedure: { $exists: true, $ne: null } } },
+            { $match: { procedure: { $exists: true, $ne: null }, method: { $nin: UNSETTLED_METHODS } } },
             {
               $group: {
                 _id: "$procedure",
@@ -107,6 +112,7 @@ export async function POST(req) {
             { $sort: { total: -1 } },
           ],
           perDay: [
+            { $match: { method: { $nin: UNSETTLED_METHODS } } },
             {
               $group: {
                 _id: { $dateToString: { format: "%Y-%m-%d", date: "$date", timezone: "Asia/Kolkata" } },
@@ -127,7 +133,7 @@ export async function POST(req) {
           ],
           prpStats: [
             {
-              $match: { procedure: { $in: ["PRP", "GFC"] } },
+              $match: { procedure: { $in: ["PRP", "GFC"] }, method: { $nin: UNSETTLED_METHODS } },
             },
             {
               $group: {

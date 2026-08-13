@@ -69,6 +69,8 @@ export async function PUT(request, { params }) {
       email: data.email?.trim() || undefined,
       role: data.role,
       isactive: data.isactive !== undefined ? data.isactive : true,
+      salaryStructure: data.salaryStructure || undefined,
+      incentiveRate: data.incentiveRate !== undefined ? data.incentiveRate : undefined,
     };
     
     // Update employee

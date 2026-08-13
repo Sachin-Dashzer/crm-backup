@@ -54,7 +54,9 @@ export async function POST(request) {
     const uploadPromise = new Promise((resolve, reject) => {
       const uploadStream = cloudinary.uploader.upload_stream(
         {
-          folder: `ryan-clinic/${patientId}/${section}`,
+          folder: patientId
+            ? `ryan-clinic/${patientId}/${section}`
+            : `ryan-clinic/receipts/${section}`,
           resource_type: resourceType,
           timeout: 120000, // 2 minute timeout per upload
           // For images, add optimization

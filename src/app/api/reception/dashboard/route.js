@@ -4,6 +4,7 @@ import Patient from "@/models/Patient";
 import Transactions from "@/models/Transactions";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { UNSETTLED_METHODS } from "@/constants/bankRouting";
 
 
 const VALID_BRANCHES = ["All", "Delhi", "Mumbai", "Hyderabad", "Noida"];
@@ -196,6 +197,7 @@ const handler = async (req) => {
             $match: {
               costType: "Revenue",
               ...(branch === "All" ? {} : { branch }),
+              method: { $nin: UNSETTLED_METHODS },
               $or: [
                 { date: { $gte: fromDate, $lte: toDate } },
                 { date: { $gte: comparisonStart, $lte: comparisonEnd } },

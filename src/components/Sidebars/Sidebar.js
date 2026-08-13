@@ -14,6 +14,10 @@ import {
   Boxes,
   Archive,
   Droplets,
+  Building2,
+  Wallet,
+  HandCoins,
+  Scale,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -156,6 +160,34 @@ export default function AdminSidebar() {
               href="/admin/transactions"
               icon={Receipt}
               active={isActive("/admin/transactions")}
+              onClick={close}
+            />
+            <NavItem
+              label="Collab Settlement"
+              href="/admin/collab-settlement"
+              icon={Building2}
+              active={isActive("/admin/collab-settlement")}
+              onClick={close}
+            />
+            <NavItem
+              label="Payables"
+              href="/admin/payables"
+              icon={Wallet}
+              active={isActive("/admin/payables")}
+              onClick={close}
+            />
+            <NavItem
+              label="Receivables"
+              href="/admin/receivables"
+              icon={HandCoins}
+              active={isActive("/admin/receivables")}
+              onClick={close}
+            />
+            <NavItem
+              label="Close Book"
+              href="/admin/close-book"
+              icon={Scale}
+              active={isActive("/admin/close-book")}
               onClick={close}
             />
             <NavItem

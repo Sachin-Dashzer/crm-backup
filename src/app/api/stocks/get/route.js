@@ -3,9 +3,10 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import dbConnect from "@/lib/db";
 import Stock from "@/models/Stock";
+import { NAME_COLLATION } from "@/lib/sortOptions";
 
 async function buildResponse(query, threshold, restrictedLocation = null) {
-  const stocks = await Stock.find(query).sort({ name: 1 }).lean();
+  const stocks = await Stock.find(query).sort({ name: 1 }).collation(NAME_COLLATION).lean();
   const statsQuery = restrictedLocation ? { location: restrictedLocation } : {};
   const allStocks = await Stock.find(statsQuery).lean();
 

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useToast } from "@/components/Toast";
 import InputField from "@/components/InputField";
 import SurgerySidebar from "@/components/Sidebars/SurgerySidebar";
+import { prepareFileForUpload, formatBytes } from "@/utils/compressImage";
 import {
   Eye, Download, Plus,
   Upload,
@@ -225,14 +226,18 @@ export default function SurgeryAddPatient() {
     if (!files?.length) return;
     setUploadingFiles((prev) => ({ ...prev, [section]: true }));
     try {
+      const compressionNotes = [];
       const paths = await Promise.all(Array.from(files).map(async (file) => {
-        const fd = new FormData(); fd.append("file", file); fd.append("section", section); fd.append("patientId", "temp");
+        const { file: preparedFile, wasCompressed, originalSize, compressedSize, warning } = await prepareFileForUpload(file);
+        if (warning) toast.error(warning);
+        if (wasCompressed) compressionNotes.push(`${file.name}: ${formatBytes(originalSize)} → ${formatBytes(compressedSize)}`);
+        const fd = new FormData(); fd.append("file", preparedFile); fd.append("section", section); fd.append("patientId", "temp");
         const res = await fetch("/api/upload", { method: "POST", body: fd });
         if (!res.ok) throw new Error(`Failed to upload ${file.name}`);
         return (await res.json()).filePath;
       }));
       setFormData((prev) => ({ ...prev, documents: { ...prev.documents, [section]: [...prev.documents[section], ...paths] } }));
-      toast.success(`Uploaded ${paths.length} file(s)`);
+      toast.success([`Uploaded ${paths.length} file(s)`, ...compressionNotes].join(" · "));
     } catch { toast.error("Failed to upload some files. Please try again."); }
     finally { setUploadingFiles((prev) => ({ ...prev, [section]: false })); }
   };

@@ -1,0 +1,1048 @@
+"use client";
+
+import { Fragment, useEffect, useRef, useState } from "react";
+import AdminSidebar from "@/components/Sidebars/Sidebar";
+import MetricCard from "@/components/MetricCard";
+import SearchableSelect from "@/components/SearchableSelect";
+import CollabCaseForm from "@/components/CollabCaseForm";
+import { useToast } from "@/components/Toast";
+import { COLLAB_BRANCHES } from "@/lib/branches";
+import { formatCurrency, formatDate, StatusBadge } from "@/lib/financeUI";
+import {
+  Building2,
+  Plus,
+  X,
+  Search,
+  ChevronDown,
+  ChevronUp,
+  Wallet,
+  TrendingUp,
+  TrendingDown,
+  Loader2,
+} from "lucide-react";
+
+// Mirrors Transactions.procedure's enum — used to categorize any revenue
+// transaction a settlement generates the same way the transplant form does.
+const PROCEDURE_OPTIONS = [
+  "Sapphire FUE",
+  "DHI",
+  "Turkish DHI",
+  "Beard Transplant",
+  "PRP",
+  "Alopecia",
+  "Headwash",
+  "Canacot",
+  "GFC",
+  "Medicine",
+  "Other",
+];
+
+const DEFAULT_CASE_FILTERS = { search: "", status: "", dateFrom: "", dateTo: "" };
+const CASE_LIMIT = 20;
+
+export default function AdminCollabSettlementPage() {
+  const toast = useToast();
+
+  const [balances, setBalances] = useState([]);
+  const [totals, setTotals] = useState({ totalReceivable: 0, totalPayable: 0 });
+  const [balancesLoading, setBalancesLoading] = useState(true);
+  const [clinicSearch, setClinicSearch] = useState("");
+
+  const [expandedClinic, setExpandedClinic] = useState(null);
+  const [clinicCases, setClinicCases] = useState([]);
+  const [caseTotal, setCaseTotal] = useState(0);
+  const [casesLoading, setCasesLoading] = useState(false);
+  const [expandedCaseId, setExpandedCaseId] = useState(null);
+  const [caseFilters, setCaseFilters] = useState(DEFAULT_CASE_FILTERS);
+  const [casePage, setCasePage] = useState(1);
+
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [collectionModalCase, setCollectionModalCase] = useState(null);
+  const [showSettleModal, setShowSettleModal] = useState(false);
+
+  const fetchBalances = async () => {
+    setBalancesLoading(true);
+    try {
+      const res = await fetch("/api/collab-settlement/balances");
+      const data = await res.json();
+      if (res.ok) {
+        setBalances(data.balances || []);
+        setTotals({ totalReceivable: data.totalReceivable || 0, totalPayable: data.totalPayable || 0 });
+      } else {
+        toast.error(data.error || "Failed to load balances");
+      }
+    } catch (error) {
+      console.error("Error fetching balances:", error);
+      toast.error("Failed to load balances");
+    } finally {
+      setBalancesLoading(false);
+    }
+  };
+
+  const fetchCasesForClinic = async (clinic, filters, page) => {
+    setCasesLoading(true);
+    try {
+      const params = new URLSearchParams({ clinic, page: String(page), limit: String(CASE_LIMIT) });
+      if (filters.search) params.set("search", filters.search);
+      if (filters.status) params.set("status", filters.status);
+      if (filters.dateFrom) params.set("dateFrom", filters.dateFrom);
+      if (filters.dateTo) params.set("dateTo", filters.dateTo);
+      const res = await fetch(`/api/collab-settlement/cases?${params}`);
+      const data = await res.json();
+      if (res.ok) {
+        setClinicCases(data.cases || []);
+        setCaseTotal(data.total || 0);
+      } else {
+        toast.error(data.error || "Failed to load cases");
+      }
+    } catch (error) {
+      console.error("Error fetching cases:", error);
+      toast.error("Failed to load cases");
+    } finally {
+      setCasesLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchBalances();
+  }, []);
+
+  // Re-fetch whenever the expanded clinic, its filters, or its page changes.
+  useEffect(() => {
+    if (expandedClinic) fetchCasesForClinic(expandedClinic, caseFilters, casePage);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [expandedClinic, caseFilters, casePage]);
+
+  const toggleClinic = (clinic) => {
+    if (expandedClinic === clinic) {
+      setExpandedClinic(null);
+      setClinicCases([]);
+      return;
+    }
+    setExpandedClinic(clinic);
+    setExpandedCaseId(null);
+    setCaseFilters(DEFAULT_CASE_FILTERS);
+    setCasePage(1);
+  };
+
+  const handleCaseFilterChange = (key, value) => {
+    setCasePage(1);
+    setCaseFilters((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const clearCaseFilters = () => {
+    setCasePage(1);
+    setCaseFilters(DEFAULT_CASE_FILTERS);
+  };
+
+  const refreshAfterChange = () => {
+    fetchBalances();
+    if (expandedClinic) fetchCasesForClinic(expandedClinic, caseFilters, casePage);
+  };
+
+  const activeBalances = balances.filter((b) => b.netPosition !== 0 || b.caseCount > 0);
+  const visibleBalances = clinicSearch
+    ? activeBalances.filter((b) => b.clinic.toLowerCase().includes(clinicSearch.toLowerCase()))
+    : activeBalances;
+  const caseTotalPages = Math.max(1, Math.ceil(caseTotal / CASE_LIMIT));
+
+  return (
+    <div className="flex min-h-screen bg-gray-50">
+      <AdminSidebar />
+      <main className="flex-1 p-4 sm:p-6 lg:p-8">
+        <div className="max-w-6xl mx-auto">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Collab Clinic Settlement</h1>
+              <p className="text-sm text-gray-500 mt-1">
+                Running account with partner clinics — who owes whom, and how much
+              </p>
+            </div>
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-indigo-600 text-white rounded-xl font-semibold text-sm hover:bg-indigo-700 transition-colors shadow-sm"
+            >
+              <Plus className="w-4 h-4" />
+              New Collab Case (Admin)
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+            <MetricCard
+              title="Total Receivable (clinics owe us)"
+              value={formatCurrency(totals.totalReceivable)}
+              icon={TrendingUp}
+              color="from-emerald-500 to-emerald-600"
+            />
+            <MetricCard
+              title="Total Payable (we owe clinics)"
+              value={formatCurrency(totals.totalPayable)}
+              icon={TrendingDown}
+              color="from-rose-500 to-rose-600"
+            />
+          </div>
+
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 text-sm text-amber-800">
+            Per-case settlement is painful — amounts flow both directions and cancel out. Let cases
+            accumulate through the month, then settle each clinic's single net figure once.
+          </div>
+
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-6">
+            <div className="relative">
+              <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                value={clinicSearch}
+                onChange={(e) => setClinicSearch(e.target.value)}
+                placeholder="Search clinic…"
+                className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm sm:max-w-xs"
+              />
+            </div>
+          </div>
+
+          {balancesLoading ? (
+            <div className="flex items-center justify-center py-16">
+              <Loader2 className="w-6 h-6 text-indigo-600 animate-spin" />
+            </div>
+          ) : activeBalances.length === 0 ? (
+            <div className="bg-white rounded-xl border border-gray-200 text-center py-16 text-gray-500 text-sm">
+              No collab cases yet.
+            </div>
+          ) : visibleBalances.length === 0 ? (
+            <div className="bg-white rounded-xl border border-gray-200 text-center py-16 text-gray-500 text-sm">
+              No clinics match "{clinicSearch}".
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {visibleBalances.map((b) => (
+                <ClinicCard
+                  key={b.clinic}
+                  balance={b}
+                  expanded={expandedClinic === b.clinic}
+                  onToggle={() => toggleClinic(b.clinic)}
+                />
+              ))}
+            </div>
+          )}
+
+          {expandedClinic && (
+            <div className="mt-6 bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold text-gray-900">{expandedClinic} — Cases</h3>
+                <button
+                  onClick={() => setShowSettleModal(true)}
+                  className="inline-flex items-center gap-2 px-3.5 py-2 bg-emerald-600 text-white rounded-lg text-sm font-semibold hover:bg-emerald-700 transition-colors"
+                >
+                  <Wallet className="w-4 h-4" />
+                  Settle {expandedClinic}
+                </button>
+              </div>
+
+              {/* Filters — order: search -> status -> date range (no purpose/branch axis; clinic is already selected) */}
+              <div className="bg-gray-50 rounded-xl border border-gray-200 p-3 mb-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                  <div className="relative lg:col-span-2">
+                    <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      value={caseFilters.search}
+                      onChange={(e) => handleCaseFilterChange("search", e.target.value)}
+                      placeholder="Search patient…"
+                      className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm bg-white"
+                    />
+                  </div>
+                  <select
+                    value={caseFilters.status}
+                    onChange={(e) => handleCaseFilterChange("status", e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white"
+                  >
+                    <option value="">All Statuses</option>
+                    <option value="OPEN">Open</option>
+                    <option value="SETTLED">Settled</option>
+                    <option value="CANCELLED">Cancelled</option>
+                  </select>
+                  <div className="flex gap-2">
+                    <input
+                      type="date"
+                      value={caseFilters.dateFrom}
+                      onChange={(e) => handleCaseFilterChange("dateFrom", e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white"
+                    />
+                    <input
+                      type="date"
+                      value={caseFilters.dateTo}
+                      onChange={(e) => handleCaseFilterChange("dateTo", e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white"
+                    />
+                  </div>
+                </div>
+                {(caseFilters.search || caseFilters.status || caseFilters.dateFrom || caseFilters.dateTo) && (
+                  <button
+                    onClick={clearCaseFilters}
+                    className="mt-2 text-xs font-medium text-indigo-700 hover:text-indigo-800"
+                  >
+                    Clear all filters
+                  </button>
+                )}
+              </div>
+
+              {casesLoading ? (
+                <div className="flex items-center justify-center py-10">
+                  <Loader2 className="w-5 h-5 text-indigo-600 animate-spin" />
+                </div>
+              ) : clinicCases.length === 0 ? (
+                <p className="text-sm text-gray-500 py-6 text-center">No cases match these filters.</p>
+              ) : (
+                <>
+                  {/* Mobile: stacked cards below sm breakpoint */}
+                  <div className="sm:hidden divide-y divide-gray-100">
+                    {clinicCases.map((c) => (
+                      <div key={c._id} className="py-3">
+                        <button
+                          onClick={() => setExpandedCaseId(expandedCaseId === c._id ? null : c._id)}
+                          className="flex items-center justify-between w-full text-left mb-2"
+                        >
+                          <span className="font-medium text-gray-900 truncate flex items-center gap-1.5">
+                            {expandedCaseId === c._id ? (
+                              <ChevronUp className="w-4 h-4 shrink-0" />
+                            ) : (
+                              <ChevronDown className="w-4 h-4 shrink-0" />
+                            )}
+                            {c.patientName || "Unknown"}
+                          </span>
+                          <StatusBadge status={c.status} />
+                        </button>
+                        {c.paidToClinic > 0 && (
+                          <span
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200 mb-2"
+                            title="Patient has paid this amount directly to the partner clinic. It is not reflected on the patient's payment record until the clinic settles — do not chase the patient for it."
+                          >
+                            Patient paid · {formatCurrency(c.paidToClinic)} with clinic
+                          </span>
+                        )}
+                        <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-gray-500 mb-2">
+                          <span>Package {formatCurrency(c.packageAmount)}</span>
+                          <span className="text-right">Clinic Share {formatCurrency(c.clinicShare)}</span>
+                          <span>Collected (us) {formatCurrency(c.collectedByUs)}</span>
+                          <span className="text-right">Collected (clinic) {formatCurrency(c.collectedByClinic)}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-sm">
+                          <div>
+                            <span className="text-gray-500">Outstanding </span>
+                            <span className="font-semibold text-amber-700">{formatCurrency(c.patientOutstanding)}</span>
+                          </div>
+                          <div>
+                            <span className="text-gray-500">Case Net </span>
+                            <span
+                              className={`font-bold ${
+                                c.caseNet > 0 ? "text-emerald-700" : c.caseNet < 0 ? "text-rose-600" : "text-gray-500"
+                              }`}
+                            >
+                              {formatCurrency(c.caseNet)}
+                            </span>
+                          </div>
+                        </div>
+                        {c.status === "OPEN" && (
+                          <div className="flex justify-end mt-2">
+                            <button
+                              onClick={() => setCollectionModalCase(c)}
+                              className="px-2.5 py-1 bg-indigo-50 text-indigo-700 rounded-lg text-xs font-semibold hover:bg-indigo-100"
+                            >
+                              Record Clinic Collection
+                            </button>
+                          </div>
+                        )}
+                        {expandedCaseId === c._id && (
+                          <div className="mt-3">
+                            <CaseHistory collabCase={c} />
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Desktop/tablet: table */}
+                  <div className="hidden sm:block overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-gray-50 border-b border-gray-200">
+                      <tr>
+                        <th className="text-left px-3 py-2 font-semibold text-gray-600">Patient</th>
+                        <th className="text-right px-3 py-2 font-semibold text-gray-600">Package</th>
+                        <th className="text-right px-3 py-2 font-semibold text-gray-600">Clinic Share</th>
+                        <th className="text-right px-3 py-2 font-semibold text-gray-600">Collected by Us</th>
+                        <th className="text-right px-3 py-2 font-semibold text-gray-600">Collected by Clinic</th>
+                        <th className="text-right px-3 py-2 font-semibold text-gray-600">Patient Outstanding</th>
+                        <th className="text-right px-3 py-2 font-semibold text-gray-600">Case Net</th>
+                        <th className="text-left px-3 py-2 font-semibold text-gray-600">Status</th>
+                        <th className="text-right px-3 py-2 font-semibold text-gray-600">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {clinicCases.map((c) => (
+                        <Fragment key={c._id}>
+                          <tr className="hover:bg-gray-50/60">
+                            <td className="px-3 py-2">
+                              <button
+                                onClick={() => setExpandedCaseId(expandedCaseId === c._id ? null : c._id)}
+                                className="flex items-center gap-1.5 text-left font-medium text-gray-900 hover:text-indigo-600"
+                              >
+                                {expandedCaseId === c._id ? (
+                                  <ChevronUp className="w-3.5 h-3.5 shrink-0" />
+                                ) : (
+                                  <ChevronDown className="w-3.5 h-3.5 shrink-0" />
+                                )}
+                                <span className="truncate max-w-37.5">{c.patientName || "Unknown"}</span>
+                              </button>
+                              {/* Money the patient paid the partner clinic never touches
+                                  Patient.payments, so this patient still reads as unpaid on
+                                  their own record. This badge is what stops staff chasing
+                                  someone who has already paid — just not to us. */}
+                              {c.paidToClinic > 0 && (
+                                <span
+                                  className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200"
+                                  title="Patient has paid this amount directly to the partner clinic. It is not reflected on the patient's payment record until the clinic settles — do not chase the patient for it."
+                                >
+                                  Patient paid · {formatCurrency(c.paidToClinic)} with clinic
+                                </span>
+                              )}
+                            </td>
+                            <td className="px-3 py-2 text-right">{formatCurrency(c.packageAmount)}</td>
+                            <td className="px-3 py-2 text-right">{formatCurrency(c.clinicShare)}</td>
+                            <td className="px-3 py-2 text-right text-emerald-700">
+                              {formatCurrency(c.collectedByUs)}
+                            </td>
+                            <td className="px-3 py-2 text-right text-indigo-700">
+                              {formatCurrency(c.collectedByClinic)}
+                            </td>
+                            <td className="px-3 py-2 text-right font-semibold text-amber-700">
+                              {formatCurrency(c.patientOutstanding)}
+                            </td>
+                            <td
+                              className={`px-3 py-2 text-right font-bold ${
+                                c.caseNet > 0 ? "text-emerald-700" : c.caseNet < 0 ? "text-rose-600" : "text-gray-500"
+                              }`}
+                            >
+                              {formatCurrency(c.caseNet)}
+                            </td>
+                            <td className="px-3 py-2">
+                              <StatusBadge status={c.status} />
+                            </td>
+                            <td className="px-3 py-2 text-right">
+                              {c.status === "OPEN" && (
+                                <button
+                                  onClick={() => setCollectionModalCase(c)}
+                                  className="px-2.5 py-1 bg-indigo-50 text-indigo-700 rounded-lg text-xs font-semibold hover:bg-indigo-100"
+                                >
+                                  Record Clinic Collection
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+                          {expandedCaseId === c._id && (
+                            <tr>
+                              <td colSpan={9} className="px-3 pb-4 bg-gray-50/60">
+                                <CaseHistory collabCase={c} />
+                              </td>
+                            </tr>
+                          )}
+                        </Fragment>
+                      ))}
+                    </tbody>
+                  </table>
+                  </div>
+                </>
+              )}
+
+              {!casesLoading && clinicCases.length > 0 && caseTotalPages > 1 && (
+                <div className="flex items-center justify-between pt-3 mt-3 border-t border-gray-200">
+                  <p className="text-xs text-gray-500">
+                    Page {casePage} of {caseTotalPages} · {caseTotal} total
+                  </p>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setCasePage((p) => Math.max(1, p - 1))}
+                      disabled={casePage <= 1}
+                      className="px-3 py-1.5 border border-gray-300 rounded-lg text-xs font-medium disabled:opacity-40"
+                    >
+                      Previous
+                    </button>
+                    <button
+                      onClick={() => setCasePage((p) => Math.min(caseTotalPages, p + 1))}
+                      disabled={casePage >= caseTotalPages}
+                      className="px-3 py-1.5 border border-gray-300 rounded-lg text-xs font-medium disabled:opacity-40"
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </main>
+
+      {showCreateModal && (
+        <NewCollabCaseModal
+          onClose={() => setShowCreateModal(false)}
+          onSuccess={() => {
+            setShowCreateModal(false);
+            refreshAfterChange();
+          }}
+          toast={toast}
+        />
+      )}
+
+      {collectionModalCase && (
+        <RecordCollectionModal
+          collabCase={collectionModalCase}
+          onClose={() => setCollectionModalCase(null)}
+          onSuccess={() => {
+            setCollectionModalCase(null);
+            refreshAfterChange();
+          }}
+          toast={toast}
+        />
+      )}
+
+      {showSettleModal && expandedClinic && (
+        <SettleModal
+          clinic={expandedClinic}
+          balance={balances.find((b) => b.clinic === expandedClinic)}
+          openCases={clinicCases.filter((c) => c.status === "OPEN")}
+          onClose={() => setShowSettleModal(false)}
+          onSuccess={() => {
+            setShowSettleModal(false);
+            refreshAfterChange();
+          }}
+          toast={toast}
+        />
+      )}
+    </div>
+  );
+}
+
+// ========== CLINIC CARD ==========
+function ClinicCard({ balance, expanded, onToggle }) {
+  const { clinic, netPosition, openCaseCount, caseCount } = balance;
+  const isReceivable = netPosition > 0;
+  const isPayable = netPosition < 0;
+
+  return (
+    <button
+      onClick={onToggle}
+      className={`text-left bg-white rounded-xl shadow-sm border p-5 transition-all hover:shadow-md ${
+        expanded ? "border-indigo-400 ring-2 ring-indigo-100" : "border-gray-200"
+      }`}
+    >
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <Building2 className="w-4 h-4 text-gray-400" />
+          <span className="font-semibold text-gray-900">{clinic}</span>
+        </div>
+        {expanded ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
+      </div>
+      <p
+        className={`text-xl font-bold ${
+          isReceivable ? "text-emerald-600" : isPayable ? "text-rose-600" : "text-gray-500"
+        }`}
+      >
+        {isReceivable && `Clinic owes us ${formatCurrency(netPosition)}`}
+        {isPayable && `We owe clinic ${formatCurrency(Math.abs(netPosition))}`}
+        {!isReceivable && !isPayable && "Square"}
+      </p>
+      <p className="text-xs text-gray-500 mt-2">
+        {openCaseCount} open · {caseCount} total case{caseCount === 1 ? "" : "s"}
+      </p>
+    </button>
+  );
+}
+
+// ========== CASE HISTORY (clinicCollections + log) ==========
+function CaseHistory({ collabCase }) {
+  const collections = collabCase.clinicCollections || [];
+  const log = collabCase.log || [];
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 pt-1">
+      <div className="bg-white rounded-lg border border-gray-200 p-4">
+        <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
+          Clinic Collections ({collections.length})
+        </h4>
+        {collections.length === 0 ? (
+          <p className="text-sm text-gray-400">No collections recorded yet.</p>
+        ) : (
+          <ul className="space-y-2">
+            {[...collections].reverse().map((c, i) => (
+              <li key={i} className="flex items-center justify-between text-sm border-b border-gray-50 pb-2 last:border-0">
+                <div>
+                  <p className="font-medium text-gray-900">{formatCurrency(c.amount)}</p>
+                  <p className="text-xs text-gray-500">
+                    {formatDate(c.date)} · {(c.mode || "—").replace(/_/g, " ").toUpperCase()}
+                    {c.reference ? ` · ${c.reference}` : ""}
+                  </p>
+                  {c.note && <p className="text-xs text-gray-400 italic mt-0.5">{c.note}</p>}
+                </div>
+                <p className="text-xs text-gray-500 text-right shrink-0 ml-3">{c.recordedBy?.name || "—"}</p>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      <div className="bg-white rounded-lg border border-gray-200 p-4">
+        <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
+          Activity Log ({log.length})
+        </h4>
+        {log.length === 0 ? (
+          <p className="text-sm text-gray-400">No activity yet.</p>
+        ) : (
+          <ul className="space-y-2">
+            {[...log].reverse().map((entry, i) => (
+              <li key={i} className="text-sm border-b border-gray-50 pb-2 last:border-0">
+                <div className="flex items-center justify-between">
+                  <span className="font-medium text-gray-900">{entry.action}</span>
+                  <span className="text-xs text-gray-500">{formatDate(entry.performedAt)}</span>
+                </div>
+                {entry.previousValue && (
+                  <p className="text-xs text-gray-500">
+                    {entry.previousValue} → {entry.newValue}
+                  </p>
+                )}
+                {entry.note && <p className="text-xs text-gray-400 italic mt-0.5">{entry.note}</p>}
+                <p className="text-xs text-gray-400 mt-0.5">by {entry.performedBy?.name || "—"}</p>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ========== NEW COLLAB CASE MODAL ==========
+// Admin EMERGENCY entry point. Deliberately renders the same shared CollabCaseForm the
+// collab panel uses — collab case entry logic must exist in exactly one place, so the
+// admin path cannot drift from the normal path. The clinic is an explicit
+// COLLAB_BRANCHES dropdown inside the form (no default), never a main branch.
+function NewCollabCaseModal({ onClose, onSuccess, toast }) {
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 sticky top-0 bg-white rounded-t-2xl">
+          <div>
+            <h3 className="text-lg font-bold text-gray-900">New Collab Case (Admin)</h3>
+            <p className="text-xs text-gray-500 mt-0.5">
+              Emergency entry — normally created from the collab panel
+            </p>
+          </div>
+          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg">
+            <X className="w-5 h-5 text-gray-500" />
+          </button>
+        </div>
+        <div className="p-6">
+          <CollabCaseForm
+            onCancel={onClose}
+            submitLabel="Create Collab Case"
+            onSuccess={(data) => {
+              const derived =
+                data.derived === "PAYABLE"
+                  ? `Payable of ₹${Number(data.derivedAmount).toLocaleString("en-IN")} created`
+                  : data.derived === "RECEIVABLE"
+                    ? `Receivable of ₹${Number(data.derivedAmount).toLocaleString("en-IN")} created`
+                    : "no payable or receivable needed";
+              toast.success(`Collab case created — ${derived}`);
+              onSuccess();
+            }}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ========== RECORD CLINIC COLLECTION MODAL ==========
+function RecordCollectionModal({ collabCase, onClose, onSuccess, toast }) {
+  const [amount, setAmount] = useState("");
+  const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
+  const [mode, setMode] = useState("cash");
+  const [reference, setReference] = useState("");
+  const [note, setNote] = useState("");
+  const [allowOverpayment, setAllowOverpayment] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  const overBalance = parseFloat(amount || 0) > collabCase.patientOutstanding;
+
+  const handleSubmit = async () => {
+    if (!amount || parseFloat(amount) <= 0) {
+      toast.error("Enter a valid collection amount");
+      return;
+    }
+    if (overBalance && !allowOverpayment) {
+      toast.error("Amount exceeds patient's remaining outstanding — check the box to proceed anyway");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const res = await fetch(`/api/collab-settlement/cases/${collabCase._id}/collection`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount, date, mode, reference, note, allowOverpayment }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast.success("Collection recorded");
+        onSuccess();
+      } else {
+        toast.error(data.error || "Failed to record collection");
+      }
+    } catch (error) {
+      console.error("Error recording collection:", error);
+      toast.error("Failed to record collection");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full">
+        <div className="flex items-center justify-between p-5 border-b border-gray-100">
+          <h3 className="text-lg font-bold text-gray-900">Record Clinic Collection</h3>
+          <button onClick={onClose} className="p-1.5 hover:bg-gray-100 rounded-lg">
+            <X className="w-5 h-5 text-gray-500" />
+          </button>
+        </div>
+        <div className="p-5 space-y-4">
+          <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-3 text-sm text-indigo-800">
+            This records money <strong>{collabCase.patientName || "the patient"} paid directly to {collabCase.clinic}</strong> —
+            not money paid to us. It does not create a transaction or touch our revenue.
+          </div>
+          <div className="bg-gray-50 rounded-lg p-3 text-sm">
+            <p className="text-gray-500">
+              Patient outstanding: <span className="font-bold text-amber-700">{formatCurrency(collabCase.patientOutstanding)}</span>
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              Amount {collabCase.patientName || "patient"} paid {collabCase.clinic} (₹) *
+            </label>
+            <input
+              type="number"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              min="0"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+              placeholder="0"
+            />
+            {overBalance && (
+              <label className="flex items-center gap-2 mt-2 text-xs text-amber-700">
+                <input type="checkbox" checked={allowOverpayment} onChange={(e) => setAllowOverpayment(e.target.checked)} />
+                Exceeds patient's outstanding balance — allow anyway
+              </label>
+            )}
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Date</label>
+              <input
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Mode</label>
+              <select value={mode} onChange={(e) => setMode(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                {["cash", "upi", "card", "banking", "other"].map((m) => (
+                  <option key={m} value={m}>
+                    {m.toUpperCase()}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">Reference</label>
+            <input
+              type="text"
+              value={reference}
+              onChange={(e) => setReference(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+              placeholder="Optional"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">Note</label>
+            <textarea
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              rows={2}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg resize-none"
+              placeholder="Optional"
+            />
+          </div>
+        </div>
+        <div className="flex gap-3 p-5 border-t border-gray-100">
+          <button onClick={onClose} className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl font-semibold text-gray-700 hover:bg-gray-50">
+            Cancel
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={submitting}
+            className="flex-1 px-4 py-2.5 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save Collection"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ========== SETTLE MODAL ==========
+function SettleModal({ clinic, balance, openCases, onClose, onSuccess, toast }) {
+  const netPosition = balance?.netPosition || 0;
+  const [direction, setDirection] = useState(netPosition < 0 ? "WE_PAID" : "THEY_PAID");
+  const [amount, setAmount] = useState(String(Math.abs(netPosition)) || "");
+  const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
+  const [mode, setMode] = useState("banking");
+  const [reference, setReference] = useState("");
+  const [remarks, setRemarks] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  // Optional per-case revenue allocation — THEY_PAID only. Cases with a
+  // positive caseNet (clinic collected more than their share for that case)
+  // are the ones that can be attributed as revenue when settled.
+  const eligibleCases = openCases.filter((c) => c.caseNet > 0);
+  const [allocations, setAllocations] = useState({}); // caseId -> amount string
+
+  const allocatedTotal = Object.values(allocations).reduce(
+    (sum, v) => sum + (parseFloat(v) || 0),
+    0,
+  );
+  const unallocated = (parseFloat(amount) || 0) - allocatedTotal;
+
+  const setAllocation = (caseId, value) => {
+    setAllocations((prev) => ({ ...prev, [caseId]: value }));
+  };
+
+  const handleSubmit = async () => {
+    if (!amount || parseFloat(amount) <= 0) {
+      toast.error("Enter a valid settlement amount");
+      return;
+    }
+    if (allocatedTotal > parseFloat(amount)) {
+      toast.error("Allocated amounts across cases exceed the settlement amount");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const coveredCases = Object.entries(allocations)
+        .filter(([, v]) => parseFloat(v) > 0)
+        .map(([caseId, v]) => ({ case: caseId, amount: parseFloat(v) }));
+
+      const res = await fetch("/api/collab-settlement/settlements/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          clinic,
+          direction,
+          amount,
+          date,
+          mode,
+          reference,
+          remarks,
+          coveredCases: direction === "THEY_PAID" ? coveredCases : undefined,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast.success("Settlement recorded");
+        onSuccess();
+      } else {
+        toast.error(data.error || "Failed to record settlement");
+      }
+    } catch (error) {
+      console.error("Error recording settlement:", error);
+      toast.error("Failed to record settlement");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full my-8">
+        <div className="flex items-center justify-between p-5 border-b border-gray-100">
+          <h3 className="text-lg font-bold text-gray-900">Settle {clinic}</h3>
+          <button onClick={onClose} className="p-1.5 hover:bg-gray-100 rounded-lg">
+            <X className="w-5 h-5 text-gray-500" />
+          </button>
+        </div>
+        <div className="p-5 space-y-4">
+          <div className="bg-gray-50 rounded-lg p-3 text-sm">
+            <p className="text-gray-600">
+              Current position:{" "}
+              {netPosition > 0 && (
+                <span className="font-bold text-emerald-700">Clinic owes us {formatCurrency(netPosition)}</span>
+              )}
+              {netPosition < 0 && (
+                <span className="font-bold text-rose-600">We owe clinic {formatCurrency(Math.abs(netPosition))}</span>
+              )}
+              {netPosition === 0 && <span className="font-bold text-gray-500">Square</span>}
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">Direction</label>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setDirection("THEY_PAID")}
+                className={`px-3 py-2.5 rounded-lg text-sm font-semibold border-2 transition-colors ${
+                  direction === "THEY_PAID"
+                    ? "bg-emerald-600 text-white border-emerald-600"
+                    : "bg-white text-emerald-700 border-emerald-200 hover:bg-emerald-50"
+                }`}
+              >
+                {clinic} paid us
+              </button>
+              <button
+                type="button"
+                onClick={() => setDirection("WE_PAID")}
+                className={`px-3 py-2.5 rounded-lg text-sm font-semibold border-2 transition-colors ${
+                  direction === "WE_PAID"
+                    ? "bg-rose-600 text-white border-rose-600"
+                    : "bg-white text-rose-700 border-rose-200 hover:bg-rose-50"
+                }`}
+              >
+                We paid {clinic}
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              {direction === "THEY_PAID" ? `Amount ${clinic} paid us (₹)` : `Amount we paid ${clinic} (₹)`} *
+            </label>
+            <input
+              type="number"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              min="0"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+              placeholder="0"
+            />
+          </div>
+
+          <div
+            className={`rounded-lg p-3 text-sm font-medium ${
+              direction === "THEY_PAID" ? "bg-emerald-50 text-emerald-800" : "bg-rose-50 text-rose-800"
+            }`}
+          >
+            {direction === "THEY_PAID"
+              ? `You are recording that ${clinic} paid you ${formatCurrency(amount || 0)}.`
+              : `You are recording that you paid ${clinic} ${formatCurrency(amount || 0)}.`}
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Date</label>
+              <input
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Mode</label>
+              <select value={mode} onChange={(e) => setMode(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                {["banking", "upi", "cash", "card", "other"].map((m) => (
+                  <option key={m} value={m}>
+                    {m.toUpperCase()}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">Reference</label>
+            <input
+              type="text"
+              value={reference}
+              onChange={(e) => setReference(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+              placeholder="Optional — UTR / cheque no."
+            />
+          </div>
+
+          {direction === "THEY_PAID" && eligibleCases.length > 0 && (
+            <div className="border-t border-gray-100 pt-4">
+              <p className="text-sm font-medium text-gray-700 mb-1">
+                Attribute to cases (optional)
+              </p>
+              <p className="text-xs text-gray-500 mb-3">
+                Only allocated amounts generate revenue for a patient's case. Unallocated amount just
+                settles the balance with no revenue recognised.
+              </p>
+              <div className="space-y-2 max-h-50 overflow-y-auto">
+                {eligibleCases.map((c) => (
+                  <div key={c._id} className="flex items-center justify-between gap-2 text-sm">
+                    <span className="text-gray-700 truncate flex-1">
+                      {c.patientName || "Unknown"}{" "}
+                      <span className="text-gray-400">(case net {formatCurrency(c.caseNet)})</span>
+                    </span>
+                    <input
+                      type="number"
+                      value={allocations[c._id] || ""}
+                      onChange={(e) => setAllocation(c._id, e.target.value)}
+                      min="0"
+                      max={c.caseNet}
+                      className="w-28 px-2 py-1 border border-gray-300 rounded text-sm"
+                      placeholder="0"
+                    />
+                  </div>
+                ))}
+              </div>
+              <p className={`text-xs mt-2 ${unallocated < 0 ? "text-red-600" : "text-gray-500"}`}>
+                Unallocated: {formatCurrency(unallocated)}
+              </p>
+            </div>
+          )}
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">Remarks</label>
+            <textarea
+              value={remarks}
+              onChange={(e) => setRemarks(e.target.value)}
+              rows={2}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg resize-none"
+              placeholder="Optional"
+            />
+          </div>
+        </div>
+        <div className="flex gap-3 p-5 border-t border-gray-100">
+          <button onClick={onClose} className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl font-semibold text-gray-700 hover:bg-gray-50">
+            Cancel
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={submitting}
+            className={`flex-1 px-4 py-2.5 text-white rounded-xl font-semibold disabled:opacity-50 flex items-center justify-center gap-2 ${
+              direction === "THEY_PAID" ? "bg-emerald-600 hover:bg-emerald-700" : "bg-rose-600 hover:bg-rose-700"
+            }`}
+          >
+            {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Confirm Settlement"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}

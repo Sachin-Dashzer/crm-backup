@@ -135,7 +135,20 @@ export default function EmployeeUpdate() {
     email: "",
     role: "",
     isactive: true,
+    salaryStructure: {
+      baseSalary: "",
+      salaryType: "Monthly",
+      effectiveFrom: new Date().toISOString().split("T")[0],
+    },
+    incentiveRate: "",
   });
+
+  const handleSalaryChange = (field, value) => {
+    setFormData((prev) => ({
+      ...prev,
+      salaryStructure: { ...prev.salaryStructure, [field]: value },
+    }));
+  };
 
   // Fetch employee data on mount
   useEffect(() => {
@@ -165,6 +178,14 @@ export default function EmployeeUpdate() {
             email: result.data.email || "",
             role: result.data.role || "",
             isactive: result.data.isactive !== undefined ? result.data.isactive : true,
+            salaryStructure: {
+              baseSalary: result.data.salaryStructure?.baseSalary ?? "",
+              salaryType: result.data.salaryStructure?.salaryType || "Monthly",
+              effectiveFrom: result.data.salaryStructure?.effectiveFrom
+                ? new Date(result.data.salaryStructure.effectiveFrom).toISOString().split("T")[0]
+                : new Date().toISOString().split("T")[0],
+            },
+            incentiveRate: result.data.incentiveRate ?? "",
           });
         }
       } catch (error) {
@@ -233,7 +254,14 @@ export default function EmployeeUpdate() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          salaryStructure: {
+            ...formData.salaryStructure,
+            baseSalary: parseFloat(formData.salaryStructure.baseSalary) || 0,
+          },
+          incentiveRate: parseFloat(formData.incentiveRate) || 0,
+        }),
       });
 
       if (!response.ok) {
@@ -404,6 +432,46 @@ export default function EmployeeUpdate() {
                     value={formData.isactive}
                     onChange={createChangeHandler("isactive")}
                     className="md:col-span-2"
+                  />
+
+                  {/* Salary Structure */}
+                  <div className="md:col-span-2 pt-4 border-t border-gray-200">
+                    <h4 className="text-sm font-bold text-gray-900 mb-4">Salary Structure</h4>
+                  </div>
+
+                  <InputField
+                    label="Base Salary (₹)"
+                    type="number"
+                    value={formData.salaryStructure.baseSalary}
+                    onChange={(e) => handleSalaryChange("baseSalary", e.target.value)}
+                    placeholder="0"
+                  />
+
+                  <InputField
+                    label="Salary Type"
+                    type="select"
+                    value={formData.salaryStructure.salaryType}
+                    onChange={(e) => handleSalaryChange("salaryType", e.target.value)}
+                    options={[
+                      { value: "Monthly", label: "Monthly" },
+                      { value: "Daily", label: "Daily" },
+                      { value: "Hourly", label: "Hourly" },
+                    ]}
+                  />
+
+                  <InputField
+                    label="Effective From"
+                    type="date"
+                    value={formData.salaryStructure.effectiveFrom}
+                    onChange={(e) => handleSalaryChange("effectiveFrom", e.target.value)}
+                  />
+
+                  <InputField
+                    label="Usual Incentive Rate (₹ per patient)"
+                    type="number"
+                    value={formData.incentiveRate}
+                    onChange={(e) => handleChange("incentiveRate", e.target.value)}
+                    placeholder="0"
                   />
                 </div>
 

@@ -1,10 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import AdminSidebar from "@/components/Sidebars/Sidebar";
 import { useToast } from "@/components/Toast";
 import BillGenerator from "@/components/BillGenerator";
 import { ALL_BRANCHES } from "@/lib/branches";
+import { formatCurrency, StatusBadge } from "@/lib/financeUI";
 import {
   Filter,
   X,
@@ -28,9 +29,20 @@ import {
   FileText as Bill,
   FileDown,
   Clock,
-  XCircle,
+  ChevronUp,
+  Receipt,
+  Percent,
+  Users,
+  Link2,
+  HelpCircle,
+  ArrowLeftRight,
+  Image as ImageIcon,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
+import { METHOD_LABELS } from "@/constants/paymentMethods";
+import { UNSETTLED_METHODS } from "@/constants/bankRouting";
+import SuspenseManager from "@/components/SuspenseManager";
+import ContraManager from "@/components/ContraManager";
 
 // ========== UTILITY FUNCTIONS ==========
 const calculateNetAmount = (transaction) => Math.max(0, parseFloat(transaction?.amount) || 0);
@@ -42,18 +54,39 @@ const formatDateForDisplay = (date) => {
   return new Date(date).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
 };
 
-const formatCurrency = (amount) =>
-  new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(parseFloat(amount) || 0);
-
-const PAYMENT_METHODS    = ["upi", "cash", "card", "banking", "bajaj_loan", "fibe_loan", "hdfc_skin_bank_transfer", "hdfc_ryan_medihub_bank_transfer", "icici_medihub_bank_transfer", "other"];
+// Filter dropdown must cover every value a stored row can carry, including methods retired
+// from entry forms (see src/constants/paymentMethods.js) — otherwise a row using a retired
+// method (e.g. an old expense with method "card") can never be filtered to.
+const PAYMENT_METHODS = Object.keys(METHOD_LABELS);
 const TRANSPLANT_PROCEDURES = ["Sapphire FUE", "DHI", "Turkish DHI", "Beard Transplant"];
 const SERVICE_PROCEDURES    = ["PRP", "GFC", "Alopecia", "Headwash", "Canacot"];
+const FILTER_KEYS = ["branch", "dateFrom", "dateTo", "paymentMethod", "procedure"];
+const defaultFilters = () => ({
+  branch: "", dateFrom: getTodayDate(), dateTo: getTodayDate(), paymentMethod: "", procedure: "",
+});
+const filtersFromParams = (params) => ({
+  branch:        params.get("branch") || "",
+  dateFrom:      params.get("dateFrom") || getTodayDate(),
+  dateTo:        params.get("dateTo") || getTodayDate(),
+  paymentMethod: params.get("paymentMethod") || "",
+  procedure:     params.get("procedure") || "",
+});
+
 const TRANSACTION_CATEGORIES = [
   { value: "TRANSPLANT", label: "Transplant", icon: User, color: "indigo" },
   { value: "SERVICE",    label: "Services",   icon: User, color: "pink"   },
   { value: "MEDICINE",   label: "Medicine",   icon: User, color: "emerald"},
   { value: "EXPENSE",    label: "Expenses",   icon: User, color: "rose"   },
+  // Neither of these is a transactionCategory — contra entries and suspense entries each live in
+  // their own collection with their own lifecycle, and bring their own manager component. They
+  // sit here because this is where someone looks for "all the money movement".
+  { value: "CONTRA",     label: "Contra",     icon: ArrowLeftRight, color: "violet" },
+  { value: "SUSPENSE",   label: "Suspense",   icon: HelpCircle, color: "amber" },
 ];
+
+// Tabs backed by their own collection rather than the Transactions query. Used to skip the
+// get-all fetch, the search bar and the header export, all of which are Transactions-shaped.
+const NON_TRANSACTION_TABS = ["CONTRA", "SUSPENSE"];
 
 const getCategoryGradientClass = (categoryValue, isActive) => {
   if (!isActive) return "bg-gray-50 text-gray-600 hover:bg-gray-100";
@@ -62,27 +95,19 @@ const getCategoryGradientClass = (categoryValue, isActive) => {
     SERVICE:    "bg-gradient-to-r from-pink-500 to-pink-600 text-white shadow-md",
     MEDICINE:   "bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-md",
     EXPENSE:    "bg-gradient-to-r from-rose-500 to-rose-600 text-white shadow-md",
+    SUSPENSE:   "bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-md",
+    CONTRA:     "bg-gradient-to-r from-violet-500 to-violet-600 text-white shadow-md",
   };
   return gradients[categoryValue] || "bg-gray-50 text-gray-600";
 };
 
 // ========== APPROVAL BADGE (EXPENSE rows) ==========
+// Delegates to the shared StatusBadge (same component payables/receivables/close-book use) so
+// the color palette can never drift — silent for APPROVED, same as before, since almost every
+// row is approved by default and a badge on every row would be noise.
 function ApprovalBadge({ status }) {
-  if (status === "PENDING") {
-    return (
-      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold bg-amber-100 text-amber-700 border border-amber-200">
-        <Clock className="w-3 h-3" />Pending Approval
-      </span>
-    );
-  }
-  if (status === "REJECTED") {
-    return (
-      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold bg-gray-100 text-gray-600 border border-gray-200">
-        <XCircle className="w-3 h-3" />Rejected
-      </span>
-    );
-  }
-  return null;
+  if (status !== "PENDING" && status !== "REJECTED") return null;
+  return <StatusBadge status={status} />;
 }
 
 // ========== STAT CARD ==========
@@ -193,9 +218,231 @@ function Select({ label, value, onChange, options, required, icon: Icon }) {
   );
 }
 
+// A removable "Active Filters" chip — clicking the X removes just that one filter and applies
+// immediately (the user has already expressed intent by clicking it).
+function FilterChip({ label, onRemove }) {
+  return (
+    <span className="inline-flex items-center gap-1 pl-2 pr-1 py-1 bg-white text-indigo-700 rounded-md text-xs font-medium border border-indigo-200">
+      {label}
+      <button
+        type="button"
+        onClick={onRemove}
+        className="p-0.5 rounded hover:bg-indigo-100 text-indigo-400 hover:text-indigo-700"
+        aria-label={`Remove filter: ${label}`}
+      >
+        <X className="w-3 h-3" />
+      </button>
+    </span>
+  );
+}
+
+const UNSETTLED_LABELS = { paid_to_external: "Held by external", paid_by_other: "Paid by other" };
+
+// Compact badge row shown under every transaction row (list view) + the "Details" toggle. Never
+// a new column — per §3, prefer badges here and put the real detail behind the toggle.
+function TransactionBadges({ row, expanded, onToggle }) {
+  const isUnsettled = UNSETTLED_METHODS.includes(row.method);
+  const linkedReceivableId = row.receivableId || row.externalParty?.linkedReceivableId;
+  const linkedPayableId = row.payableId || row.externalParty?.linkedPayableId;
+  const hasLink = !!(linkedReceivableId || linkedPayableId);
+  const hasTax = row.taxDetails?.gstAmount || row.taxDetails?.tdsAmount;
+  const hasCollab = row.collabSplit?.ourShare || row.collabSplit?.clinicShare || row.collabRef?.caseId;
+  const hasReceipts = row.receipts?.length > 0;
+
+  return (
+    <div className="flex items-center gap-1.5 flex-wrap px-4 pb-2 pt-0.5">
+      <button
+        type="button"
+        onClick={onToggle}
+        className="inline-flex items-center gap-1 text-xs font-semibold text-gray-500 hover:text-indigo-600 transition-colors"
+      >
+        {expanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+        Details
+      </button>
+      {row.furtherMode && (
+        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-slate-100 text-slate-600 border border-slate-200">
+          {row.costType === "Expenses" ? "Paid From" : "Received In"}: {row.furtherMode}
+        </span>
+      )}
+      {isUnsettled && (
+        <button
+          type="button"
+          onClick={onToggle}
+          className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-100 text-amber-700 border border-amber-200 hover:bg-amber-200"
+          title="Excluded from totals until settled"
+        >
+          {UNSETTLED_LABELS[row.method] || "Unsettled"}
+        </button>
+      )}
+      {hasLink && (
+        <button
+          type="button"
+          onClick={onToggle}
+          className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100"
+        >
+          <Link2 className="w-3 h-3" /> Linked
+        </button>
+      )}
+      {hasReceipts && (
+        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-blue-50 text-blue-700 border border-blue-200" title="Receipt attached">
+          <Receipt className="w-3 h-3" /> {row.receipts.length}
+        </span>
+      )}
+      {hasTax && (
+        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-purple-50 text-purple-700 border border-purple-200" title="Tax applied">
+          <Percent className="w-3 h-3" /> Tax
+        </span>
+      )}
+      {hasCollab && (
+        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-teal-50 text-teal-700 border border-teal-200" title="Collab split">
+          <Users className="w-3 h-3" /> Collab
+        </span>
+      )}
+    </div>
+  );
+}
+
+// Expanded detail panel — tax breakdown, collab split, external party, receipts, and the
+// linked receivable/payable's LIVE pending figure (fetched on expand, never cached on the row).
+function TransactionDetail({ row, linkedInfo, linkedLoading }) {
+  const router = useRouter();
+  const hasTax = row.taxDetails && (row.taxDetails.gstAmount || row.taxDetails.tdsAmount);
+  const hasCollab = row.collabSplit?.ourShare || row.collabSplit?.clinicShare;
+  const hasExternalParty = !!row.externalParty?.name;
+  const hasReceipts = row.receipts?.length > 0;
+  const hasLink = !!(linkedInfo || linkedLoading);
+
+  if (!hasTax && !hasCollab && !hasExternalParty && !hasReceipts && !hasLink) {
+    return <div className="px-4 pb-4 pt-1 text-xs text-gray-400">No additional detail for this transaction.</div>;
+  }
+
+  return (
+    <div className="px-4 pb-4 pt-1 bg-slate-50/70 border-t border-slate-100">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-xs">
+        {hasTax && (
+          <div className="bg-white rounded-lg border border-slate-200 p-3">
+            <p className="font-semibold text-slate-700 mb-1.5">Tax Breakdown</p>
+            <dl className="space-y-1 text-slate-600">
+              {row.taxDetails.baseAmount != null && <div className="flex justify-between"><dt>Base</dt><dd>{formatCurrency(row.taxDetails.baseAmount)}</dd></div>}
+              {row.taxDetails.gstAmount != null && <div className="flex justify-between"><dt>GST ({row.taxDetails.gstRate || 0}%)</dt><dd>{formatCurrency(row.taxDetails.gstAmount)}</dd></div>}
+              {row.taxDetails.invoiceTotal != null && <div className="flex justify-between font-medium text-slate-800"><dt>Invoice Total</dt><dd>{formatCurrency(row.taxDetails.invoiceTotal)}</dd></div>}
+              {row.taxDetails.tdsApplied && <div className="flex justify-between text-rose-600"><dt>TDS ({row.taxDetails.tdsRate || 0}%)</dt><dd>-{formatCurrency(row.taxDetails.tdsAmount)}</dd></div>}
+              {row.taxDetails.tdsApplied && (
+                <div className="flex justify-between font-medium text-slate-800">
+                  <dt>Net</dt><dd>{formatCurrency((row.taxDetails.invoiceTotal || 0) - (row.taxDetails.tdsAmount || 0))}</dd>
+                </div>
+              )}
+            </dl>
+          </div>
+        )}
+
+        {hasCollab && (
+          <div className="bg-white rounded-lg border border-slate-200 p-3">
+            <p className="font-semibold text-slate-700 mb-1.5">Collab Split</p>
+            <dl className="space-y-1 text-slate-600">
+              <div className="flex justify-between"><dt>Package</dt><dd>{formatCurrency((row.collabSplit.ourShare || 0) + (row.collabSplit.clinicShare || 0))}</dd></div>
+              <div className="flex justify-between"><dt>Our Share</dt><dd>{formatCurrency(row.collabSplit.ourShare)}</dd></div>
+              <div className="flex justify-between"><dt>Clinic Share</dt><dd>{formatCurrency(row.collabSplit.clinicShare)}</dd></div>
+              <div className="flex justify-between"><dt>Received by Us</dt><dd>{formatCurrency(row.collabSplit.ourReceived)}</dd></div>
+              <div className="flex justify-between"><dt>Received by Clinic</dt><dd>{formatCurrency(row.collabSplit.clinicReceived)}</dd></div>
+            </dl>
+          </div>
+        )}
+
+        {hasExternalParty && (
+          <div className="bg-white rounded-lg border border-slate-200 p-3">
+            <p className="font-semibold text-slate-700 mb-1.5">External Party</p>
+            <dl className="space-y-1 text-slate-600">
+              <div className="flex justify-between"><dt>Name</dt><dd>{row.externalParty.name}</dd></div>
+              <div className="flex justify-between"><dt>Their Method</dt><dd>{row.externalParty.method || "—"}</dd></div>
+              <div className="flex justify-between"><dt>Type</dt><dd>{row.externalParty.partyKind || "—"}</dd></div>
+            </dl>
+          </div>
+        )}
+
+        {hasReceipts && (
+          <div className="bg-white rounded-lg border border-slate-200 p-3">
+            <p className="font-semibold text-slate-700 mb-1.5">Receipts</p>
+            <div className="flex flex-wrap gap-2">
+              {row.receipts.map((r) => (
+                <a
+                  key={r.publicId || r.url}
+                  href={r.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1 px-2 py-1 bg-slate-100 rounded text-slate-700 hover:bg-slate-200 max-w-[140px]"
+                >
+                  {r.fileType === "pdf" ? <Bill className="w-3.5 h-3.5 shrink-0" /> : <ImageIcon className="w-3.5 h-3.5 shrink-0" />}
+                  <span className="truncate">{r.fileName || "File"}</span>
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {hasLink && (
+          <div className="bg-white rounded-lg border border-slate-200 p-3">
+            <p className="font-semibold text-slate-700 mb-1.5">
+              Linked {linkedInfo?.type === "payable" ? "Payable" : "Receivable"}
+            </p>
+            {linkedLoading ? (
+              <Loader2 className="w-4 h-4 animate-spin text-slate-400" />
+            ) : linkedInfo?.data ? (
+              <dl className="space-y-1 text-slate-600">
+                <div className="flex justify-between"><dt>Total</dt><dd>{formatCurrency(linkedInfo.data.totalAmount)}</dd></div>
+                <div className="flex justify-between"><dt>{linkedInfo.type === "payable" ? "Paid" : "Received"}</dt><dd>{formatCurrency(linkedInfo.data.paid ?? linkedInfo.data.received)}</dd></div>
+                <div className="flex justify-between font-medium text-rose-600"><dt>Pending</dt><dd>{formatCurrency(linkedInfo.data.pending)}</dd></div>
+                <button
+                  type="button"
+                  onClick={() => router.push(linkedInfo.type === "payable" ? "/admin/payables" : "/admin/receivables")}
+                  className="mt-1 text-indigo-600 hover:underline text-xs font-medium"
+                >
+                  View in {linkedInfo.type === "payable" ? "Payables" : "Receivables"} →
+                </button>
+              </dl>
+            ) : (
+              <p className="text-slate-400">Not found</p>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ========== DATA TABLE ==========
 function DataTable({ category, rows, onDelete, onSort, sortConfig, pagination, onGenerateBill }) {
   const router = useRouter();
+  const [expandedId, setExpandedId] = useState(null);
+  const [expandedInfo, setExpandedInfo] = useState(null);
+  const [expandedLoading, setExpandedLoading] = useState(false);
+
+  const toggleExpand = async (row) => {
+    if (expandedId === row._id) { setExpandedId(null); return; }
+    setExpandedId(row._id);
+    setExpandedInfo(null);
+
+    const linkedReceivableId = row.receivableId || row.externalParty?.linkedReceivableId;
+    const linkedPayableId = row.payableId || row.externalParty?.linkedPayableId;
+    if (!linkedReceivableId && !linkedPayableId) return;
+
+    setExpandedLoading(true);
+    try {
+      if (linkedReceivableId) {
+        const res = await fetch(`/api/receivables/${linkedReceivableId}`);
+        const data = await res.json();
+        if (res.ok) setExpandedInfo({ type: "receivable", data: data.receivable });
+      } else {
+        const res = await fetch(`/api/payables/${linkedPayableId}`);
+        const data = await res.json();
+        if (res.ok) setExpandedInfo({ type: "payable", data: data.payable });
+      }
+    } catch (error) {
+      console.error("Error fetching linked receivable/payable:", error);
+    } finally {
+      setExpandedLoading(false);
+    }
+  };
 
   const getColumns = () => {
     const base = [{ key: "date", label: "Date", sortable: true, width: "110px" }];
@@ -357,11 +604,11 @@ function DataTable({ category, rows, onDelete, onSort, sortConfig, pagination, o
                       </div>
                       <div className="px-2 py-3"><span className={`inline-flex px-2 py-1 rounded-lg text-xs font-semibold border ${getProcedureColor(row.procedure)}`}>{row.procedure}</span></div>
                       <div className="px-2 py-3"><span className="inline-flex px-2 py-1 rounded-lg text-xs font-semibold bg-blue-100 text-blue-700 border border-blue-200">{row.paymentType}</span></div>
-                      <div className="px-2 py-3 text-center">
+                      <div className="px-2 py-3 text-right">
                         <div className="text-sm font-bold text-emerald-700">{formatCurrency(netAmount)}</div>
                         {hasDiscount && <div className="flex items-center justify-center gap-1 mt-1"><Tag className="w-3 h-3 text-amber-500" /><span className="text-xs text-amber-600 font-medium">-{formatCurrency(row.discount)}</span></div>}
                       </div>
-                      <div className="px-2 py-3"><span className={`inline-flex px-2 py-1 rounded-lg text-xs font-semibold border ${getMethodColor(row.method)}`}>{row.method?.replace(/_/g, " ").toUpperCase()}</span></div>
+                      <div className="px-2 py-3"><span className={`inline-flex px-2 py-1 rounded-lg text-xs font-semibold border ${getMethodColor(row.method)}`}>{METHOD_LABELS[row.method] || row.method}</span></div>
                       <div className="px-2 py-3">{row.paymentId ? <div className="bg-slate-100 px-2 py-1 rounded text-xs font-mono text-slate-700 truncate">{row.paymentId}</div> : <span className="text-xs text-slate-400">-</span>}</div>
                       <div className="px-2 py-3"><span className="inline-flex px-2 py-1 rounded-lg text-xs font-semibold bg-purple-100 text-purple-700 border border-purple-200">{row.branch}</span></div>
                     </>)}
@@ -372,13 +619,13 @@ function DataTable({ category, rows, onDelete, onSort, sortConfig, pagination, o
                         <div className="text-xs text-slate-600 font-medium">{getPatientPhone(row) || "No phone"}</div>
                       </div>
                       <div className="px-2 py-3"><span className={`inline-flex px-2 py-1 rounded-lg text-xs font-semibold border ${getProcedureColor(row.procedure)}`}>{row.procedure}</span></div>
-                      <div className="px-2 py-3 text-center"><div className="text-sm font-bold text-indigo-700">{row.quantity || 1}</div></div>
-                      <div className="px-2 py-3 text-center"><div className="text-sm font-medium text-slate-900">{formatCurrency(row.perSessionCost || 0)}</div></div>
-                      <div className="px-2 py-3 text-center">
+                      <div className="px-2 py-3 text-right"><div className="text-sm font-bold text-indigo-700">{row.quantity || 1}</div></div>
+                      <div className="px-2 py-3 text-right"><div className="text-sm font-medium text-slate-900">{formatCurrency(row.perSessionCost || 0)}</div></div>
+                      <div className="px-2 py-3 text-right">
                         <div className="text-sm font-bold text-emerald-700">{formatCurrency(netAmount)}</div>
                         {hasDiscount && <div className="flex items-center justify-center gap-1 mt-1"><Tag className="w-3 h-3 text-amber-500" /><span className="text-xs text-amber-600 font-medium">-{formatCurrency(row.discount)}</span></div>}
                       </div>
-                      <div className="px-2 py-3"><span className={`inline-flex px-2 py-1 rounded-lg text-xs font-semibold border ${getMethodColor(row.method)}`}>{row.method?.replace(/_/g, " ").toUpperCase()}</span></div>
+                      <div className="px-2 py-3"><span className={`inline-flex px-2 py-1 rounded-lg text-xs font-semibold border ${getMethodColor(row.method)}`}>{METHOD_LABELS[row.method] || row.method}</span></div>
                       <div className="px-2 py-3">{row.paymentId ? <div className="bg-slate-100 px-2 py-1 rounded text-xs font-mono text-slate-700 truncate">{row.paymentId}</div> : <span className="text-xs text-slate-400">-</span>}</div>
                       <div className="px-2 py-3">{row.batchId ? <div className="flex items-center gap-1"><Package className="w-3 h-3 text-indigo-600" /><span className="text-xs font-mono text-indigo-700">{row.batchId.slice(-8)}</span></div> : <span className="text-xs text-slate-400">-</span>}</div>
                       <div className="px-2 py-3"><span className="inline-flex px-2 py-1 rounded-lg text-xs font-semibold bg-purple-100 text-purple-700 border border-purple-200">{row.branch}</span></div>
@@ -390,13 +637,13 @@ function DataTable({ category, rows, onDelete, onSort, sortConfig, pagination, o
                         <div className="text-xs text-slate-600 font-medium">{getPatientPhone(row) || "No phone"}</div>
                       </div>
                       <div className="px-2 py-3"><div className="text-sm font-semibold text-slate-900 truncate">{getMedicineName(row)}</div></div>
-                      <div className="px-2 py-3 text-center"><div className="text-sm font-bold text-indigo-700">{row.quantity || 1}</div></div>
-                      <div className="px-2 py-3 text-center"><div className="text-sm font-medium text-slate-900">{formatCurrency(row.perUnitCost || 0)}</div></div>
-                      <div className="px-2 py-3 text-center">
+                      <div className="px-2 py-3 text-right"><div className="text-sm font-bold text-indigo-700">{row.quantity || 1}</div></div>
+                      <div className="px-2 py-3 text-right"><div className="text-sm font-medium text-slate-900">{formatCurrency(row.perUnitCost || 0)}</div></div>
+                      <div className="px-2 py-3 text-right">
                         <div className="text-sm font-bold text-emerald-700">{formatCurrency(netAmount)}</div>
                         {hasDiscount && <div className="flex items-center justify-center gap-1 mt-1"><Tag className="w-3 h-3 text-amber-500" /><span className="text-xs text-amber-600 font-medium">-{formatCurrency(row.discount)}</span></div>}
                       </div>
-                      <div className="px-2 py-3"><span className={`inline-flex px-2 py-1 rounded-lg text-xs font-semibold border ${getMethodColor(row.method)}`}>{row.method?.replace(/_/g, " ").toUpperCase()}</span></div>
+                      <div className="px-2 py-3"><span className={`inline-flex px-2 py-1 rounded-lg text-xs font-semibold border ${getMethodColor(row.method)}`}>{METHOD_LABELS[row.method] || row.method}</span></div>
                       <div className="px-2 py-3">{row.paymentId ? <div className="bg-slate-100 px-2 py-1 rounded text-xs font-mono text-slate-700 truncate">{row.paymentId}</div> : <span className="text-xs text-slate-400">-</span>}</div>
                       <div className="px-2 py-3">{row.batchId ? <div className="flex items-center gap-1"><Package className="w-3 h-3 text-indigo-600" /><span className="text-xs font-mono text-indigo-700">{row.batchId.slice(-8)}</span></div> : <span className="text-xs text-slate-400">-</span>}</div>
                       <div className="px-2 py-3"><span className="inline-flex px-2 py-1 rounded-lg text-xs font-semibold bg-purple-100 text-purple-700 border border-purple-200">{row.branch}</span></div>
@@ -406,7 +653,7 @@ function DataTable({ category, rows, onDelete, onSort, sortConfig, pagination, o
                       <div className="px-2 py-3"><div className="text-sm font-semibold text-slate-900 truncate">{row.expense || row.expenseCategory || "N/A"}</div></div>
                       <div className="px-2 py-3"><div className="text-sm text-slate-900 truncate">{getExpenseGiverName(row)}</div></div>
                       <div className="px-2 py-3 text-right"><div className="text-sm font-bold text-rose-600">{formatCurrency(row.amount)}</div></div>
-                      <div className="px-2 py-3"><span className={`inline-flex px-2 py-1 rounded-lg text-xs font-semibold border ${getMethodColor(row.method)}`}>{row.method?.replace(/_/g, " ").toUpperCase()}</span></div>
+                      <div className="px-2 py-3"><span className={`inline-flex px-2 py-1 rounded-lg text-xs font-semibold border ${getMethodColor(row.method)}`}>{METHOD_LABELS[row.method] || row.method}</span></div>
                       <div className="px-2 py-3">{row.paymentId ? <div className="bg-slate-100 px-2 py-1 rounded text-xs font-mono text-slate-700 truncate">{row.paymentId}</div> : <span className="text-xs text-slate-400">-</span>}</div>
                       <div className="px-2 py-3"><span className="inline-flex px-2 py-1 rounded-lg text-xs font-semibold bg-purple-100 text-purple-700 border border-purple-200">{row.branch}</span></div>
                       <div className="px-2 py-3"><ApprovalBadge status={row.approvalStatus} /></div>
@@ -422,6 +669,12 @@ function DataTable({ category, rows, onDelete, onSort, sortConfig, pagination, o
                     </div>
                   </div>
 
+                  {/* Badges + expandable detail — shared across desktop and mobile layouts */}
+                  <TransactionBadges row={row} expanded={expandedId === row._id} onToggle={() => toggleExpand(row)} />
+                  {expandedId === row._id && (
+                    <TransactionDetail row={row} linkedInfo={expandedInfo} linkedLoading={expandedLoading} />
+                  )}
+
                   {/* Mobile row */}
                   <div className="md:hidden p-4">
                     <div className="space-y-4">
@@ -431,7 +684,7 @@ function DataTable({ category, rows, onDelete, onSort, sortConfig, pagination, o
                             <span className={`px-2 py-1 rounded text-xs font-semibold ${rowCategory === "EXPENSE" ? "bg-rose-100 text-rose-700 border border-rose-200" : getProcedureColor(row.procedure)}`}>
                               {rowCategory === "MEDICINE" ? getMedicineName(row) : rowCategory === "EXPENSE" ? (row.expense || row.expenseCategory || "Expense") : row.procedure}
                             </span>
-                            <span className={`px-2 py-1 rounded text-xs font-semibold ${getMethodColor(row.method)}`}>{row.method?.replace(/_/g, " ").toUpperCase()}</span>
+                            <span className={`px-2 py-1 rounded text-xs font-semibold ${getMethodColor(row.method)}`}>{METHOD_LABELS[row.method] || row.method}</span>
                             {rowCategory === "EXPENSE" && <ApprovalBadge status={row.approvalStatus} />}
                           </div>
                           <h4 className="text-base font-bold text-slate-900">{rowCategory !== "EXPENSE" ? getPatientName(row) : getExpenseGiverName(row)}</h4>
@@ -509,8 +762,18 @@ function DataTable({ category, rows, onDelete, onSort, sortConfig, pagination, o
 
 // ========== MAIN COMPONENT ==========
 export default function AllTransactionsPage() {
+  return (
+    <Suspense fallback={null}>
+      <AllTransactionsPageInner />
+    </Suspense>
+  );
+}
+
+function AllTransactionsPageInner() {
   const tenantBranches = ALL_BRANCHES;
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const toast  = useToast();
 
   const [transactions, setTransactions] = useState([]);
@@ -521,9 +784,12 @@ export default function AllTransactionsPage() {
   const [refreshing, setRefreshing]     = useState(false);
 
   const [activeCategory, setActiveCategory] = useState("TRANSPLANT");
-  const [filters, setFilters] = useState({
-    branch: "", dateFrom: getTodayDate(), dateTo: getTodayDate(), paymentMethod: "", procedure: "",
-  });
+  // appliedFilters drives the actual query; draftFilters is what the filter panel's inputs are
+  // bound to. They only converge when Apply is clicked (or a chip/quick-filter/reset acts
+  // immediately on both at once) — see the §4 spec: pagination/sort/search stay live, filters
+  // don't fire a request until applied.
+  const [appliedFilters, setAppliedFilters] = useState(() => filtersFromParams(searchParams));
+  const [draftFilters, setDraftFilters]     = useState(() => filtersFromParams(searchParams));
   const [tableSearch, setTableSearch]   = useState("");
   const [showFilters, setShowFilters]   = useState(false);
   const [pendingOnly, setPendingOnly]   = useState(false);
@@ -546,6 +812,13 @@ export default function AllTransactionsPage() {
   };
 
   const fetchData = useCallback(async (isRefresh = false) => {
+    // These tabs aren't transactionCategories — each manager loads its own collection. Hitting
+    // get-all with one would query for a category that cannot exist.
+    if (NON_TRANSACTION_TABS.includes(activeCategory)) {
+      setLoading(false);
+      setRefreshing(false);
+      return;
+    }
     try {
       if (isRefresh) setRefreshing(true); else setLoading(true);
       setError(null);
@@ -557,11 +830,11 @@ export default function AllTransactionsPage() {
         sortKey:       sortConfig.key,
         sortDir:       sortConfig.direction,
       });
-      if (filters.branch)        p.set("branch",         filters.branch);
-      if (filters.dateFrom)      p.set("dateFrom",       filters.dateFrom);
-      if (filters.dateTo)        p.set("dateTo",         filters.dateTo);
-      if (filters.paymentMethod) p.set("paymentMethod",  filters.paymentMethod);
-      if (filters.procedure)     p.set("procedure",      filters.procedure);
+      if (appliedFilters.branch)        p.set("branch",         appliedFilters.branch);
+      if (appliedFilters.dateFrom)      p.set("dateFrom",       appliedFilters.dateFrom);
+      if (appliedFilters.dateTo)        p.set("dateTo",         appliedFilters.dateTo);
+      if (appliedFilters.paymentMethod) p.set("paymentMethod",  appliedFilters.paymentMethod);
+      if (appliedFilters.procedure)     p.set("procedure",      appliedFilters.procedure);
       if (debouncedSearch)       p.set("search",         debouncedSearch);
       if (activeCategory === "EXPENSE" && pendingOnly) p.set("approvalStatus", "PENDING");
 
@@ -580,15 +853,29 @@ export default function AllTransactionsPage() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [page, perPage, activeCategory, sortConfig, filters, debouncedSearch, pendingOnly]);
+  }, [page, perPage, activeCategory, sortConfig, appliedFilters, debouncedSearch, pendingOnly]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
   // Reset to page 1 when filters or category change
-  useEffect(() => { setPage(1); }, [filters, activeCategory, debouncedSearch, sortConfig, pendingOnly]);
+  useEffect(() => { setPage(1); }, [appliedFilters, activeCategory, debouncedSearch, sortConfig, pendingOnly]);
 
   // The Pending Approvals toggle only makes sense on the EXPENSE tab
   useEffect(() => { if (activeCategory !== "EXPENSE") setPendingOnly(false); }, [activeCategory]);
+
+  // Applied filters persist in the URL — a filtered view survives a refresh and can be shared.
+  // Draft edits never touch the URL; only Apply/chip-remove/quick-filter/reset do.
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (appliedFilters.branch)        params.set("branch", appliedFilters.branch);
+    if (appliedFilters.dateFrom)      params.set("dateFrom", appliedFilters.dateFrom);
+    if (appliedFilters.dateTo)        params.set("dateTo", appliedFilters.dateTo);
+    if (appliedFilters.paymentMethod) params.set("paymentMethod", appliedFilters.paymentMethod);
+    if (appliedFilters.procedure)     params.set("procedure", appliedFilters.procedure);
+    const qs = params.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [appliedFilters]);
 
   const handleRefresh = () => fetchData(true);
 
@@ -596,32 +883,53 @@ export default function AllTransactionsPage() {
     setSortConfig((prev) => ({ key, direction: prev.key === key && prev.direction === "asc" ? "desc" : "asc" }));
   };
 
+  // Reset clears both draft and applied, and fires exactly one fetch (via the appliedFilters
+  // change triggering the existing fetch effect).
   const clearFilters = () => {
-    setFilters({ branch: "", dateFrom: getTodayDate(), dateTo: getTodayDate(), paymentMethod: "", procedure: "" });
+    const defaults = defaultFilters();
+    setDraftFilters(defaults);
+    setAppliedFilters(defaults);
     setTableSearch("");
     setDebouncedSearch("");
     setPage(1);
   };
 
+  // Quick-filter presets are a single decisive click, not a draft edit — they apply
+  // immediately, same as removing a chip.
   const applyQuickFilter = (preset) => {
     const today = getTodayDate();
     const date  = new Date();
+    let patch = {};
     switch (preset) {
-      case "today":     setFilters((f) => ({ ...f, dateFrom: today, dateTo: today })); break;
-      case "yesterday": { const y = new Date(date.setDate(date.getDate() - 1)).toISOString().split("T")[0]; setFilters((f) => ({ ...f, dateFrom: y, dateTo: y })); break; }
-      case "week":      { const w = new Date(date.setDate(date.getDate() - 7)).toISOString().split("T")[0]; setFilters((f) => ({ ...f, dateFrom: w, dateTo: getTodayDate() })); break; }
-      case "month":     { const m = new Date(date.setMonth(date.getMonth() - 1)).toISOString().split("T")[0]; setFilters((f) => ({ ...f, dateFrom: m, dateTo: getTodayDate() })); break; }
-      case "all":       setFilters((f) => ({ ...f, dateFrom: "", dateTo: "" })); break;
+      case "today":     patch = { dateFrom: today, dateTo: today }; break;
+      case "yesterday": { const y = new Date(date.setDate(date.getDate() - 1)).toISOString().split("T")[0]; patch = { dateFrom: y, dateTo: y }; break; }
+      case "week":      { const w = new Date(date.setDate(date.getDate() - 7)).toISOString().split("T")[0]; patch = { dateFrom: w, dateTo: today }; break; }
+      case "month":     { const m = new Date(date.setMonth(date.getMonth() - 1)).toISOString().split("T")[0]; patch = { dateFrom: m, dateTo: today }; break; }
+      case "all":       patch = { dateFrom: "", dateTo: "" }; break;
     }
+    setDraftFilters((f) => ({ ...f, ...patch }));
+    setAppliedFilters((f) => ({ ...f, ...patch }));
   };
+
+  // The only place a draft filter edit actually reaches the query.
+  const applyFilters = () => setAppliedFilters(draftFilters);
+
+  // A chip's X removes just that one filter and applies immediately — the user has already
+  // expressed intent by clicking it.
+  const removeFilter = (key) => {
+    setDraftFilters((f) => ({ ...f, [key]: "" }));
+    setAppliedFilters((f) => ({ ...f, [key]: "" }));
+  };
+
+  const hasPendingChanges = FILTER_KEYS.some((k) => draftFilters[k] !== appliedFilters[k]);
 
   const pages    = Math.max(1, Math.ceil(total / perPage));
   const current  = Math.min(page, pages);
   const startIdx = (current - 1) * perPage;
   const endIdx   = Math.min(startIdx + perPage, total);
 
-  const hasActiveFilters = filters.branch || filters.paymentMethod || filters.procedure || tableSearch ||
-    filters.dateFrom !== getTodayDate() || filters.dateTo !== getTodayDate();
+  const hasActiveFilters = appliedFilters.branch || appliedFilters.paymentMethod || appliedFilters.procedure || tableSearch ||
+    appliedFilters.dateFrom !== getTodayDate() || appliedFilters.dateTo !== getTodayDate();
 
   const exportToExcel = async () => {
     try {
@@ -631,11 +939,11 @@ export default function AllTransactionsPage() {
         category: activeCategory,
         sortKey: sortConfig.key, sortDir: sortConfig.direction,
       });
-      if (filters.branch)        p.set("branch",        filters.branch);
-      if (filters.dateFrom)      p.set("dateFrom",      filters.dateFrom);
-      if (filters.dateTo)        p.set("dateTo",        filters.dateTo);
-      if (filters.paymentMethod) p.set("paymentMethod", filters.paymentMethod);
-      if (filters.procedure)     p.set("procedure",     filters.procedure);
+      if (appliedFilters.branch)        p.set("branch",        appliedFilters.branch);
+      if (appliedFilters.dateFrom)      p.set("dateFrom",      appliedFilters.dateFrom);
+      if (appliedFilters.dateTo)        p.set("dateTo",        appliedFilters.dateTo);
+      if (appliedFilters.paymentMethod) p.set("paymentMethod", appliedFilters.paymentMethod);
+      if (appliedFilters.procedure)     p.set("procedure",     appliedFilters.procedure);
       if (debouncedSearch)       p.set("search",        debouncedSearch);
 
       const res  = await fetch(`/api/transactions/get-all?${p.toString()}`, { credentials: "include" });
@@ -705,7 +1013,7 @@ export default function AllTransactionsPage() {
         utils.book_append_sheet(wb, wsHistory, "Edit History");
       }
 
-      writeFile(wb, `transactions_${activeCategory}_${filters.dateFrom || "all"}_to_${filters.dateTo || "all"}.xlsx`);
+      writeFile(wb, `transactions_${activeCategory}_${appliedFilters.dateFrom || "all"}_to_${appliedFilters.dateTo || "all"}.xlsx`);
     } catch (e) {
       toast?.error?.(e.message || "Export failed");
     }
@@ -788,9 +1096,13 @@ export default function AllTransactionsPage() {
               <button onClick={handleRefresh} disabled={refreshing} className="p-2 sm:p-3 bg-white border-2 border-gray-200 rounded-xl hover:bg-gray-50 transition-all shadow-sm disabled:opacity-50 shrink-0" title="Refresh data">
                 <RefreshCw className={`w-4 h-4 sm:w-5 sm:h-5 text-gray-600 ${refreshing ? "animate-spin" : ""}`} />
               </button>
-              <button onClick={exportToExcel} className="p-2 sm:p-3 bg-white border-2 border-gray-200 rounded-xl hover:bg-indigo-50 hover:border-indigo-200 transition-all shadow-sm shrink-0" title="Download Excel">
-                <FileDown className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-600" />
-              </button>
+              {/* Exports the Transactions query, which these tabs aren't part of — it would
+                  write an empty sheet. Each manager carries its own export. */}
+              {!NON_TRANSACTION_TABS.includes(activeCategory) && (
+                <button onClick={exportToExcel} className="p-2 sm:p-3 bg-white border-2 border-gray-200 rounded-xl hover:bg-indigo-50 hover:border-indigo-200 transition-all shadow-sm shrink-0" title="Download Excel">
+                  <FileDown className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-600" />
+                </button>
+              )}
               <button onClick={() => router.push("/admin/transactions/create")} className="bg-linear-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white px-3 sm:px-5 py-2 sm:py-3 rounded-xl flex items-center gap-1 sm:gap-2 transition-all shadow-lg text-sm sm:text-base shrink-0">
                 <Plus size={18} strokeWidth={2.5} />
                 <span className="font-semibold hidden sm:inline">Add Transaction</span>
@@ -823,14 +1135,20 @@ export default function AllTransactionsPage() {
                       onClick={() => setActiveCategory(cat.value)}
                     >
                       <Icon size={18} />
-                      {cat.label} ({stats[cat.value].count})
+                      {/* Guarded: `stats` is keyed by transactionCategory and comes from
+                          /api/transactions/get-all, so SUSPENSE — a separate collection — has no
+                          entry there and renders without a count rather than throwing. */}
+                      {cat.label}
+                      {stats[cat.value] ? ` (${stats[cat.value].count})` : ""}
                     </button>
                   );
                 })}
               </div>
 
-              {/* Search + filter toggle */}
-              <div className="flex gap-2 sm:gap-3 w-full lg:w-auto">
+              {/* Search + filter toggle. Hidden on the manager tabs — those entries come from
+                  different collections with their own filters, so this bar would silently do
+                  nothing. */}
+              <div className={`flex gap-2 sm:gap-3 w-full lg:w-auto ${NON_TRANSACTION_TABS.includes(activeCategory) ? "hidden" : ""}`}>
                 <div className="relative flex-1 lg:flex-initial min-w-0">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 sm:w-5 sm:h-5" />
                   <input
@@ -878,18 +1196,32 @@ export default function AllTransactionsPage() {
                     ))}
                   </div>
                 </div>
-                <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-4">
-                  <Select label="Branch" value={filters.branch} onChange={(v) => setFilters((f) => ({ ...f, branch: v }))} options={[{ value: "", label: "All Branches" }, ...tenantBranches.map((b) => ({ value: b, label: b }))]} icon={Building2} />
-                  <Input  label="From Date" type="date" value={filters.dateFrom} onChange={(v) => setFilters((f) => ({ ...f, dateFrom: v }))} icon={Calendar} />
-                  <Input  label="To Date"   type="date" value={filters.dateTo}   onChange={(v) => setFilters((f) => ({ ...f, dateTo: v }))}   icon={Calendar} />
-                  <Select label="Payment Method" value={filters.paymentMethod} onChange={(v) => setFilters((f) => ({ ...f, paymentMethod: v }))} options={[{ value: "", label: "All Methods" }, ...PAYMENT_METHODS.map((m) => ({ value: m, label: m.replace(/_/g, " ").toUpperCase() }))]} icon={CreditCard} />
+                {/* Enter in any field here submits — same as clicking Apply Filters. */}
+                <form
+                  onSubmit={(e) => { e.preventDefault(); applyFilters(); }}
+                  className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-4"
+                >
+                  <Select label="Branch" value={draftFilters.branch} onChange={(v) => setDraftFilters((f) => ({ ...f, branch: v }))} options={[{ value: "", label: "All Branches" }, ...tenantBranches.map((b) => ({ value: b, label: b }))]} icon={Building2} />
+                  <Input  label="From Date" type="date" value={draftFilters.dateFrom} onChange={(v) => setDraftFilters((f) => ({ ...f, dateFrom: v }))} icon={Calendar} />
+                  <Input  label="To Date"   type="date" value={draftFilters.dateTo}   onChange={(v) => setDraftFilters((f) => ({ ...f, dateTo: v }))}   icon={Calendar} />
+                  <Select label="Payment Method" value={draftFilters.paymentMethod} onChange={(v) => setDraftFilters((f) => ({ ...f, paymentMethod: v }))} options={[{ value: "", label: "All Methods" }, ...PAYMENT_METHODS.map((m) => ({ value: m, label: METHOD_LABELS[m] || m }))]} icon={CreditCard} />
                   {(activeCategory === "TRANSPLANT" || activeCategory === "SERVICE") && (
                     <Select
-                      label="Procedure" value={filters.procedure} onChange={(v) => setFilters((f) => ({ ...f, procedure: v }))}
+                      label="Procedure" value={draftFilters.procedure} onChange={(v) => setDraftFilters((f) => ({ ...f, procedure: v }))}
                       options={[{ value: "", label: "All Procedures" }, ...(activeCategory === "TRANSPLANT" ? TRANSPLANT_PROCEDURES : SERVICE_PROCEDURES).map((p) => ({ value: p, label: p }))]}
                     />
                   )}
-                </div>
+                  <button
+                    type="submit"
+                    disabled={!hasPendingChanges}
+                    className="relative self-end px-4 py-2.5 sm:py-3 rounded-xl font-semibold text-sm transition-all flex items-center justify-center gap-2 bg-indigo-600 text-white hover:bg-indigo-700 disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
+                  >
+                    Apply Filters
+                    {hasPendingChanges && (
+                      <span className="absolute -top-1.5 -right-1.5 w-3 h-3 rounded-full bg-amber-400 ring-2 ring-white" />
+                    )}
+                  </button>
+                </form>
                 {hasActiveFilters && (
                   <div className="mt-4 p-3 bg-indigo-50 border border-indigo-200 rounded-lg">
                     <div className="flex items-center justify-between mb-2">
@@ -897,12 +1229,24 @@ export default function AllTransactionsPage() {
                       <span className="text-xs text-indigo-700">{total} results</span>
                     </div>
                     <div className="flex flex-wrap gap-2">
-                      {filters.branch        && <span className="px-2 py-1 bg-white text-indigo-700 rounded-md text-xs font-medium border border-indigo-200">Branch: {filters.branch}</span>}
-                      {filters.dateFrom      && <span className="px-2 py-1 bg-white text-indigo-700 rounded-md text-xs font-medium border border-indigo-200">From: {formatDateForDisplay(filters.dateFrom)}</span>}
-                      {filters.dateTo        && <span className="px-2 py-1 bg-white text-indigo-700 rounded-md text-xs font-medium border border-indigo-200">To: {formatDateForDisplay(filters.dateTo)}</span>}
-                      {filters.paymentMethod && <span className="px-2 py-1 bg-white text-indigo-700 rounded-md text-xs font-medium border border-indigo-200">Method: {filters.paymentMethod.replace(/_/g, " ").toUpperCase()}</span>}
-                      {filters.procedure     && <span className="px-2 py-1 bg-white text-indigo-700 rounded-md text-xs font-medium border border-indigo-200">Procedure: {filters.procedure}</span>}
-                      {tableSearch           && <span className="px-2 py-1 bg-white text-indigo-700 rounded-md text-xs font-medium border border-indigo-200">Search: "{tableSearch}"</span>}
+                      {appliedFilters.branch && (
+                        <FilterChip label={`Branch: ${appliedFilters.branch}`} onRemove={() => removeFilter("branch")} />
+                      )}
+                      {appliedFilters.dateFrom && (
+                        <FilterChip label={`From: ${formatDateForDisplay(appliedFilters.dateFrom)}`} onRemove={() => removeFilter("dateFrom")} />
+                      )}
+                      {appliedFilters.dateTo && (
+                        <FilterChip label={`To: ${formatDateForDisplay(appliedFilters.dateTo)}`} onRemove={() => removeFilter("dateTo")} />
+                      )}
+                      {appliedFilters.paymentMethod && (
+                        <FilterChip label={`Method: ${METHOD_LABELS[appliedFilters.paymentMethod] || appliedFilters.paymentMethod}`} onRemove={() => removeFilter("paymentMethod")} />
+                      )}
+                      {appliedFilters.procedure && (
+                        <FilterChip label={`Procedure: ${appliedFilters.procedure}`} onRemove={() => removeFilter("procedure")} />
+                      )}
+                      {tableSearch && (
+                        <FilterChip label={`Search: "${tableSearch}"`} onRemove={() => { setTableSearch(""); setDebouncedSearch(""); }} />
+                      )}
                     </div>
                   </div>
                 )}
@@ -910,7 +1254,14 @@ export default function AllTransactionsPage() {
             )}
           </div>
 
-          {refreshing ? (
+          {/* Each of these is its own collection with its own lifecycle, so each brings its own
+              table rather than being forced through DataTable, which is built around the
+              Transactions shape. */}
+          {activeCategory === "SUSPENSE" ? (
+            <SuspenseManager />
+          ) : activeCategory === "CONTRA" ? (
+            <ContraManager />
+          ) : refreshing ? (
             <div className="flex items-center justify-center py-20">
               <Loader2 className="animate-spin h-10 w-10 text-indigo-400" />
             </div>

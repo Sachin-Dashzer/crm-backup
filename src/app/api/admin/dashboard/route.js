@@ -3,6 +3,7 @@ import { withDB } from "@/lib/withDB";
 import Patient from "@/models/Patient";
 import Transactions from "@/models/Transactions";
 import { ALL_BRANCHES } from "@/lib/branches";
+import { UNSETTLED_METHODS } from "@/constants/bankRouting";
 
 const VALID_BRANCHES = ["All", ...ALL_BRANCHES];
 
@@ -222,14 +223,18 @@ const handler = async (req) => {
           },
         },
         {
+          // Every branch below excludes UNSETTLED_METHODS — it's a total — EXCEPT the
+          // *ByMethod ones, which stay unfiltered on purpose: grouping by method is exactly
+          // where the paid_to_external/paid_by_other bucket should still be visible (see the
+          // §2.4 report — totals hide it, breakdowns-by-method show it).
           $facet: {
             // Current period revenue
             currentTotal: [
-              { $match: { date: { $gte: fromDate, $lte: toDate } } },
+              { $match: { date: { $gte: fromDate, $lte: toDate }, method: { $nin: UNSETTLED_METHODS } } },
               { $group: { _id: null, total: { $sum: "$amount" } } },
             ],
             currentByTechnique: [
-              { $match: { date: { $gte: fromDate, $lte: toDate } } },
+              { $match: { date: { $gte: fromDate, $lte: toDate }, method: { $nin: UNSETTLED_METHODS } } },
               {
                 $group: {
                   _id: "$procedure",
@@ -241,13 +246,13 @@ const handler = async (req) => {
             // Comparison period revenue
             comparisonTotal: [
               {
-                $match: { date: { $gte: yesterdayStart, $lte: yesterdayEnd } },
+                $match: { date: { $gte: yesterdayStart, $lte: yesterdayEnd }, method: { $nin: UNSETTLED_METHODS } },
               },
               { $group: { _id: null, total: { $sum: "$amount" } } },
             ],
             // Last 7 days
             last7DaysTotal: [
-              { $match: { date: { $gte: last7DaysStart, $lte: actualToday } } },
+              { $match: { date: { $gte: last7DaysStart, $lte: actualToday }, method: { $nin: UNSETTLED_METHODS } } },
               { $group: { _id: null, total: { $sum: "$amount" } } },
             ],
             last7DaysByMethod: [
@@ -261,7 +266,7 @@ const handler = async (req) => {
               },
             ],
             last7DaysPerDay: [
-              { $match: { date: { $gte: last7DaysStart, $lte: actualToday } } },
+              { $match: { date: { $gte: last7DaysStart, $lte: actualToday }, method: { $nin: UNSETTLED_METHODS } } },
               {
                 $group: {
                   _id: { $dateToString: { format: "%Y-%m-%d", date: "$date" } },
@@ -273,7 +278,7 @@ const handler = async (req) => {
             // Last 30 days
             last30DaysTotal: [
               {
-                $match: { date: { $gte: last30DaysStart, $lte: actualToday } },
+                $match: { date: { $gte: last30DaysStart, $lte: actualToday }, method: { $nin: UNSETTLED_METHODS } },
               },
               { $group: { _id: null, total: { $sum: "$amount" } } },
             ],
@@ -291,7 +296,7 @@ const handler = async (req) => {
             ],
             last30DaysPerDay: [
               {
-                $match: { date: { $gte: last30DaysStart, $lte: actualToday } },
+                $match: { date: { $gte: last30DaysStart, $lte: actualToday }, method: { $nin: UNSETTLED_METHODS } },
               },
               {
                 $group: {
@@ -303,7 +308,7 @@ const handler = async (req) => {
             ],
             // This month
             thisMonthTotal: [
-              { $match: { date: { $gte: thisMonthStart, $lte: actualToday } } },
+              { $match: { date: { $gte: thisMonthStart, $lte: actualToday }, method: { $nin: UNSETTLED_METHODS } } },
               { $group: { _id: null, total: { $sum: "$amount" } } },
             ],
             thisMonthByMethod: [
@@ -317,7 +322,7 @@ const handler = async (req) => {
               },
             ],
             thisMonthPerDay: [
-              { $match: { date: { $gte: thisMonthStart, $lte: actualToday } } },
+              { $match: { date: { $gte: thisMonthStart, $lte: actualToday }, method: { $nin: UNSETTLED_METHODS } } },
               {
                 $group: {
                   _id: { $dateToString: { format: "%Y-%m-%d", date: "$date" } },
@@ -332,6 +337,7 @@ const handler = async (req) => {
                 $match: {
                   date: { $gte: fromDate, $lte: toDate },
                   procedure: { $in: ["PRP", "GFC"] },
+                  method: { $nin: UNSETTLED_METHODS },
                 },
               },
               {

@@ -5,6 +5,13 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import connectDB from "@/lib/db";
 import Transactions from "@/models/Transactions";
 import Patient from "@/models/Patient";
+import {
+  withExternalPartyLink,
+  withDbTransaction,
+  createExternalReceivable,
+  validateExternalParty,
+} from "@/lib/externalPartyDerivation";
+import { resolveReceivableAllocations } from "@/lib/receivableAllocation";
 
 export async function POST(req) {
   try {
@@ -26,6 +33,11 @@ export async function POST(req) {
       branch,
       date,
       remarks,
+      receiptMode,
+      furtherMode,
+      receipts,
+      receivableAllocationChoice,
+      externalParty,
     } = body;
 
     const services = body.services || [
@@ -83,6 +95,15 @@ export async function POST(req) {
       }
     }
 
+    // "Paid to External" — someone else physically received the cash on our behalf.
+    // The sale still books in full; a Receivable tracks what they owe us.
+    if (method === "paid_to_external") {
+      const partyError = validateExternalParty(externalParty, "RECEIVED_BY");
+      if (partyError) {
+        return NextResponse.json({ error: partyError }, { status: 400 });
+      }
+    }
+
     const batchId = `BATCH-${Date.now()}-${Math.random()
       .toString(36)
       .substr(2, 9)}`;
@@ -93,44 +114,112 @@ export async function POST(req) {
     );
     const totalDiscount = discount || 0;
     const finalTotal = subtotal - totalDiscount;
+    const resolvedBranch = branch || session.user.branch;
+    const createdBy = {
+      name: session.user.name,
+      email: session.user.email,
+      branch: session.user.branch,
+      date: new Date(),
+    };
 
-    const transactions = [];
-
-    for (const item of services) {
+    const computeItemFinalAmount = (item) => {
       const itemSubtotal = item.quantity * parseFloat(item.perSessionCost);
-      const itemDiscount =
-        subtotal > 0 ? (itemSubtotal / subtotal) * totalDiscount : 0;
-      const itemFinalAmount = itemSubtotal - itemDiscount;
+      const itemDiscount = subtotal > 0 ? (itemSubtotal / subtotal) * totalDiscount : 0;
+      return { itemDiscount, itemFinalAmount: itemSubtotal - itemDiscount };
+    };
 
-      const transaction = new Transactions({
-        transactionCategory: "SERVICE",
-        costType: "Revenue",
-        batchId,
-        patient: patientId || null,
-        patientName: patientName || "",
-        patientPhone: patientPhone || "",
-        procedure: item.procedure,
-        quantity: item.quantity,
-        perSessionCost: parseFloat(item.perSessionCost),
-        amount: itemFinalAmount,
-        discount: itemDiscount,
-        method,
-        paymentId: paymentId || "",
-        branch: branch || session.user.branch,
-        date: date ? new Date(date) : new Date(),
-        remarks: remarks || "",
-        createdBy: {
-          name: session.user.name,
-          email: session.user.email,
-          branch: session.user.branch,
-          date: new Date(),
-        },
+    // allocationsByIndex: one { receivableId, receivableAllocations } per service item, same
+    // order as `services` — see resolveReceivableAllocations. Omitted entirely on the
+    // paid_to_external path, where every item's receivableId/receivableAllocations stay empty.
+    const buildTxnDocs = (allocationsByIndex) =>
+      services.map((item, idx) => {
+        const { itemDiscount, itemFinalAmount } = computeItemFinalAmount(item);
+        const alloc = allocationsByIndex?.[idx];
+
+        return {
+          transactionCategory: "SERVICE",
+          costType: "Revenue",
+          batchId,
+          patient: patientId || null,
+          patientName: patientName || "",
+          patientPhone: patientPhone || "",
+          procedure: item.procedure,
+          quantity: item.quantity,
+          perSessionCost: parseFloat(item.perSessionCost),
+          amount: itemFinalAmount,
+          discount: itemDiscount,
+          method,
+          paymentId: paymentId || "",
+          branch: resolvedBranch,
+          date: date ? new Date(date) : new Date(),
+          remarks: remarks || "",
+          receiptMode: receiptMode || "",
+          furtherMode: furtherMode || "",
+          receipts: receipts || [],
+          receivableId: alloc?.receivableId || null,
+          receivableAllocations: alloc?.receivableAllocations || [],
+          createdBy,
+          ...(method === "paid_to_external"
+            ? {
+                externalParty: {
+                  direction: "RECEIVED_BY",
+                  name: externalParty.name,
+                  method: externalParty.method,
+                  partyKind: externalParty.partyKind || "MANUAL",
+                  partyRefId:
+                    externalParty.partyKind && externalParty.partyKind !== "MANUAL"
+                      ? externalParty.partyRefId
+                      : null,
+                },
+              }
+            : {}),
+        };
       });
 
-      transactions.push(transaction);
+    let savedTransactions;
+    if (method === "paid_to_external") {
+      savedTransactions = await withExternalPartyLink(async (dbSession) => {
+        const txns = await Transactions.create(buildTxnDocs(), { session: dbSession });
+        // One Receivable for the whole batch (finalTotal) — the external party
+        // received one payment covering every line item, not one per item.
+        const receivable = await createExternalReceivable({
+          session: dbSession,
+          amount: finalTotal,
+          name: externalParty.name,
+          method: externalParty.method,
+          partyKind: externalParty.partyKind || "MANUAL",
+          partyRefId: externalParty.partyRefId,
+          branch: resolvedBranch,
+          transactionCategory: "SERVICE",
+          relatedPatient: patientId || undefined,
+          actor: createdBy,
+        });
+        for (const txn of txns) {
+          txn.externalParty.linkedReceivableId = receivable._id;
+          await txn.save({ session: dbSession });
+        }
+        return txns;
+      });
+    } else {
+      // Auto-allocation (or an explicit override) happens server-side, inside the same
+      // transaction as the write — see src/lib/receivableAllocation.js. The whole batch is
+      // allocated as one continuous FIFO stream across its line items, not per item.
+      try {
+        savedTransactions = await withDbTransaction(async (dbSession) => {
+          const itemAmounts = services.map((item) => computeItemFinalAmount(item).itemFinalAmount);
+          const allocations = await resolveReceivableAllocations({
+            patientId,
+            method,
+            itemAmounts,
+            choice: receivableAllocationChoice,
+            session: dbSession,
+          });
+          return Transactions.create(buildTxnDocs(allocations), { session: dbSession });
+        });
+      } catch (allocationError) {
+        return NextResponse.json({ error: allocationError.message }, { status: 400 });
+      }
     }
-
-    const savedTransactions = await Transactions.insertMany(transactions);
 
     // ── Patient payment update (only if a registered patient is linked) ──
     let updatedPatient = null;

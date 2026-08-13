@@ -3,6 +3,8 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import connectDB from "@/lib/db";
+import { periodLockResponse } from "@/lib/periodLock";
+import { withDbTransaction, syncExternalPartyOnUpdate } from "@/lib/externalPartyDerivation";
 import Transactions from "@/models/Transactions";
 import Patient from "@/models/Patient";
 import Stock from "@/models/Stock";
@@ -38,6 +40,11 @@ export async function PUT(req) {
       branch,
       date,
       remarks,
+      receiptMode,
+      furtherMode,
+      receipts,
+      receivableId,
+      externalParty,
     } = await req.json();
 
     // Find existing transaction
@@ -47,6 +54,12 @@ export async function PUT(req) {
         { error: "Transaction not found" },
         { status: 404 }
       );
+    }
+
+    // Closed-period guard — checks both the current position and where the edit moves it.
+    const locked = await periodLockResponse(existingTransaction, { date, furtherMode });
+    if (locked) {
+      return NextResponse.json(locked.body, { status: locked.status });
     }
 
     // Check if it's a MEDICINE transaction
@@ -188,6 +201,10 @@ export async function PUT(req) {
     existingTransaction.branch = branch;
     existingTransaction.date = date ? new Date(date) : existingTransaction.date;
     existingTransaction.remarks = remarks || "";
+    if (receiptMode !== undefined) existingTransaction.receiptMode = receiptMode || "";
+    if (furtherMode !== undefined) existingTransaction.furtherMode = furtherMode || "";
+    if (receipts !== undefined) existingTransaction.receipts = receipts || [];
+    if (receivableId !== undefined) existingTransaction.receivableId = receivableId || null;
     existingTransaction.stock = medicineId; // For backward compatibility
 
     // Add editor info
@@ -206,7 +223,28 @@ export async function PUT(req) {
       existingTransaction.lastEditedBy = editorInfo;
     }
 
-    await existingTransaction.save();
+    // Editing into / out of / within "Paid to External" has to move the linked Receivable with
+    // it, or the amount leaves the books entirely — see syncExternalPartyOnUpdate.
+    try {
+      await withDbTransaction(async (dbSession) => {
+        const patch = await syncExternalPartyOnUpdate({
+          session: dbSession,
+          transaction: existingTransaction,
+          nextMethod: existingTransaction.method,
+          nextAmount: existingTransaction.amount,
+          nextExternalParty: externalParty,
+          branch: existingTransaction.branch,
+          transactionCategory: "MEDICINE",
+          relatedPatient: existingTransaction.patient,
+          actor: { name: session.user.name, email: session.user.email, branch: session.user.branch },
+        });
+        if (patch) existingTransaction.set(patch);
+        await existingTransaction.save({ session: dbSession });
+      });
+    } catch (syncError) {
+      // A deliberate refusal (money already settled against the linked receivable), not a fault.
+      return NextResponse.json({ error: syncError.message }, { status: 400 });
+    }
 
     return NextResponse.json({
       success: true,

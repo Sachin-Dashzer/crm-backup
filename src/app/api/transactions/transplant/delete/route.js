@@ -2,6 +2,7 @@
 
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/db";
+import { periodLockResponse } from "@/lib/periodLock";
 import Transactions from "@/models/Transactions";
 import Patient from "@/models/Patient";
 import Audit from "@/models/Audit";
@@ -56,6 +57,12 @@ export async function DELETE(req) {
         { success: false, message: "Not a transplant transaction" },
         { status: 400 }
       );
+    }
+
+    // Closed-period guard — a delete inside a frozen period would invalidate its snapshot.
+    const locked = await periodLockResponse(transactionToDelete);
+    if (locked) {
+      return NextResponse.json({ ...locked.body, message: locked.body.error }, { status: locked.status });
     }
 
     const patientId = transactionToDelete.patient;

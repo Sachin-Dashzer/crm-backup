@@ -17,6 +17,11 @@ export default function SearchableSelect({
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  // Last option we successfully resolved for the current `value`. In server-search mode the
+  // parent replaces `options` on every keystroke, so the selected item drops out of the list
+  // as soon as the search term stops matching it — without this the trigger fell back to the
+  // placeholder and the selection looked lost even though `value` was still set.
+  const [cachedSelected, setCachedSelected] = useState(null);
   const dropdownRef = useRef(null);
 
   // Close dropdown when clicking outside
@@ -42,8 +47,29 @@ export default function SearchableSelect({
         return searchString.includes(searchTerm.toLowerCase());
       });
 
-  // Get selected option — search in options first, fallback handled by parent via cache
-  const selectedOption = options.find((option) => option[valueKey] === value);
+  const resolvedOption = options.find((option) => option[valueKey] === value);
+
+  useEffect(() => {
+    if (!value) {
+      setCachedSelected(null); // a cleared selection clears the cache
+    } else if (resolvedOption) {
+      setCachedSelected(resolvedOption);
+    }
+  }, [value, resolvedOption]);
+
+  // Only trust the cache while it still describes the CURRENT value. If `value` changed to
+  // something neither `options` nor the cache knows, fall through to rendering the raw value
+  // below — a stale label is worse than an unlovely one, because it names the wrong record.
+  const selectedOption =
+    resolvedOption || (cachedSelected?.[valueKey] === value ? cachedSelected : null);
+
+  const selectedLabel = selectedOption
+    ? formatOption
+      ? formatOption(selectedOption)
+      : selectedOption[displayKey]
+    : value
+      ? String(value)
+      : null;
 
   const handleSearchChange = (val) => {
     setSearchTerm(val);
@@ -81,18 +107,14 @@ export default function SearchableSelect({
       >
         <div className="flex items-center gap-2 flex-1 min-w-0">
           <Search className="w-4 h-4 text-gray-400 shrink-0" />
-          {selectedOption ? (
-            <span className="text-sm truncate">
-              {formatOption
-                ? formatOption(selectedOption)
-                : selectedOption[displayKey]}
-            </span>
+          {selectedLabel ? (
+            <span className="text-sm truncate">{selectedLabel}</span>
           ) : (
             <span className="text-sm text-gray-400">{placeholder}</span>
           )}
         </div>
         <div className="flex items-center gap-1 shrink-0">
-          {selectedOption && !disabled && (
+          {value && !disabled && (
             <button
               onClick={handleClear}
               className="p-1 hover:bg-gray-100 rounded"

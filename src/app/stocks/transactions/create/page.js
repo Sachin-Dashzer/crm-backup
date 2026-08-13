@@ -2,33 +2,25 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebars/StockSidebar";
-import SearchableSelect from "@/components/SearchableSelect";
+import RevenueSection from "@/components/RevenueSection";
+import DirectExpenseSection from "@/components/DirectExpenseSection";
+import { MAIN_BRANCHES } from "@/lib/branches";
 import { useSession } from "next-auth/react";
-import { maskPhone } from "@/utils/phoneUtils";
-import { EXPENSE_CATEGORIES, getExpenseTypes } from "@/constants/expenseCategories";
+import { getExpenseTypes } from "@/constants/expenseCategories";
 import {
   ArrowLeft,
-  Plus,
-  Trash2,
-  Save,
   Scissors,
   Heart,
   Pill,
   Receipt,
 } from "lucide-react";
 
-const getPaymentIdConfig = (method) => {
-  if (method === "card")
-    return { placeholder: "Please enter card last no.", required: true };
-  if (
-    method?.toLowerCase() === "bajaj_loan" ||
-    method?.toLowerCase() === "fibe_loan"
-  )
-    return { placeholder: "Please add the reference id", required: true };
-  if (method === "cash")
-    return { placeholder: "Please add transaction id", required: false };
-  return { placeholder: "Please add transaction id", required: true };
-};
+// Returns today's date in IST (Asia/Kolkata) as YYYY-MM-DD. Previously this file used
+// `new Date().toISOString().split("T")[0]`, which is UTC — between 00:00 and 05:30 IST every
+// new transaction silently defaulted to YESTERDAY's date. Matches admin/collab/reception,
+// which already used the IST-correct version.
+const getTodayIST = () =>
+  new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
 
 // useSession() can resolve synchronously on mount if the session is already
 // cached, so falling back to "Delhi" only when branch is falsy isn't enough —
@@ -46,6 +38,10 @@ export default function AllTransactionsPage() {
   const [loading, setLoading] = useState(false);
   const [fetchLoading, setFetchLoading] = useState(true);
   const [patients, setPatients] = useState([]);
+  // Stocks fetches the FULL patient list once and filters client-side, unlike the
+  // server-side debounced search admin/collab/reception use — a real, pre-existing
+  // difference (not accidental drift), preserved exactly rather than unified away.
+  const picker = { options: patients, searching: false, onSearch: () => {}, addToCache: () => {} };
   const [medicines, setMedicines] = useState([]);
   const [vendors, setVendors] = useState([]);
 
@@ -58,9 +54,13 @@ export default function AllTransactionsPage() {
     discount: 0,
     method: "cash",
     paymentId: "",
-    date: new Date().toISOString().split("T")[0],
+    date: getTodayIST(),
     branch: resolveInitialBranch(session?.user?.branch),
     remarks: "",
+    receiptMode: "",
+    furtherMode: "",
+    receipts: [],
+    externalParty: { name: "", method: "", partyKind: "MANUAL", partyRefId: "" },
   });
 
   // SERVICE DATA - Now supports multiple services
@@ -72,9 +72,13 @@ export default function AllTransactionsPage() {
     discount: 0,
     method: "cash",
     paymentId: "",
-    date: new Date().toISOString().split("T")[0],
+    date: getTodayIST(),
     branch: resolveInitialBranch(session?.user?.branch),
     remarks: "",
+    receiptMode: "",
+    furtherMode: "",
+    receipts: [],
+    externalParty: { name: "", method: "", partyKind: "MANUAL", partyRefId: "" },
   });
 
   const [serviceItems, setServiceItems] = useState([
@@ -96,9 +100,13 @@ export default function AllTransactionsPage() {
     discount: 0,
     method: "cash",
     paymentId: "",
-    date: new Date().toISOString().split("T")[0],
+    date: getTodayIST(),
     branch: resolveInitialBranch(session?.user?.branch),
     remarks: "",
+    receiptMode: "",
+    furtherMode: "",
+    receipts: [],
+    externalParty: { name: "", method: "", partyKind: "MANUAL", partyRefId: "" },
   });
 
   const [medicineItems, setMedicineItems] = useState([
@@ -122,9 +130,12 @@ export default function AllTransactionsPage() {
     amount: "",
     method: "cash",
     paymentId: "",
-    date: new Date().toISOString().split("T")[0],
+    date: getTodayIST(),
     branch: resolveInitialBranch(session?.user?.branch),
     remarks: "",
+    receipts: [],
+    furtherMode: "",
+    externalParty: { name: "", method: "", partyKind: "MANUAL", partyRefId: "" },
   });
 
   useEffect(() => {
@@ -174,31 +185,7 @@ export default function AllTransactionsPage() {
     }
   };
 
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat("en-IN", {
-      style: "currency",
-      currency: "INR",
-      maximumFractionDigits: 0,
-    }).format(amount || 0);
-  };
-
-  const formatPatientOption = (patient) => {
-    return `${patient.personal?.name || "N/A"} - ${maskPhone(patient.personal?.phone, session?.user?.role) || "N/A"} | Package: ${formatCurrency(patient?.payments?.totalAmount)} | Received: ${formatCurrency(patient?.payments?.amountReceived)} | Pending: ${formatCurrency(patient?.payments?.pendingAmount)}`;
-  };
-
-  const formatMedicineOption = (medicine) => {
-    return `${medicine.name} (Stock: ${medicine.totalQuantity}) - MRP: ${formatCurrency(medicine.mrp)}`;
-  };
-
-  const formatVendorOption = (vendor) => {
-    return `${vendor.name} - ${vendor.contact || vendor.email || "No contact"}`;
-  };
-
   // TRANSPLANT HANDLERS
-  const calculateTransplantTotal = () => {
-    const amount = parseFloat(transplantData.amount) || 0;
-    return amount - transplantData.discount;
-  };
 
   const handleSaveTransplant = async () => {
     if (!transplantData.patient) {
@@ -220,6 +207,13 @@ export default function AllTransactionsPage() {
       );
       return;
     }
+    if (
+      transplantData.method === "paid_to_external" &&
+      (!transplantData.externalParty.name || !transplantData.externalParty.method)
+    ) {
+      alert("Please enter the receiver's name and payment method");
+      return;
+    }
 
     setLoading(true);
     try {
@@ -237,6 +231,12 @@ export default function AllTransactionsPage() {
           branch: transplantData.branch,
           date: transplantData.date,
           remarks: transplantData.remarks,
+          receiptMode: transplantData.receiptMode,
+          furtherMode: transplantData.furtherMode,
+          receipts: transplantData.receipts,
+          receivableAllocationChoice: transplantData.receivableAllocationChoice,
+          externalParty:
+            transplantData.method === "paid_to_external" ? transplantData.externalParty : undefined,
         }),
       });
 
@@ -255,60 +255,7 @@ export default function AllTransactionsPage() {
     }
   };
 
-  // SERVICE HANDLERS (Multiple Items)
-  const addServiceItem = () => {
-    setServiceItems([
-      ...serviceItems,
-      {
-        id: Date.now(),
-        procedure: "PRP",
-        quantity: 1,
-        perSessionCost: "",
-        totalAmount: 0,
-      },
-    ]);
-  };
-
-  const removeServiceItem = (id) => {
-    if (serviceItems.length === 1) {
-      alert("At least one service is required");
-      return;
-    }
-    setServiceItems(serviceItems.filter((item) => item.id !== id));
-  };
-
-  const updateServiceItem = (id, field, value) => {
-    setServiceItems((prev) =>
-      prev.map((item) => {
-        if (item.id === id) {
-          const updated = { ...item, [field]: value };
-
-          if (field === "quantity" || field === "perSessionCost") {
-            const qty = parseFloat(
-              field === "quantity" ? value : updated.quantity,
-            );
-            const price = parseFloat(
-              field === "perSessionCost" ? value : updated.perSessionCost,
-            );
-            updated.totalAmount =
-              !isNaN(qty) && !isNaN(price) ? qty * price : 0;
-          }
-
-          return updated;
-        }
-        return item;
-      }),
-    );
-  };
-
-  const calculateServiceTotal = () => {
-    const subtotal = serviceItems.reduce(
-      (sum, item) => sum + (parseFloat(item.totalAmount) || 0),
-      0,
-    );
-    return subtotal - serviceData.discount;
-  };
-
+  // SERVICE HANDLERS
   const handleSaveService = async () => {
     if (!serviceData.isWalkIn && !serviceData.patient) {
       alert("Please select a patient");
@@ -339,6 +286,13 @@ export default function AllTransactionsPage() {
       );
       return;
     }
+    if (
+      serviceData.method === "paid_to_external" &&
+      (!serviceData.externalParty.name || !serviceData.externalParty.method)
+    ) {
+      alert("Please enter the receiver's name and payment method");
+      return;
+    }
 
     setLoading(true);
     try {
@@ -361,6 +315,11 @@ export default function AllTransactionsPage() {
           branch: serviceData.branch,
           date: serviceData.date,
           remarks: serviceData.remarks,
+          receiptMode: serviceData.receiptMode,
+          furtherMode: serviceData.furtherMode,
+          receipts: serviceData.receipts,
+          receivableAllocationChoice: serviceData.receivableAllocationChoice,
+          externalParty: serviceData.method === "paid_to_external" ? serviceData.externalParty : undefined,
         }),
       });
 
@@ -379,69 +338,7 @@ export default function AllTransactionsPage() {
     }
   };
 
-  // MEDICINE HANDLERS (Multiple Items)
-  const addMedicineItem = () => {
-    setMedicineItems([
-      ...medicineItems,
-      {
-        id: Date.now(),
-        medicineId: "",
-        medicineName: "",
-        quantity: 1,
-        perUnitCost: "",
-        totalAmount: 0,
-      },
-    ]);
-  };
-
-  const removeMedicineItem = (id) => {
-    if (medicineItems.length === 1) {
-      alert("At least one medicine is required");
-      return;
-    }
-    setMedicineItems(medicineItems.filter((item) => item.id !== id));
-  };
-
-  const updateMedicineItem = (id, field, value) => {
-    setMedicineItems((prev) =>
-      prev.map((item) => {
-        if (item.id === id) {
-          const updated = { ...item, [field]: value };
-
-          if (field === "medicineId" && value) {
-            const medicine = medicines.find((m) => m._id === value);
-            if (medicine) {
-              updated.medicineName = medicine.name;
-              updated.perUnitCost = medicine.soldAmt || medicine.mrp || "";
-            }
-          }
-
-          if (field === "quantity" || field === "perUnitCost") {
-            const qty = parseFloat(
-              field === "quantity" ? value : updated.quantity,
-            );
-            const price = parseFloat(
-              field === "perUnitCost" ? value : updated.perUnitCost,
-            );
-            updated.totalAmount =
-              !isNaN(qty) && !isNaN(price) ? qty * price : 0;
-          }
-
-          return updated;
-        }
-        return item;
-      }),
-    );
-  };
-
-  const calculateMedicineTotal = () => {
-    const subtotal = medicineItems.reduce(
-      (sum, item) => sum + (parseFloat(item.totalAmount) || 0),
-      0,
-    );
-    return subtotal - medicineData.discount;
-  };
-
+  // MEDICINE HANDLERS
   const handleSaveMedicine = async () => {
     if (!medicineData.isWalkIn && !medicineData.patient) {
       alert("Please select a patient");
@@ -476,6 +373,13 @@ export default function AllTransactionsPage() {
       );
       return;
     }
+    if (
+      medicineData.method === "paid_to_external" &&
+      (!medicineData.externalParty.name || !medicineData.externalParty.method)
+    ) {
+      alert("Please enter the receiver's name and payment method");
+      return;
+    }
 
     setLoading(true);
     try {
@@ -498,6 +402,11 @@ export default function AllTransactionsPage() {
           branch: medicineData.branch,
           date: medicineData.date,
           remarks: medicineData.remarks,
+          receiptMode: medicineData.receiptMode,
+          furtherMode: medicineData.furtherMode,
+          receipts: medicineData.receipts,
+          receivableAllocationChoice: medicineData.receivableAllocationChoice,
+          externalParty: medicineData.method === "paid_to_external" ? medicineData.externalParty : undefined,
         }),
       });
 
@@ -517,10 +426,6 @@ export default function AllTransactionsPage() {
   };
 
   // EXPENSE HANDLERS
-  const calculateExpenseTotal = () => {
-    return parseFloat(expenseData.amount) || 0;
-  };
-
   const handleSaveExpense = async () => {
     if (!expenseData.expenseCategory) {
       alert("Please select expense category");
@@ -556,6 +461,13 @@ export default function AllTransactionsPage() {
       );
       return;
     }
+    if (
+      expenseData.method === "paid_by_other" &&
+      (!expenseData.externalParty.name || !expenseData.externalParty.method)
+    ) {
+      alert("Please enter the sender's name and payment method");
+      return;
+    }
 
     setLoading(true);
     try {
@@ -579,6 +491,9 @@ export default function AllTransactionsPage() {
           branch: expenseData.branch,
           date: expenseData.date,
           remarks: expenseData.remarks,
+          receipts: expenseData.receipts,
+          furtherMode: expenseData.furtherMode,
+          externalParty: expenseData.method === "paid_by_other" ? expenseData.externalParty : undefined,
         }),
       });
 
@@ -698,1356 +613,73 @@ export default function AllTransactionsPage() {
 
             {/* TRANSPLANT TAB - Keep existing code */}
             {activeTab === "transplant" && (
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* ... existing transplant form ... */}
-                <div className="lg:col-span-2 space-y-6">
-                  <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                      Patient Information
-                    </h3>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Select Patient <span className="text-red-500">*</span>
-                      </label>
-                      <SearchableSelect
-                        options={patients}
-                        value={transplantData.patient}
-                        onChange={(value) =>
-                          setTransplantData({
-                            ...transplantData,
-                            patient: value,
-                          })
-                        }
-                        placeholder="Search and select a patient..."
-                        valueKey="_id"
-                        formatOption={formatPatientOption}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                      Procedure Details
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Procedure <span className="text-red-500">*</span>
-                        </label>
-                        <select
-                          value={transplantData.procedure}
-                          onChange={(e) =>
-                            setTransplantData({
-                              ...transplantData,
-                              procedure: e.target.value,
-                            })
-                          }
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                        >
-                          <option value="Sapphire FUE">Sapphire FUE</option>
-                          <option value="DHI">DHI</option>
-                          <option value="Turkish DHI">Turkish DHI</option>
-                          <option value="Beard Transplant">
-                            Beard Transplant
-                          </option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Payment Type <span className="text-red-500">*</span>
-                        </label>
-                        <select
-                          value={transplantData.paymentType}
-                          onChange={(e) =>
-                            setTransplantData({
-                              ...transplantData,
-                              paymentType: e.target.value,
-                            })
-                          }
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                        >
-                          <option value="Booking">Booking</option>
-                          <option value="Pending">Pending</option>
-                          <option value="Full-payment">Full Payment</option>
-                        </select>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                      Transaction Details
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Amount (₹) <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                          type="number"
-                          value={transplantData.amount}
-                          onChange={(e) =>
-                            setTransplantData({
-                              ...transplantData,
-                              amount: e.target.value,
-                            })
-                          }
-                          min="0"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                          placeholder="Enter amount"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Discount (₹)
-                        </label>
-                        <input
-                          type="number"
-                          value={transplantData.discount}
-                          onChange={(e) =>
-                            setTransplantData({
-                              ...transplantData,
-                              discount: Number(e.target.value),
-                            })
-                          }
-                          min="0"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Payment Method
-                        </label>
-                        <select
-                          value={transplantData.method}
-                          onChange={(e) =>
-                            setTransplantData({
-                              ...transplantData,
-                              method: e.target.value,
-                            })
-                          }
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                        >
-                          <option value="cash">Cash</option>
-                          <option value="card">Card</option>
-                          <option value="upi">UPI</option>
-                          <option value="bajaj_loan">Bajaj Loan</option>
-                          <option value="fibe_loan">Fibe Loan</option>
-
-                          <option value="banking">Bank Transfer</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Transaction ID
-                          {getPaymentIdConfig(transplantData.method)
-                            .required && (
-                            <span className="text-red-500 ml-1">*</span>
-                          )}
-                        </label>
-                        <input
-                          type="text"
-                          value={transplantData.paymentId}
-                          onChange={(e) =>
-                            setTransplantData({
-                              ...transplantData,
-                              paymentId: e.target.value,
-                            })
-                          }
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                          placeholder={
-                            getPaymentIdConfig(transplantData.method)
-                              .placeholder
-                          }
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Branch
-                        </label>
-                        <select
-                          value={transplantData.branch}
-                          onChange={(e) =>
-                            setTransplantData({
-                              ...transplantData,
-                              branch: e.target.value,
-                            })
-                          }
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                        >
-                          <option value="Delhi">Delhi</option>
-                          <option value="Mumbai">Mumbai</option>
-                          <option value="Hyderabad">Hyderabad</option>
-                          <option value="Noida">Noida</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Date
-                        </label>
-                        <input
-                          type="date"
-                          value={transplantData.date}
-                          onChange={(e) =>
-                            setTransplantData({
-                              ...transplantData,
-                              date: e.target.value,
-                            })
-                          }
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                        />
-                      </div>
-                      <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Remarks
-                        </label>
-                        <textarea
-                          value={transplantData.remarks}
-                          onChange={(e) =>
-                            setTransplantData({
-                              ...transplantData,
-                              remarks: e.target.value,
-                            })
-                          }
-                          rows="2"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                          placeholder="Additional notes"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 sticky top-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                      Transaction Summary
-                    </h3>
-
-                    <div className="space-y-3">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Amount:</span>
-                        <span className="font-semibold">
-                          {formatCurrency(transplantData.amount)}
-                        </span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Discount:</span>
-                        <span className="font-semibold text-red-600">
-                          -{formatCurrency(transplantData.discount)}
-                        </span>
-                      </div>
-                      <div className="border-t border-gray-200 pt-3 mt-3">
-                        <div className="flex justify-between items-center">
-                          <span className="text-lg font-bold text-gray-900">
-                            Total Amount:
-                          </span>
-                          <span className="text-2xl font-bold text-indigo-600">
-                            {formatCurrency(calculateTransplantTotal())}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <button
-                      onClick={handleSaveTransplant}
-                      disabled={loading}
-                      className="w-full mt-6 px-4 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 font-medium"
-                    >
-                      {loading ? (
-                        "Saving..."
-                      ) : (
-                        <div className="flex items-center justify-center gap-2">
-                          <Save className="w-4 h-4" />
-                          Save Transaction
-                        </div>
-                      )}
-                    </button>
-                  </div>
-                </div>
-              </div>
+              <RevenueSection
+                category="TRANSPLANT"
+                data={transplantData}
+                onChange={setTransplantData}
+                picker={picker}
+                patientLabel={patients.find((p) => p._id === transplantData.patient)?.personal?.name}
+                onSave={handleSaveTransplant}
+                saving={loading}
+                saveLabel="Save Transaction"
+                branches={MAIN_BRANCHES}
+              />
             )}
 
             {/* SERVICE TAB - UPDATED WITH MULTIPLE ITEMS */}
             {activeTab === "service" && (
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2 space-y-6">
-                  <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                      Patient Information
-                    </h3>
-
-                    <div className="mb-4">
-                      <label className="flex items-center gap-2">
-                        <input
-                          type="checkbox"
-                          checked={serviceData.isWalkIn}
-                          onChange={(e) =>
-                            setServiceData({
-                              ...serviceData,
-                              isWalkIn: e.target.checked,
-                            })
-                          }
-                          className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                        />
-                        <span className="text-sm font-medium text-gray-700">
-                          Walk-in Patient
-                        </span>
-                      </label>
-                    </div>
-
-                    {serviceData.isWalkIn ? (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Patient Name <span className="text-red-500">*</span>
-                          </label>
-                          <input
-                            type="text"
-                            value={serviceData.patientName}
-                            onChange={(e) =>
-                              setServiceData({
-                                ...serviceData,
-                                patientName: e.target.value,
-                              })
-                            }
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-200"
-                            placeholder="Enter patient name"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Phone Number <span className="text-red-500">*</span>
-                          </label>
-                          <input
-                            type="tel"
-                            value={serviceData.patientPhone}
-                            onChange={(e) =>
-                              setServiceData({
-                                ...serviceData,
-                                patientPhone: e.target.value,
-                              })
-                            }
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-200"
-                            placeholder="Enter phone number"
-                          />
-                        </div>
-                      </div>
-                    ) : (
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Select Patient <span className="text-red-500">*</span>
-                        </label>
-                        <SearchableSelect
-                          options={patients}
-                          value={serviceData.patient}
-                          onChange={(value) =>
-                            setServiceData({
-                              ...serviceData,
-                              patient: value,
-                            })
-                          }
-                          placeholder="Search and select a patient..."
-                          valueKey="_id"
-                          formatOption={formatPatientOption}
-                        />
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Service Items Table */}
-                  <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-lg font-semibold text-gray-900">
-                        Service Items
-                      </h3>
-                      <button
-                        type="button"
-                        onClick={addServiceItem}
-                        className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
-                      >
-                        <Plus size={18} />
-                        Add Service
-                      </button>
-                    </div>
-
-                    <div className="overflow-x-auto">
-                      <table className="w-full">
-                        <thead>
-                          <tr className="border-b border-gray-200">
-                            <th className="text-left py-3 px-2 text-sm font-semibold text-gray-700">
-                              #
-                            </th>
-                            <th className="text-left py-3 px-2 text-sm font-semibold text-gray-700">
-                              Service Type
-                            </th>
-                            <th className="text-left py-3 px-2 text-sm font-semibold text-gray-700">
-                              Quantity
-                            </th>
-                            <th className="text-left py-3 px-2 text-sm font-semibold text-gray-700">
-                              Per Session Cost
-                            </th>
-                            <th className="text-left py-3 px-2 text-sm font-semibold text-gray-700">
-                              Total
-                            </th>
-                            <th className="text-center py-3 px-2 text-sm font-semibold text-gray-700">
-                              Action
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {serviceItems.map((item, index) => (
-                            <tr
-                              key={item.id}
-                              className="border-b border-gray-100"
-                            >
-                              <td className="py-3 px-2 text-sm text-gray-600">
-                                {index + 1}
-                              </td>
-                              <td className="py-3 px-2">
-                                <select
-                                  value={item.procedure}
-                                  onChange={(e) =>
-                                    updateServiceItem(
-                                      item.id,
-                                      "procedure",
-                                      e.target.value,
-                                    )
-                                  }
-                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                                >
-                                  <option value="PRP">PRP</option>
-                                  <option value="GFC">GFC</option>
-                                </select>
-                              </td>
-                              <td className="py-3 px-2">
-                                <input
-                                  type="number"
-                                  value={item.quantity}
-                                  onChange={(e) =>
-                                    updateServiceItem(
-                                      item.id,
-                                      "quantity",
-                                      e.target.value,
-                                    )
-                                  }
-                                  min="1"
-                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                                />
-                              </td>
-                              <td className="py-3 px-2">
-                                <input
-                                  type="number"
-                                  value={item.perSessionCost}
-                                  onChange={(e) =>
-                                    updateServiceItem(
-                                      item.id,
-                                      "perSessionCost",
-                                      e.target.value,
-                                    )
-                                  }
-                                  min="0"
-                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                                  placeholder="₹"
-                                />
-                              </td>
-                              <td className="py-3 px-2">
-                                <div className="font-semibold text-indigo-600">
-                                  {formatCurrency(item.totalAmount)}
-                                </div>
-                              </td>
-                              <td className="py-3 px-2 text-center">
-                                <button
-                                  type="button"
-                                  onClick={() => removeServiceItem(item.id)}
-                                  disabled={serviceItems.length === 1}
-                                  className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                  <Trash2 size={18} />
-                                </button>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-
-                  {/* Transaction Details */}
-                  <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                      Transaction Details
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Discount (₹)
-                        </label>
-                        <input
-                          type="number"
-                          value={serviceData.discount}
-                          onChange={(e) =>
-                            setServiceData({
-                              ...serviceData,
-                              discount: Number(e.target.value),
-                            })
-                          }
-                          min="0"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Payment Method
-                        </label>
-                        <select
-                          value={serviceData.method}
-                          onChange={(e) =>
-                            setServiceData({
-                              ...serviceData,
-                              method: e.target.value,
-                            })
-                          }
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                        >
-                          <option value="cash">Cash</option>
-                          <option value="card">Card</option>
-                          <option value="upi">UPI</option>
-                          <option value="bajaj_loan">Bajaj Loan</option>
-                          <option value="fibe_loan">Fibe Loan</option>
-
-                          <option value="banking">Bank Transfer</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Transaction ID
-                          {getPaymentIdConfig(serviceData.method).required && (
-                            <span className="text-red-500 ml-1">*</span>
-                          )}
-                        </label>
-                        <input
-                          type="text"
-                          value={serviceData.paymentId}
-                          onChange={(e) =>
-                            setServiceData({
-                              ...serviceData,
-                              paymentId: e.target.value,
-                            })
-                          }
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                          placeholder={
-                            getPaymentIdConfig(serviceData.method).placeholder
-                          }
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Branch
-                        </label>
-                        <select
-                          value={serviceData.branch}
-                          onChange={(e) =>
-                            setServiceData({
-                              ...serviceData,
-                              branch: e.target.value,
-                            })
-                          }
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                        >
-                          <option value="Delhi">Delhi</option>
-                          <option value="Mumbai">Mumbai</option>
-                          <option value="Hyderabad">Hyderabad</option>
-                          <option value="Noida">Noida</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Date
-                        </label>
-                        <input
-                          type="date"
-                          value={serviceData.date}
-                          onChange={(e) =>
-                            setServiceData({
-                              ...serviceData,
-                              date: e.target.value,
-                            })
-                          }
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                        />
-                      </div>
-                      <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Remarks
-                        </label>
-                        <textarea
-                          value={serviceData.remarks}
-                          onChange={(e) =>
-                            setServiceData({
-                              ...serviceData,
-                              remarks: e.target.value,
-                            })
-                          }
-                          rows="2"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                          placeholder="Additional notes"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 sticky top-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                      Service Summary
-                    </h3>
-
-                    <div className="space-y-3">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Total Items:</span>
-                        <span className="font-semibold">
-                          {serviceItems.length}
-                        </span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Subtotal:</span>
-                        <span className="font-semibold">
-                          {formatCurrency(
-                            serviceItems.reduce(
-                              (sum, item) =>
-                                sum + (parseFloat(item.totalAmount) || 0),
-                              0,
-                            ),
-                          )}
-                        </span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Discount:</span>
-                        <span className="font-semibold text-red-600">
-                          -{formatCurrency(serviceData.discount)}
-                        </span>
-                      </div>
-                      <div className="border-t border-gray-200 pt-3 mt-3">
-                        <div className="flex justify-between items-center">
-                          <span className="text-lg font-bold text-gray-900">
-                            Total Amount:
-                          </span>
-                          <span className="text-2xl font-bold text-indigo-600">
-                            {formatCurrency(calculateServiceTotal())}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <button
-                      onClick={handleSaveService}
-                      disabled={loading}
-                      className="w-full mt-6 px-4 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 font-medium"
-                    >
-                      {loading ? (
-                        "Saving..."
-                      ) : (
-                        <div className="flex items-center justify-center gap-2">
-                          <Save className="w-4 h-4" />
-                          Save Services
-                        </div>
-                      )}
-                    </button>
-                  </div>
-                </div>
-              </div>
+              <RevenueSection
+                category="SERVICE"
+                data={serviceData}
+                onChange={setServiceData}
+                picker={picker}
+                items={serviceItems}
+                onItemsChange={setServiceItems}
+                patientLabel={
+                  serviceData.isWalkIn
+                    ? serviceData.patientName
+                    : patients.find((p) => p._id === serviceData.patient)?.personal?.name
+                }
+                onSave={handleSaveService}
+                saving={loading}
+                saveLabel="Save Services"
+                branches={MAIN_BRANCHES}
+              />
             )}
 
             {/* MEDICINE TAB - UPDATED WITH MULTIPLE ITEMS */}
             {activeTab === "medicine" && (
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2 space-y-6">
-                  <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                      Customer Information
-                    </h3>
-
-                    <div className="mb-4">
-                      <label className="flex items-center gap-2">
-                        <input
-                          type="checkbox"
-                          checked={medicineData.isWalkIn}
-                          onChange={(e) =>
-                            setMedicineData({
-                              ...medicineData,
-                              isWalkIn: e.target.checked,
-                            })
-                          }
-                          className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                        />
-                        <span className="text-sm font-medium text-gray-700">
-                          Walk-in Customer
-                        </span>
-                      </label>
-                    </div>
-
-                    {medicineData.isWalkIn ? (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Customer Name{" "}
-                            <span className="text-red-500">*</span>
-                          </label>
-                          <input
-                            type="text"
-                            value={medicineData.patientName}
-                            onChange={(e) =>
-                              setMedicineData({
-                                ...medicineData,
-                                patientName: e.target.value,
-                              })
-                            }
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-200"
-                            placeholder="Enter customer name"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Phone Number <span className="text-red-500">*</span>
-                          </label>
-                          <input
-                            type="tel"
-                            value={medicineData.patientPhone}
-                            onChange={(e) =>
-                              setMedicineData({
-                                ...medicineData,
-                                patientPhone: e.target.value,
-                              })
-                            }
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-200"
-                            placeholder="Enter phone number"
-                          />
-                        </div>
-                      </div>
-                    ) : (
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Select Patient <span className="text-red-500">*</span>
-                        </label>
-                        <SearchableSelect
-                          options={patients}
-                          value={medicineData.patient}
-                          onChange={(value) =>
-                            setMedicineData({
-                              ...medicineData,
-                              patient: value,
-                            })
-                          }
-                          placeholder="Search and select a patient..."
-                          valueKey="_id"
-                          formatOption={formatPatientOption}
-                        />
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Medicine Items Table */}
-                  <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-lg font-semibold text-gray-900">
-                        Medicine Items
-                      </h3>
-                      <button
-                        type="button"
-                        onClick={addMedicineItem}
-                        className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
-                      >
-                        <Plus size={18} />
-                        Add Medicine
-                      </button>
-                    </div>
-
-                    <div className="overflow-x-auto">
-                      <table className="w-full">
-                        <thead>
-                          <tr className="border-b border-gray-200">
-                            <th className="text-left py-3 px-2 text-sm font-semibold text-gray-700">
-                              #
-                            </th>
-                            <th className="text-left py-3 px-2 text-sm font-semibold text-gray-700 min-w-50">
-                              Medicine
-                            </th>
-                            <th className="text-left py-3 px-2 text-sm font-semibold text-gray-700">
-                              Quantity
-                            </th>
-                            <th className="text-left py-3 px-2 text-sm font-semibold text-gray-700">
-                              Per Unit Cost
-                            </th>
-                            <th className="text-left py-3 px-2 text-sm font-semibold text-gray-700">
-                              Total
-                            </th>
-                            <th className="text-center py-3 px-2 text-sm font-semibold text-gray-700">
-                              Action
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {medicineItems.map((item, index) => (
-                            <tr
-                              key={item.id}
-                              className="border-b border-gray-100"
-                            >
-                              <td className="py-3 px-2 text-sm text-gray-600">
-                                {index + 1}
-                              </td>
-                              <td className="py-3 px-2">
-                                <SearchableSelect
-                                  options={medicines}
-                                  value={item.medicineId}
-                                  onChange={(value) =>
-                                    updateMedicineItem(
-                                      item.id,
-                                      "medicineId",
-                                      value,
-                                    )
-                                  }
-                                  placeholder="Select medicine"
-                                  valueKey="_id"
-                                  formatOption={formatMedicineOption}
-                                  className="w-full"
-                                />
-                              </td>
-                              <td className="py-3 px-2">
-                                <input
-                                  type="number"
-                                  value={item.quantity}
-                                  onChange={(e) =>
-                                    updateMedicineItem(
-                                      item.id,
-                                      "quantity",
-                                      e.target.value,
-                                    )
-                                  }
-                                  min="1"
-                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                                />
-                              </td>
-                              <td className="py-3 px-2">
-                                <input
-                                  type="number"
-                                  value={item.perUnitCost}
-                                  onChange={(e) =>
-                                    updateMedicineItem(
-                                      item.id,
-                                      "perUnitCost",
-                                      e.target.value,
-                                    )
-                                  }
-                                  min="0"
-                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                                  placeholder="₹"
-                                />
-                              </td>
-                              <td className="py-3 px-2">
-                                <div className="font-semibold text-indigo-600">
-                                  {formatCurrency(item.totalAmount)}
-                                </div>
-                              </td>
-                              <td className="py-3 px-2 text-center">
-                                <button
-                                  type="button"
-                                  onClick={() => removeMedicineItem(item.id)}
-                                  disabled={medicineItems.length === 1}
-                                  className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                  <Trash2 size={18} />
-                                </button>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-
-                  {/* Transaction Details */}
-                  <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                      Transaction Details
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Discount (₹)
-                        </label>
-                        <input
-                          type="number"
-                          value={medicineData.discount}
-                          onChange={(e) =>
-                            setMedicineData({
-                              ...medicineData,
-                              discount: Number(e.target.value),
-                            })
-                          }
-                          min="0"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Payment Method
-                        </label>
-                        <select
-                          value={medicineData.method}
-                          onChange={(e) =>
-                            setMedicineData({
-                              ...medicineData,
-                              method: e.target.value,
-                            })
-                          }
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                        >
-                          <option value="cash">Cash</option>
-                          <option value="card">Card</option>
-                          <option value="upi">UPI</option>
-                          <option value="bajaj_loan">Bajaj Loan</option>
-                          <option value="fibe_loan">Fibe Loan</option>
-
-                          <option value="banking">Bank Transfer</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Transaction ID
-                          {getPaymentIdConfig(medicineData.method).required && (
-                            <span className="text-red-500 ml-1">*</span>
-                          )}
-                        </label>
-                        <input
-                          type="text"
-                          value={medicineData.paymentId}
-                          onChange={(e) =>
-                            setMedicineData({
-                              ...medicineData,
-                              paymentId: e.target.value,
-                            })
-                          }
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                          placeholder={
-                            getPaymentIdConfig(medicineData.method).placeholder
-                          }
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Branch
-                        </label>
-                        <select
-                          value={medicineData.branch}
-                          onChange={(e) =>
-                            setMedicineData({
-                              ...medicineData,
-                              branch: e.target.value,
-                            })
-                          }
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                        >
-                          <option value="Delhi">Delhi</option>
-                          <option value="Mumbai">Mumbai</option>
-                          <option value="Hyderabad">Hyderabad</option>
-                          <option value="Noida">Noida</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Date
-                        </label>
-                        <input
-                          type="date"
-                          value={medicineData.date}
-                          onChange={(e) =>
-                            setMedicineData({
-                              ...medicineData,
-                              date: e.target.value,
-                            })
-                          }
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                        />
-                      </div>
-                      <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Remarks
-                        </label>
-                        <textarea
-                          value={medicineData.remarks}
-                          onChange={(e) =>
-                            setMedicineData({
-                              ...medicineData,
-                              remarks: e.target.value,
-                            })
-                          }
-                          rows="2"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                          placeholder="Additional notes"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 sticky top-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                      Medicine Summary
-                    </h3>
-
-                    <div className="space-y-3">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Total Items:</span>
-                        <span className="font-semibold">
-                          {medicineItems.length}
-                        </span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Subtotal:</span>
-                        <span className="font-semibold">
-                          {formatCurrency(
-                            medicineItems.reduce(
-                              (sum, item) =>
-                                sum + (parseFloat(item.totalAmount) || 0),
-                              0,
-                            ),
-                          )}
-                        </span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Discount:</span>
-                        <span className="font-semibold text-red-600">
-                          -{formatCurrency(medicineData.discount)}
-                        </span>
-                      </div>
-                      <div className="border-t border-gray-200 pt-3 mt-3">
-                        <div className="flex justify-between items-center">
-                          <span className="text-lg font-bold text-gray-900">
-                            Total Amount:
-                          </span>
-                          <span className="text-2xl font-bold text-indigo-600">
-                            {formatCurrency(calculateMedicineTotal())}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <button
-                      onClick={handleSaveMedicine}
-                      disabled={loading}
-                      className="w-full mt-6 px-4 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 font-medium"
-                    >
-                      {loading ? (
-                        "Saving..."
-                      ) : (
-                        <div className="flex items-center justify-center gap-2">
-                          <Save className="w-4 h-4" />
-                          Save Medicines
-                        </div>
-                      )}
-                    </button>
-                  </div>
-                </div>
-              </div>
+              <RevenueSection
+                category="MEDICINE"
+                data={medicineData}
+                onChange={setMedicineData}
+                picker={picker}
+                items={medicineItems}
+                onItemsChange={setMedicineItems}
+                medicines={medicines}
+                patientLabel={
+                  medicineData.isWalkIn
+                    ? medicineData.patientName
+                    : patients.find((p) => p._id === medicineData.patient)?.personal?.name
+                }
+                onSave={handleSaveMedicine}
+                saving={loading}
+                saveLabel="Save Medicines"
+                branches={MAIN_BRANCHES}
+              />
             )}
 
             {/* EXPENSE TAB */}
             {activeTab === "expense" && (
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2 space-y-6">
-                  <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                      Vendor Information
-                    </h3>
-
-                    <div className="mb-4">
-                      <label className="flex items-center gap-2">
-                        <input
-                          type="checkbox"
-                          checked={!expenseData.isVendor}
-                          onChange={(e) =>
-                            setExpenseData({
-                              ...expenseData,
-                              isVendor: !e.target.checked,
-                            })
-                          }
-                          className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                        />
-                        <span className="text-sm font-medium text-gray-700">
-                          Enter Manually
-                        </span>
-                      </label>
-                    </div>
-
-                    {expenseData.isVendor ? (
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Select Vendor <span className="text-red-500">*</span>
-                        </label>
-                        <select
-                          value={expenseData.vendorId}
-                          onChange={(e) =>
-                            setExpenseData({
-                              ...expenseData,
-                              vendorId: e.target.value,
-                            })
-                          }
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-200"
-                        >
-                          <option value="">Choose a vendor</option>
-                          {vendors.map((vendor) => (
-                            <option key={vendor._id} value={vendor._id}>
-                              {vendor.name} - {vendor.contact}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    ) : (
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Payee Name <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                          type="text"
-                          value={expenseData.expenseGiverName}
-                          onChange={(e) =>
-                            setExpenseData({
-                              ...expenseData,
-                              expenseGiverName: e.target.value,
-                            })
-                          }
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-200"
-                          placeholder="Enter payee name"
-                        />
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                      Expense Details
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Expense Category{" "}
-                          <span className="text-red-500">*</span>
-                        </label>
-                        <select
-                          value={expenseData.expenseCategory}
-                          onChange={(e) =>
-                            setExpenseData({
-                              ...expenseData,
-                              expenseCategory: e.target.value,
-                              expenseType: "",
-                            })
-                          }
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                        >
-                          <option value="">Select Category</option>
-                          {EXPENSE_CATEGORIES.map((cat) => (
-                            <option key={cat} value={cat}>
-                              {cat}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Expense Type{" "}
-                          <span className="text-red-500">*</span>
-                        </label>
-                        <select
-                          value={expenseData.expenseType}
-                          onChange={(e) =>
-                            setExpenseData({
-                              ...expenseData,
-                              expenseType: e.target.value,
-                            })
-                          }
-                          disabled={!expenseData.expenseCategory}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg disabled:bg-gray-100"
-                        >
-                          <option value="">Select Type</option>
-                          {getExpenseTypes(expenseData.expenseCategory).map(
-                            (type) => (
-                              <option key={type} value={type}>
-                                {type}
-                              </option>
-                            ),
-                          )}
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Amount (₹) <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                          type="number"
-                          value={expenseData.amount}
-                          onChange={(e) =>
-                            setExpenseData({
-                              ...expenseData,
-                              amount: e.target.value,
-                            })
-                          }
-                          min="0"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                          placeholder="Enter amount"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                      Transaction Details
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Payment Method
-                        </label>
-                        <select
-                          value={expenseData.method}
-                          onChange={(e) =>
-                            setExpenseData({
-                              ...expenseData,
-                              method: e.target.value,
-                            })
-                          }
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                        >
-                          <option value="cash">Cash</option>
-                          <option value="card">Card</option>
-                          <option value="upi">UPI</option>
-                          <option value="bajaj_loan">Bajaj Loan</option>
-                          <option value="fibe_loan">Fibe Loan</option>
-
-                          <option value="banking">Bank Transfer</option>
-                          <option value="hdfc_skin_bank_transfer">HDFC Skin Bank Transfer</option>
-                          <option value="hdfc_ryan_medihub_bank_transfer">HDFC Ryan Medihub Bank Transfer</option>
-                          <option value="icici_medihub_bank_transfer">ICICI Medihub Bank Transfer</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Transaction ID
-                          {getPaymentIdConfig(expenseData.method).required && (
-                            <span className="text-red-500 ml-1">*</span>
-                          )}
-                        </label>
-                        <input
-                          type="text"
-                          value={expenseData.paymentId}
-                          onChange={(e) =>
-                            setExpenseData({
-                              ...expenseData,
-                              paymentId: e.target.value,
-                            })
-                          }
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                          placeholder={
-                            getPaymentIdConfig(expenseData.method).placeholder
-                          }
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Branch
-                        </label>
-                        <select
-                          value={expenseData.branch}
-                          onChange={(e) =>
-                            setExpenseData({
-                              ...expenseData,
-                              branch: e.target.value,
-                            })
-                          }
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                        >
-                          <option value="Delhi">Delhi</option>
-                          <option value="Mumbai">Mumbai</option>
-                          <option value="Hyderabad">Hyderabad</option>
-                          <option value="Noida">Noida</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Date
-                        </label>
-                        <input
-                          type="date"
-                          value={expenseData.date}
-                          onChange={(e) =>
-                            setExpenseData({
-                              ...expenseData,
-                              date: e.target.value,
-                            })
-                          }
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                        />
-                      </div>
-                      <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Remarks
-                        </label>
-                        <textarea
-                          value={expenseData.remarks}
-                          onChange={(e) =>
-                            setExpenseData({
-                              ...expenseData,
-                              remarks: e.target.value,
-                            })
-                          }
-                          rows="2"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                          placeholder="Additional notes"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 sticky top-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                      Expense Summary
-                    </h3>
-
-                    <div className="space-y-3">
-                      <div className="border-t border-gray-200 pt-3 mt-3">
-                        <div className="flex justify-between items-center">
-                          <span className="text-lg font-bold text-gray-900">
-                            Total Amount:
-                          </span>
-                          <span className="text-2xl font-bold text-indigo-600">
-                            {formatCurrency(calculateExpenseTotal())}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <button
-                      onClick={handleSaveExpense}
-                      disabled={loading}
-                      className="w-full mt-6 px-4 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 font-medium"
-                    >
-                      {loading ? (
-                        "Saving..."
-                      ) : (
-                        <div className="flex items-center justify-center gap-2">
-                          <Save className="w-4 h-4" />
-                          Save Expense
-                        </div>
-                      )}
-                    </button>
-                  </div>
-                </div>
-              </div>
+              <DirectExpenseSection
+                data={expenseData}
+                onChange={setExpenseData}
+                vendors={vendors}
+                onSave={handleSaveExpense}
+                saving={loading}
+                saveLabel="Save Expense"
+                branches={MAIN_BRANCHES}
+              />
             )}
           </div>
         </div>

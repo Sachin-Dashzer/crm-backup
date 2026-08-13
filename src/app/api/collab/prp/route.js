@@ -5,6 +5,7 @@ import connectDB from "@/lib/db";
 import Transactions from "@/models/Transactions";
 import Patient from "@/models/Patient";
 import { resolveBranchFilter } from "@/lib/branches";
+import { UNSETTLED_METHODS } from "@/constants/bankRouting";
 
 const PROCEDURES = ["PRP", "GFC", "Canacot", "Biotin"];
 
@@ -114,13 +115,17 @@ export async function GET(req) {
       status: "paid",
     }));
 
-    const totalRevenue = paidList.reduce((s, t) => s + (t.amount || 0), 0);
+    // paidList itself stays unfiltered — every row still shows, unsettled ones included (badge
+    // in the UI, per §2.5). Only the revenue TOTALS below exclude paid_to_external — that money
+    // isn't ours yet.
+    const settledPaidList = paidList.filter((t) => !UNSETTLED_METHODS.includes(t.method));
+    const totalRevenue = settledPaidList.reduce((s, t) => s + (t.amount || 0), 0);
     const byType = {};
     PROCEDURES.forEach((proc) => {
       byType[proc] = {
         paid:    paidList.filter((r) => r.procedure === proc).length,
         unpaid:  unpaidSessions.filter((r) => r.procedure === proc).length,
-        revenue: paidList.filter((r) => r.procedure === proc).reduce((s, t) => s + (t.amount || 0), 0),
+        revenue: settledPaidList.filter((r) => r.procedure === proc).reduce((s, t) => s + (t.amount || 0), 0),
       };
     });
 

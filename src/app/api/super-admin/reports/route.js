@@ -10,6 +10,7 @@ import Leads from "@/models/Leads";
 import Interviewer from "@/models/Interviewer";
 import Vendor from "@/models/Vendor";
 import { ALL_BRANCHES } from "@/lib/branches";
+import { UNSETTLED_METHODS } from "@/constants/bankRouting";
 
 export async function GET(request) {
   try {
@@ -1057,7 +1058,7 @@ async function generateProcedureRevenueReport({
   branch,
   procedureFilter,
 }) {
-  const query = { costType: "Revenue", ...txDateFilter };
+  const query = { costType: "Revenue", method: { $nin: UNSETTLED_METHODS }, ...txDateFilter };
   if (branch && branch !== "All") query.branch = branch;
   if (procedureFilter) query.procedure = procedureFilter;
 
@@ -1111,6 +1112,7 @@ async function generateBranchComparisonReport({ visitDateFilter, txDateFilter })
               ...txDateFilter,
               branch: b,
               costType: "Revenue",
+              method: { $nin: UNSETTLED_METHODS },
             },
           },
           { $group: { _id: null, total: { $sum: "$amount" } } },
@@ -1121,6 +1123,7 @@ async function generateBranchComparisonReport({ visitDateFilter, txDateFilter })
               ...txDateFilter,
               branch: b,
               costType: "Expenses",
+              method: { $nin: UNSETTLED_METHODS },
             },
           },
           { $group: { _id: null, total: { $sum: "$amount" } } },

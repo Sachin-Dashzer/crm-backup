@@ -4,6 +4,8 @@ import { authOptions } from "../../../auth/[...nextauth]/route";
 import Transaction from "@/models/Transactions";
 import Vendor from "@/models/Vendor";
 import connectDB from "@/lib/db";
+import { periodLockResponse } from "@/lib/periodLock";
+import { withDbTransaction, syncExternalPartyOnUpdate } from "@/lib/externalPartyDerivation";
 import { getExpenseTypes } from "@/constants/expenseCategories";
 
 export async function PUT(req) {
@@ -27,6 +29,8 @@ export async function PUT(req) {
       branch,
       date,
       remarks,
+      receipts,
+      furtherMode,
     } = body;
 
     // Validation
@@ -68,6 +72,12 @@ export async function PUT(req) {
       );
     }
 
+    // Closed-period guard — checks both the current position and where the edit moves it.
+    const locked = await periodLockResponse(existingTransaction, { date, furtherMode });
+    if (locked) {
+      return NextResponse.json(locked.body, { status: locked.status });
+    }
+
     // Check if it's an expense transaction
     if (existingTransaction.transactionCategory !== "EXPENSE") {
       return NextResponse.json(
@@ -101,6 +111,7 @@ export async function PUT(req) {
     trackField("branch", existingTransaction.branch, branch);
     trackField("date", existingTransaction.date, date);
     trackField("remarks", existingTransaction.remarks, remarks);
+    trackField("furtherMode", existingTransaction.furtherMode, furtherMode);
 
     // Handle vendor reference changes
     const oldVendorId = existingTransaction.expenseGiver?.vendorId || existingTransaction.vendor;
@@ -178,7 +189,9 @@ export async function PUT(req) {
     existingTransaction.branch = branch;
     existingTransaction.date = date;
     existingTransaction.remarks = remarks || "";
+    existingTransaction.furtherMode = furtherMode || "";
     existingTransaction.vendor = expenseGiver.type === "VENDOR" ? expenseGiver.vendorId : null; // For backward compatibility
+    if (receipts !== undefined) existingTransaction.receipts = receipts || [];
 
     // Add edit tracking
     if (updatedFields.length > 0) {
@@ -196,7 +209,28 @@ export async function PUT(req) {
       existingTransaction.lastEditedBy = editorInfo;
     }
 
-    await existingTransaction.save();
+    // Editing into / out of / within "Paid by Other" has to move the linked Payable with it, or
+    // the cost leaves the books entirely — see syncExternalPartyOnUpdate.
+    try {
+      await withDbTransaction(async (dbSession) => {
+        const patch = await syncExternalPartyOnUpdate({
+          session: dbSession,
+          transaction: existingTransaction,
+          nextMethod: existingTransaction.method,
+          nextAmount: existingTransaction.amount,
+          nextExternalParty: body.externalParty,
+          branch: existingTransaction.branch,
+          transactionCategory: "EXPENSE",
+          relatedPatient: existingTransaction.patient,
+          actor: { name: session.user.name, email: session.user.email, branch: session.user.branch },
+        });
+        if (patch) existingTransaction.set(patch);
+        await existingTransaction.save({ session: dbSession });
+      });
+    } catch (syncError) {
+      // A deliberate refusal (money already settled against the linked payable), not a fault.
+      return NextResponse.json({ error: syncError.message }, { status: 400 });
+    }
 
     return NextResponse.json({
       success: true,

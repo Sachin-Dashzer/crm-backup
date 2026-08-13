@@ -27,7 +27,17 @@ const employeeSchema = new mongoose.Schema({
   },
   patient: [{
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Patient"  }]
+    ref: "Patient"  }],
+  // Current base-pay info, used to pre-fill the expense form's Salary section.
+  // NOT where individual salary payments/history live — see Payable + Transactions.
+  salaryStructure: {
+    baseSalary: { type: Number, default: 0, min: 0 },
+    salaryType: { type: String, enum: ["Monthly", "Daily", "Hourly"], default: "Monthly" },
+    effectiveFrom: { type: Date, default: Date.now }
+  },
+  // Usual per-patient incentive amount, used to pre-fill the Incentive
+  // sub-tab's amount field — overridable per entry.
+  incentiveRate: { type: Number, default: 0, min: 0 }
 }, {
   timestamps: true
 });

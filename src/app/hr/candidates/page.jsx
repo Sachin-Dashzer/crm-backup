@@ -3,6 +3,8 @@
 import { useState, useEffect, useCallback, useMemo, useRef, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import HRSidebar from "@/components/Sidebars/HRSidebar";
+import { byName } from "@/lib/sortOptions";
+import SearchableSelect from "@/components/SearchableSelect";
 import {
   Plus, Search, Eye, Pencil, Trash2, X, Star, Filter,
   ChevronLeft, ChevronRight, UserCheck, UserX, Clock,
@@ -541,11 +543,16 @@ function FilterDrawer({ filters, setFilters, positions, sources, hrEmployees, on
           </F>
 
           <F label="Assigned HR">
-            <select value={filters.assignedHr} onChange={(e) => setFilters((f) => ({ ...f, assignedHr: e.target.value }))} className={sel}>
-              <option value="">All HR</option>
-              <option value="unassigned">Unassigned</option>
-              {hrEmployees.map((e) => <option key={e._id} value={e._id}>{e.name}</option>)}
-            </select>
+            {/* Clearing the selection is what "All HR" means, so it's the placeholder rather
+                than an option; "Unassigned" is a real filter value and stays in the list. */}
+            <SearchableSelect
+              options={[{ _id: "unassigned", name: "Unassigned" }, ...hrEmployees]}
+              value={filters.assignedHr}
+              onChange={(v) => setFilters((f) => ({ ...f, assignedHr: v }))}
+              placeholder="All HR"
+              valueKey="_id"
+              displayKey="name"
+            />
           </F>
 
           <F label="Experience Type">
@@ -564,10 +571,12 @@ function FilterDrawer({ filters, setFilters, positions, sources, hrEmployees, on
           </F>
 
           <F label="Position">
-            <select value={filters.position} onChange={(e) => setFilters((f) => ({ ...f, position: e.target.value }))} className={sel}>
-              <option value="">All Positions</option>
-              {positions.map((p) => <option key={p}>{p}</option>)}
-            </select>
+            <SearchableSelect
+              options={positions.map((p) => ({ value: p, label: p }))}
+              value={filters.position}
+              onChange={(v) => setFilters((f) => ({ ...f, position: v }))}
+              placeholder="All Positions"
+            />
           </F>
 
           <F label="Interview Date Range">
@@ -672,8 +681,8 @@ function CandidatesContent() {
   useEffect(() => { setPage(1); }, [search, activeStatus, filters]);
 
   /* derived */
-  const positions = useMemo(() => [...new Set(candidates.map((c) => c.position).filter(Boolean))].sort(), [candidates]);
-  const sources   = useMemo(() => [...new Set(candidates.map((c) => c.source).filter(Boolean))].sort(), [candidates]);
+  const positions = useMemo(() => [...new Set(candidates.map((c) => c.position).filter(Boolean))].sort(byName), [candidates]);
+  const sources   = useMemo(() => [...new Set(candidates.map((c) => c.source).filter(Boolean))].sort(byName), [candidates]);
 
   const statusCounts = useMemo(() => {
     const counts = { "": candidates.length };

@@ -5,6 +5,7 @@ import dbConnect from "@/lib/db";
 import Stock from "@/models/Stock";
 import Transactions from "@/models/Transactions";
 import Vendor from "@/models/Vendor";
+import { UNSETTLED_METHODS } from "@/constants/bankRouting";
 
 export async function GET(req) {
   try {
@@ -184,9 +185,14 @@ export async function GET(req) {
         s.unitsPurchased += ev.quantity;
         s.totalCost      += ev.totalAmount;
       } else {
-        s.unitsSold    += ev.quantity;
-        s.totalRevenue += ev.totalAmount;
-        s.totalProfit  += (ev.profit || 0);
+        // Every sale event still shows in `events` (with its method, badged in the UI) — only
+        // the revenue/profit TOTALS below exclude paid_to_external, since that money isn't
+        // ours yet. Units sold still counts — the stock genuinely left the shelf.
+        s.unitsSold += ev.quantity;
+        if (!UNSETTLED_METHODS.includes(ev.method)) {
+          s.totalRevenue += ev.totalAmount;
+          s.totalProfit  += (ev.profit || 0);
+        }
       }
     }
 

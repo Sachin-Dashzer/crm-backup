@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/db";
+import { periodLockResponse } from "@/lib/periodLock";
 import Transaction from "@/models/Transactions";
 import Stock from "@/models/Stock";
 import DeleteLog from "@/models/DeleteLog";
@@ -66,6 +67,16 @@ export async function DELETE(req) {
       }
 
       transactionsToDelete = [transaction];
+    }
+
+    // Closed-period guard. A batch delete spans several rows, so EVERY row is checked — if
+    // any one of them sits in a frozen period the whole batch is refused, rather than
+    // deleting the open rows and leaving the batch half-gone.
+    for (const txn of transactionsToDelete) {
+      const locked = await periodLockResponse(txn);
+      if (locked) {
+        return NextResponse.json(locked.body, { status: locked.status });
+      }
     }
 
     // Restore stock for all transactions
