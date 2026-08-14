@@ -30,6 +30,8 @@ export default function ContraManager() {
   const [status, setStatus] = useState("active");
   const [account, setAccount] = useState("");
   const [branch, setBranch] = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState({});
 
@@ -41,6 +43,8 @@ export default function ContraManager() {
       if (status === "cancelled") p.set("onlyCancelled", "true");
       if (account) p.set("account", account);
       if (branch) p.set("branch", branch);
+      if (dateFrom) p.set("from", dateFrom);
+      if (dateTo) p.set("to", dateTo);
       const res = await fetch(`/api/account-transfers/list?${p}`);
       const d = await res.json();
       if (res.ok) setRows(d.transfers || []);
@@ -50,7 +54,7 @@ export default function ContraManager() {
     } finally {
       setLoading(false);
     }
-  }, [status, account, branch, toast]);
+  }, [status, account, branch, dateFrom, dateTo, toast]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -201,7 +205,7 @@ export default function ContraManager() {
           </button>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-3 mt-4">
           <div>
             <label className="block text-xs font-medium text-gray-500 mb-1.5">Status</label>
             <div className="flex gap-1">
@@ -235,6 +239,24 @@ export default function ContraManager() {
               <option value="">All branches</option>
               {ALL_BRANCHES.map((b) => <option key={b} value={b}>{b}</option>)}
             </select>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1.5">From date</label>
+            <input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1.5">To date</label>
+            <input
+              type="date"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+            />
           </div>
         </div>
       </div>

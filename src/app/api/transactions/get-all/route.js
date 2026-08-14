@@ -27,6 +27,9 @@ export async function GET(request) {
     const search        = searchParams.get("search")        || "";
     const paymentMethod = searchParams.get("paymentMethod") || "";
     const procedure     = searchParams.get("procedure")     || "";
+    const furtherMode    = searchParams.get("furtherMode")    || "";
+    const expenseCategory = searchParams.get("expenseCategory") || "";
+    const expenseType    = searchParams.get("expenseType")    || "";
     const approvalStatus = searchParams.get("approvalStatus") || "";
     const payableId      = searchParams.get("payableId")      || "";
     const receivableId   = searchParams.get("receivableId")   || "";
@@ -95,6 +98,20 @@ export async function GET(request) {
       query.procedure = { $regex: new RegExp(`^${procedure}$`, "i") };
     }
 
+    // Further Mode — destination/source account (revenue "Received In" / expense "Paid From")
+    if (furtherMode) {
+      query.furtherMode = { $regex: new RegExp(`^${furtherMode}$`, "i") };
+    }
+
+    // Expense Category / Type — EXPENSE transactions only. `expense` holds the top-level
+    // category (see src/models/Transactions.js); expenseType the sub-category under it.
+    if (expenseCategory) {
+      query.expense = { $regex: new RegExp(`^${expenseCategory}$`, "i") };
+    }
+    if (expenseType) {
+      query.expenseType = { $regex: new RegExp(`^${expenseType}$`, "i") };
+    }
+
     // Text search: look up matching Patient IDs first, then OR with direct fields
     if (search) {
       const searchRegex = { $regex: search, $options: "i" };
@@ -135,6 +152,9 @@ export async function GET(request) {
     const statsQuery = { ...branchFilter, approvalStatus: { $nin: ["PENDING", "REJECTED"] } };
     if (query.date)        statsQuery.date   = query.date;
     if (query.procedure)   statsQuery.procedure = query.procedure;
+    if (query.furtherMode) statsQuery.furtherMode = query.furtherMode;
+    if (query.expense)     statsQuery.expense = query.expense;
+    if (query.expenseType) statsQuery.expenseType = query.expenseType;
     // These are TOTALS (the category tab chips), not a list — paid_to_external/paid_by_other
     // rows must never count here even though they still show in the list below. Combined with
     // an explicit paymentMethod filter via $and, since both constrain the same `method` field.

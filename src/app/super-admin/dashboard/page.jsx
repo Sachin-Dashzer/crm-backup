@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import {
   AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, Cell, PieChart, Pie, Legend,
@@ -10,6 +11,7 @@ import {
   ClipboardList, Activity, TrendingUp, Stethoscope,
   Crown, ChevronDown, Briefcase, Calendar, MapPin,
   RefreshCw, HeartPulse, Scissors, BarChart2, CreditCard, Droplets,
+  Wallet, ArrowDownCircle, ArrowUpCircle, ExternalLink,
 } from "lucide-react";
 import SuperAdminSidebar from "@/components/Sidebars/SuperAdminSidebar";
 import { ALL_BRANCHES } from "@/lib/branches";
@@ -176,12 +178,40 @@ function DashboardSkeleton() {
    Main Page
 ───────────────────────────────────────────── */
 export default function SuperAdminDashboard() {
+  const router = useRouter();
   const [branch, setBranch]       = useState("All");
   const [dateRange, setDateRange] = useState("Today");
   const [custom, setCustom]       = useState({ from: "", to: "" });
   const [loading, setLoading]     = useState(true);
   const [data, setData]           = useState(null);
   const [error, setError]         = useState(null);
+
+  // Receivables/payables are running balances, not period-scoped like the rest of the
+  // dashboard — fetched independently, only re-sliced by branch.
+  const [finance, setFinance]         = useState(null);
+  const [financeLoading, setFinanceLoading] = useState(true);
+
+  const fetchFinance = useCallback(async () => {
+    setFinanceLoading(true);
+    try {
+      const bq = branch !== "All" ? `?branch=${encodeURIComponent(branch)}` : "";
+      const [recRes, payRes] = await Promise.all([
+        fetch(`/api/receivables/summary${bq}`),
+        fetch(`/api/payables/summary${bq}`),
+      ]);
+      const [recJson, payJson] = await Promise.all([recRes.json(), payRes.json()]);
+      setFinance({
+        receivable: recJson.success ? recJson.overall : null,
+        payable: payJson.success ? payJson.overall : null,
+      });
+    } catch {
+      setFinance(null);
+    } finally {
+      setFinanceLoading(false);
+    }
+  }, [branch]);
+
+  useEffect(() => { fetchFinance(); }, [fetchFinance]);
 
   const fetchData = useCallback(async () => {
     if (dateRange === "Custom" && !custom.from) return;
@@ -420,6 +450,39 @@ export default function SuperAdminDashboard() {
                   <KpiCard title="Stock Items"      value={fmt(d.totalStockItems)}  icon={Package}     color="indigo" subtitle={`${fmt(d.totalStockQty)} units`} />
                   <KpiCard title="Stock Value"      value={rupee(d.totalStockValue)}icon={BarChart2}   color="amber"  subtitle="MRP × Qty" />
                 </div>
+              </div>
+
+              {/* ── Receivables & Payables ── */}
+              <div>
+                <SectionHeader icon={Wallet} title="Receivables & Payables" color="text-teal-600" accent="bg-teal-50" />
+                {financeLoading ? (
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-28" />)}
+                  </div>
+                ) : (
+                  <>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                      <KpiCard title="Total Receivable"   value={rupee(finance?.receivable?.totalReceivable)} icon={ArrowDownCircle} color="green" subtitle={`${fmt(finance?.receivable?.count ?? 0)} open`} />
+                      <KpiCard title="Pending to Receive" value={rupee(finance?.receivable?.totalPending)}    icon={IndianRupee}     color="amber" subtitle="Outstanding" />
+                      <KpiCard title="Total Payable"      value={rupee(finance?.payable?.totalOwed)}          icon={ArrowUpCircle}   color="rose"  subtitle={`${fmt(finance?.payable?.count ?? 0)} open`} />
+                      <KpiCard title="Pending to Pay"     value={rupee(finance?.payable?.totalPending)}       icon={IndianRupee}     color="red"   subtitle="Outstanding" />
+                    </div>
+                    <div className="flex flex-wrap gap-3 mt-3">
+                      <button
+                        onClick={() => router.push("/admin/receivables")}
+                        className="flex-1 min-w-40 flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-xs font-semibold text-gray-700 hover:bg-emerald-50 hover:border-emerald-200 hover:text-emerald-700 shadow-sm transition-colors"
+                      >
+                        View Receivables <ExternalLink className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => router.push("/admin/payables")}
+                        className="flex-1 min-w-40 flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-xs font-semibold text-gray-700 hover:bg-rose-50 hover:border-rose-200 hover:text-rose-700 shadow-sm transition-colors"
+                      >
+                        View Payables <ExternalLink className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
 
               {/* ── Daily Revenue Chart ── */}
