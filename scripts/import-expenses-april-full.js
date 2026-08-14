@@ -1,11 +1,25 @@
 import mongoose from "mongoose";
 import fs from "fs";
-// import dotenv from "dotenv";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { EXPENSE_CATEGORY_TREE } from "../src/constants/expenseCategories.js";
 import { ALL_BRANCHES } from "../src/lib/branches.js";
 import { ACCOUNTS } from "../src/constants/bankRouting.js";
 
-// dotenv.config({ path: ".env.local" });
+// Repo root, not process.cwd() — this script lives in scripts/, and .env/.env.local live one
+// level up, regardless of which directory it's invoked from.
+const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+
+function readMongoUri() {
+  for (const file of [".env.local", ".env"]) {
+    const p = path.resolve(REPO_ROOT, file);
+    if (!fs.existsSync(p)) continue;
+    const m = fs.readFileSync(p, "utf8").match(/^\s*MONGODB_URI\s*=\s*(.+)\s*$/m);
+    if (m) return m[1].trim().replace(/^["']|["']$/g, "");
+  }
+  if (process.env.MONGODB_URI) return process.env.MONGODB_URI;
+  throw new Error("MONGODB_URI not found in .env.local, .env, or the environment");
+}
 
 // ---------------------------------------------------------------------------
 // Embedded data - 4411 rows
@@ -7387,12 +7401,7 @@ const args = process.argv.slice(2);
 const APPLY = args.includes("--apply");
 const ALLOW_DUPES = args.includes("--allow-duplicates");
 
-const MONGODB_URI =
-  "mongodb://sachindashzer:user8520@ac-pu86ixj-shard-00-00.hwjor1r.mongodb.net:27017,ac-pu86ixj-shard-00-01.hwjor1r.mongodb.net:27017,ac-pu86ixj-shard-00-02.hwjor1r.mongodb.net:27017/?ssl=true&replicaSet=atlas-ool7b4-shard-0&authSource=admin&appName=crm";
-if (!MONGODB_URI) {
-  console.error("MONGODB_URI missing in .env.local");
-  process.exit(1);
-}
+const MONGODB_URI = readMongoUri();
 
 const VALID_METHODS = [
   "cash",
@@ -7559,7 +7568,7 @@ async function run() {
   // --- build documents ---
   const docs = ENTRIES.map((e) => ({
     transactionCategory: "EXPENSE",
-    costType: "Expense",
+    costType: "Expenses",
     approvalStatus: "APPROVED",
     date: new Date(e.date),
     branch: e.branch,

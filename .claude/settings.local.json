@@ -203,7 +203,12 @@
       "Bash(node scripts/_verify_closebook_link2.mjs)",
       "Bash(node scripts/import-contra-entries-april.js)",
       "Bash(node --check scripts/import-contra-entries-april.js)",
-      "Bash(node import-contra-entries-april.js)"
+      "Bash(node import-contra-entries-april.js)",
+      "Bash(node backfill-bank-routing.mjs --overwrite)",
+      "Bash(node backfill-bank-routing.mjs --overwrite --apply)",
+      "Bash(node _check-costtype.mjs)",
+      "Bash(node fix-costtype-typo.mjs)",
+      "Bash(node fix-costtype-typo.mjs --apply)"
     ],
     "additionalDirectories": [
       "c:\\dashzer\\ryan-crm\\src\\app\\api\\reception",
