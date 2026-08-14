@@ -10,6 +10,14 @@ import "@/models/Stock";
 import "@/models/Vendor";
 import "@/models/Employee";
 
+// Regex-metacharacter-safe — several account names carry literal ( ) (see the furtherMode
+// filter below), and any dropdown value could in principle include one.
+const escapeRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+// Sentinel for the Further Mode filter's "Untracked" option — rows with no account recorded at
+// all, never a real account name (so it can't collide with one, however accounts get renamed).
+const UNTRACKED_FURTHER_MODE = "__UNTRACKED__";
+
 export async function GET(request) {
   try {
     const session = await getServerSession(authOptions);
@@ -90,26 +98,33 @@ export async function GET(request) {
 
     // Payment method
     if (paymentMethod) {
-      query.method = { $regex: new RegExp(`^${paymentMethod}$`, "i") };
+      query.method = { $regex: new RegExp(`^${escapeRegex(paymentMethod)}$`, "i") };
     }
 
     // Procedure
     if (procedure) {
-      query.procedure = { $regex: new RegExp(`^${procedure}$`, "i") };
+      query.procedure = { $regex: new RegExp(`^${escapeRegex(procedure)}$`, "i") };
     }
 
-    // Further Mode — destination/source account (revenue "Received In" / expense "Paid From")
-    if (furtherMode) {
-      query.furtherMode = { $regex: new RegExp(`^${furtherMode}$`, "i") };
+    // Further Mode — destination/source account (revenue "Received In" / expense "Paid From").
+    // Several account names carry literal parentheses (e.g. "Cash ( backend )", "Paytm ( Delhi
+    // T44P )") — unescaped, those are regex grouping syntax, not literal characters, so the
+    // filter would silently match nothing for them. escapeRegex is what makes this literal.
+    if (furtherMode === UNTRACKED_FURTHER_MODE) {
+      // Missing is equivalent to null for Mongo equality, so this also catches rows where the
+      // field was never set at all, not just ones explicitly stored as "" or null.
+      query.furtherMode = { $in: ["", null] };
+    } else if (furtherMode) {
+      query.furtherMode = { $regex: new RegExp(`^${escapeRegex(furtherMode)}$`, "i") };
     }
 
     // Expense Category / Type — EXPENSE transactions only. `expense` holds the top-level
     // category (see src/models/Transactions.js); expenseType the sub-category under it.
     if (expenseCategory) {
-      query.expense = { $regex: new RegExp(`^${expenseCategory}$`, "i") };
+      query.expense = { $regex: new RegExp(`^${escapeRegex(expenseCategory)}$`, "i") };
     }
     if (expenseType) {
-      query.expenseType = { $regex: new RegExp(`^${expenseType}$`, "i") };
+      query.expenseType = { $regex: new RegExp(`^${escapeRegex(expenseType)}$`, "i") };
     }
 
     // Text search: look up matching Patient IDs first, then OR with direct fields

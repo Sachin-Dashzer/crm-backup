@@ -5,6 +5,7 @@ import AdminSidebar from "@/components/Sidebars/Sidebar";
 import MetricCard from "@/components/MetricCard";
 import SearchableSelect from "@/components/SearchableSelect";
 import CollabCaseForm from "@/components/CollabCaseForm";
+import BankRoutingFields from "@/components/BankRoutingFields";
 import { useToast } from "@/components/Toast";
 import { COLLAB_BRANCHES } from "@/lib/branches";
 import { formatCurrency, formatDate, StatusBadge } from "@/lib/financeUI";
@@ -813,6 +814,13 @@ function SettleModal({ clinic, balance, openCases, onClose, onSuccess, toast }) 
   const [mode, setMode] = useState("banking");
   const [reference, setReference] = useState("");
   const [remarks, setRemarks] = useState("");
+  // Bank routing — the same "which account did this land in / leave from" fields every other
+  // transaction form collects (see BankRoutingFields). This settlement generates a real
+  // Transactions row (see settlements/create/route.js), and without these it landed as
+  // "Untracked" in the Further Mode filter with no method/paymentId either — same gap this form
+  // is being fixed for.
+  const [receiptMode, setReceiptMode] = useState("");
+  const [furtherMode, setFurtherMode] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   // Optional per-case revenue allocation — THEY_PAID only. Cases with a
@@ -840,6 +848,12 @@ function SettleModal({ clinic, balance, openCases, onClose, onSuccess, toast }) 
       toast.error("Allocated amounts across cases exceed the settlement amount");
       return;
     }
+    // Same requirement as every other transaction entry form — cash is the only method with no
+    // independently-verifiable trail, everything else needs one.
+    if (mode !== "cash" && !reference.trim()) {
+      toast.error("Enter the transaction ID / reference for this settlement");
+      return;
+    }
     setSubmitting(true);
     try {
       const coveredCases = Object.entries(allocations)
@@ -857,6 +871,8 @@ function SettleModal({ clinic, balance, openCases, onClose, onSuccess, toast }) 
           mode,
           reference,
           remarks,
+          receiptMode: direction === "THEY_PAID" ? receiptMode : "",
+          furtherMode,
           coveredCases: direction === "THEY_PAID" ? coveredCases : undefined,
         }),
       });
@@ -973,13 +989,33 @@ function SettleModal({ clinic, balance, openCases, onClose, onSuccess, toast }) 
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Reference</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              Transaction ID / Reference {mode !== "cash" && <span className="text-red-500">*</span>}
+            </label>
             <input
               type="text"
               value={reference}
               onChange={(e) => setReference(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-              placeholder="Optional — UTR / cheque no."
+              placeholder={mode === "cash" ? "Optional" : "UTR / cheque no. / transaction ID"}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {/* Collab branches have no entry in BANK_ROUTING_MAP by design (see bankRouting.js),
+                so transactionCategory has nothing to key a pre-fill off here — the field just
+                starts blank and gets picked manually, same as it already does for any collab
+                branch on the normal transaction forms. */}
+            <BankRoutingFields
+              costType={direction === "WE_PAID" ? "Expenses" : "Revenue"}
+              branch={clinic}
+              method={mode}
+              receiptMode={receiptMode}
+              furtherMode={furtherMode}
+              onChange={(patch) => {
+                if (patch.receiptMode !== undefined) setReceiptMode(patch.receiptMode);
+                if (patch.furtherMode !== undefined) setFurtherMode(patch.furtherMode);
+              }}
             />
           </div>
 

@@ -338,6 +338,15 @@ async function run() {
         unmapped.push(doc);
         continue;
       }
+      // getExpenseFurtherModeDefault (bankRouting.js) is a fallback for BLANK expense rows only
+      // — it picks one account per method with no branch/category split, so it cannot tell two
+      // legitimately different accounts apart (e.g. cash expenses land in either "Cash Book" or
+      // "Cash ( backend )" depending on which till the money came from). --overwrite treating a
+      // disagreement here as drift once stamped 803 correctly-entered "Cash ( backend )" rows to
+      // "Cash Book" — reverted in scripts/revert-cash-backend-furthermode.mjs. The revenue-side
+      // map (branch + category + method, from BANK_ROUTING_MAP) has no such ambiguity and keeps
+      // full --overwrite support.
+      const overwriteAllowed = routed.source !== "crm:expense";
       for (const field of ["receiptMode", "furtherMode"]) {
         const value = routed[field];
         // Blank means the map deliberately says nothing — never write "" over a real value.
@@ -345,9 +354,11 @@ async function run() {
         const current = doc[field];
         if (current === value) continue;
         if (!isBlank(current)) {
-          // Stored value disagrees with the map. Only --overwrite may re-align it.
+          // Stored value disagrees with the map. Only --overwrite may re-align it, and only
+          // where the map is actually authoritative (see above) — expense drift is reported
+          // but never auto-corrected, however this script is invoked.
           drift.push({ doc, field, current, value });
-          if (!OVERWRITE) continue;
+          if (!OVERWRITE || !overwriteAllowed) continue;
         }
         changes.push({ name: field, previousValue: show(current), newValue: value });
       }

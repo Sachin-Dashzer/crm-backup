@@ -46,6 +46,8 @@ export async function POST(req) {
       mode,
       reference,
       remarks,
+      receiptMode,
+      furtherMode,
       coveredCases, // optional: [{ case: caseId, amount }]
     } = await req.json();
 
@@ -104,6 +106,7 @@ export async function POST(req) {
           amount: parsedAmount,
           method: mode,
           paymentId: reference || "",
+          furtherMode: furtherMode || "",
           branch: clinic,
           date: settlement.date,
           remarks: remarks || `Collab settlement — ${clinic}`,
@@ -129,6 +132,10 @@ export async function POST(req) {
             costType: "Revenue",
             patient: collabCase.patient,
             amount: parseFloat(allocation.amount),
+            method: mode,
+            paymentId: reference || "",
+            receiptMode: receiptMode || "",
+            furtherMode: furtherMode || "",
             branch: clinic,
             date: settlement.date,
             paymentType: "Other",

@@ -64,6 +64,8 @@ const SERVICE_PROCEDURES    = ["PRP", "GFC", "Alopecia", "Headwash", "Canacot"];
 // Categories whose money moves through an account — revenue tabs show this as "Received In",
 // EXPENSE shows it as "Paid From" (see furtherMode's model comment in src/models/Transactions.js).
 const REVENUE_CATEGORIES = ["TRANSPLANT", "SERVICE", "MEDICINE"];
+// Mirrors UNTRACKED_FURTHER_MODE in src/app/api/transactions/get-all/route.js.
+const UNTRACKED_FURTHER_MODE = "__UNTRACKED__";
 const FILTER_KEYS = ["branch", "dateFrom", "dateTo", "paymentMethod", "procedure", "furtherMode", "expenseCategory", "expenseType"];
 const defaultFilters = () => ({
   branch: "", dateFrom: getTodayDate(), dateTo: getTodayDate(), paymentMethod: "", procedure: "",
@@ -95,6 +97,7 @@ const TRANSACTION_CATEGORIES = [
 // Tabs backed by their own collection rather than the Transactions query. Used to skip the
 // get-all fetch, the search bar and the header export, all of which are Transactions-shaped.
 const NON_TRANSACTION_TABS = ["CONTRA", "SUSPENSE"];
+const VALID_CATEGORIES = new Set(TRANSACTION_CATEGORIES.map((c) => c.value));
 
 const getCategoryGradientClass = (categoryValue, isActive) => {
   if (!isActive) return "bg-gray-50 text-gray-600 hover:bg-gray-100";
@@ -794,7 +797,16 @@ function AllTransactionsPageInner({ Sidebar }) {
   const [error, setError]               = useState(null);
   const [refreshing, setRefreshing]     = useState(false);
 
-  const [activeCategory, setActiveCategory] = useState("TRANSPLANT");
+  // Restored from the URL (falling back to TRANSPLANT) rather than always defaulting — a
+  // category-scoped filter value (expenseCategory, procedure) restored from the URL below but
+  // applied against the wrong tab silently zeroes out every result, since e.g. a TRANSPLANT
+  // query filtered by expense: "Salary" can never match anything. Reproduced against the live
+  // data before this fix: 0 results whenever the tab defaulted to TRANSPLANT while an
+  // EXPENSE-only filter survived a refresh in the URL.
+  const [activeCategory, setActiveCategory] = useState(() => {
+    const fromUrl = searchParams.get("category");
+    return VALID_CATEGORIES.has(fromUrl) ? fromUrl : "TRANSPLANT";
+  });
   // appliedFilters drives the actual query; draftFilters is what the filter panel's inputs are
   // bound to. They only converge when Apply is clicked (or a chip/quick-filter/reset acts
   // immediately on both at once) — see the §4 spec: pagination/sort/search stay live, filters
@@ -879,11 +891,12 @@ function AllTransactionsPageInner({ Sidebar }) {
 
   // Category-scoped filters must not silently carry over into a tab where the field doesn't
   // exist — e.g. a leftover Procedure filter from SERVICE would zero out every EXPENSE result,
-  // since EXPENSE rows have no procedure to match. Clear them the moment the tab changes (skip
-  // on first mount so a filter restored from the URL isn't wiped before the first fetch).
-  const mountedRef = useRef(false);
+  // since EXPENSE rows have no procedure to match. Runs on mount too (not just on tab changes):
+  // activeCategory is now itself restored from the URL's `category` param, so a filter that's
+  // still valid for the restored tab is left alone, and one that isn't (e.g. an expenseCategory
+  // left in a stale/legacy URL that predates `category` being persisted) gets cleared instead of
+  // silently zeroing every result.
   useEffect(() => {
-    if (!mountedRef.current) { mountedRef.current = true; return; }
     const patch = {};
     if (!(activeCategory === "TRANSPLANT" || activeCategory === "SERVICE")) patch.procedure = "";
     if (activeCategory !== "EXPENSE") { patch.expenseCategory = ""; patch.expenseType = ""; }
@@ -892,10 +905,14 @@ function AllTransactionsPageInner({ Sidebar }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeCategory]);
 
-  // Applied filters persist in the URL — a filtered view survives a refresh and can be shared.
-  // Draft edits never touch the URL; only Apply/chip-remove/quick-filter/reset do.
+  // Applied filters (and the active tab) persist in the URL — a filtered view survives a
+  // refresh and can be shared. Draft edits never touch the URL; only Apply/chip-remove/
+  // quick-filter/reset do. Category MUST be included: without it, reloading while on e.g. the
+  // Expense tab with an expenseCategory filter set drops back to the Transplant tab default but
+  // keeps that filter value in the URL, which then silently zeroes out every result.
   useEffect(() => {
     const params = new URLSearchParams();
+    if (activeCategory !== "TRANSPLANT") params.set("category", activeCategory);
     if (appliedFilters.branch)        params.set("branch", appliedFilters.branch);
     if (appliedFilters.dateFrom)      params.set("dateFrom", appliedFilters.dateFrom);
     if (appliedFilters.dateTo)        params.set("dateTo", appliedFilters.dateTo);
@@ -907,7 +924,7 @@ function AllTransactionsPageInner({ Sidebar }) {
     const qs = params.toString();
     router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [appliedFilters]);
+  }, [appliedFilters, activeCategory]);
 
   const handleRefresh = () => fetchData(true);
 
@@ -1251,7 +1268,11 @@ function AllTransactionsPageInner({ Sidebar }) {
                     <Select
                       label={activeCategory === "EXPENSE" ? "Paid From" : "Received In"}
                       value={draftFilters.furtherMode} onChange={(v) => setDraftFilters((f) => ({ ...f, furtherMode: v }))}
-                      options={[{ value: "", label: "All Accounts" }, ...FURTHER_MODES.map((m) => ({ value: m, label: m }))]}
+                      options={[
+                        { value: "", label: "All Accounts" },
+                        { value: UNTRACKED_FURTHER_MODE, label: "Untracked (no account recorded)" },
+                        ...FURTHER_MODES.map((m) => ({ value: m, label: m })),
+                      ]}
                       icon={Landmark}
                     />
                   )}
@@ -1309,7 +1330,10 @@ function AllTransactionsPageInner({ Sidebar }) {
                         <FilterChip label={`Procedure: ${appliedFilters.procedure}`} onRemove={() => removeFilter("procedure")} />
                       )}
                       {appliedFilters.furtherMode && (
-                        <FilterChip label={`${activeCategory === "EXPENSE" ? "Paid From" : "Received In"}: ${appliedFilters.furtherMode}`} onRemove={() => removeFilter("furtherMode")} />
+                        <FilterChip
+                          label={`${activeCategory === "EXPENSE" ? "Paid From" : "Received In"}: ${appliedFilters.furtherMode === UNTRACKED_FURTHER_MODE ? "Untracked" : appliedFilters.furtherMode}`}
+                          onRemove={() => removeFilter("furtherMode")}
+                        />
                       )}
                       {appliedFilters.expenseCategory && (
                         <FilterChip label={`Category: ${appliedFilters.expenseCategory}`} onRemove={() => removeFilter("expenseCategory")} />

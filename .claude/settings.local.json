@@ -208,7 +208,15 @@
       "Bash(node backfill-bank-routing.mjs --overwrite --apply)",
       "Bash(node _check-costtype.mjs)",
       "Bash(node fix-costtype-typo.mjs)",
-      "Bash(node fix-costtype-typo.mjs --apply)"
+      "Bash(node fix-costtype-typo.mjs --apply)",
+      "Bash(node show-transaction-changes.mjs)",
+      "Bash(node revert-cash-backend-furthermode.mjs)",
+      "Bash(node revert-cash-backend-furthermode.mjs --apply)",
+      "Bash(node --check backfill-bank-routing.mjs)",
+      "Bash(node backfill-bank-routing.mjs --overwrite --all-dates --branch=Delhi --category=EXPENSE --method=cash)",
+      "Bash(node backfill-bank-routing.mjs --overwrite --all-dates --branch Delhi --category EXPENSE --method cash)",
+      "Bash(node backfill-bank-routing.mjs --overwrite --all-dates)",
+      "Bash(node _debug-filters.mjs)"
     ],
     "additionalDirectories": [
       "c:\\dashzer\\ryan-crm\\src\\app\\api\\reception",
