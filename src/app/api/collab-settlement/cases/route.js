@@ -9,7 +9,10 @@ import Patient from "@/models/Patient";
 import { COLLAB_BRANCHES } from "@/lib/branches";
 import { UNSETTLED_METHODS } from "@/constants/bankRouting";
 
-const ALLOWED_ROLES = ["admin", "super-admin"];
+// Read-only listing — the collab panel needs it for its own settlement view. Money movements
+// (creating or deleting a settlement) stay admin-only; see settlements/create and
+// settlements/[id].
+const ALLOWED_ROLES = ["collab", "admin", "super-admin"];
 
 // Returns each case with derived numbers computed via a single aggregation
 // (lookup into Transactions for collectedByUs, read-only) — no N+1 per row.

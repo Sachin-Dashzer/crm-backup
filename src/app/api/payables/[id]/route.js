@@ -5,6 +5,7 @@ import connectDB from "@/lib/db";
 import mongoose from "mongoose";
 import Payable from "@/models/Payable";
 import Transactions from "@/models/Transactions";
+import DeleteLog from "@/models/DeleteLog";
 import { buildPayableAggregationStages } from "@/lib/payableAggregation";
 
 const ALLOWED_ROLES = ["admin", "super-admin"];
@@ -165,5 +166,77 @@ export async function PATCH(req, { params }) {
   } catch (error) {
     console.error("Error updating payable:", error);
     return NextResponse.json({ error: "Failed to update payable" }, { status: 500 });
+  }
+}
+
+// Hard-deletes a Payable, recording it in DeleteLog first so the removal is auditable.
+//
+// REFUSES when money has already been paid against it: those transactions carry payableId and
+// are what the paid/pending aggregation sums, so deleting the document they point at would
+// strand them — the payments stay on the books while the obligation they settled disappears.
+// Cancelling (PATCH isCancelled) is the reversible route; this is for entries created in error.
+export async function DELETE(req, { params }) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    if (!ALLOWED_ROLES.includes(session.user.role)) {
+      return NextResponse.json({ error: "Forbidden — admin access required" }, { status: 403 });
+    }
+
+    await connectDB();
+
+    const { id } = await params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return NextResponse.json({ error: "Invalid payable ID" }, { status: 400 });
+    }
+
+    const payable = await Payable.findById(id);
+    if (!payable) {
+      return NextResponse.json({ error: "Payable not found" }, { status: 404 });
+    }
+
+    const linked = await Transactions.countDocuments({ payableId: payable._id });
+    if (linked > 0) {
+      return NextResponse.json(
+        {
+          error:
+            `${linked} payment(s) have already been made against this payable. ` +
+            `Delete or re-link those first, or cancel this payable instead — deleting it now ` +
+            `would leave those payments pointing at nothing.`,
+        },
+        { status: 409 },
+      );
+    }
+
+    await DeleteLog.create({
+      entityType: "Payable",
+      entityId: String(payable._id),
+      entityName: payable.payee?.label || "Payable",
+      entityDetails: {
+        purpose: payable.purpose,
+        expenseCategory: payable.expenseCategory,
+        expenseSubType: payable.expenseSubType,
+        totalAmount: payable.totalAmount,
+        branch: payable.branch,
+        payeeKind: payable.payee?.kind,
+        remarks: payable.remarks,
+        createdBy: payable.createdBy?.name,
+      },
+      deletedBy: {
+        name: session.user.name,
+        email: session.user.email,
+        branch: session.user.branch,
+      },
+      branch: payable.branch,
+    });
+
+    await payable.deleteOne();
+
+    return NextResponse.json({ message: "Payable deleted" });
+  } catch (error) {
+    console.error("Error deleting payable:", error);
+    return NextResponse.json({ error: "Failed to delete payable" }, { status: 500 });
   }
 }

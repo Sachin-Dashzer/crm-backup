@@ -25,6 +25,7 @@ import {
   Banknote,
   Pencil,
   Ban,
+  Trash2,
 } from "lucide-react";
 
 const PURPOSES = [
@@ -220,6 +221,29 @@ function AdminPayablesPageInner() {
   const refreshAll = () => {
     fetchSummary();
     fetchList();
+  };
+
+  // Row-level delete. The API refuses outright when payments already point at this payable
+  // (409), so the guard lives there rather than being duplicated as a disabled button here —
+  // the row can't know the live payment count without another fetch.
+  const deletePayable = async (p) => {
+    const ok = window.confirm(
+      `Permanently delete this payable?\n\n` +
+        `  ${p.payee?.label || "Payable"} · ${formatCurrency(p.totalAmount)}\n` +
+        `  ${p.expenseCategory || p.purpose || ""}${p.branch ? ` · ${p.branch}` : ""}\n\n` +
+        `Cancelling instead keeps the record and the audit trail. Delete cannot be undone.`,
+    );
+    if (!ok) return;
+    try {
+      const res = await fetch(`/api/payables/${p._id}`, { method: "DELETE" });
+      const data = await res.json();
+      if (!res.ok) return toast.error(data.error || "Failed to delete payable");
+      toast.success("Payable deleted");
+      refreshAll();
+    } catch (error) {
+      console.error("Error deleting payable:", error);
+      toast.error("Failed to delete payable");
+    }
   };
 
   const toggleExpand = async (payable) => {
@@ -484,6 +508,12 @@ function AdminPayablesPageInner() {
                         >
                           <Pencil className="w-3.5 h-3.5" /> Revise
                         </button>
+                        <button
+                          onClick={() => deletePayable(p)}
+                          className="flex items-center gap-1 text-xs font-medium text-red-600 px-2 py-1 rounded-lg bg-red-50"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" /> Delete
+                        </button>
                       </div>
                       {expandedId === p._id && (
                         <div className="mt-3">
@@ -578,6 +608,13 @@ function AdminPayablesPageInner() {
                                 className="p-1.5 rounded-lg bg-gray-50 text-gray-600 hover:bg-gray-100"
                               >
                                 <Pencil className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => deletePayable(p)}
+                                title="Delete permanently"
+                                className="p-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100"
+                              >
+                                <Trash2 className="w-4 h-4" />
                               </button>
                             </div>
                           </td>
@@ -941,6 +978,28 @@ function ReviseModal({ payable, onClose, onSuccess, toast }) {
     }
   };
 
+  const remove = async () => {
+    const ok = window.confirm(
+      `Permanently delete this payable?\n\n` +
+        `  ${payable.payee?.label || "Payable"} · ${formatCurrency(payable.totalAmount)}\n\n` +
+        `Cancelling instead keeps the record and the audit trail. Delete cannot be undone.`,
+    );
+    if (!ok) return;
+    setSubmitting(true);
+    try {
+      const res = await fetch(`/api/payables/${payable._id}`, { method: "DELETE" });
+      const data = await res.json();
+      if (!res.ok) return toast.error(data.error || "Failed to delete payable");
+      toast.success("Payable deleted");
+      onSuccess();
+    } catch (error) {
+      console.error("Error deleting payable:", error);
+      toast.error("Failed to delete payable");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full">
@@ -1014,6 +1073,17 @@ function ReviseModal({ payable, onClose, onSuccess, toast }) {
           >
             <Ban className="w-4 h-4" />
             {payable.isCancelled ? "Reinstate Payable" : "Cancel Payable"}
+          </button>
+          {/* Offered under Cancel, not beside it: cancelling keeps the record and is reversible,
+              so it should stay the obvious choice. The API refuses outright if any payment has
+              already been logged against this payable. */}
+          <button
+            onClick={remove}
+            disabled={submitting}
+            className="w-full px-4 py-2 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 text-red-600 hover:bg-red-50 disabled:opacity-50"
+          >
+            <Trash2 className="w-4 h-4" />
+            Delete Permanently
           </button>
         </div>
       </div>

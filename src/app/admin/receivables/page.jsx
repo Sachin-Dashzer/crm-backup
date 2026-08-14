@@ -24,6 +24,7 @@ import {
   Loader2,
   Pencil,
   Ban,
+  Trash2,
 } from "lucide-react";
 
 const PURPOSES = ["PATIENT_DUE", "COLLAB_SETTLEMENT", "REFUND_DUE", "ADVANCE_RECOVERY", "OTHER"];
@@ -175,6 +176,29 @@ function AdminReceivablesPageInner() {
   const refreshAll = () => {
     fetchSummary();
     fetchList();
+  };
+
+  // Row-level delete. The API refuses outright when receipts already point at this receivable
+  // (409), so the guard lives there rather than being duplicated as a disabled button here —
+  // the row can't know the live receipt count without another fetch.
+  const deleteReceivable = async (r) => {
+    const ok = window.confirm(
+      `Permanently delete this receivable?\n\n` +
+        `  ${r.payer?.label || "Receivable"} · ${formatCurrency(r.totalAmount)}\n` +
+        `  ${r.purpose || ""}${r.branch ? ` · ${r.branch}` : ""}\n\n` +
+        `Cancelling instead keeps the record and the audit trail. Delete cannot be undone.`,
+    );
+    if (!ok) return;
+    try {
+      const res = await fetch(`/api/receivables/${r._id}`, { method: "DELETE" });
+      const data = await res.json();
+      if (!res.ok) return toast.error(data.error || "Failed to delete receivable");
+      toast.success("Receivable deleted");
+      refreshAll();
+    } catch (error) {
+      console.error("Error deleting receivable:", error);
+      toast.error("Failed to delete receivable");
+    }
   };
 
   const toggleExpand = async (receivable) => {
@@ -431,6 +455,12 @@ function AdminReceivablesPageInner() {
                         >
                           <Pencil className="w-3.5 h-3.5" /> Revise
                         </button>
+                        <button
+                          onClick={() => deleteReceivable(r)}
+                          className="flex items-center gap-1 text-xs font-medium text-red-600 px-2 py-1 rounded-lg bg-red-50"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" /> Delete
+                        </button>
                       </div>
                       {expandedId === r._id && (
                         <div className="mt-3">
@@ -512,6 +542,13 @@ function AdminReceivablesPageInner() {
                                 className="p-1.5 rounded-lg bg-gray-50 text-gray-600 hover:bg-gray-100"
                               >
                                 <Pencil className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => deleteReceivable(r)}
+                                title="Delete permanently"
+                                className="p-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100"
+                              >
+                                <Trash2 className="w-4 h-4" />
                               </button>
                             </div>
                           </td>
@@ -877,6 +914,28 @@ function ReviseModal({ receivable, onClose, onSuccess, toast }) {
     }
   };
 
+  const remove = async () => {
+    const ok = window.confirm(
+      `Permanently delete this receivable?\n\n` +
+        `  ${receivable.payer?.label || "Receivable"} · ${formatCurrency(receivable.totalAmount)}\n\n` +
+        `Cancelling instead keeps the record and the audit trail. Delete cannot be undone.`,
+    );
+    if (!ok) return;
+    setSubmitting(true);
+    try {
+      const res = await fetch(`/api/receivables/${receivable._id}`, { method: "DELETE" });
+      const data = await res.json();
+      if (!res.ok) return toast.error(data.error || "Failed to delete receivable");
+      toast.success("Receivable deleted");
+      onSuccess();
+    } catch (error) {
+      console.error("Error deleting receivable:", error);
+      toast.error("Failed to delete receivable");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full">
@@ -951,6 +1010,17 @@ function ReviseModal({ receivable, onClose, onSuccess, toast }) {
           >
             <Ban className="w-4 h-4" />
             {receivable.isCancelled ? "Reinstate Receivable" : "Cancel Receivable"}
+          </button>
+          {/* Offered under Cancel, not beside it: cancelling keeps the record and is reversible,
+              so it should stay the obvious choice. The API refuses outright if any receipt has
+              already been logged against this receivable. */}
+          <button
+            onClick={remove}
+            disabled={submitting}
+            className="w-full px-4 py-2 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 text-red-600 hover:bg-red-50 disabled:opacity-50"
+          >
+            <Trash2 className="w-4 h-4" />
+            Delete Permanently
           </button>
         </div>
       </div>

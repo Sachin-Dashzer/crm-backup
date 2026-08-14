@@ -15,6 +15,7 @@ import {
   Users,
   Droplets,
   History,
+  Wallet,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -60,6 +61,7 @@ export default function CollabSidebar({ sidebarOpen: externalOpen, setSidebarOpe
     { name: "Add Patient",  path: "/collab/add-patient", icon: UserPlus },
     { name: "Not Visited",  path: "/collab/not-visited", icon: UserMinus },
     { name: "Transactions", path: "/collab/transactions",icon: Receipt },
+    { name: "Settlement",   path: "/collab/collab-settlement", icon: Wallet },
     { name: "PRP",          path: "/collab/prp",               icon: Droplets },
     { name: "Old PRP",      path: "/collab/old-prp-patients", icon: History },
     { name: "Reports",      path: "/collab/reports",          icon: FileBarChart },

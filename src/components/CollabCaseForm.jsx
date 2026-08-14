@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import SearchableSelect from "@/components/SearchableSelect";
+import BankRoutingFields from "@/components/BankRoutingFields";
 import { COLLAB_BRANCHES } from "@/lib/branches";
 import { deriveClinicSettlement } from "@/lib/collabFormula";
 import { REVENUE_METHODS } from "@/constants/paymentMethods";
@@ -60,10 +61,13 @@ export default function CollabCaseForm({
   const [clinic, setClinic] = useState(defaultClinic);
   const [procedure, setProcedure] = useState("Sapphire FUE");
   const [clinicShare, setClinicShare] = useState(20000);
+  const [discount, setDiscount] = useState(0);
   const [paymentSource, setPaymentSource] = useState("us");
   const [ourReceived, setOurReceived] = useState(0);
   const [clinicReceived, setClinicReceived] = useState(0);
   const [method, setMethod] = useState("cash");
+  const [receiptMode, setReceiptMode] = useState("");
+  const [furtherMode, setFurtherMode] = useState("");
   const [date, setDate] = useState(getTodayIST());
   const [remarks, setRemarks] = useState("");
 
@@ -105,9 +109,15 @@ export default function CollabCaseForm({
   const selectedPatient = patientCache[patientId] || patients.find((p) => p._id === patientId);
 
   // Read-only: the package already lives on Patient.payments.totalAmount (derived from
-  // counselling.finlpackage). Never written back to from here.
-  const totalPackage = selectedPatient?.payments?.totalAmount || 0;
+  // counselling.finlpackage). Never written back to from here — a discount is applied on top
+  // instead, so the patient's own package figure stays the single source of truth.
+  const grossPackage = selectedPatient?.payments?.totalAmount || 0;
+  const discountNum = Number(discount) || 0;
+  // Everything downstream (split, collections, the settlement formula) works off the NET
+  // figure — that is what is actually chargeable and therefore what gets booked as revenue.
+  const totalPackage = Math.round((grossPackage - discountNum) * 100) / 100;
   const ourShare = Math.round((totalPackage - (Number(clinicShare) || 0)) * 100) / 100;
+  const discountInvalid = discountNum < 0 || discountNum > grossPackage;
 
   // The selector only PRE-FILLS the two collected amounts. Split leaves them alone.
   useEffect(() => {
@@ -134,6 +144,10 @@ export default function CollabCaseForm({
   const formatPatientOption = (p) =>
     `${p.personal?.name || "N/A"} — Package: ${formatCurrency(p?.payments?.totalAmount)}`;
 
+  // What the clinic keeps out of what it collected — mirrors the min() in
+  // createCollabCaseAtomic, so the preview states exactly what will be booked.
+  const clinicShareExpensed = Math.min(Number(clinicReceived) || 0, Number(clinicShare) || 0);
+
   const canSubmit =
     patientId &&
     clinic &&
@@ -141,6 +155,7 @@ export default function CollabCaseForm({
     totalPackage > 0 &&
     !overCollected &&
     !shareMismatch &&
+    !discountInvalid &&
     !submitting;
 
   const handleSubmit = async () => {
@@ -154,10 +169,13 @@ export default function CollabCaseForm({
           patient: patientId,
           clinic,
           clinicShare: Number(clinicShare) || 0,
+          discount: discountNum,
           ourReceived: Number(ourReceived) || 0,
           clinicReceived: Number(clinicReceived) || 0,
           procedure,
           method,
+          receiptMode,
+          furtherMode,
           date,
           remarks,
         }),
@@ -219,19 +237,30 @@ export default function CollabCaseForm({
       </div>
 
       {/* Package (read-only, from the patient) */}
-      {patientId && totalPackage <= 0 && (
+      {patientId && grossPackage <= 0 && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700">
           This patient has no final package set. Set the patient&apos;s package (counselling →
           final package) before creating a collab case.
         </div>
       )}
 
-      {totalPackage > 0 && (
+      {grossPackage > 0 && (
         <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-          <div className="grid grid-cols-3 gap-4 text-center">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
             <div>
               <p className="text-xs text-gray-500 uppercase tracking-wide">Total Package</p>
-              <p className="text-lg font-bold text-gray-900">{formatCurrency(totalPackage)}</p>
+              <p className="text-lg font-bold text-gray-900">{formatCurrency(grossPackage)}</p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-500 uppercase tracking-wide">Net Chargeable</p>
+              <p className="text-lg font-bold text-gray-900">
+                {formatCurrency(totalPackage)}
+                {discountNum > 0 && (
+                  <span className="block text-[11px] font-medium text-amber-600">
+                    after −{formatCurrency(discountNum)}
+                  </span>
+                )}
+              </p>
             </div>
             <div>
               <p className="text-xs text-gray-500 uppercase tracking-wide">Our Share</p>
@@ -243,8 +272,9 @@ export default function CollabCaseForm({
             </div>
           </div>
           <p className="text-[11px] text-gray-500 mt-3 text-center">
-            Package is read from the patient record and never modified here. Our share is always
-            the remainder, so the split always equals the package.
+            Package is read from the patient record and never modified here — a discount is
+            applied on top instead. Our share is always the remainder of the net, so the split
+            always equals what is actually chargeable.
           </p>
         </div>
       )}
@@ -261,7 +291,22 @@ export default function CollabCaseForm({
           />
           {shareMismatch && (
             <p className="text-xs text-red-600 mt-1">
-              Clinic share cannot exceed the package total ({formatCurrency(totalPackage)}).
+              Clinic share cannot exceed the net chargeable amount ({formatCurrency(totalPackage)}).
+            </p>
+          )}
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Discount</label>
+          <input
+            type="number"
+            min="0"
+            value={discount}
+            onChange={(e) => setDiscount(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+          />
+          {discountInvalid && (
+            <p className="text-xs text-red-600 mt-1">
+              Discount must be between 0 and the package total ({formatCurrency(grossPackage)}).
             </p>
           )}
         </div>
@@ -378,9 +423,22 @@ export default function CollabCaseForm({
             {formatCurrency(clinicShare)} = {formatCurrency(settlement.clinicOwesUs)}
           </p>
           <p className="text-[11px] text-gray-600 mt-1">
-            Revenue is booked gross: {formatCurrency(totalPackage)} revenue, net margin{" "}
-            {formatCurrency(ourShare)}.
+            Revenue is booked gross: {formatCurrency(totalPackage)} revenue
+            {clinicShareExpensed > 0 && (
+              <>
+                , plus a {formatCurrency(clinicShareExpensed)} clinic-share expense for what{" "}
+                {clinic || "the clinic"} kept out of its own collections
+              </>
+            )}
+            , net margin {formatCurrency(ourShare)}.
           </p>
+          {clinicShareExpensed < (Number(clinicShare) || 0) && (
+            <p className="text-[11px] text-gray-500 mt-1">
+              The remaining{" "}
+              {formatCurrency((Number(clinicShare) || 0) - clinicShareExpensed)} of the clinic&apos;s
+              share is still owed to them and is expensed when it is actually paid.
+            </p>
+          )}
         </div>
       )}
 
@@ -408,6 +466,22 @@ export default function CollabCaseForm({
             className="w-full px-3 py-2 border border-gray-300 rounded-lg"
           />
         </div>
+        {/* Which account the money we collected actually landed in. Collab branches have no
+            entry in BANK_ROUTING_MAP by design (see bankRouting.js), so these start blank and
+            are picked manually rather than pre-filled. Only meaningful when we collected
+            something — if the clinic took all of it, no account of ours moved. */}
+        <BankRoutingFields
+          costType="Revenue"
+          branch={clinic}
+          transactionCategory={procedure === "Medicine" ? "MEDICINE" : undefined}
+          method={method}
+          receiptMode={receiptMode}
+          furtherMode={furtherMode}
+          onChange={(patch) => {
+            if (patch.receiptMode !== undefined) setReceiptMode(patch.receiptMode);
+            if (patch.furtherMode !== undefined) setFurtherMode(patch.furtherMode);
+          }}
+        />
       </div>
 
       <div>

@@ -6,7 +6,10 @@ import CollabCase from "@/models/CollabCase";
 import Transactions from "@/models/Transactions";
 import { UNSETTLED_METHODS } from "@/constants/bankRouting";
 
-const ALLOWED_ROLES = ["admin", "super-admin"];
+// The collab team enters the case in the first place, so they also record what the patient
+// later paid the clinic directly — this only appends to clinicCollections and never creates a
+// Transaction or touches Patient.payments (see the note below).
+const ALLOWED_ROLES = ["collab", "admin", "super-admin"];
 
 // Appends a clinicCollections entry — money the PATIENT paid DIRECTLY TO THE
 // PARTNER CLINIC. Never touches Patient.payments or creates a Transaction;

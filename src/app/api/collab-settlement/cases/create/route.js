@@ -26,10 +26,13 @@ export async function POST(req) {
       patient,
       clinic,
       clinicShare,
+      discount,
       ourReceived,
       clinicReceived,
       procedure,
       method,
+      receiptMode,
+      furtherMode,
       date,
       remarks,
     } = await req.json();
@@ -59,13 +62,30 @@ export async function POST(req) {
 
     // The package is read from the patient, never sent by the client and never
     // written back — it is derived from counselling.finlpackage by Patient's hook.
-    const totalPackage = patientDoc.payments?.totalAmount || 0;
-    if (totalPackage <= 0) {
+    const grossPackage = patientDoc.payments?.totalAmount || 0;
+    if (grossPackage <= 0) {
       return NextResponse.json(
         {
           error:
             "This patient has no final package set. Set the patient's package (counselling → final package) before creating a collab case.",
         },
+        { status: 400 },
+      );
+    }
+
+    // A discount is applied on top of the patient's package rather than editing it, so the
+    // patient record stays the single source of truth. Everything downstream splits the NET.
+    const discountNum = Number(discount) || 0;
+    if (!Number.isFinite(discountNum) || discountNum < 0 || discountNum > grossPackage) {
+      return NextResponse.json(
+        { error: `Discount must be between 0 and the package total (${grossPackage})` },
+        { status: 400 },
+      );
+    }
+    const totalPackage = Math.round((grossPackage - discountNum) * 100) / 100;
+    if (totalPackage <= 0) {
+      return NextResponse.json(
+        { error: "Net chargeable amount after discount must be greater than zero" },
         { status: 400 },
       );
     }
@@ -103,11 +123,14 @@ export async function POST(req) {
       clinic,
       procedure,
       totalPackage,
+      discount: discountNum,
       ourShare: ourShareNum,
       clinicShare: clinicShareNum,
       ourReceived: ourReceivedNum,
       clinicReceived: clinicReceivedNum,
       method,
+      receiptMode,
+      furtherMode,
       date,
       remarks,
       actor: {

@@ -20,6 +20,7 @@ import {
   TrendingUp,
   TrendingDown,
   Loader2,
+  Trash2,
 } from "lucide-react";
 
 // Mirrors Transactions.procedure's enum — used to categorize any revenue
@@ -60,6 +61,71 @@ export default function AdminCollabSettlementPage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [collectionModalCase, setCollectionModalCase] = useState(null);
   const [showSettleModal, setShowSettleModal] = useState(false);
+
+  const [settlements, setSettlements] = useState([]);
+  const [settlementsLoading, setSettlementsLoading] = useState(false);
+
+  const fetchSettlements = async (clinic) => {
+    setSettlementsLoading(true);
+    try {
+      const res = await fetch(`/api/collab-settlement/settlements?clinic=${encodeURIComponent(clinic)}&limit=50`);
+      const data = await res.json();
+      if (res.ok) setSettlements(data.settlements || []);
+      else toast.error(data.error || "Failed to load settlements");
+    } catch (error) {
+      console.error("Error fetching settlements:", error);
+      toast.error("Failed to load settlements");
+    } finally {
+      setSettlementsLoading(false);
+    }
+  };
+
+  const deleteCase = async (c) => {
+    const ok = window.confirm(
+      `Permanently delete this collab case?\n\n` +
+        `  ${c.patientName || "Unknown"} · ${c.clinic} · package ${formatCurrency(c.packageAmount)}\n\n` +
+        `The revenue transaction, clinic-share expense and the payable/receivable this case ` +
+        `created are deleted with it, so none of it stays on the books.\n\n` +
+        `This cannot be undone.`,
+    );
+    if (!ok) return;
+    try {
+      const res = await fetch(`/api/collab-settlement/cases/${c._id}`, { method: "DELETE" });
+      const data = await res.json();
+      if (!res.ok) return toast.error(data.error || "Failed to delete case");
+      toast.success("Collab case deleted");
+      refreshAfterChange();
+    } catch (error) {
+      console.error("Error deleting collab case:", error);
+      toast.error("Failed to delete case");
+    }
+  };
+
+  const deleteSettlement = async (s) => {
+    const linkedCount =
+      (s.linkedTransaction ? 1 : 0) + (s.linkedRevenueTransactions?.length || 0);
+    const ok = window.confirm(
+      `Permanently delete this settlement?\n\n` +
+        `  ${s.clinic} · ${s.direction === "THEY_PAID" ? "They paid us" : "We paid them"} · ${formatCurrency(s.amount)}\n` +
+        `  ${formatDate(s.date)}${s.reference ? ` · ${s.reference}` : ""}\n\n` +
+        (linkedCount
+          ? `The ${linkedCount} transaction(s) this settlement generated will be deleted with it, so the money stops showing in reports.\n\n`
+          : "") +
+        `This cannot be undone.`,
+    );
+    if (!ok) return;
+    try {
+      const res = await fetch(`/api/collab-settlement/settlements/${s._id}`, { method: "DELETE" });
+      const data = await res.json();
+      if (!res.ok) return toast.error(data.error || "Failed to delete settlement");
+      toast.success("Settlement deleted");
+      if (expandedClinic) fetchSettlements(expandedClinic);
+      refreshAfterChange();
+    } catch (error) {
+      console.error("Error deleting settlement:", error);
+      toast.error("Failed to delete settlement");
+    }
+  };
 
   const fetchBalances = async () => {
     setBalancesLoading(true);
@@ -113,6 +179,14 @@ export default function AdminCollabSettlementPage() {
     if (expandedClinic) fetchCasesForClinic(expandedClinic, caseFilters, casePage);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [expandedClinic, caseFilters, casePage]);
+
+  // Settlement history is clinic-level and unaffected by the case filters, so it reloads only
+  // when the selected clinic changes.
+  useEffect(() => {
+    if (expandedClinic) fetchSettlements(expandedClinic);
+    else setSettlements([]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [expandedClinic]);
 
   const toggleClinic = (clinic) => {
     if (expandedClinic === clinic) {
@@ -343,16 +417,22 @@ export default function AdminCollabSettlementPage() {
                             </span>
                           </div>
                         </div>
-                        {c.status === "OPEN" && (
-                          <div className="flex justify-end mt-2">
+                        <div className="flex justify-end gap-2 mt-2">
+                          {c.status === "OPEN" && (
                             <button
                               onClick={() => setCollectionModalCase(c)}
                               className="px-2.5 py-1 bg-indigo-50 text-indigo-700 rounded-lg text-xs font-semibold hover:bg-indigo-100"
                             >
                               Record Clinic Collection
                             </button>
-                          </div>
-                        )}
+                          )}
+                          <button
+                            onClick={() => deleteCase(c)}
+                            className="flex items-center gap-1 px-2.5 py-1 bg-red-50 text-red-600 rounded-lg text-xs font-semibold hover:bg-red-100"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" /> Delete
+                          </button>
+                        </div>
                         {expandedCaseId === c._id && (
                           <div className="mt-3">
                             <CaseHistory collabCase={c} />
@@ -428,15 +508,24 @@ export default function AdminCollabSettlementPage() {
                             <td className="px-3 py-2">
                               <StatusBadge status={c.status} />
                             </td>
-                            <td className="px-3 py-2 text-right">
-                              {c.status === "OPEN" && (
+                            <td className="px-3 py-2">
+                              <div className="flex items-center justify-end gap-1.5">
+                                {c.status === "OPEN" && (
+                                  <button
+                                    onClick={() => setCollectionModalCase(c)}
+                                    className="px-2.5 py-1 bg-indigo-50 text-indigo-700 rounded-lg text-xs font-semibold hover:bg-indigo-100"
+                                  >
+                                    Record Clinic Collection
+                                  </button>
+                                )}
                                 <button
-                                  onClick={() => setCollectionModalCase(c)}
-                                  className="px-2.5 py-1 bg-indigo-50 text-indigo-700 rounded-lg text-xs font-semibold hover:bg-indigo-100"
+                                  onClick={() => deleteCase(c)}
+                                  title="Delete case permanently"
+                                  className="p-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 shrink-0"
                                 >
-                                  Record Clinic Collection
+                                  <Trash2 className="w-4 h-4" />
                                 </button>
-                              )}
+                              </div>
                             </td>
                           </tr>
                           {expandedCaseId === c._id && (
@@ -477,6 +566,65 @@ export default function AdminCollabSettlementPage() {
                   </div>
                 </div>
               )}
+
+              {/* Settlement history — the actual money movements with this clinic, separate
+                  from the per-case view above. This is where a mis-entered settlement gets
+                  removed; deleting one also removes the transactions it generated. */}
+              <div className="mt-6 pt-5 border-t border-gray-200">
+                <h4 className="text-sm font-bold text-gray-900 mb-3">
+                  Settlement History ({settlements.length})
+                </h4>
+                {settlementsLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="w-5 h-5 text-indigo-600 animate-spin" />
+                  </div>
+                ) : settlements.length === 0 ? (
+                  <p className="text-sm text-gray-500 py-4 text-center">
+                    No settlements recorded with {expandedClinic} yet.
+                  </p>
+                ) : (
+                  <div className="divide-y divide-gray-100 border border-gray-200 rounded-lg">
+                    {settlements.map((s) => {
+                      const linkedCount =
+                        (s.linkedTransaction ? 1 : 0) + (s.linkedRevenueTransactions?.length || 0);
+                      return (
+                        <div
+                          key={s._id}
+                          className="flex flex-wrap items-center justify-between gap-2 px-3 py-2.5"
+                        >
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-gray-900">
+                              <span
+                                className={
+                                  s.direction === "THEY_PAID" ? "text-emerald-700" : "text-rose-600"
+                                }
+                              >
+                                {s.direction === "THEY_PAID" ? "They paid us" : "We paid them"}
+                              </span>{" "}
+                              {formatCurrency(s.amount)}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {formatDate(s.date)} · {(s.mode || "—").replace(/_/g, " ").toUpperCase()}
+                              {s.reference ? ` · ${s.reference}` : ""}
+                              {linkedCount > 0 && ` · ${linkedCount} txn`}
+                            </p>
+                            {s.remarks && (
+                              <p className="text-xs text-gray-400 italic mt-0.5">{s.remarks}</p>
+                            )}
+                          </div>
+                          <button
+                            onClick={() => deleteSettlement(s)}
+                            title="Delete settlement permanently"
+                            className="p-2 rounded-lg text-red-600 hover:bg-red-50 transition-colors shrink-0"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>

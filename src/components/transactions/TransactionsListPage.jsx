@@ -55,6 +55,18 @@ const formatDateForDisplay = (date) => {
   return new Date(date).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
 };
 
+// Shared by the expense table rows and the expense Excel export, so the name shown on screen is
+// always the name written to the sheet. A VENDOR payee may arrive populated (an object) or as a
+// bare id depending on the query, hence the type check.
+const getExpenseGiverName = (row) => {
+  if (row.expenseGiver?.type === "VENDOR") {
+    return typeof row.expenseGiver.vendorId === "object"
+      ? row.expenseGiver.vendorId?.name || row.expenseGiver.name || "N/A"
+      : row.expenseGiver.name || "N/A";
+  }
+  return row.expenseGiver?.name || "N/A";
+};
+
 // Filter dropdown must cover every value a stored row can carry, including methods retired
 // from entry forms (see src/constants/paymentMethods.js) — otherwise a row using a retired
 // method (e.g. an old expense with method "card") can never be filtered to.
@@ -381,7 +393,7 @@ function TransactionDetail({ row, linkedInfo, linkedLoading }) {
                   href={r.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-1 px-2 py-1 bg-slate-100 rounded text-slate-700 hover:bg-slate-200 max-w-[140px]"
+                  className="flex items-center gap-1 px-2 py-1 bg-slate-100 rounded text-slate-700 hover:bg-slate-200 max-w-35"
                 >
                   {r.fileType === "pdf" ? <Bill className="w-3.5 h-3.5 shrink-0" /> : <ImageIcon className="w-3.5 h-3.5 shrink-0" />}
                   <span className="truncate">{r.fileName || "File"}</span>
@@ -549,10 +561,6 @@ function DataTable({ category, rows, onDelete, onSort, sortConfig, pagination, o
   const getPatientName  = (row) => row.patient?.personal?.name || row.patientName || "Walk-in Customer";
   const getPatientPhone = (row) => row.patient?.personal?.phone || row.patientPhone || "";
   const getMedicineName = (row) => (typeof row.medicineId === "object" ? row.medicineId?.name : null) || "N/A";
-  const getExpenseGiverName = (row) => {
-    if (row.expenseGiver?.type === "VENDOR") return typeof row.expenseGiver.vendorId === "object" ? row.expenseGiver.vendorId?.name || row.expenseGiver.name || "N/A" : row.expenseGiver.name || "N/A";
-    return row.expenseGiver?.name || "N/A";
-  };
 
   return (
     <div className="flex flex-col h-full bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
@@ -998,6 +1006,9 @@ function AllTransactionsPageInner({ Sidebar }) {
       if (appliedFilters.expenseCategory) p.set("expenseCategory", appliedFilters.expenseCategory);
       if (appliedFilters.expenseType)     p.set("expenseType",     appliedFilters.expenseType);
       if (debouncedSearch)       p.set("search",        debouncedSearch);
+      // Must mirror fetchData, or exporting while the Pending Approvals toggle is on silently
+      // writes the APPROVED rows instead of the pending ones the user is looking at.
+      if (activeCategory === "EXPENSE" && pendingOnly) p.set("approvalStatus", "PENDING");
 
       const res  = await fetch(`/api/transactions/get-all?${p.toString()}`, { credentials: "include" });
       const data = await res.json();
@@ -1005,12 +1016,66 @@ function AllTransactionsPageInner({ Sidebar }) {
 
       const { utils, writeFile } = await import("xlsx");
 
-      const rows = all.map((t) => {
+      const stamp = (d) =>
+        d ? new Date(d).toLocaleString("en-IN", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: true }) : "";
+      const yesNo = (v) => (v ? "Yes" : "No");
+
+      // Expenses carry an almost entirely different set of fields from revenue rows — payee,
+      // category/type, GST/TDS breakdown, approval, the account it was paid from — and share
+      // barely half the revenue columns. Forcing both through one shape meant the expense
+      // export was mostly blank patient/procedure columns with none of what was actually
+      // entered on the create form, so the EXPENSE tab gets its own column set.
+      const isExpenseExport = activeCategory === "EXPENSE";
+
+      const expenseRow = (t) => {
+        const tax = t.taxDetails || {};
+        const invoiceTotal = tax.invoiceTotal ?? null;
+        const tdsAmount = tax.tdsAmount ?? null;
+        return {
+          "Date":                formatDateForDisplay(t.date),
+          "Branch":              t.branch || "",
+          "Expense Category":    t.expense || t.expenseCategory || "",
+          "Expense Type":        t.expenseType || "",
+          "Paid To":             getExpenseGiverName(t),
+          "Payee Type":          t.expenseGiver?.type || "",
+          "Amount":              parseFloat(t.amount) || 0,
+          "Payment Method":      METHOD_LABELS[t.method] || t.method || "",
+          "Paid From Account":   t.furtherMode || "",
+          "Transaction ID":      t.paymentId || "",
+          "Approval Status":     t.approvalStatus || "",
+          "Approved/Rejected By": t.approvalActionBy?.name || "",
+          "GST Included":        yesNo(tax.gstAmount != null),
+          "Base Amount":         tax.baseAmount ?? "",
+          "GST Rate %":          tax.gstRate ?? "",
+          "GST Amount":          tax.gstAmount ?? "",
+          "Invoice Total":       invoiceTotal ?? "",
+          "TDS Applied":         yesNo(tax.tdsApplied),
+          "TDS Category":        tax.tdsCategory || "",
+          "TDS Rate %":          tax.tdsRate ?? "",
+          "TDS Amount":          tdsAmount ?? "",
+          "Net After TDS":       tax.tdsApplied && invoiceTotal != null ? invoiceTotal - (tdsAmount || 0) : "",
+          "Commission Receiver": t.commissionReceiver?.name || "",
+          "Commission Payee Type": t.commissionReceiver?.type || "",
+          "Against Payable":     yesNo(t.payableId),
+          "Payable ID":          t.payableId ? String(t.payableId) : "",
+          "Paid By (External)":  t.externalParty?.name || "",
+          "External Party Type": t.externalParty?.partyKind || "",
+          "External Party Method": t.externalParty?.method || "",
+          "Linked Patient":      t.patient?.personal?.name || "",
+          "Receipts":            t.receipts?.length || 0,
+          "Receipt Files":       (t.receipts || []).map((r) => r.fileName).filter(Boolean).join(", "),
+          "Receipt URLs":        (t.receipts || []).map((r) => r.url).filter(Boolean).join(", "),
+          "Remarks":             t.remarks || "",
+          "Created By":          t.createdBy?.name || "",
+          "Created By Email":    t.createdBy?.email || "",
+          "Created At":          stamp(t.createdAt),
+          "Total Edits":         t.editors?.length || 0,
+        };
+      };
+
+      const revenueRow = (t) => {
         const amount   = parseFloat(t.amount)   || 0;
         const discount = parseFloat(t.discount) || 0;
-        const createdAt = t.createdAt
-          ? new Date(t.createdAt).toLocaleString("en-IN", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: true })
-          : "";
         const medicineName = t.transactionCategory === "MEDICINE"
           ? (typeof t.medicineId === "object" ? t.medicineId?.name : "") || t.procedure || "" : "";
 
@@ -1025,6 +1090,8 @@ function AllTransactionsPageInner({ Sidebar }) {
           "Quantity":         t.transactionCategory === "MEDICINE" ? (t.quantity || "") : "",
           "Payment Type":     t.paymentType || "",
           "Payment Method":   t.method || "",
+          "Received In Account": t.furtherMode || "",
+          "Receipt Mode":     t.receiptMode || "",
           "Original Amount":  amount + discount,
           "TransID / CardNo": t.paymentId || "",
           "Discount":         discount,
@@ -1032,27 +1099,39 @@ function AllTransactionsPageInner({ Sidebar }) {
           "Pending Amount":   parseFloat(t.patient?.payments?.pendingAmount) || 0,
           "Remarks":          t.remarks || "",
           "Created By":       t.createdBy?.name || "",
-          "Date & Time":      createdAt,
+          "Date & Time":      stamp(t.createdAt),
           "Total Edits":      t.editors?.length || 0,
         };
-      });
+      };
+
+      const rows = all.map(isExpenseExport ? expenseRow : revenueRow);
 
       const ws = utils.json_to_sheet(rows);
-      ws["!cols"] = [14,24,14,12,12,18,24,10,15,16,16,20,12,14,16,24,18,22,12].map((w) => ({ wch: w }));
+      ws["!cols"] = (isExpenseExport
+        ? [14,12,22,28,24,13,13,20,20,20,15,20,13,13,11,12,14,12,26,11,12,14,22,20,15,26,22,18,20,22,10,30,40,30,18,26,22,12]
+        : [14,24,14,12,12,18,24,10,15,16,20,18,16,20,12,14,16,24,18,22,12]
+      ).map((w) => ({ wch: w }));
 
       const wb = utils.book_new();
-      utils.book_append_sheet(wb, ws, "Transactions");
+      utils.book_append_sheet(wb, ws, isExpenseExport ? "Expenses" : "Transactions");
 
       const historyRows = [];
       all.forEach((t) => {
         if (!t.editors?.length) return;
-        const patientName = t.patient?.personal?.name || t.patientName || "Walk-in Customer";
+        // An expense has no patient — identify the row by who was paid, and by what it was for,
+        // otherwise every expense edit reads as "Walk-in Customer".
+        const subject = isExpenseExport
+          ? getExpenseGiverName(t)
+          : t.patient?.personal?.name || t.patientName || "Walk-in Customer";
         const txDate = formatDateForDisplay(t.date);
         t.editors.forEach((editor, editIdx) => {
-          const editedAt = editor.date ? new Date(editor.date).toLocaleString("en-IN", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: true }) : "";
+          const editedAt = stamp(editor.date);
           const fields = editor.updatedFields?.length ? editor.updatedFields : [{ name: "(no field details)", previousValue: "", newValue: "" }];
           fields.forEach((field) => historyRows.push({
-            "Transaction Date": txDate, "Patient Name": patientName, "Branch": t.branch || "",
+            "Transaction Date": txDate,
+            [isExpenseExport ? "Paid To" : "Patient Name"]: subject,
+            ...(isExpenseExport ? { "Expense Category": t.expense || t.expenseCategory || "" } : {}),
+            "Branch": t.branch || "",
             "Edit #": editIdx + 1, "Edited By": editor.name || "", "Editor Email": editor.email || "",
             "Editor Branch": editor.branch || "", "Edited At": editedAt,
             "Field Changed": field.name || "", "Previous Value": field.previousValue || "", "New Value": field.newValue || "",
@@ -1062,11 +1141,15 @@ function AllTransactionsPageInner({ Sidebar }) {
 
       if (historyRows.length > 0) {
         const wsHistory = utils.json_to_sheet(historyRows);
-        wsHistory["!cols"] = [16,24,12,8,20,26,14,22,20,24,24].map((w) => ({ wch: w }));
+        wsHistory["!cols"] = (isExpenseExport
+          ? [16,24,22,12,8,20,26,14,22,20,24,24]
+          : [16,24,12,8,20,26,14,22,20,24,24]
+        ).map((w) => ({ wch: w }));
         utils.book_append_sheet(wb, wsHistory, "Edit History");
       }
 
-      writeFile(wb, `transactions_${activeCategory}_${appliedFilters.dateFrom || "all"}_to_${appliedFilters.dateTo || "all"}.xlsx`);
+      const prefix = isExpenseExport ? "expenses" : `transactions_${activeCategory}`;
+      writeFile(wb, `${prefix}_${appliedFilters.dateFrom || "all"}_to_${appliedFilters.dateTo || "all"}.xlsx`);
     } catch (e) {
       toast?.error?.(e.message || "Export failed");
     }

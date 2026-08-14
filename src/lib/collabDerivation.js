@@ -50,11 +50,14 @@ export async function createCollabCaseAtomic({
   clinic,
   procedure,
   totalPackage,
+  discount = 0,
   ourShare,
   clinicShare,
   ourReceived,
   clinicReceived,
   method,
+  receiptMode,
+  furtherMode,
   date,
   remarks,
   actor, // { name, email, branch }
@@ -70,7 +73,13 @@ export async function createCollabCaseAtomic({
   const performedBy = { name: actor?.name, email: actor?.email };
   const when = date ? new Date(date) : new Date();
 
-  const created = { collabCase: null, transaction: null, payable: null, receivable: null };
+  const created = {
+    collabCase: null,
+    transaction: null,
+    clinicShareExpense: null,
+    payable: null,
+    receivable: null,
+  };
 
   const session = await mongoose.startSession();
   try {
@@ -113,7 +122,10 @@ export async function createCollabCaseAtomic({
             patient: patientId,
             procedure,
             amount: totalPackage,
+            discount: discount || 0,
             method: method || "cash",
+            receiptMode: receiptMode || "",
+            furtherMode: furtherMode || "",
             branch: clinic,
             date: when,
             remarks: remarks || "",
@@ -126,6 +138,58 @@ export async function createCollabCaseAtomic({
         { session },
       );
       created.transaction = transaction;
+
+      // 2b. The clinic-share EXPENSE that makes the gross booking above net out
+      //     correctly. Without it a 50,000 package booked 50,000 revenue and no
+      //     cost at all, so every report read the clinic's share as our profit
+      //     (see the collabSplit comment in src/models/Transactions.js: "a 50,000
+      //     package books 50,000 revenue and a 20,000 clinic-share expense —
+      //     net margin 30,000").
+      //
+      //     Only the part the clinic has ALREADY taken is booked here, i.e. what
+      //     it kept out of money it collected itself:
+      //
+      //         settledNow = min(clinicReceived, clinicShare)
+      //
+      //     The remainder is money we still owe the clinic; that becomes the
+      //     Payable below and is expensed when it is actually paid, by the
+      //     WE_PAID branch of settlements/create. Booking the full clinicShare
+      //     here instead would double-count it against that later payment.
+      //
+      //       paid us 50k      -> min(0, 20k)     = 0      (all 20k via Payable)
+      //       paid clinic 50k  -> min(50k, 20k)   = 20k    (nothing left to pay)
+      //       split 20k/30k    -> min(30k, 20k)   = 20k    (nothing left to pay)
+      //       clinic got 5k    -> min(5k, 20k)    = 5k     (15k via Payable)
+      //
+      //     method "offset_settlement" is load-bearing: no money left one of our
+      //     accounts, the clinic simply kept cash it was holding. It is in
+      //     NON_CASH_METHODS (src/constants/bankRouting.js) so this never moves an
+      //     account balance, and furtherMode is deliberately left blank for the
+      //     same reason.
+      const clinicSettledNow = Math.min(Number(clinicReceived) || 0, Number(clinicShare) || 0);
+      if (clinicSettledNow > 0) {
+        const [clinicShareExpense] = await Transactions.create(
+          [
+            {
+              transactionCategory: "EXPENSE",
+              costType: "Expenses",
+              expense: "Collab Clinic Payment",
+              expenseType: "Collab Clinic Payment",
+              expenseGiver: { type: "MANUAL", name: clinic },
+              amount: clinicSettledNow,
+              method: "offset_settlement",
+              branch: clinic,
+              date: when,
+              remarks: `Clinic share retained by ${clinic} from collections for ${patientName || "patient"}`,
+              approvalStatus: "APPROVED",
+              collabRef: { caseId: collabCase._id },
+              createdBy,
+            },
+          ],
+          { session },
+        );
+        created.clinicShareExpense = clinicShareExpense;
+      }
 
       // 3. Whatever the formula says follows from the actual numbers — never
       //    from a UI checkbox.
@@ -205,6 +269,8 @@ export async function createCollabCaseAtomic({
     summary: {
       collabCaseId: created.collabCase?._id,
       transactionId: created.transaction?._id,
+      clinicShareExpenseId: created.clinicShareExpense?._id || null,
+      clinicShareExpensed: created.clinicShareExpense?.amount || 0,
       payableId: created.payable?._id || null,
       receivableId: created.receivable?._id || null,
       derived: settlement.kind,

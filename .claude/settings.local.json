@@ -216,7 +216,9 @@
       "Bash(node backfill-bank-routing.mjs --overwrite --all-dates --branch=Delhi --category=EXPENSE --method=cash)",
       "Bash(node backfill-bank-routing.mjs --overwrite --all-dates --branch Delhi --category EXPENSE --method cash)",
       "Bash(node backfill-bank-routing.mjs --overwrite --all-dates)",
-      "Bash(node _debug-filters.mjs)"
+      "Bash(node _debug-filters.mjs)",
+      "Bash(node _check-collab-gap.mjs)",
+      "Bash(rm -f _check-collab-gap.mjs)"
     ],
     "additionalDirectories": [
       "c:\\dashzer\\ryan-crm\\src\\app\\api\\reception",

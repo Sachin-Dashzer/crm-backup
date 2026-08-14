@@ -5,6 +5,7 @@ import connectDB from "@/lib/db";
 import mongoose from "mongoose";
 import Receivable from "@/models/Receivable";
 import Transactions from "@/models/Transactions";
+import DeleteLog from "@/models/DeleteLog";
 import { buildReceivableAggregationStages } from "@/lib/receivableAggregation";
 
 const ALLOWED_ROLES = ["admin", "super-admin"];
@@ -135,5 +136,76 @@ export async function PATCH(req, { params }) {
   } catch (error) {
     console.error("Error updating receivable:", error);
     return NextResponse.json({ error: "Failed to update receivable" }, { status: 500 });
+  }
+}
+
+// Hard-deletes a Receivable, recording it in DeleteLog first so the removal is auditable.
+//
+// REFUSES when money has already been received against it: those transactions carry
+// receivableId and are what the paid/pending aggregation sums, so deleting the document they
+// point at would strand them against nothing — the receipts stay on the books while the thing
+// they settled disappears. Cancelling (PATCH isCancelled) is the reversible route and is what
+// the error steers the user to; this endpoint exists for entries created in genuine error.
+export async function DELETE(req, { params }) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    if (!ALLOWED_ROLES.includes(session.user.role)) {
+      return NextResponse.json({ error: "Forbidden — admin access required" }, { status: 403 });
+    }
+
+    await connectDB();
+
+    const { id } = await params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return NextResponse.json({ error: "Invalid receivable ID" }, { status: 400 });
+    }
+
+    const receivable = await Receivable.findById(id);
+    if (!receivable) {
+      return NextResponse.json({ error: "Receivable not found" }, { status: 404 });
+    }
+
+    const linked = await Transactions.countDocuments({ receivableId: receivable._id });
+    if (linked > 0) {
+      return NextResponse.json(
+        {
+          error:
+            `${linked} transaction(s) have already been received against this receivable. ` +
+            `Delete or re-link those first, or cancel this receivable instead — deleting it now ` +
+            `would leave those receipts pointing at nothing.`,
+        },
+        { status: 409 },
+      );
+    }
+
+    await DeleteLog.create({
+      entityType: "Receivable",
+      entityId: String(receivable._id),
+      entityName: receivable.payer?.label || "Receivable",
+      entityDetails: {
+        purpose: receivable.purpose,
+        totalAmount: receivable.totalAmount,
+        branch: receivable.branch,
+        payerKind: receivable.payer?.kind,
+        remarks: receivable.remarks,
+        createdBy: receivable.createdBy?.name,
+      },
+      deletedBy: {
+        name: session.user.name,
+        email: session.user.email,
+        branch: session.user.branch,
+      },
+      branch: receivable.branch,
+    });
+
+    await receivable.deleteOne();
+
+    return NextResponse.json({ message: "Receivable deleted" });
+  } catch (error) {
+    console.error("Error deleting receivable:", error);
+    return NextResponse.json({ error: "Failed to delete receivable" }, { status: 500 });
   }
 }

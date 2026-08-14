@@ -430,19 +430,8 @@ async function run() {
     },
   }));
 
-  // BATCHED, one transaction per chunk — not one transaction for the whole run.
-  //
-  // A single session across every row was the original design, back when a run was a couple of
-  // hundred rows. It does not scale: a 7,580-row run (each update also pushing an editors[]
-  // entry) blows past the server's transaction lifetime and aborts, and because it is
-  // all-or-nothing the whole thing rolls back — the operation silently achieves nothing no
-  // matter how many times you run it.
-  //
-  // Each chunk is still atomic, so no individual row is half-written. What is given up is
-  // atomicity ACROSS chunks, and for this script that is the right trade: every operation here
-  // is idempotent (fill-blanks skips what is already filled; --overwrite and --remap both
-  // converge on the same target value), so a run that dies midway can simply be re-run and it
-  // continues from where it stopped. Progress is printed for exactly that reason.
+
+  
   const CHUNK = 500;
   const totalChunks = Math.ceil(ops.length / CHUNK);
   let modified = 0;
