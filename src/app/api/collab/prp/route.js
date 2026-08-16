@@ -118,7 +118,9 @@ export async function GET(req) {
     // paidList itself stays unfiltered — every row still shows, unsettled ones included (badge
     // in the UI, per §2.5). Only the revenue TOTALS below exclude paid_to_external — that money
     // isn't ours yet.
-    const settledPaidList = paidList.filter((t) => !UNSETTLED_METHODS.includes(t.method));
+    const settledPaidList = paidList.filter(
+      (t) => !UNSETTLED_METHODS.includes(t.method) && t.isSettlement !== true,
+    );
     const totalRevenue = settledPaidList.reduce((s, t) => s + (t.amount || 0), 0);
     const byType = {};
     PROCEDURES.forEach((proc) => {

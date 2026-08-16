@@ -78,6 +78,20 @@ const transactionSchema = new mongoose.Schema(
       default: null,
     },
 
+    // TRUE when this transaction moves cash for a sale or cost whose P&L was ALREADY recognised
+    // by a different transaction — a receipt against a receivable, a payment against a payable, a
+    // collab settlement. The money genuinely moved, so it belongs in cash-account balances; the
+    // revenue/expense was already booked at the point of sale, so counting it again in a total
+    // double-counts the same rupee.
+    //
+    // Deliberately a separate flag rather than a `method` value: overloading method would lose
+    // whether the cash arrived by cash/UPI/bank, which close-book account routing depends on.
+    // See SETTLEMENT_EXCLUSION in src/constants/bankRouting.js for how totals filter on it, and
+    // note it is NOT interchangeable with NON_CASH_METHODS or UNSETTLED_METHODS beside it.
+    //
+    // Defaults false, so every existing row keeps its current behaviour until explicitly set.
+    isSettlement: { type: Boolean, default: false, index: true },
+
     // FIFO split of THIS transaction's amount across more than one open receivable — set only
     // when a payment spilled over from one receivable into the next (see
     // src/lib/receivableAllocation.js). receivableId above is always kept equal to this array's

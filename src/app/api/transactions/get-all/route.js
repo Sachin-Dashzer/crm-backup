@@ -5,7 +5,7 @@ import connectDB from "@/lib/db";
 import Transactions from "@/models/Transactions";
 import Patient from "@/models/Patient";
 import { resolveBranchFilter } from "@/lib/branches";
-import { UNSETTLED_METHODS } from "@/constants/bankRouting";
+import { UNSETTLED_METHODS, SETTLEMENT_EXCLUSION } from "@/constants/bankRouting";
 import "@/models/Stock";
 import "@/models/Vendor";
 import "@/models/Employee";
@@ -164,7 +164,14 @@ export async function GET(request) {
     // Stats aggregation query: same filters except category (to show totals for all categories).
     // Always excludes PENDING/REJECTED regardless of the approvalStatus param — dashboard
     // totals must reflect approved money only, even when viewing a Pending Approvals list.
-    const statsQuery = { ...branchFilter, approvalStatus: { $nin: ["PENDING", "REJECTED"] } };
+    // Category-tab chips are TOTALS, so settlements are excluded here (§2.3) — the row LIST
+    // below deliberately still shows them, badged, which is why this exclusion is on the stats
+    // query only and never on `query`.
+    const statsQuery = {
+      ...branchFilter,
+      ...SETTLEMENT_EXCLUSION,
+      approvalStatus: { $nin: ["PENDING", "REJECTED"] },
+    };
     if (query.date)        statsQuery.date   = query.date;
     if (query.procedure)   statsQuery.procedure = query.procedure;
     if (query.furtherMode) statsQuery.furtherMode = query.furtherMode;

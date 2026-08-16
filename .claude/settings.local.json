@@ -218,7 +218,18 @@
       "Bash(node backfill-bank-routing.mjs --overwrite --all-dates)",
       "Bash(node _debug-filters.mjs)",
       "Bash(node _check-collab-gap.mjs)",
-      "Bash(rm -f _check-collab-gap.mjs)"
+      "Bash(rm -f _check-collab-gap.mjs)",
+      "Bash(grep -rln '\\\\$sum.*amount\\\\|\\\\$sum: \"\\\\$amount\"\\\\|reduce\\(' src/app/api src/lib)",
+      "Bash(grep -n 'costType\\\\|signedAmount\\\\|$sum\\\\|NON_CASH\\\\|furtherMode' src/lib/accountBalances.js)",
+      "Bash(grep -n 'payableId\\\\|receivableId\\\\|$sum\\\\|UNSETTLED' src/lib/payableAggregation.js src/lib/receivableAggregation.js)",
+      "Bash(node find-orphaned-links.mjs)",
+      "Bash(grep -n 'reduce\\(\\\\|$sum\\\\|total' src/components/TransactionTable.jsx)",
+      "Bash(grep -n 'costType\\\\|$sum\\\\|total\\\\|reduce' src/app/api/transactions/get-data/route.js)",
+      "Bash(node clear-dangling-payable-link.mjs)",
+      "Bash(node clear-dangling-payable-link.mjs --apply)",
+      "Bash(node report-unattributed-routing.mjs)",
+      "Bash(node fill-unattributed-routing.mjs)",
+      "Bash(git checkout *)"
     ],
     "additionalDirectories": [
       "c:\\dashzer\\ryan-crm\\src\\app\\api\\reception",

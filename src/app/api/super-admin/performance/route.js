@@ -7,7 +7,7 @@ import Transactions from "@/models/Transactions";
 import Employee from "@/models/Employee";
 import Interviewer from "@/models/Interviewer";
 import Leads from "@/models/Leads";
-import { UNSETTLED_METHODS } from "@/constants/bankRouting";
+import { UNSETTLED_METHODS, SETTLEMENT_EXCLUSION } from "@/constants/bankRouting";
 
 export async function POST(req) {
   try {
@@ -74,7 +74,7 @@ export async function POST(req) {
 
     // ── 5. Revenue Daily Trend ─────────────────────────────────────────────
     const revenueDailyPromise = Transactions.aggregate([
-      { $match: { ...txBranchQ, date: { $gte: fromDate, $lte: toDate }, method: { $nin: UNSETTLED_METHODS } } },
+      { $match: { ...txBranchQ, date: { $gte: fromDate, $lte: toDate }, method: { $nin: UNSETTLED_METHODS }, ...SETTLEMENT_EXCLUSION } },
       { $group: {
         _id: {
           day: { $dateToString: { format: "%Y-%m-%d", date: "$date", timezone: "Asia/Kolkata" } },
@@ -87,7 +87,7 @@ export async function POST(req) {
 
     // ── 6. Revenue by Branch ──────────────────────────────────────────────
     const revByBranchPromise = Transactions.aggregate([
-      { $match: { date: { $gte: fromDate, $lte: toDate }, method: { $nin: UNSETTLED_METHODS } } },
+      { $match: { date: { $gte: fromDate, $lte: toDate }, method: { $nin: UNSETTLED_METHODS }, ...SETTLEMENT_EXCLUSION } },
       { $group: {
         _id: { branch: "$branch", type: "$costType" },
         amount: { $sum: "$amount" },
@@ -96,7 +96,7 @@ export async function POST(req) {
 
     // ── 7. Revenue by Procedure ───────────────────────────────────────────
     const revByProcedurePromise = Transactions.aggregate([
-      { $match: { ...txBranchQ, date: { $gte: fromDate, $lte: toDate }, costType: "Revenue", method: { $nin: UNSETTLED_METHODS } } },
+      { $match: { ...txBranchQ, date: { $gte: fromDate, $lte: toDate }, costType: "Revenue", method: { $nin: UNSETTLED_METHODS }, ...SETTLEMENT_EXCLUSION } },
       { $group: { _id: "$procedure", amount: { $sum: "$amount" }, count: { $sum: 1 } } },
       { $sort: { amount: -1 } },
     ]);

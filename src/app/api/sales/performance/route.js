@@ -3,7 +3,7 @@ import dbConnect from "@/lib/db.js";
 import Employee from "@/models/Employee";
 import Patient from "@/models/Patient";
 import Transactions from "@/models/Transactions.js";
-import { UNSETTLED_METHODS } from "@/constants/bankRouting";
+import { UNSETTLED_METHODS, SETTLEMENT_EXCLUSION } from "@/constants/bankRouting";
 
 export async function GET(request) {
   try {
@@ -66,7 +66,7 @@ export async function GET(request) {
         const transactions = await Transactions.find({
           patient: { $in: patients.map((p) => p._id) },
           costType: "Revenue",
-          method: { $nin: UNSETTLED_METHODS },
+          method: { $nin: UNSETTLED_METHODS }, ...SETTLEMENT_EXCLUSION,
           ...dateFilter,
         }).lean();
 
@@ -85,7 +85,7 @@ export async function GET(request) {
     );
 
     // 2. Revenue by Branch
-    const branchFilter = { costType: "Revenue", method: { $nin: UNSETTLED_METHODS }, ...dateFilter };
+    const branchFilter = { costType: "Revenue", method: { $nin: UNSETTLED_METHODS }, ...SETTLEMENT_EXCLUSION, ...dateFilter };
     const branches = ["Delhi", "Mumbai", "Hyderabad", "Noida"];
 
     const revenueByBranch = await Promise.all(
@@ -127,7 +127,7 @@ export async function GET(request) {
       procedures.map(async (procedure) => {
         const filter = {
           costType: "Revenue",
-          method: { $nin: UNSETTLED_METHODS },
+          method: { $nin: UNSETTLED_METHODS }, ...SETTLEMENT_EXCLUSION,
           procedure: procedure,
           ...dateFilter,
         };
@@ -164,7 +164,7 @@ export async function GET(request) {
 
       const filter = {
         costType: "Revenue",
-        method: { $nin: UNSETTLED_METHODS },
+        method: { $nin: UNSETTLED_METHODS }, ...SETTLEMENT_EXCLUSION,
         date: {
           $gte: monthStart,
           $lte: monthEnd,
@@ -252,7 +252,7 @@ export async function GET(request) {
     // 7. Summary Statistics
     const allTransactions = await Transactions.find({
       costType: "Revenue",
-      method: { $nin: UNSETTLED_METHODS },
+      method: { $nin: UNSETTLED_METHODS }, ...SETTLEMENT_EXCLUSION,
       ...dateFilter,
       ...(branch ? { branch } : {}),
     }).lean();

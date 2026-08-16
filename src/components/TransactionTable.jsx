@@ -383,7 +383,13 @@ export default function TransactionTable({ config = {} }) {
     Object.fromEntries(
       visibleCategories.map((cat) => {
         const rows = dateFiltered.filter((t) => t.transactionCategory === cat);
-        return [cat, { count: rows.length, total: rows.reduce((s, t) => s + (t.amount || 0), 0) }];
+        // The StatCard figure is a TOTAL, so settlements are excluded (§2.3) — they move cash
+        // for revenue already recognised elsewhere. The table rows below still list them.
+        const totalRows = rows.filter((t) => t.isSettlement !== true);
+        return [
+          cat,
+          { count: rows.length, total: totalRows.reduce((s, t) => s + (t.amount || 0), 0) },
+        ];
       })
     ),
   [dateFiltered, visibleCategories]);

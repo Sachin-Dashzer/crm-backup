@@ -28,6 +28,16 @@ export const NON_CASH_METHODS = [
 
 export const UNSETTLED_METHODS = ["paid_to_external", "paid_by_other"];
 
+// A settlement moves cash for a sale or cost already recognised elsewhere. It belongs in
+// cash-account balances (the money genuinely moved) but NOT in revenue or expense totals,
+// or the same rupee is counted twice.
+//
+// Distinct from the two lists beside it, and they are not interchangeable:
+//   NON_CASH_METHODS  - no cash moved      -> exclude from BALANCES,  include in P&L
+//   UNSETTLED_METHODS - cash went elsewhere-> exclude from P&L,       (already handled)
+//   isSettlement      - cash moved, P&L already recognised -> exclude from P&L, include in BALANCES
+export const SETTLEMENT_EXCLUSION = { isSettlement: { $ne: true } };
+
 export const FURTHER_MODES = ACCOUNTS;
 
 export const RECEIPT_MODES = [

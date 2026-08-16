@@ -3,6 +3,7 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/db";
 import { periodLockResponse } from "@/lib/periodLock";
+import { checkCascadeOnDelete } from "@/lib/cascadeIntegrity";
 import Transactions from "@/models/Transactions";
 import Patient from "@/models/Patient";
 import Audit from "@/models/Audit";
@@ -63,6 +64,17 @@ export async function DELETE(req) {
     const locked = await periodLockResponse(transactionToDelete);
     if (locked) {
       return NextResponse.json({ ...locked.body, message: locked.body.error }, { status: locked.status });
+    }
+
+    // §3.2 Direction A — refuse to orphan a Receivable/Payable this transaction created.
+    // Direction B (this row merely PAYS a linked document) needs no cascade: paid/pending is
+    // aggregated from transactions, so deleting it self-corrects.
+    const cascade = await checkCascadeOnDelete(transactionToDelete);
+    if (cascade.blocked) {
+      return NextResponse.json(
+        { success: false, error: cascade.reasons.join(" "), message: cascade.reasons.join(" "), cascadeBlocked: true },
+        { status: 409 },
+      );
     }
 
     const patientId = transactionToDelete.patient;
