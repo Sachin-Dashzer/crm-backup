@@ -126,6 +126,65 @@ export async function GET(request) {
             rows: [
               { $skip: (page - 1) * limit },
               { $limit: limit },
+              // A transaction carries its patient one of TWO ways and neither covers the
+              // ledger on its own: TRANSPLANT rows always set the `patient` ref and almost
+              // never the denormalized `patientName`, while MEDICINE rows are the reverse.
+              // Reading only patientName left every transplant row — the largest revenue in
+              // the book — blank on screen and in the export.
+              //
+              // Joined AFTER $skip/$limit so at most one page of rows is looked up, never the
+              // whole period. Contra and suspense rows have no `patient` field, so $$pid is
+              // missing, matches nothing, and they fall through with an empty name.
+              {
+                $lookup: {
+                  from: "patients",
+                  let: { pid: "$patient" },
+                  pipeline: [
+                    { $match: { $expr: { $eq: ["$_id", "$$pid"] } } },
+                    { $project: { "personal.name": 1, "personal.phone": 1 } },
+                  ],
+                  as: "patientDoc",
+                },
+              },
+              {
+                $addFields: {
+                  // The row's own string wins when it has one — it is what was recorded at the
+                  // time of payment, and a patient later renamed shouldn't silently rewrite
+                  // history. The linked patient is the fallback, not the override.
+                  patientName: {
+                    $let: {
+                      vars: { linked: { $arrayElemAt: ["$patientDoc", 0] } },
+                      in: {
+                        $trim: {
+                          input: {
+                            $cond: [
+                              { $gt: [{ $strLenCP: { $ifNull: ["$patientName", ""] } }, 0] },
+                              "$patientName",
+                              { $ifNull: ["$$linked.personal.name", ""] },
+                            ],
+                          },
+                        },
+                      },
+                    },
+                  },
+                  patientPhone: {
+                    $let: {
+                      vars: { linked: { $arrayElemAt: ["$patientDoc", 0] } },
+                      in: {
+                        $trim: {
+                          input: {
+                            $cond: [
+                              { $gt: [{ $strLenCP: { $ifNull: ["$patientPhone", ""] } }, 0] },
+                              "$patientPhone",
+                              { $ifNull: ["$$linked.personal.phone", ""] },
+                            ],
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
               {
                 $project: {
                   date: 1,
@@ -142,6 +201,9 @@ export async function GET(request) {
                   expense: 1,
                   expenseType: 1,
                   patientName: 1,
+                  patientPhone: 1,
+                  // The Patient _id, so the ledger can link back to the patient record.
+                  patient: 1,
                   paymentId: 1,
                   remarks: 1,
                   // Contra / suspense-only fields; absent on transaction rows.

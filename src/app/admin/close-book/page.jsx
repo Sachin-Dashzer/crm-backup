@@ -83,6 +83,8 @@ const LEDGER_COLUMNS = {
   Type: "",
   Category: "",
   Patient: "",
+  "Patient Phone": "",
+  "Patient ID": "",
   Procedure: "",
   "Expense Head": "",
   "Expense Type": "",
@@ -97,7 +99,7 @@ const LEDGER_COLUMNS = {
   "Record ID": "",
 };
 const ledgerRow = (values) => ({ ...LEDGER_COLUMNS, ...values });
-const LEDGER_COL_WIDTHS = [13, 18, 10, 14, 22, 18, 18, 18, 46, 16, 12, 20, 30, 14, 14, 15, 26];
+const LEDGER_COL_WIDTHS = [13, 18, 10, 14, 22, 15, 26, 18, 18, 18, 46, 16, 12, 20, 30, 14, 14, 15, 26];
 
 const CATEGORIES = ["TRANSPLANT", "SERVICE", "MEDICINE", "EXPENSE"];
 // Every value a stored row can carry (src/constants/paymentMethods.js), not just what entry
@@ -276,6 +278,10 @@ function AccountLedger({ toast }) {
                   : "Expense",
             Category: isSpecial ? "" : r.transactionCategory || "",
             Patient: r.patientName || "",
+            // Written as text, not a number — Excel would strip the leading zero off an
+            // 0XXXXXXXXX landline and render a 10-digit number in scientific notation.
+            "Patient Phone": r.patientPhone ? String(r.patientPhone) : "",
+            "Patient ID": r.patient ? String(r.patient) : "",
             Procedure: r.procedure || "",
             "Expense Head": r.expense || "",
             "Expense Type": r.expenseType || "",
@@ -441,6 +447,8 @@ function AccountLedger({ toast }) {
               <tr>
                 <th className="px-4 py-3">Date</th>
                 <th className="px-4 py-3">Description</th>
+                <th className="px-4 py-3">Patient</th>
+                <th className="px-4 py-3">Trans ID</th>
                 <th className="px-4 py-3">Method</th>
                 <th className="px-4 py-3">Branch</th>
                 <th className="px-4 py-3 text-right">Movement</th>
@@ -449,11 +457,11 @@ function AccountLedger({ toast }) {
             </thead>
             <tbody className="divide-y divide-gray-100">
               {loading ? (
-                <tr><td colSpan={6} className="px-4 py-10 text-center text-gray-400">
+                <tr><td colSpan={8} className="px-4 py-10 text-center text-gray-400">
                   <Loader2 className="w-5 h-5 animate-spin inline" />
                 </td></tr>
               ) : !data?.rows?.length ? (
-                <tr><td colSpan={6} className="px-4 py-10 text-center text-gray-500">
+                <tr><td colSpan={8} className="px-4 py-10 text-center text-gray-500">
                   No movements for {account} in this period
                   {data?.contraExcludedByFilter ? " under these filters" : ""}.
                 </td></tr>
@@ -461,7 +469,7 @@ function AccountLedger({ toast }) {
                 <>
                   <tr className="bg-gray-50/60">
                     <td className="px-4 py-2 text-gray-500">{formatDate(from)}</td>
-                    <td className="px-4 py-2 font-medium text-gray-700" colSpan={4}>Opening balance</td>
+                    <td className="px-4 py-2 font-medium text-gray-700" colSpan={6}>Opening balance</td>
                     <td className="px-4 py-2 text-right font-semibold text-gray-900">
                       {formatCurrency(data.openingBalance)}
                     </td>
@@ -505,6 +513,29 @@ function AccountLedger({ toast }) {
                           </>
                         )}
                       </td>
+                      {/* Name over phone rather than two columns — the ledger is already wide,
+                          and the phone is only ever read to confirm which patient this is. */}
+                      <td className="px-4 py-2 text-gray-700">
+                        {r.patientName ? (
+                          <div className="leading-tight">
+                            <div className="truncate max-w-45">{r.patientName}</div>
+                            {r.patientPhone && (
+                              <div className="text-[11px] text-gray-400 font-mono">{r.patientPhone}</div>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-gray-300">—</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-2">
+                        {r.isContra || r.isSuspense ? (
+                          <span className="text-gray-300">—</span>
+                        ) : r.paymentId ? (
+                          <span className="font-mono text-xs text-gray-600">{r.paymentId}</span>
+                        ) : (
+                          <span className="text-gray-300">—</span>
+                        )}
+                      </td>
                       {/* Neither a transfer nor a suspense entry has a payment instrument. */}
                       <td className="px-4 py-2 text-gray-600">
                         {r.isContra || r.isSuspense ? "—" : (r.method || "").replace(/_/g, " ")}
@@ -518,7 +549,7 @@ function AccountLedger({ toast }) {
                   ))}
                   <tr className="bg-gray-50 border-t-2 border-gray-200">
                     <td className="px-4 py-2.5 text-gray-500">{formatDate(to)}</td>
-                    <td className="px-4 py-2.5 font-bold text-gray-900" colSpan={4}>Closing balance</td>
+                    <td className="px-4 py-2.5 font-bold text-gray-900" colSpan={6}>Closing balance</td>
                     <td className="px-4 py-2.5 text-right font-bold text-indigo-700">
                       {formatCurrency(data.closingBalance)}
                     </td>
