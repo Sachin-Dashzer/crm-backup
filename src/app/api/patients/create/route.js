@@ -2,6 +2,7 @@ import Patient from "@/models/Patient";
 import Employee from "@/models/Employee";
 import Leads from "@/models/Leads";
 import { withDB } from "@/lib/withDB";
+import { normalizePhone } from "@/lib/phone";
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
@@ -54,18 +55,25 @@ const handler = async (req) => {
   //   );
   // }
 
-  const existingPatient = await Patient.findOne({
-    "personal.phone": personal.phone,
-  });
+  const phoneNormalized = normalizePhone(phone);
 
-  if (existingPatient) {
-    return NextResponse.json(
-      {
-        success: false,
-        error: "Patient already exists with this phone number",
-      },
-      { status: 409 },
-    );
+  // Match on the normalized form so "+919876543210" and "9876543210" are caught as
+  // the same patient. Guarded: a null normalized value would match every document
+  // that has no phoneNormalized field at all.
+  if (phoneNormalized) {
+    const existingPatient = await Patient.findOne({
+      "personal.phoneNormalized": phoneNormalized,
+    });
+
+    if (existingPatient) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Patient already exists with this phone number",
+        },
+        { status: 409 },
+      );
+    }
   }
 
   try {
@@ -85,7 +93,8 @@ const handler = async (req) => {
     const newPatient = new Patient({
       personal: {
         name: personal.name.trim(),
-        phone: personal.phone.trim(),
+        phone: phone,
+        phoneNormalized: phoneNormalized,
         email: personal.email?.trim() || "",
         age: personal.age || null,
         gender: personal.gender || "MALE",

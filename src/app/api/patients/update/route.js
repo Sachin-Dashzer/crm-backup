@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { withDB } from "@/lib/withDB";
+import { normalizePhone } from "@/lib/phone";
 import Patient from "@/models/Patient";
 import Employee from "@/models/Employee";
 import mongoose from "mongoose";
@@ -37,17 +38,25 @@ const handler = async (req) => {
 
     const data = await req.json();
 
-    // Check for duplicate phone number
-    if (data.personal?.phone && data.personal.phone !== patient.personal.phone) {
-      const numberExisted = await Patient.findOne({
-        "personal.phone": data.personal.phone,
-      });
+    // Check for duplicate phone number on the normalized form. Excluding self is
+    // required here and wasn't before: a raw edit from "+919876543210" to
+    // "9876543210" changes the raw string but normalizes to the same value, so the
+    // patient would otherwise collide with itself.
+    if (data.personal?.phone && data.personal.phone !== patient.personal?.phone) {
+      const phoneNormalized = normalizePhone(data.personal.phone);
 
-      if (numberExisted) {
-        return NextResponse.json(
-          { success: false, message: "Phone number already exists" },
-          { status: 400 }
-        );
+      if (phoneNormalized) {
+        const numberExisted = await Patient.findOne({
+          "personal.phoneNormalized": phoneNormalized,
+          _id: { $ne: patient._id },
+        });
+
+        if (numberExisted) {
+          return NextResponse.json(
+            { success: false, message: "Phone number already exists" },
+            { status: 400 }
+          );
+        }
       }
     }
 
@@ -96,6 +105,12 @@ const handler = async (req) => {
     };
 
     updateFields(patient, data);
+
+    // Always re-derive from the stored phone — never trust a phoneNormalized the
+    // client may have sent through updateFields.
+    if (patient.isModified("personal.phone")) {
+      patient.personal.phoneNormalized = normalizePhone(patient.personal?.phone);
+    }
 
     // Add editor entry
     patient.editors = patient.editors || [];

@@ -5,6 +5,7 @@ import Transaction from "@/models/Transactions";
 import Vendor from "@/models/Vendor";
 import connectDB from "@/lib/db";
 import { periodLockResponse } from "@/lib/periodLock";
+import { checkCascadeOnUpdate, applyCascadeOnUpdate } from "@/lib/cascadeIntegrity";
 import { withDbTransaction, syncExternalPartyOnUpdate } from "@/lib/externalPartyDerivation";
 import { getExpenseTypes } from "@/constants/expenseCategories";
 
@@ -84,6 +85,15 @@ export async function PUT(req) {
         { error: "This is not an expense transaction" },
         { status: 400 }
       );
+    }
+
+    // §2.2 — an amount change on a transaction that CREATED a Payable/Receivable is ambiguous:
+    // a typo correction, or a genuinely changed obligation. Warn and refuse to guess unless the
+    // caller says which, via updateLinked. Payments AGAINST a document need no cascade — their
+    // paid/pending is aggregated and self-corrects (lib/payableAggregation.js).
+    const linkedWarning = await checkCascadeOnUpdate(existingTransaction, { amount });
+    if (linkedWarning && !body.updateLinked) {
+      return NextResponse.json(linkedWarning, { status: 409 });
     }
 
     // Track changes for audit
@@ -226,6 +236,14 @@ export async function PUT(req) {
         });
         if (patch) existingTransaction.set(patch);
         await existingTransaction.save({ session: dbSession });
+        // Inside the same session as the transaction write, so the linked total can never move
+        // while the amount that justified it fails to commit (replica set confirmed live).
+        if (linkedWarning && body.updateLinked) {
+          await applyCascadeOnUpdate(existingTransaction, { amount }, dbSession, {
+            name: session.user.name,
+            email: session.user.email,
+          });
+        }
       });
     } catch (syncError) {
       // A deliberate refusal (money already settled against the linked payable), not a fault.

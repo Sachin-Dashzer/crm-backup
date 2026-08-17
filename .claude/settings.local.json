@@ -229,14 +229,22 @@
       "Bash(node clear-dangling-payable-link.mjs --apply)",
       "Bash(node report-unattributed-routing.mjs)",
       "Bash(node fill-unattributed-routing.mjs)",
-      "Bash(git checkout *)"
+      "Bash(git checkout *)",
+      "Bash(grep -n \"PayModal\\\\|payModal\\\\|fetch\\(\\\\`/api\\\\|fetch\\(\\\\\"/api\" src/app/admin/payables/page.jsx)",
+      "Bash(cd \"c:/dashzer/New folder/ryan-crm\" && sed -n '/^function PayModal/,/^}/p' src/app/admin/payables/page.jsx | grep -n \"fetch\\(\\\\|body: JSON\\\\|method:\\\\|useState\\(\" | head -20)",
+      "Bash(awk 'NR>=700 && NR<=790' src/app/admin/payables/page.jsx)",
+      "Bash(cd \"c:/dashzer/New folder/ryan-crm\" && grep -n \"const branch\\\\s*=\\\\|branch,\" src/app/api/receivables/\\\\[id\\\\]/receipt/route.js | head -5 && echo \"--- validation block ---\" && sed -n '/if \\(!method || !ALLOWED_METHODS/,/}/p' src/app/api/receivables/\\\\[id\\\\]/receipt/route.js)",
+      "Bash(node --check scripts/backfill-phone-normalized.mjs)",
+      "Bash(npx --no-install eslint src/lib/phone.js src/lib/patientStatus.js src/models/Patient.js src/app/api/patients/create/route.js src/app/api/patients/update/route.js)"
     ],
     "additionalDirectories": [
       "c:\\dashzer\\ryan-crm\\src\\app\\api\\reception",
       "c:\\dashzer\\New folder\\ryan-crm\\src\\app\\api\\liabilities\\[id]",
       "c:\\dashzer\\New folder\\ryan-crm\\src\\app\\api\\payables",
       "c:\\dashzer\\New folder\\ryan-crm\\src\\app\\api\\collab-settlement\\cases\\[id]",
-      "\\tmp"
+      "\\tmp",
+      "c:\\dashzer\\New folder\\ryan-crm\\src\\app\\admin\\payables",
+      "C:\\dashzer\\New folder\\ryan-crm\\src\\app\\api\\receivables\\[id]\\receipt"
     ]
   }
 }

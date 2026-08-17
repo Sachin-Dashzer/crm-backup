@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import connectDB from "@/lib/db";
 import { periodLockResponse } from "@/lib/periodLock";
+import { checkCascadeOnUpdate, applyCascadeOnUpdate } from "@/lib/cascadeIntegrity";
 import { withDbTransaction, syncExternalPartyOnUpdate } from "@/lib/externalPartyDerivation";
 import Transactions from "@/models/Transactions";
 import Patient from "@/models/Patient";
@@ -45,6 +46,7 @@ export async function PUT(req) {
       receipts,
       receivableId,
       externalParty,
+      updateLinked,
     } = await req.json();
 
     // Find existing transaction
@@ -60,6 +62,16 @@ export async function PUT(req) {
     const locked = await periodLockResponse(existingTransaction, { date, furtherMode });
     if (locked) {
       return NextResponse.json(locked.body, { status: locked.status });
+    }
+
+    // §2.2 — amount changes on a transaction that CREATED a linked document need explicit
+    // confirmation; payments AGAINST one self-correct via aggregation and are not flagged.
+    // finalAmount is computed further down, so the proposed figure is recomputed here from the
+    // same inputs rather than reordering the existing logic.
+    const proposedAmount = (Number(quantity) || 0) * (Number(perUnitCost) || 0) - (Number(discount) || 0);
+    const linkedWarning = await checkCascadeOnUpdate(existingTransaction, { amount: proposedAmount });
+    if (linkedWarning && !updateLinked) {
+      return NextResponse.json(linkedWarning, { status: 409 });
     }
 
     // Check if it's a MEDICINE transaction
@@ -240,6 +252,14 @@ export async function PUT(req) {
         });
         if (patch) existingTransaction.set(patch);
         await existingTransaction.save({ session: dbSession });
+        // Same session as the transaction write — the linked total must never move while the
+        // amount that justified it fails to commit.
+        if (linkedWarning && updateLinked) {
+          await applyCascadeOnUpdate(existingTransaction, { amount: existingTransaction.amount }, dbSession, {
+            name: session.user.name,
+            email: session.user.email,
+          });
+        }
       });
     } catch (syncError) {
       // A deliberate refusal (money already settled against the linked receivable), not a fault.

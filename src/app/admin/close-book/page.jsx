@@ -69,6 +69,36 @@ function describeRow(r, account) {
   return [head, r.remarks].filter(Boolean).join(" · ");
 }
 
+// Every ledger row is built from this template so all three kinds — opening, movement and
+// closing — carry the same keys in the same order. json_to_sheet derives its header from the
+// keys in order of first appearance, so rows built ad hoc would order columns by whichever
+// row happened to come first and no longer line up with LEDGER_COL_WIDTHS.
+//
+// Description stays alongside the broken-out columns rather than being replaced by them: it is
+// the one-liner the on-screen table shows, and dropping it would let the sheet and the screen
+// describe the same row differently. The structured columns are what you filter and pivot on.
+const LEDGER_COLUMNS = {
+  Date: "",
+  "Transaction ID": "",
+  Type: "",
+  Category: "",
+  Patient: "",
+  Procedure: "",
+  "Expense Head": "",
+  "Expense Type": "",
+  Description: "",
+  Method: "",
+  Branch: "",
+  Reference: "",
+  Remarks: "",
+  "Money In": null,
+  "Money Out": null,
+  Balance: null,
+  "Record ID": "",
+};
+const ledgerRow = (values) => ({ ...LEDGER_COLUMNS, ...values });
+const LEDGER_COL_WIDTHS = [13, 18, 10, 14, 22, 18, 18, 18, 46, 16, 12, 20, 30, 14, 14, 15, 26];
+
 const CATEGORIES = ["TRANSPLANT", "SERVICE", "MEDICINE", "EXPENSE"];
 // Every value a stored row can carry (src/constants/paymentMethods.js), not just what entry
 // forms currently offer — a non-cash method (offset_settlement, paid_to_external, etc.)
@@ -221,21 +251,20 @@ function AccountLedger({ toast }) {
       const opening = head.openingBalance || 0;
 
       const rows = [
-        {
+        ledgerRow({
           Date: formatDate(from),
           Description: "Opening balance",
-          Type: "",
-          Method: "",
-          Branch: "",
-          "Money In": null,
-          "Money Out": null,
           Balance: opening,
-        },
+        }),
         ...all.map((r) => {
           const signed = r.signedAmount || 0;
-          return {
+          // A transfer and a suspense entry are not transactions — neither carries a payment
+          // instrument, a category or a payment id, so those columns stay blank rather than
+          // borrowing a transaction's shape.
+          const isSpecial = r.isContra || r.isSuspense;
+          return ledgerRow({
             Date: formatDate(r.date),
-            Description: describeRow(r, account),
+            "Transaction ID": isSpecial ? "" : r.paymentId || "",
             // Contra and Suspense are called out explicitly — neither is revenue or expense,
             // and a reader summing the sheet by Type needs to see why they belong to neither.
             Type: r.isSuspense
@@ -245,23 +274,31 @@ function AccountLedger({ toast }) {
                 : r.costType === "Revenue"
                   ? "Revenue"
                   : "Expense",
-            Method: r.isContra || r.isSuspense ? "" : (r.method || "").replace(/_/g, " "),
+            Category: isSpecial ? "" : r.transactionCategory || "",
+            Patient: r.patientName || "",
+            Procedure: r.procedure || "",
+            "Expense Head": r.expense || "",
+            "Expense Type": r.expenseType || "",
+            Description: describeRow(r, account),
+            Method: isSpecial ? "" : (r.method || "").replace(/_/g, " "),
             Branch: r.isContra ? "" : r.branch || "",
+            Reference: r.reference || "",
+            Remarks: r.remarks || "",
             "Money In": signed > 0 ? signed : null,
             "Money Out": signed < 0 ? Math.abs(signed) : null,
             Balance: r.runningBalance ?? null,
-          };
+            // The Mongo _id, not the payment id — paymentId is optional and often blank, so
+            // this is the only handle guaranteed to find the exact row again in the CRM.
+            "Record ID": String(r._id || ""),
+          });
         }),
-        {
+        ledgerRow({
           Date: formatDate(to),
           Description: "Closing balance",
-          Type: "",
-          Method: "",
-          Branch: "",
           "Money In": head.totalIn || 0,
           "Money Out": head.totalOut || 0,
           Balance: head.closingBalance || 0,
-        },
+        }),
       ];
 
       const scope = [
@@ -278,7 +315,7 @@ function AccountLedger({ toast }) {
           {
             name: "Ledger",
             rows,
-            colWidths: [13, 52, 10, 18, 12, 14, 14, 15],
+            colWidths: LEDGER_COL_WIDTHS,
           },
           {
             // The filters that produced these numbers travel with the file — a bare ledger

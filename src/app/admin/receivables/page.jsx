@@ -6,6 +6,7 @@ import AdminSidebar from "@/components/Sidebars/Sidebar";
 import MetricCard from "@/components/MetricCard";
 import SearchableSelect from "@/components/SearchableSelect";
 import ReceiptUpload from "@/components/ReceiptUpload";
+import TransactionFieldSet, { validateTransactionFields } from "@/components/TransactionFieldSet";
 import { useToast } from "@/components/Toast";
 import { REVENUE_METHODS } from "@/constants/paymentMethods";
 import { ALL_BRANCHES, COLLAB_BRANCHES } from "@/lib/branches";
@@ -712,20 +713,31 @@ function ReceivableHistory({ receivable, transactions, loading }) {
 // where the outstanding balance is known, so the amount can be validated against it. Mirrors
 // RecordPaymentModal on the payables page, including the allowOverpayment escape hatch.
 function RecordReceiptModal({ receivable, onClose, onSuccess, toast }) {
-  const [amount, setAmount] = useState(String(receivable.pending || ""));
-  const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
-  const [method, setMethod] = useState("cash");
-  const [paymentId, setPaymentId] = useState("");
-  const [remarks, setRemarks] = useState("");
-  const [receipts, setReceipts] = useState([]);
+  // One flat object owned here and handed to TransactionFieldSet, rather than a state variable
+  // per field — the field set is what decides which of these are shown and required.
+  const [fields, setFields] = useState({
+    amount: String(receivable.pending || ""),
+    date: new Date().toISOString().split("T")[0],
+    method: "cash",
+    paymentId: "",
+    branch: receivable.branch || "",
+    receiptMode: "",
+    furtherMode: "",
+    remarks: "",
+    receipts: [],
+    externalParty: {},
+  });
   const [allowOverpayment, setAllowOverpayment] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  const overBalance = parseFloat(amount || 0) > receivable.pending;
+  const overBalance = parseFloat(fields.amount || 0) > receivable.pending;
 
   const handleSubmit = async () => {
-    if (!amount || parseFloat(amount) <= 0) {
-      toast.error("Enter a valid receipt amount");
+    // Same rules the field set renders — validateTransactionFields is the single definition, so
+    // the form can't enforce something different from what it showed.
+    const invalid = validateTransactionFields(fields, "receivable-receipt");
+    if (invalid) {
+      toast.error(invalid);
       return;
     }
     if (overBalance && !allowOverpayment) {
@@ -738,12 +750,7 @@ function RecordReceiptModal({ receivable, onClose, onSuccess, toast }) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          amount,
-          date,
-          method,
-          paymentId,
-          remarks,
-          receipts,
+          ...fields,
           allowOverpayment,
         }),
       });
@@ -781,17 +788,18 @@ function RecordReceiptModal({ receivable, onClose, onSuccess, toast }) {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Amount (₹) *</label>
-            <input
-              type="number"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              min="0"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-              placeholder="0"
+            {/* Full field parity with a directly-entered transaction (§1.2) — most importantly
+                receiptMode/furtherMode, whose absence here is what produced thousands of rows
+                invisible to Close Book. */}
+            <TransactionFieldSet
+              context="receivable-receipt"
+              value={fields}
+              onChange={(patch) => setFields((f) => ({ ...f, ...patch }))}
+              transactionCategory={receivable.revenueCategory || undefined}
+              patientId={receivable.relatedPatient || undefined}
             />
             {overBalance && (
-              <label className="flex items-center gap-2 mt-2 text-xs text-amber-700">
+              <label className="flex items-center gap-2 mt-3 text-xs text-amber-700">
                 <input
                   type="checkbox"
                   checked={allowOverpayment}
@@ -800,62 +808,6 @@ function RecordReceiptModal({ receivable, onClose, onSuccess, toast }) {
                 Amount exceeds outstanding balance — allow overpayment
               </label>
             )}
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Date</label>
-              <input
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Method</label>
-              <select
-                value={method}
-                onChange={(e) => setMethod(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-              >
-                {REVENUE_METHODS.map((m) => (
-                  <option key={m.value} value={m.value}>{m.label}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Reference</label>
-            <input
-              type="text"
-              value={paymentId}
-              onChange={(e) => setPaymentId(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-              placeholder="UTR / cheque / transaction reference"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Remarks</label>
-            <input
-              type="text"
-              value={remarks}
-              onChange={(e) => setRemarks(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-              placeholder="Optional"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Receipt / Proof</label>
-            <ReceiptUpload
-              receipts={receipts}
-              onChange={setReceipts}
-              section="receivable-receipt"
-              patientId={receivable.relatedPatient || undefined}
-            />
           </div>
 
           <div className="flex gap-3 pt-1">

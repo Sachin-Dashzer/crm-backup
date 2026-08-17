@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { normalizePhone } from "@/lib/phone";
 
 const patientSchema = new mongoose.Schema(
   {
@@ -7,6 +8,14 @@ const patientSchema = new mongoose.Schema(
       phone: {
         type: String,
         unique: true,
+      },
+      // Canonical 10-digit form of personal.phone, maintained by the pre-save hook.
+      // Sparse: patients predating the backfill have no value and must not collide
+      // with each other on a shared null.
+      phoneNormalized: {
+        type: String,
+        index: true,
+        sparse: true,
       },
       email: String,
       age: Number,
@@ -194,6 +203,11 @@ patientSchema.pre("save", async function () {
 
   if (!patient.ops) {
     patient.ops = {};
+  }
+
+  if (patient.isModified("personal.phone")) {
+    const normalized = normalizePhone(patient.personal?.phone);
+    if (patient.personal) patient.personal.phoneNormalized = normalized;
   }
 
   // Only derive totalAmount from finlpackage when it wasn't explicitly set by the caller.

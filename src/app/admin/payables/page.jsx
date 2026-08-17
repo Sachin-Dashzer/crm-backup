@@ -6,6 +6,7 @@ import AdminSidebar from "@/components/Sidebars/Sidebar";
 import MetricCard from "@/components/MetricCard";
 import SearchableSelect from "@/components/SearchableSelect";
 import { useToast } from "@/components/Toast";
+import TransactionFieldSet, { validateTransactionFields } from "@/components/TransactionFieldSet";
 import { getExpenseTypes } from "@/constants/expenseCategories";
 import { ALL_BRANCHES, COLLAB_BRANCHES } from "@/lib/branches";
 import { formatCurrency, formatDate, StatusBadge } from "@/lib/financeUI";
@@ -776,19 +777,30 @@ function buildGiverForPayable(payable) {
 
 // ========== RECORD PAYMENT MODAL ==========
 function RecordPaymentModal({ payable, onClose, onSuccess, toast }) {
-  const [amount, setAmount] = useState(String(payable.pending || ""));
-  const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
-  const [mode, setMode] = useState("cash");
-  const [paymentId, setPaymentId] = useState("");
-  const [remarks, setRemarks] = useState("");
+  // Flat object handed to TransactionFieldSet — see the receipt modal for the same shape. The
+  // routing fields here are what was missing: a payment with no furtherMode never reaches an
+  // account in Close Book.
+  const [fields, setFields] = useState({
+    amount: String(payable.pending || ""),
+    date: new Date().toISOString().split("T")[0],
+    method: "cash",
+    paymentId: "",
+    branch: payable.branch || "",
+    receiptMode: "",
+    furtherMode: "",
+    remarks: "",
+    receipts: [],
+    externalParty: {},
+  });
   const [allowOverpayment, setAllowOverpayment] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  const overBalance = parseFloat(amount || 0) > payable.pending;
+  const overBalance = parseFloat(fields.amount || 0) > payable.pending;
 
   const handleSubmit = async () => {
-    if (!amount || parseFloat(amount) <= 0) {
-      toast.error("Enter a valid payment amount");
+    const invalid = validateTransactionFields(fields, "payable-payment");
+    if (invalid) {
+      toast.error(invalid);
       return;
     }
     if (overBalance && !allowOverpayment) {
@@ -803,12 +815,16 @@ function RecordPaymentModal({ payable, onClose, onSuccess, toast }) {
         body: JSON.stringify({
           expenseCategory: payable.expenseCategory,
           expenseType: payable.expenseSubType,
-          amount,
-          method: mode,
-          paymentId,
-          branch: payable.branch,
-          date,
-          remarks: remarks || `Payment against payable — ${payable.payee?.label}`,
+          amount: fields.amount,
+          method: fields.method,
+          paymentId: fields.paymentId,
+          branch: fields.branch,
+          date: fields.date,
+          receiptMode: fields.receiptMode,
+          furtherMode: fields.furtherMode,
+          receipts: fields.receipts,
+          externalParty: fields.externalParty?.name ? fields.externalParty : undefined,
+          remarks: fields.remarks || `Payment against payable — ${payable.payee?.label}`,
           patientId: payable.relatedPatient || undefined,
           expenseGiver: buildGiverForPayable(payable),
           payableId: payable._id,
@@ -849,68 +865,21 @@ function RecordPaymentModal({ payable, onClose, onSuccess, toast }) {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Amount (₹) *</label>
-            <input
-              type="number"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              min="0"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-              placeholder="0"
+            {/* Full parity with a directly-entered expense (§1.2) — the routing fields are the
+                point: a payment with no furtherMode never lands in a Close Book account. */}
+            <TransactionFieldSet
+              context="payable-payment"
+              value={fields}
+              onChange={(patch) => setFields((f) => ({ ...f, ...patch }))}
+              transactionCategory="EXPENSE"
+              patientId={payable.relatedPatient || undefined}
             />
             {overBalance && (
-              <label className="flex items-center gap-2 mt-2 text-xs text-amber-700">
+              <label className="flex items-center gap-2 mt-3 text-xs text-amber-700">
                 <input type="checkbox" checked={allowOverpayment} onChange={(e) => setAllowOverpayment(e.target.checked)} />
                 Amount exceeds pending balance — allow overpayment
               </label>
             )}
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Date</label>
-              <input
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Mode</label>
-              <select value={mode} onChange={(e) => setMode(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg">
-                {/* Recording a payment creates a real expense transaction, so this offers
-                    exactly what an expense form offers. withLegacyMethod keeps a retired
-                    method visible if one is ever pre-selected here. */}
-                {withLegacyMethod(EXPENSE_METHODS, mode).map((o) => (
-                  <option key={o.value} value={o.value} disabled={o.disabled}>
-                    {o.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Reference / Transaction ID</label>
-            <input
-              type="text"
-              value={paymentId}
-              onChange={(e) => setPaymentId(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-              placeholder="Optional"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Remarks</label>
-            <textarea
-              value={remarks}
-              onChange={(e) => setRemarks(e.target.value)}
-              rows={2}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg resize-none"
-              placeholder="Optional"
-            />
           </div>
         </div>
         <div className="flex gap-3 p-5 border-t border-gray-100">

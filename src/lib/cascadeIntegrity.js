@@ -125,6 +125,28 @@ export async function applyCascadeOnDelete(transaction, session, actor = {}) {
 }
 
 /**
+ * §2.3 — the update-side counterpart of checkCascadeOnDelete, named to mirror it so all four
+ * update routes call the same thing.
+ *
+ * `changes` is the proposed patch; only `amount` is consequential today, because that is the
+ * only field a linked document's total mirrors. Returns null when nothing needs confirming.
+ */
+export async function checkCascadeOnUpdate(transaction, changes = {}, session = null) {
+  if (changes.amount === undefined || changes.amount === null) return null;
+  return checkCascadeOnAmountChange(transaction, changes.amount, session);
+}
+
+/**
+ * §2.3 — applies the linked-total change once the caller has passed updateLinked:true. Thin
+ * alias over applyLinkedAmountChange so the update routes read symmetrically with the delete
+ * routes (check… then apply…).
+ */
+export async function applyCascadeOnUpdate(transaction, changes, session, actor = {}) {
+  if (changes?.amount === undefined || changes?.amount === null) return [];
+  return applyLinkedAmountChange(transaction, changes.amount, session, actor);
+}
+
+/**
  * §3.2 amount-edit guard. Returns null when the edit is unambiguous, or a warning payload when
  * the transaction CREATED a linked document whose total would now disagree with it.
  *

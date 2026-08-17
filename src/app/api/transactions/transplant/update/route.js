@@ -6,6 +6,7 @@ import Transactions from "@/models/Transactions";
 import Patient from "@/models/Patient";
 import connectDB from "@/lib/db";
 import { periodLockResponse } from "@/lib/periodLock";
+import { checkCascadeOnUpdate, applyCascadeOnUpdate } from "@/lib/cascadeIntegrity";
 import { withDbTransaction, syncExternalPartyOnUpdate } from "@/lib/externalPartyDerivation";
 import mongoose from "mongoose";
 
@@ -57,6 +58,17 @@ export async function PUT(req) {
     });
     if (locked) {
       return NextResponse.json({ ...locked.body, message: locked.body.error }, { status: locked.status });
+    }
+
+    // §2.2 — amount changes on a transaction that CREATED a linked document need explicit
+    // confirmation via updateLinked; payments AGAINST one self-correct via aggregation.
+    // This route patches selectively, so only flag when `amount` is actually in the payload.
+    const linkedWarning =
+      data.amount !== undefined
+        ? await checkCascadeOnUpdate(existingTransaction, { amount: data.amount })
+        : null;
+    if (linkedWarning && !data.updateLinked) {
+      return NextResponse.json({ ...linkedWarning, message: linkedWarning.message }, { status: 409 });
     }
 
     // Basic validations
@@ -174,7 +186,7 @@ export async function PUT(req) {
           actor: { name: session.user.name, email: session.user.email, branch: session.user.branch },
         });
 
-        return Transactions.findByIdAndUpdate(
+        const saved = await Transactions.findByIdAndUpdate(
           data.transactionId,
           {
             $set: { ...updateData, ...(patch || {}) },
@@ -182,6 +194,17 @@ export async function PUT(req) {
           },
           { new: true, runValidators: true, session: dbSession },
         );
+
+        // Same session as the transaction write, so the linked total can never move while the
+        // amount that justified it fails to commit.
+        if (linkedWarning && data.updateLinked) {
+          await applyCascadeOnUpdate(existingTransaction, { amount: newAmount }, dbSession, {
+            name: session.user.name,
+            email: session.user.email,
+          });
+        }
+
+        return saved;
       });
     } catch (syncError) {
       // These are deliberate refusals (money already settled against the linked receivable),

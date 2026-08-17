@@ -12,7 +12,7 @@ import {
   createExternalPayable,
   validateExternalParty,
 } from "@/lib/externalPartyDerivation";
-import { UNSETTLED_METHODS } from "@/constants/bankRouting";
+import { UNSETTLED_METHODS, NON_CASH_METHODS } from "@/constants/bankRouting";
 
 // Expense categories driven by the Agent/Patient/Rent/Collab tabs never use
 // the vendor/manual "Paid To" picker — only the Other Expense tab does.
@@ -53,6 +53,7 @@ export async function POST(req) {
       allowOverpayment,
       receipts,
       furtherMode,
+      receiptMode,
       externalParty,
       // GST breakdown for a Direct Payment entered with "Include GST". Display/audit only —
       // GST never becomes a payable. `amount` above is already the invoice total.
@@ -78,6 +79,17 @@ export async function POST(req) {
       return NextResponse.json(
         { error: "Missing required fields" },
         { status: 400 }
+      );
+    }
+
+    // §1.2 — a settlement (payment against a payable) moving real cash must name the account it
+    // left from, or it is invisible to Close Book. Scoped to payableId payments deliberately:
+    // direct expenses keep today's behaviour, since tightening those is not in scope here.
+    // Enforced server-side because a UI-only rule is bypassed by calling the endpoint directly.
+    if (payableId && furtherMode !== undefined && !furtherMode && !NON_CASH_METHODS.includes(method)) {
+      return NextResponse.json(
+        { error: "furtherMode is required — name the account this payment left from" },
+        { status: 400 },
       );
     }
 
@@ -220,6 +232,12 @@ export async function POST(req) {
       remarks: remarks || "",
       receipts: receipts || [],
       furtherMode: furtherMode || "",
+      receiptMode: receiptMode || "",
+      // §2.2 of the earlier spec — an expense carrying a payableId is a PAYMENT against a cost
+      // already recognised when the payable was raised. Counting it in expense totals again
+      // double-counts the same rupee; SETTLEMENT_EXCLUSION keeps it out of P&L while
+      // accountBalances still sees the cash leave.
+      isSettlement: !!payableId,
       taxDetails: taxDetails || undefined,
       vendor: expenseGiver?.type === "VENDOR" ? expenseGiver.vendorId : null,
       approvalStatus: "APPROVED",

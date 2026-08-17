@@ -5,7 +5,7 @@ import connectDB from "@/lib/db";
 import Receivable from "@/models/Receivable";
 import Transactions from "@/models/Transactions";
 import { REVENUE_METHODS } from "@/constants/paymentMethods";
-import { getBankRoutingDefaults, UNSETTLED_METHODS } from "@/constants/bankRouting";
+import { getBankRoutingDefaults, UNSETTLED_METHODS, NON_CASH_METHODS } from "@/constants/bankRouting";
 
 // Record a receipt against a receivable.
 //
@@ -57,11 +57,32 @@ export async function POST(req, { params }) {
       remarks,
       receipts,
       allowOverpayment,
+      // §1.2 — routing now comes FROM the form. The server still derives a default below when
+      // the client sends nothing (older callers), but a value sent explicitly always wins:
+      // the whole point is that the user can override what the map guessed.
+      receiptMode: receiptModeInput,
+      furtherMode: furtherModeInput,
+      branch: branchInput,
+      externalParty,
     } = await req.json();
 
     const parsedAmount = parseFloat(amount);
     if (!parsedAmount || parsedAmount <= 0) {
       return NextResponse.json({ error: "A receipt amount greater than zero is required" }, { status: 400 });
+    }
+    // §1.2 — a settlement moving real cash MUST name the account it landed in, or it is
+    // invisible to Close Book and the reconciliation this receipt exists for is impossible.
+    // Enforced here and not only in the modal: a UI-only rule is bypassed by calling the
+    // endpoint directly, which is exactly how the unattributed backlog grew.
+    if (
+      furtherModeInput !== undefined &&
+      !furtherModeInput &&
+      !NON_CASH_METHODS.includes(method)
+    ) {
+      return NextResponse.json(
+        { error: "furtherMode is required — name the account this money landed in" },
+        { status: 400 },
+      );
     }
     if (!method || !ALLOWED_METHODS.includes(method)) {
       return NextResponse.json(
@@ -104,7 +125,7 @@ export async function POST(req, { params }) {
       );
     }
 
-    const branch = receivable.branch || session.user.branch;
+    const branch = branchInput || receivable.branch || session.user.branch;
     const transactionCategory =
       CATEGORY_BY_REVENUE_CATEGORY[String(receivable.revenueCategory || "").toLowerCase()] ||
       undefined;
@@ -132,10 +153,17 @@ export async function POST(req, { params }) {
       branch,
       date: date ? new Date(date) : new Date(),
       remarks: remarks || `Receipt against receivable — ${receivable.payer?.label || ""}`.trim(),
-      receiptMode: routing.receiptMode || "",
-      furtherMode: routing.furtherMode || "",
+      // Explicit client value wins over the derived default; `?? ` not `||` so a deliberate
+      // blank is respected rather than silently re-filled from the map.
+      receiptMode: receiptModeInput ?? routing.receiptMode ?? "",
+      furtherMode: furtherModeInput ?? routing.furtherMode ?? "",
       receipts: receipts || [],
       receivableId: receivable._id,
+      // §2.2 of the earlier spec — this moves cash for revenue already recognised at the point
+      // of sale. Without this flag every receipt double-counts as new revenue, which is the
+      // bug SETTLEMENT_EXCLUSION exists to prevent.
+      isSettlement: true,
+      externalParty: externalParty && externalParty.name ? externalParty : undefined,
       createdBy: {
         name: session.user.name,
         email: session.user.email,
