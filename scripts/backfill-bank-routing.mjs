@@ -20,8 +20,8 @@ const OVERRIDES = [
 ];
 
   
-const DEFAULT_FROM = "2026-04-01";
-const DEFAULT_TO = "2026-08-12";
+const DEFAULT_FROM = "2026-08-12";
+const DEFAULT_TO = "2026-08-18";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Below here is machinery — you shouldn't need to edit it.

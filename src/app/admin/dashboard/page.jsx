@@ -1,643 +1,470 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
-  AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
-  XAxis, YAxis, CartesianGrid, Tooltip, Legend,
-  ResponsiveContainer,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
 } from "recharts";
-import {
-  Calendar, Activity, CheckCircle2, Stethoscope, IndianRupee,
-  Users, TrendingUp, RefreshCw, ChevronDown,
-  MapPin, ArrowUpRight, ArrowDownRight, Minus,
-  BarChart2, Target, Droplets,
-} from "lucide-react";
+import { Landmark, ScrollText, Scale, AlertTriangle, ArrowRight, Filter } from "lucide-react";
 import AdminSidebar from "@/components/Sidebars/Sidebar";
-import { ALL_BRANCHES } from "@/lib/branches";
+import MetricCard from "@/components/MetricCard";
+import AccountMultiSelect from "@/components/finance/AccountMultiSelect";
+import { formatCurrency } from "@/lib/financeUI";
+import { ACCOUNTS } from "@/constants/bankRouting";
 
-/* ─── Constants ─────────────────────────────────────────────────────────── */
-const BRANCHES    = ["All", ...ALL_BRANCHES];
-const DATE_RANGES = ["Today", "Yesterday", "Last 7 Days", "Last 30 Days", "Custom"];
-
-const PALETTE = [
-  "#6366f1","#8b5cf6","#a78bfa","#ec4899",
-  "#3b82f6","#10b981","#f59e0b","#14b8a6",
-];
-
-const METHOD_META = {
-  upi:     { label: "UPI",     color: "#6366f1", icon: "📲" },
-  cash:    { label: "Cash",    color: "#10b981", icon: "💵" },
-  card:    { label: "Card",    color: "#3b82f6", icon: "💳" },
-  banking: { label: "Banking", color: "#8b5cf6", icon: "🏦" },
-  bajaj_loan: { label: "Bajaj Loan", color: "#f97316", icon: "📄" },
-  fibe_loan: { label: "Fibe Loan", color: "#f97316", icon: "📄" },
-  hdfc_skin_bank_transfer: { label: "HDFC Skin Bank Transfer", color: "#0ea5e9", icon: "🏦" },
-  hdfc_ryan_medihub_bank_transfer: { label: "HDFC Ryan Medihub Bank Transfer", color: "#0d9488", icon: "🏦" },
-  icici_medihub_bank_transfer: { label: "ICICI Medihub Bank Transfer", color: "#e11d48", icon: "🏦" },
-  other:   { label: "Other",   color: "#9ca3af", icon: "💰" },
-};
-
-/* ─── Helpers ────────────────────────────────────────────────────────────── */
-const fmt   = (n) => new Intl.NumberFormat("en-IN").format(n || 0);
-const fmtK  = (n) => n >= 100000 ? `₹${(n / 100000).toFixed(1)}L` : n >= 1000 ? `₹${(n / 1000).toFixed(0)}K` : `₹${n || 0}`;
-const fmtDate = (s) => {
-  if (!s) return "";
-  return new Date(s).toLocaleDateString("en-IN", { day: "2-digit", month: "short" });
-};
-
-function buildPayload(dateRange, customDates, branch) {
-  let from = new Date(), to = new Date();
+function periodRange(preset, custom) {
+  let to = new Date();
   to.setHours(23, 59, 59, 999);
-
-  if (dateRange === "Today") {
+  let from;
+  if (preset === "custom" && custom?.from) {
+    from = new Date(custom.from);
     from.setHours(0, 0, 0, 0);
-  } else if (dateRange === "Yesterday") {
-    from.setDate(from.getDate() - 1); from.setHours(0, 0, 0, 0);
-    to = new Date(from); to.setHours(23, 59, 59, 999);
-  } else if (dateRange === "Last 7 Days") {
-    from = new Date(); from.setDate(from.getDate() - 6); from.setHours(0, 0, 0, 0);
-  } else if (dateRange === "Last 30 Days") {
-    from = new Date(); from.setDate(from.getDate() - 29); from.setHours(0, 0, 0, 0);
-  } else if (dateRange === "Custom" && customDates.from) {
-    from = new Date(customDates.from); from.setHours(0, 0, 0, 0);
-    to   = customDates.to ? new Date(customDates.to) : new Date(customDates.from);
+    to = custom.to ? new Date(custom.to) : new Date(custom.from);
     to.setHours(23, 59, 59, 999);
+  } else if (preset === "30") {
+    from = new Date();
+    from.setDate(from.getDate() - 29);
+    from.setHours(0, 0, 0, 0);
+  } else if (preset === "90") {
+    from = new Date();
+    from.setDate(from.getDate() - 89);
+    from.setHours(0, 0, 0, 0);
+  } else {
+    from = new Date(to.getFullYear(), to.getMonth(), 1);
+    from.setHours(0, 0, 0, 0);
   }
-  return { branch, from: from.toISOString(), to: to.toISOString() };
+  const lengthMs = Math.max(to.getTime() - from.getTime(), 0);
+  const priorTo = new Date(from.getTime() - 1);
+  const priorFrom = new Date(priorTo.getTime() - lengthMs);
+  return { from, to, priorFrom, priorTo };
 }
 
-/* ─── Reusable UI ────────────────────────────────────────────────────────── */
-function Skeleton({ className = "" }) {
-  return <div className={`animate-pulse bg-gray-100 rounded-xl ${className}`} />;
-}
+const iso = (d) => d.toISOString().slice(0, 10);
+const fmtK = (n) =>
+  Math.abs(n) >= 100000 ? `₹${(n / 100000).toFixed(1)}L` : Math.abs(n) >= 1000 ? `₹${(n / 1000).toFixed(0)}K` : `₹${n || 0}`;
 
-function CustomTooltip({ active, payload, label, formatter }) {
-  if (!active || !payload?.length) return null;
-  return (
-    <div className="bg-white border border-gray-200 rounded-xl shadow-lg p-3 text-xs">
-      {label && <p className="font-semibold text-gray-700 mb-1.5">{fmtDate(label) || label}</p>}
-      {payload.map((p, i) => (
-        <div key={i} className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full" style={{ backgroundColor: p.color }} />
-          <span className="text-gray-500">{p.name}:</span>
-          <span className="font-semibold text-gray-900">
-            {formatter ? formatter(p.value, p.name) : fmt(p.value)}
-          </span>
-        </div>
-      ))}
-    </div>
-  );
-}
+const AGEING_BUCKET_ORDER = ["current", "1-30", "31-60", "61-90", "90+"];
 
-function ChartCard({ title, subtitle, children, className = "" }) {
-  return (
-    <div className={`bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden ${className}`}>
-      <div className="px-5 py-4 border-b border-gray-100">
-        <h3 className="text-sm font-semibold text-gray-800">{title}</h3>
-        {subtitle && <p className="text-xs text-gray-400 mt-0.5">{subtitle}</p>}
-      </div>
-      <div className="p-4">{children}</div>
-    </div>
-  );
-}
+const bucketMap = (rows) => {
+  const map = {};
+  (rows || []).forEach((r) => {
+    if (r._id) map[r._id] = (map[r._id] || 0) + (r.totalPending || 0);
+  });
+  return map;
+};
+const overdueAmount = (rows) =>
+  (rows || []).filter((r) => r._id && r._id !== "current").reduce((s, r) => s + (r.totalPending || 0), 0);
+const overdueCount = (rows) =>
+  (rows || []).filter((r) => r._id && r._id !== "current").reduce((s, r) => s + (r.count || 0), 0);
 
-/* ─── KPI Card ───────────────────────────────────────────────────────────── */
-function KpiCard({ title, value, growth, icon: Icon, accent, soft, text, onClick }) {
-  const isPositive = growth > 0;
-  const isZero     = growth === 0;
-
-  return (
-    <button
-      onClick={onClick}
-      className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden text-left group w-full"
-    >
-      <div className={`h-1 ${accent}`} />
-      <div className="p-4">
-        <div className="flex items-center justify-between mb-3">
-          <div className={`w-9 h-9 rounded-xl ${soft} flex items-center justify-center`}>
-            <Icon className={`w-4.5 h-4.5 ${text}`} />
-          </div>
-          <div className={`flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-full ${
-            isZero
-              ? "bg-gray-100 text-gray-500"
-              : isPositive
-              ? "bg-emerald-50 text-emerald-600"
-              : "bg-red-50 text-red-500"
-          }`}>
-            {isZero
-              ? <Minus className="w-3 h-3" />
-              : isPositive
-              ? <ArrowUpRight className="w-3 h-3" />
-              : <ArrowDownRight className="w-3 h-3" />
-            }
-            {Math.abs(growth)}%
-          </div>
-        </div>
-        <p className="text-2xl font-bold text-gray-900 leading-none">{value}</p>
-        <p className="text-xs font-medium text-gray-500 mt-1.5 group-hover:text-indigo-600 transition-colors">{title}</p>
-      </div>
-    </button>
-  );
-}
-
-/* ─── Main Page ──────────────────────────────────────────────────────────── */
 export default function AdminDashboard() {
   const router = useRouter();
-  const [branch,    setBranch]    = useState("All");
-  const [dateRange, setDateRange] = useState("Today");
-  const [custom,    setCustom]    = useState({ from: "", to: "" });
-  const [loading,   setLoading]   = useState(true);
-  const [data,      setData]      = useState(null);
 
-  const fetchData = useCallback(async () => {
-    if (dateRange === "Custom" && !custom.from) return;
-    setLoading(true);
-    try {
-      const payload = buildPayload(dateRange, custom, branch);
-      const res = await fetch("/api/admin/dashboard", {
-        method:  "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body:    JSON.stringify(payload),
+  // Draft = bound to the filter controls, edited freely. Applied = what every fetch below
+  // actually uses. They only converge when Apply is clicked, so changing the period or the
+  // account selection doesn't refetch anything until the user says so.
+  const [draftPreset, setDraftPreset] = useState("month");
+  const [draftCustomRange, setDraftCustomRange] = useState({ from: "", to: "" });
+  const [draftAccounts, setDraftAccounts] = useState(ACCOUNTS);
+
+  const [appliedPreset, setAppliedPreset] = useState("month");
+  const [appliedCustomRange, setAppliedCustomRange] = useState({ from: "", to: "" });
+  const [appliedAccounts, setAppliedAccounts] = useState(ACCOUNTS);
+
+  const isDirty =
+    draftPreset !== appliedPreset ||
+    draftCustomRange.from !== appliedCustomRange.from ||
+    draftCustomRange.to !== appliedCustomRange.to ||
+    draftAccounts.length !== appliedAccounts.length ||
+    draftAccounts.some((a) => !appliedAccounts.includes(a));
+
+  const applyFilters = () => {
+    setAppliedPreset(draftPreset);
+    setAppliedCustomRange(draftCustomRange);
+    setAppliedAccounts(draftAccounts);
+  };
+
+  const customReady = appliedPreset !== "custom" || !!appliedCustomRange.from;
+  const { from, to, priorFrom, priorTo } = useMemo(
+    () => periodRange(appliedPreset, appliedCustomRange),
+    [appliedPreset, appliedCustomRange],
+  );
+
+  const [assets, setAssets] = useState(null);
+  const [liabilities, setLiabilities] = useState(null);
+  const [cashFlow, setCashFlow] = useState(null); // { receipts, payments, balanceLeft }
+  const [pnl, setPnl] = useState(null);
+  const [priorPnl, setPriorPnl] = useState(null);
+  const [expenseByHead, setExpenseByHead] = useState([]);
+  const [monthlyTrend, setMonthlyTrend] = useState([]);
+  const [ageing, setAgeing] = useState({ payables: {}, receivables: {} });
+  const [attention, setAttention] = useState(null);
+
+  // All 9 cards (Rows 1-3) come from this one effect, keyed only to APPLIED filters — nothing
+  // refetches while the user is still adjusting the draft controls.
+  useEffect(() => {
+    if (!customReady) return;
+    let cancelled = false;
+    async function run() {
+      const accountsQS =
+        appliedAccounts.length < ACCOUNTS.length ? `&accounts=${appliedAccounts.join(",")}` : "";
+
+      const [
+        cashJson, receivablesJson, payablesJson, suspenseJson,
+        pnlJson, priorPnlJson, headJson, ageingPayJson, ageingRecJson, unattributedJson, cashFlowJson,
+      ] = await Promise.all([
+        // Row 1 balances are AS OF the period's end date (`to` only, no `from`) — a balance
+        // sheet figure is a point-in-time position, not a flow, so it reads "everything up to
+        // this date" rather than "movement within this date range".
+        //
+        // No `filter` = every account in ACCOUNTS, including the Bajaj/Fibe loan-financing
+        // settlement accounts — those are ordinary asset accounts (money the financier pays the
+        // clinic), not a liability, so they belong in this total same as Cash Book/Paytm/etc.
+        fetch(`/api/close-book/accounts?to=${iso(to)}`).then((r) => r.json()),
+        fetch(`/api/receivables/grouped?level=1&to=${iso(to)}`).then((r) => r.json()),
+        fetch(`/api/payables/grouped?level=1&to=${iso(to)}`).then((r) => r.json()),
+        fetch(`/api/suspense?groupBy=account&to=${iso(to)}`).then((r) => r.json()),
+        // Row 2 — accrual Income/Expense, current period and the prior period of equal length.
+        fetch(`/api/close-book/pnl?from=${iso(from)}&to=${iso(to)}${accountsQS}`).then((r) => r.json()),
+        fetch(`/api/close-book/pnl?from=${iso(priorFrom)}&to=${iso(priorTo)}${accountsQS}`).then((r) => r.json()),
+        fetch(`/api/payables/grouped?level=1&from=${iso(from)}&to=${iso(to)}`).then((r) => r.json()),
+        fetch("/api/payables/summary?ageing=1").then((r) => r.json()),
+        fetch("/api/receivables/summary?ageing=1").then((r) => r.json()),
+        fetch(`/api/close-book/balance-sheet?from=1970-01-01&to=${iso(to)}`).then((r) => r.json()),
+        // Row 3 — cash-basis Receipts/Payments for the SAME applied period + accounts.
+        fetch(`/api/close-book/cash-flow?from=${iso(from)}&to=${iso(to)}${accountsQS}`).then((r) => r.json()),
+      ]);
+      if (cancelled) return;
+
+      // Further Mode filter — restrict the account-keyed totals to the applied accounts. Every
+      // account selected (the default) is equivalent to no filter at all.
+      const inSelection = (row) => appliedAccounts.includes(row.key);
+      const cashTotal = (cashJson.rows || []).filter(inSelection).reduce((s, r) => s + (r.closing || 0), 0);
+      const receivablesTotal = (receivablesJson.rows || []).reduce((s, r) => s + (r.closing || 0), 0);
+      const payablesTotal = (payablesJson.rows || []).reduce((s, r) => s + (r.closing || 0), 0);
+      const suspenseTotal = (suspenseJson.rows || []).filter(inSelection).reduce((s, r) => s + (r.closing || 0), 0);
+
+      setAssets({ cashTotal, receivablesTotal, total: cashTotal + receivablesTotal });
+      setLiabilities({ payablesTotal, suspenseTotal, total: payablesTotal + suspenseTotal });
+      setCashFlow({
+        receipts: cashFlowJson.receipts || 0,
+        payments: cashFlowJson.payments || 0,
+        balanceLeft: cashFlowJson.balanceLeft || 0,
       });
-      const json = await res.json();
-      setData(json);
-    } catch (err) {
-      console.error("Dashboard fetch error:", err);
-    } finally {
-      setLoading(false);
+      setPnl({ income: pnlJson.income || 0, expense: pnlJson.expense || 0 });
+      setPriorPnl({ income: priorPnlJson.income || 0, expense: priorPnlJson.expense || 0 });
+
+      setExpenseByHead([...(headJson.rows || [])].sort((a, b) => b.movement - a.movement).slice(0, 10));
+
+      setAgeing({ payables: bucketMap(ageingPayJson.byBucket), receivables: bucketMap(ageingRecJson.byBucket) });
+
+      setAttention({
+        overduePayables: { amount: overdueAmount(ageingPayJson.byBucket), count: overdueCount(ageingPayJson.byBucket) },
+        overdueReceivables: { amount: overdueAmount(ageingRecJson.byBucket), count: overdueCount(ageingRecJson.byBucket) },
+        suspenseCount: (suspenseJson.rows || []).reduce((s, r) => s + (r.count || 0), 0),
+        unattributed: unattributedJson.unattributed || { count: 0, amount: 0 },
+      });
     }
-  }, [branch, dateRange, custom]);
+    run();
+    return () => { cancelled = true; };
+  }, [from, to, priorFrom, priorTo, customReady, appliedAccounts]);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => {
+    let cancelled = false;
+    async function run() {
+      const now = new Date();
+      const months = [];
+      for (let i = 5; i >= 0; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const start = new Date(d.getFullYear(), d.getMonth(), 1);
+        const end = new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59, 999);
+        months.push({ label: d.toLocaleDateString("en-IN", { month: "short" }), start, end });
+      }
+      const results = await Promise.all(
+        months.map((m) =>
+          fetch(`/api/transactions/get-all?dateFrom=${iso(m.start)}&dateTo=${iso(m.end)}&limit=1`).then((r) => r.json()),
+        ),
+      );
+      if (cancelled) return;
+      setMonthlyTrend(
+        months.map((m, i) => {
+          const s = results[i].stats || {};
+          return {
+            month: m.label,
+            Income: (s.TRANSPLANT?.total || 0) + (s.SERVICE?.total || 0) + (s.MEDICINE?.total || 0),
+            Expense: s.EXPENSE?.total || 0,
+          };
+        }),
+      );
+    }
+    run();
+    return () => { cancelled = true; };
+  }, []);
 
-  const d = data || {};
+  const netPosition = assets && liabilities ? assets.total - liabilities.total : null;
+  const profit = pnl ? pnl.income - pnl.expense : null;
+  const priorProfit = priorPnl ? priorPnl.income - priorPnl.expense : null;
+  const growth = (curr, prior) => (prior ? Math.round(((curr - prior) / prior) * 100) : 0);
 
-  /* ── KPI Metrics ── */
-  const metrics = [
-    {
-      title: "Appointments",
-      value: fmt(d.appointment?.count ?? 0),
-      growth: d.appointment?.growth ?? 0,
-      icon: Calendar,
-      accent: "bg-indigo-500", soft: "bg-indigo-50", text: "text-indigo-600",
-      href: "/admin/patients",
-    },
-    {
-      title: "Patients Visited",
-      value: fmt(d.visitPatient?.count ?? 0),
-      growth: d.visitPatient?.growth ?? 0,
-      icon: Activity,
-      accent: "bg-emerald-500", soft: "bg-emerald-50", text: "text-emerald-600",
-      href: "/admin/patients?visited=true",
-    },
-    {
-      title: "Ready for Surgery",
-      value: fmt(d.readyforSurgery?.count ?? 0),
-      growth: d.readyforSurgery?.growth ?? 0,
-      icon: CheckCircle2,
-      accent: "bg-purple-500", soft: "bg-purple-50", text: "text-purple-600",
-      href: "/admin/patients?status=CONSULTED",
-    },
-    {
-      title: "Surgeries Done",
-      value: fmt(d.surgeryPatient?.count ?? 0),
-      growth: d.surgeryPatient?.growth ?? 0,
-      icon: Stethoscope,
-      accent: "bg-blue-500", soft: "bg-blue-50", text: "text-blue-600",
-      href: "/admin/patients?status=CLOSED",
-    },
-    {
-      title: "Revenue",
-      value: fmtK(d.amountReceived?.total ?? 0),
-      growth: d.amountReceived?.growth ?? 0,
-      icon: IndianRupee,
-      accent: "bg-violet-500", soft: "bg-violet-50", text: "text-violet-600",
-      href: "/admin/transactions",
-    },
-  ];
+  const ageingChartData = AGEING_BUCKET_ORDER.map((b) => ({
+    bucket: b,
+    Payables: ageing.payables[b] || 0,
+    Receivables: ageing.receivables[b] || 0,
+  }));
 
-  /* ── Chart data ── */
-  const perDay7    = (d.last7Days?.perDay  || []).map((x) => ({ date: x.date, amount: x.total }));
-  const perDay30      = (d.last30Days?.perDay   || []).map((x) => ({ date: x.date, amount: x.total }));
-  const perDayMonth   = (d.thisMonth?.perDay    || []).map((x) => ({ date: x.date, amount: x.total }));
-  const byMethod7     = d.last7Days?.amountByMethod  || [];
-  const byMethod30    = d.last30Days?.amountByMethod || [];
-  const byMethodMonth = d.thisMonth?.amountByMethod  || [];
-  const byTechnique = d.amountByTechnique || [];
-
-  const patientFunnel = [
-    { stage: "Appointments",    count: d.appointment?.count     ?? 0 },
-    { stage: "Visited",         count: d.visitPatient?.count    ?? 0 },
-    { stage: "Ready for Surg.", count: d.readyforSurgery?.count ?? 0 },
-    { stage: "Surgeries Done",  count: d.surgeryPatient?.count  ?? 0 },
-  ];
+  const periodLabel =
+    appliedPreset === "month" ? "This Month"
+    : appliedPreset === "30" ? "Last 30 Days"
+    : appliedPreset === "90" ? "Last 90 Days"
+    : appliedCustomRange.from
+      ? `${new Date(appliedCustomRange.from).toLocaleDateString("en-IN", { day: "2-digit", month: "short" })} – ${
+          appliedCustomRange.to ? new Date(appliedCustomRange.to).toLocaleDateString("en-IN", { day: "2-digit", month: "short" }) : "…"
+        }`
+      : "Custom Range";
 
   return (
     <div className="flex min-h-screen bg-[#f8f9fc]">
       <AdminSidebar />
+      <main className="flex-1 p-4 sm:p-6 lg:p-8 space-y-6">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h1 className="text-xl font-bold text-gray-900">Financial Dashboard</h1>
+            <p className="text-sm text-gray-500 mt-1">Assets, liabilities, and P&amp;L at a glance.</p>
+          </div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <AccountMultiSelect
+              options={ACCOUNTS}
+              selected={draftAccounts}
+              onChange={setDraftAccounts}
+            />
+            <select
+              value={draftPreset}
+              onChange={(e) => setDraftPreset(e.target.value)}
+              className="px-3 py-2 border border-gray-200 rounded-xl text-sm bg-white shadow-sm"
+            >
+              <option value="month">This Month</option>
+              <option value="30">Last 30 Days</option>
+              <option value="90">Last 90 Days</option>
+              <option value="custom">Custom Range</option>
+            </select>
+            {draftPreset === "custom" && (
+              <>
+                <input
+                  type="date"
+                  value={draftCustomRange.from}
+                  onChange={(e) => setDraftCustomRange((c) => ({ ...c, from: e.target.value }))}
+                  className="px-3 py-2 border border-gray-200 rounded-xl text-sm bg-white shadow-sm"
+                />
+                <input
+                  type="date"
+                  value={draftCustomRange.to}
+                  min={draftCustomRange.from}
+                  onChange={(e) => setDraftCustomRange((c) => ({ ...c, to: e.target.value }))}
+                  className="px-3 py-2 border border-gray-200 rounded-xl text-sm bg-white shadow-sm"
+                />
+              </>
+            )}
+            <button
+              onClick={applyFilters}
+              disabled={!isDirty}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-xl shadow-sm hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <Filter className="w-3.5 h-3.5" /> Apply
+            </button>
+          </div>
+        </div>
 
-      <main className="flex-1 flex flex-col min-w-0 overflow-auto">
+        {/* Row 1 — as of {periodLabel}'s end date */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <MetricCard
+            title="Total Assets"
+            value={assets ? formatCurrency(assets.total) : "…"}
+            icon={Landmark}
+            color="from-emerald-500 to-emerald-600"
+            onClick={() => router.push("/admin/assets")}
+          />
+          <MetricCard
+            title="Total Liabilities"
+            value={liabilities ? formatCurrency(liabilities.total) : "…"}
+            icon={ScrollText}
+            color="from-rose-500 to-rose-600"
+            onClick={() => router.push("/admin/liabilities")}
+          />
+          <MetricCard
+            title="Net Position"
+            value={netPosition != null ? formatCurrency(netPosition) : "…"}
+            icon={Scale}
+            color={netPosition >= 0 ? "from-indigo-500 to-indigo-600" : "from-red-500 to-red-600"}
+          />
+        </div>
 
-        {/* ── Sticky Header ── */}
-        <div className="bg-white border-b border-gray-200 px-6 py-4 sticky top-0 z-10 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-linear-to-br from-indigo-500 via-purple-500 to-indigo-600 flex items-center justify-center shadow-md">
-                <BarChart2 className="w-5 h-5 text-white" />
+        {/* Row 2 — P&L strip (accrual) */}
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
+          <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wide mb-1">
+            Profit &amp; Loss — {periodLabel}
+          </h2>
+          <p className="text-xs text-gray-400 mb-4">
+            Income = direct sales + receivables raised this period, minus what's double-counted
+            against them. Expense = direct expenses + payables raised this period, minus what's
+            double-counted against them.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {[
+              { label: "Income", value: pnl?.income, prior: priorPnl?.income },
+              { label: "Expense", value: pnl?.expense, prior: priorPnl?.expense },
+              { label: "Profit", value: profit, prior: priorProfit },
+            ].map((row) => (
+              <div key={row.label} className="border border-gray-100 rounded-xl p-4">
+                <p className="text-xs text-gray-400 uppercase tracking-wide">{row.label}</p>
+                <p className="text-xl font-bold text-gray-900 mt-1">
+                  {row.value != null ? formatCurrency(row.value) : "…"}
+                </p>
+                {row.prior != null && (
+                  <p className="text-xs text-gray-400 mt-1">
+                    Prior period: {formatCurrency(row.prior)} (
+                    {growth(row.value, row.prior) >= 0 ? "+" : ""}
+                    {growth(row.value, row.prior)}%)
+                  </p>
+                )}
               </div>
-              <div>
-                <h1 className="text-base font-bold text-gray-900 leading-tight">Admin Dashboard</h1>
-                <p className="text-[11px] text-gray-400 mt-0.5">Overview across all patient and financial metrics</p>
-              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Row 3 — Cash flow strip (cash basis) */}
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
+          <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wide mb-1">
+            Cash Flow — {periodLabel}
+          </h2>
+          <p className="text-xs text-gray-400 mb-4">
+            Every positive (Receipts) and negative (Payments) transaction posted to your bank/
+            further-mode accounts, excluding internal contra transfers between your own accounts.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="border border-emerald-100 bg-emerald-50/40 rounded-xl p-4">
+              <p className="text-xs text-emerald-700 font-semibold uppercase tracking-wide">Receipts</p>
+              <p className="text-xl font-bold text-gray-900 mt-1">
+                {cashFlow ? formatCurrency(cashFlow.receipts) : "…"}
+              </p>
             </div>
-
-            <div className="flex items-center gap-2 flex-wrap">
-              {/* Branch */}
-              <div className="relative">
-                <MapPin className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
-                <select value={branch} onChange={(e) => setBranch(e.target.value)}
-                  className="pl-7 pr-7 py-2 border border-gray-200 rounded-xl text-xs font-semibold text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-300 appearance-none cursor-pointer shadow-sm">
-                  {BRANCHES.map((b) => <option key={b}>{b}</option>)}
-                </select>
-                <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
-              </div>
-
-              {/* Date Range */}
-              <div className="relative">
-                <Calendar className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
-                <select value={dateRange} onChange={(e) => setDateRange(e.target.value)}
-                  className="pl-7 pr-7 py-2 border border-gray-200 rounded-xl text-xs font-semibold text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-300 appearance-none cursor-pointer shadow-sm">
-                  {DATE_RANGES.map((r) => <option key={r}>{r}</option>)}
-                </select>
-                <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
-              </div>
-
-              {dateRange === "Custom" && (
-                <>
-                  <input type="date" value={custom.from}
-                    onChange={(e) => setCustom((p) => ({ ...p, from: e.target.value }))}
-                    className="border border-gray-200 rounded-xl px-3 py-2 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-indigo-300 shadow-sm" />
-                  <input type="date" value={custom.to} min={custom.from}
-                    onChange={(e) => setCustom((p) => ({ ...p, to: e.target.value }))}
-                    className="border border-gray-200 rounded-xl px-3 py-2 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-indigo-300 shadow-sm" />
-                </>
-              )}
-
-              <button onClick={fetchData} disabled={loading}
-                className="w-9 h-9 flex items-center justify-center border border-gray-200 rounded-xl bg-white hover:bg-indigo-50 shadow-sm transition-colors disabled:opacity-50">
-                <RefreshCw className={`w-4 h-4 text-indigo-500 ${loading ? "animate-spin" : ""}`} />
-              </button>
+            <div className="border border-rose-100 bg-rose-50/40 rounded-xl p-4">
+              <p className="text-xs text-rose-700 font-semibold uppercase tracking-wide">Payment</p>
+              <p className="text-xl font-bold text-gray-900 mt-1">
+                {cashFlow ? formatCurrency(cashFlow.payments) : "…"}
+              </p>
+            </div>
+            <div className="border border-indigo-100 bg-indigo-50/40 rounded-xl p-4">
+              <p className="text-xs text-indigo-700 font-semibold uppercase tracking-wide">Balance Left</p>
+              <p className="text-xl font-bold text-gray-900 mt-1">
+                {cashFlow ? formatCurrency(cashFlow.balanceLeft) : "…"}
+              </p>
             </div>
           </div>
         </div>
 
-        <div className="flex-1 p-6 space-y-6">
+        {/* Row 4 — three charts */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
+            <h3 className="text-sm font-semibold text-gray-800 mb-3">Expense by Head — Top 10</h3>
+            <ResponsiveContainer width="100%" height={260}>
+              <BarChart data={expenseByHead} layout="vertical" margin={{ left: 8, right: 30 }}>
+                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f3f4f6" />
+                <XAxis type="number" tickFormatter={fmtK} tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
+                <YAxis type="category" dataKey="label" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} width={100} />
+                <Tooltip formatter={(v) => formatCurrency(v)} />
+                <Bar dataKey="movement" name="Raised" radius={[0, 6, 6, 0]} fill="#f43f5e" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
 
-          {loading ? (
-            <div className="space-y-6">
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-                {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-28" />)}
-              </div>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-                <Skeleton className="h-72" />
-                <Skeleton className="h-72" />
-              </div>
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-                <Skeleton className="h-64" />
-                <Skeleton className="h-64" />
-                <Skeleton className="h-64" />
-              </div>
-            </div>
-          ) : (
-            <>
-              {/* ── KPI Cards ── */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-                {metrics.map((m) => (
-                  <KpiCard
-                    key={m.title}
-                    title={m.title}
-                    value={m.value}
-                    growth={m.growth}
-                    icon={m.icon}
-                    accent={m.accent}
-                    soft={m.soft}
-                    text={m.text}
-                    onClick={() => router.push(m.href)}
-                  />
-                ))}
-              </div>
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
+            <h3 className="text-sm font-semibold text-gray-800 mb-3">Income vs Expense — Last 6 Months</h3>
+            <ResponsiveContainer width="100%" height={260}>
+              <BarChart data={monthlyTrend}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
+                <XAxis dataKey="month" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
+                <YAxis tickFormatter={fmtK} tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
+                <Tooltip formatter={(v) => formatCurrency(v)} />
+                <Legend wrapperStyle={{ fontSize: 11 }} />
+                <Bar dataKey="Income" fill="#10b981" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="Expense" fill="#f43f5e" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
 
-              {/* ── Revenue + Patient Funnel ── */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-                <ChartCard title="Revenue — Last 7 Days" subtitle="Daily collection trend">
-                  {perDay7.length > 0 ? (
-                    <ResponsiveContainer width="100%" height={240}>
-                      <AreaChart data={perDay7}>
-                        <defs>
-                          <linearGradient id="revGrad7" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%"  stopColor="#6366f1" stopOpacity={0.3} />
-                            <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
-                          </linearGradient>
-                        </defs>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
-                        <XAxis dataKey="date" tickFormatter={fmtDate} tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
-                        <YAxis tickFormatter={fmtK} tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
-                        <Tooltip content={<CustomTooltip formatter={(v) => fmtK(v)} />} />
-                        <Area type="monotone" dataKey="amount" name="Revenue" stroke="#6366f1" fill="url(#revGrad7)" strokeWidth={2.5} dot={false} />
-                      </AreaChart>
-                    </ResponsiveContainer>
-                  ) : (
-                    <div className="h-60 flex items-center justify-center text-gray-400 text-sm">No revenue data for this period</div>
-                  )}
-                </ChartCard>
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
+            <h3 className="text-sm font-semibold text-gray-800 mb-3">Ageing — Payables vs Receivables</h3>
+            <ResponsiveContainer width="100%" height={260}>
+              <BarChart data={ageingChartData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
+                <XAxis dataKey="bucket" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
+                <YAxis tickFormatter={fmtK} tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
+                <Tooltip formatter={(v) => formatCurrency(v)} />
+                <Legend wrapperStyle={{ fontSize: 11 }} />
+                <Bar dataKey="Payables" stackId="a" fill="#f97316" />
+                <Bar dataKey="Receivables" stackId="a" fill="#0ea5e9" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
 
-                <ChartCard title="Patient Journey Funnel" subtitle={`${dateRange} — stage-wise breakdown`}>
-                  <ResponsiveContainer width="100%" height={240}>
-                    <BarChart data={patientFunnel} layout="vertical" margin={{ left: 10, right: 40 }}>
-                      <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f3f4f6" />
-                      <XAxis type="number" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
-                      <YAxis type="category" dataKey="stage" tick={{ fontSize: 11, fontWeight: 600 }} axisLine={false} tickLine={false} width={105} />
-                      <Tooltip content={<CustomTooltip />} />
-                      <Bar dataKey="count" name="Patients" radius={[0, 6, 6, 0]}
-                        label={{ position: "right", fontSize: 11, fontWeight: 700, fill: "#374151" }}>
-                        {patientFunnel.map((_, i) => (
-                          <Cell key={i} fill={["#6366f1", "#8b5cf6", "#a78bfa", "#3b82f6"][i]} />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                </ChartCard>
-              </div>
-
-              {/* ── 30-day Revenue + Payment Methods + Summary ── */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-                <ChartCard title="Revenue — This Month" subtitle="Daily collection this month" className="lg:col-span-2">
-                  {perDayMonth.length > 0 ? (
-                    <ResponsiveContainer width="100%" height={220}>
-                      <AreaChart data={perDayMonth}>
-                        <defs>
-                          <linearGradient id="revGradMonth" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%"  stopColor="#8b5cf6" stopOpacity={0.3} />
-                            <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0} />
-                          </linearGradient>
-                        </defs>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
-                        <XAxis dataKey="date" tickFormatter={fmtDate} tick={{ fontSize: 9 }} axisLine={false} tickLine={false} interval={4} />
-                        <YAxis tickFormatter={fmtK} tick={{ fontSize: 9 }} axisLine={false} tickLine={false} />
-                        <Tooltip content={<CustomTooltip formatter={(v) => fmtK(v)} />} />
-                        <Area type="monotone" dataKey="amount" name="Revenue" stroke="#8b5cf6" fill="url(#revGradMonth)" strokeWidth={2} dot={false} />
-                      </AreaChart>
-                    </ResponsiveContainer>
-                  ) : (
-                    <div className="h-56 flex items-center justify-center text-gray-400 text-sm">No data</div>
-                  )}
-                </ChartCard>
-
-                {/* Payment Methods */}
-                <ChartCard title="Payment Methods" subtitle="Last 7 days">
-                  {byMethod7.length > 0 ? (
-                    <div className="space-y-2.5">
-                      {byMethod7.slice(0, 5).map((m) => {
-                        const meta = METHOD_META[m.method] || { label: m.method, color: "#9ca3af", icon: "💰" };
-                        const total7 = byMethod7.reduce((s, x) => s + x.total, 0);
-                        const pct = total7 > 0 ? ((m.total / total7) * 100).toFixed(0) : 0;
-                        return (
-                          <div key={m.method}>
-                            <div className="flex items-center justify-between mb-1">
-                              <div className="flex items-center gap-1.5">
-                                <span className="text-sm">{meta.icon}</span>
-                                <span className="text-xs font-semibold text-gray-700">{meta.label}</span>
-                              </div>
-                              <span className="text-xs font-bold text-gray-900">{fmtK(m.total)}</span>
-                            </div>
-                            <div className="h-1.5 rounded-full bg-gray-100 overflow-hidden">
-                              <div className="h-full rounded-full transition-all"
-                                style={{ width: `${pct}%`, backgroundColor: meta.color }} />
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    <div className="h-48 flex items-center justify-center text-gray-400 text-sm">No data</div>
-                  )}
-                </ChartCard>
-              </div>
-
-              {/* ── Technique Revenue + Summary + Quick Links ── */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-                <ChartCard title="Revenue by Technique" subtitle={`${dateRange}`} className="lg:col-span-2">
-                  {byTechnique.length > 0 ? (
-                    <ResponsiveContainer width="100%" height={220}>
-                      <BarChart data={byTechnique} layout="vertical" margin={{ left: 8, right: 50 }}>
-                        <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f3f4f6" />
-                        <XAxis type="number" tickFormatter={fmtK} tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
-                        <YAxis type="category" dataKey="method" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} width={110} />
-                        <Tooltip content={<CustomTooltip formatter={(v) => fmtK(v)} />} />
-                        <Bar dataKey="total" name="Revenue" radius={[0, 6, 6, 0]}
-                          label={{ position: "right", fontSize: 10, fontWeight: 700, fill: "#374151", formatter: fmtK }}>
-                          {byTechnique.map((_, i) => <Cell key={i} fill={PALETTE[i % PALETTE.length]} />)}
-                        </Bar>
-                      </BarChart>
-                    </ResponsiveContainer>
-                  ) : (
-                    <div className="h-56 flex items-center justify-center text-gray-400 text-sm">No technique data for this period</div>
-                  )}
-                </ChartCard>
-
-                <div className="space-y-3">
-                  {/* 7-day total */}
-                  <div className="bg-white rounded-2xl border border-indigo-100 shadow-sm p-4">
-                    <div className="flex items-center gap-2 mb-1">
-                      <div className="w-7 h-7 rounded-lg bg-indigo-50 flex items-center justify-center">
-                        <TrendingUp className="w-3.5 h-3.5 text-indigo-600" />
-                      </div>
-                      <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">7-Day Revenue</span>
-                    </div>
-                    <p className="text-2xl font-bold text-gray-900">{fmtK(d.last7Days?.total ?? 0)}</p>
-                    <p className="text-[10px] text-gray-400 mt-0.5">Total collected in last 7 days</p>
-                  </div>
-
-                  {/* This month total */}
-                  <div className="bg-white rounded-2xl border border-purple-100 shadow-sm p-4">
-                    <div className="flex items-center gap-2 mb-1">
-                      <div className="w-7 h-7 rounded-lg bg-purple-50 flex items-center justify-center">
-                        <Target className="w-3.5 h-3.5 text-purple-600" />
-                      </div>
-                      <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">This Month Revenue</span>
-                    </div>
-                    <p className="text-2xl font-bold text-gray-900">{fmtK(d.thisMonth?.total ?? 0)}</p>
-                    <p className="text-[10px] text-gray-400 mt-0.5">Total collected this month</p>
-                  </div>
-
-                  {/* Quick nav */}
-                  <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
-                    <p className="text-xs font-bold text-gray-700 mb-2.5 uppercase tracking-wide">Quick Links</p>
-                    <div className="space-y-1">
-                      {[
-                        { label: "All Patients",    href: "/admin/patients" },
-                        { label: "Transactions",    href: "/admin/transactions" },
-                        { label: "Reports",         href: "/admin/reports" },
-                        { label: "Employees",       href: "/admin/employees" },
-                      ].map((link) => (
-                        <button key={link.label}
-                          onClick={() => router.push(link.href)}
-                          className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-gray-600 hover:bg-indigo-50 hover:text-indigo-700 transition-colors">
-                          {link.label}
-                          <ArrowUpRight className="w-3.5 h-3.5 opacity-50" />
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* ── PRP & GFC ── */}
-              <div>
-                <div className="flex items-center gap-2.5 mb-4">
-                  <div className="w-7 h-7 rounded-lg bg-teal-50 flex items-center justify-center">
-                    <Droplets className="w-3.5 h-3.5 text-teal-600" />
-                  </div>
-                  <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wider">PRP &amp; GFC Sessions</h2>
-                  <div className="flex-1 h-px bg-gray-200" />
-                  <span className="text-xs text-gray-400">{dateRange}</span>
-                </div>
-
-                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                  {/* PRP Sessions */}
-                  <div className="bg-white rounded-2xl border border-teal-100 shadow-sm overflow-hidden">
-                    <div className="h-1 bg-teal-500" />
-                    <div className="p-4">
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="w-9 h-9 rounded-xl bg-teal-50 flex items-center justify-center">
-                          <Droplets className="w-4 h-4 text-teal-600" />
-                        </div>
-                        <span className="text-[10px] font-semibold text-teal-600 bg-teal-50 px-2 py-0.5 rounded-full">PRP</span>
-                      </div>
-                      <p className="text-2xl font-bold text-gray-900">{fmt(d.prp?.prpSessions ?? 0)}</p>
-                      <p className="text-xs text-gray-500 mt-1">Sessions</p>
-                      <p className="text-sm font-semibold text-teal-700 mt-1">{fmtK(d.prp?.prpRevenue ?? 0)}</p>
-                    </div>
-                  </div>
-
-                  {/* GFC Sessions */}
-                  <div className="bg-white rounded-2xl border border-purple-100 shadow-sm overflow-hidden">
-                    <div className="h-1 bg-purple-500" />
-                    <div className="p-4">
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="w-9 h-9 rounded-xl bg-purple-50 flex items-center justify-center">
-                          <Droplets className="w-4 h-4 text-purple-600" />
-                        </div>
-                        <span className="text-[10px] font-semibold text-purple-600 bg-purple-50 px-2 py-0.5 rounded-full">GFC</span>
-                      </div>
-                      <p className="text-2xl font-bold text-gray-900">{fmt(d.prp?.gfcSessions ?? 0)}</p>
-                      <p className="text-xs text-gray-500 mt-1">Sessions</p>
-                      <p className="text-sm font-semibold text-purple-700 mt-1">{fmtK(d.prp?.gfcRevenue ?? 0)}</p>
-                    </div>
-                  </div>
-
-                  {/* Total Sessions */}
-                  <div className="bg-white rounded-2xl border border-indigo-100 shadow-sm overflow-hidden">
-                    <div className="h-1 bg-indigo-500" />
-                    <div className="p-4">
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="w-9 h-9 rounded-xl bg-indigo-50 flex items-center justify-center">
-                          <Activity className="w-4 h-4 text-indigo-600" />
-                        </div>
-                        <span className="text-[10px] font-semibold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">Total</span>
-                      </div>
-                      <p className="text-2xl font-bold text-gray-900">{fmt(d.prp?.totalSessions ?? 0)}</p>
-                      <p className="text-xs text-gray-500 mt-1">Combined sessions</p>
-                    </div>
-                  </div>
-
-                  {/* Total Revenue */}
-                  <div className="bg-white rounded-2xl border border-emerald-100 shadow-sm overflow-hidden">
-                    <div className="h-1 bg-emerald-500" />
-                    <div className="p-4">
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="w-9 h-9 rounded-xl bg-emerald-50 flex items-center justify-center">
-                          <IndianRupee className="w-4 h-4 text-emerald-600" />
-                        </div>
-                        <span className="text-[10px] font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">Revenue</span>
-                      </div>
-                      <p className="text-2xl font-bold text-gray-900">{fmtK(d.prp?.totalRevenue ?? 0)}</p>
-                      <p className="text-xs text-gray-500 mt-1">PRP + GFC combined</p>
-                      {(d.prp?.totalSessions ?? 0) > 0 && (
-                        <p className="text-[10px] text-gray-400 mt-0.5">
-                          avg {fmtK(Math.round((d.prp?.totalRevenue ?? 0) / (d.prp?.totalSessions ?? 1)))} / session
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* PRP vs GFC bar comparison */}
-                {((d.prp?.prpSessions ?? 0) > 0 || (d.prp?.gfcSessions ?? 0) > 0) && (
-                  <div className="mt-4 bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
-                    <p className="text-xs font-semibold text-gray-500 mb-3">PRP vs GFC — session split</p>
-                    <div className="flex items-center gap-3">
-                      <span className="text-[11px] font-bold text-teal-600 w-8 text-right">{d.prp?.prpSessions ?? 0}</span>
-                      <div className="flex-1 flex h-3 rounded-full overflow-hidden bg-gray-100">
-                        {(() => {
-                          const total = (d.prp?.totalSessions ?? 0) || 1;
-                          const prpPct = ((d.prp?.prpSessions ?? 0) / total) * 100;
-                          return (
-                            <>
-                              <div className="h-full bg-teal-500 transition-all duration-700" style={{ width: `${prpPct}%` }} />
-                              <div className="h-full bg-purple-500 transition-all duration-700" style={{ width: `${100 - prpPct}%` }} />
-                            </>
-                          );
-                        })()}
-                      </div>
-                      <span className="text-[11px] font-bold text-purple-600 w-8">{d.prp?.gfcSessions ?? 0}</span>
-                    </div>
-                    <div className="flex items-center gap-4 mt-2">
-                      <span className="flex items-center gap-1.5 text-[11px] text-gray-500">
-                        <span className="w-2 h-2 rounded-full bg-teal-500" /> PRP · {fmtK(d.prp?.prpRevenue ?? 0)}
-                      </span>
-                      <span className="flex items-center gap-1.5 text-[11px] text-gray-500">
-                        <span className="w-2 h-2 rounded-full bg-purple-500" /> GFC · {fmtK(d.prp?.gfcRevenue ?? 0)}
-                      </span>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* ── 7d vs 30d Payment Method Comparison ── */}
-              {(byMethod7.length > 0 || byMethod30.length > 0) && (
-                <ChartCard title="Payment Method Comparison" subtitle="7-day vs 30-day collection by channel">
-                  <ResponsiveContainer width="100%" height={220}>
-                    <BarChart data={(() => {
-                      const map = {};
-                      byMethod7.forEach((m) => {
-                        const meta = METHOD_META[m.method] || { label: m.method };
-                        map[meta.label] = { method: meta.label, "7 Days": m.total, "30 Days": 0 };
-                      });
-                      byMethod30.forEach((m) => {
-                        const meta = METHOD_META[m.method] || { label: m.method };
-                        if (!map[meta.label]) map[meta.label] = { method: meta.label, "7 Days": 0, "30 Days": 0 };
-                        map[meta.label]["30 Days"] = m.total;
-                      });
-                      return Object.values(map);
-                    })()}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
-                      <XAxis dataKey="method" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
-                      <YAxis tickFormatter={fmtK} tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
-                      <Tooltip content={<CustomTooltip formatter={(v) => fmtK(v)} />} />
-                      <Legend iconType="circle" wrapperStyle={{ fontSize: 11 }} />
-                      <Bar dataKey="7 Days"  fill="#6366f1" radius={[4, 4, 0, 0]} />
-                      <Bar dataKey="30 Days" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </ChartCard>
+        {/* Row 5 — attention list */}
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
+          <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wide mb-4">Needs Attention</h2>
+          <div className="space-y-2">
+            <AttentionRow
+              label="Overdue payables"
+              count={attention?.overduePayables?.count}
+              amount={attention?.overduePayables?.amount}
+              href="/admin/liabilities"
+            />
+            <AttentionRow
+              label="Overdue receivables"
+              count={attention?.overdueReceivables?.count}
+              amount={attention?.overdueReceivables?.amount}
+              href="/admin/assets"
+            />
+            <AttentionRow
+              label="Unreclassified suspense entries"
+              count={attention?.suspenseCount}
+              href="/admin/liabilities"
+            />
+            <AttentionRow
+              label="Transactions missing account attribution"
+              count={attention?.unattributed?.count}
+              amount={attention?.unattributed?.amount}
+              href="/admin/transactions?furtherMode=__UNTRACKED__"
+            />
+            {attention && !attention.overduePayables?.count && !attention.overdueReceivables?.count &&
+              !attention.suspenseCount && !attention.unattributed?.count && (
+                <p className="text-sm text-gray-400 py-2">Nothing needs attention right now.</p>
               )}
-            </>
-          )}
+          </div>
         </div>
       </main>
     </div>
+  );
+}
+
+function AttentionRow({ label, count, amount, href }) {
+  if (!count) return null;
+  return (
+    <Link
+      href={href}
+      className="flex items-center justify-between p-3 rounded-xl hover:bg-gray-50 border border-gray-100 transition-colors"
+    >
+      <div className="flex items-center gap-2">
+        <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
+        <span className="text-sm text-gray-700">{label}</span>
+      </div>
+      <div className="flex items-center gap-2">
+        <span className="text-sm font-semibold text-gray-900">
+          {count}
+          {amount != null ? ` · ${formatCurrency(amount)}` : ""}
+        </span>
+        <ArrowRight className="w-3.5 h-3.5 text-gray-400" />
+      </div>
+    </Link>
   );
 }

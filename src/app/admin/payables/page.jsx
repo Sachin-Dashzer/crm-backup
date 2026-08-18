@@ -7,7 +7,7 @@ import MetricCard from "@/components/MetricCard";
 import SearchableSelect from "@/components/SearchableSelect";
 import { useToast } from "@/components/Toast";
 import TransactionFieldSet, { validateTransactionFields } from "@/components/TransactionFieldSet";
-import { getExpenseTypes } from "@/constants/expenseCategories";
+import { getExpenseTypes, PAYABLE_EXPENSE_CATEGORIES } from "@/constants/expenseCategories";
 import { ALL_BRANCHES, COLLAB_BRANCHES } from "@/lib/branches";
 import { formatCurrency, formatDate, StatusBadge } from "@/lib/financeUI";
 import { EXPENSE_METHODS, withLegacyMethod } from "@/constants/paymentMethods";
@@ -98,6 +98,8 @@ const DEFAULT_FILTERS = {
   status: "",
   ageingBucket: "",
   purpose: "",
+  expenseCategory: "",
+  expenseSubType: "",
   branch: "",
   dateFrom: "",
   dateTo: "",
@@ -131,6 +133,8 @@ function AdminPayablesPageInner() {
     status: searchParams.get("status") || "",
     ageingBucket: searchParams.get("ageingBucket") || "",
     purpose: searchParams.get("purpose") || "",
+    expenseCategory: searchParams.get("expenseCategory") || "",
+    expenseSubType: searchParams.get("expenseSubType") || "",
     branch: searchParams.get("branch") || "",
     dateFrom: searchParams.get("dateFrom") || "",
     dateTo: searchParams.get("dateTo") || "",
@@ -178,6 +182,8 @@ function AdminPayablesPageInner() {
     try {
       const params = new URLSearchParams({ page: String(page), limit: String(limit) });
       if (filters.purpose) params.set("purpose", filters.purpose);
+      if (filters.expenseCategory) params.set("expenseCategory", filters.expenseCategory);
+      if (filters.expenseSubType) params.set("expenseSubType", filters.expenseSubType);
       if (filters.status) params.set("status", filters.status);
       if (filters.ageingBucket) params.set("ageingBucket", filters.ageingBucket);
       if (filters.branch) params.set("branch", filters.branch);
@@ -212,6 +218,13 @@ function AdminPayablesPageInner() {
   const handleFilterChange = (key, value) => {
     setPage(1);
     setFilters((prev) => ({ ...prev, [key]: value }));
+  };
+
+  // A sub-type belongs to exactly one category, so carrying the old one across a category
+  // change would always produce an empty list. Clearing it is the only sane behaviour.
+  const handleCategoryChange = (value) => {
+    setPage(1);
+    setFilters((prev) => ({ ...prev, expenseCategory: value, expenseSubType: "" }));
   };
 
   const clearFilters = () => {
@@ -346,9 +359,10 @@ function AdminPayablesPageInner() {
             </div>
           )}
 
-          {/* Filters — order: search -> status -> purpose -> branch -> date range */}
+          {/* Filters — order: search -> status -> ageing -> purpose -> category -> sub-category
+              -> branch -> date range */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-8 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-3">
               <div className="relative lg:col-span-2">
                 <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
@@ -383,14 +397,30 @@ function AdminPayablesPageInner() {
                 ))}
               </select>
               <select
-                value={filters.purpose}
-                onChange={(e) => handleFilterChange("purpose", e.target.value)}
+                value={filters.expenseCategory}
+                onChange={(e) => handleCategoryChange(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
               >
-                <option value="">All Purposes</option>
-                {PURPOSES.map((p) => (
-                  <option key={p} value={p}>
-                    {PURPOSE_LABELS[p]}
+                <option value="">All Categories</option>
+                {PAYABLE_EXPENSE_CATEGORIES.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={filters.expenseSubType}
+                onChange={(e) => handleFilterChange("expenseSubType", e.target.value)}
+                disabled={!filters.expenseCategory}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm disabled:bg-gray-50 disabled:text-gray-400"
+                title={filters.expenseCategory ? undefined : "Pick a category first"}
+              >
+                <option value="">
+                  {filters.expenseCategory ? "All Sub-categories" : "Sub-category"}
+                </option>
+                {getExpenseTypes(filters.expenseCategory).map((t) => (
+                  <option key={t} value={t}>
+                    {t}
                   </option>
                 ))}
               </select>
@@ -1087,6 +1117,10 @@ function NewPayableModal({ onClose, onSuccess, toast }) {
   const [employeeSearching, setEmployeeSearching] = useState(false);
   const employeeDebounce = useRef(null);
 
+  const [vendors, setVendors] = useState([]);
+  const [vendorId, setVendorId] = useState("");
+  const [vendorName, setVendorName] = useState("");
+
   const [month, setMonth] = useState(new Date().getMonth() + 1);
   const [year, setYear] = useState(new Date().getFullYear());
 
@@ -1130,9 +1164,25 @@ function NewPayableModal({ onClose, onSuccess, toast }) {
   };
   const formatEmployeeOption = (e) => `${e.name} — ${e.role}`;
 
+  // Fetched once — the vendor list is small and has no search endpoint, so SearchableSelect
+  // filters it locally instead of round-tripping per keystroke like patients and employees.
+  const fetchVendors = async () => {
+    try {
+      const res = await fetch("/api/vendors/get");
+      if (res.ok) {
+        const data = await res.json();
+        setVendors(data.data || data.vendors || []);
+      }
+    } catch {
+      // An empty picker is recoverable — the vendor is optional here.
+    }
+  };
+  const formatVendorOption = (v) => (v.DealsIn ? `${v.name} — ${v.DealsIn}` : v.name);
+
   useEffect(() => {
     fetchPatients("");
     fetchEmployees("");
+    fetchVendors();
   }, []);
 
   const needsPeriod = ["SALARY", "RENT", "ELECTRICITY", "COLLAB_CLINIC", "TAX"].includes(purpose);
@@ -1150,7 +1200,14 @@ function NewPayableModal({ onClose, onSuccess, toast }) {
       return { kind: "PATIENT", refId: relatedPatient, label: pat?.personal?.name || "Patient" };
     }
     if (purpose === "TAX") return { kind: "OTHER", refId: null, label: taxType };
-    if (GENERIC_SUBTYPE_PURPOSES.includes(purpose)) return { kind: "OTHER", refId: null, label: subType };
+    if (GENERIC_SUBTYPE_PURPOSES.includes(purpose)) {
+      // The vendor is optional and additive: these purposes have always recorded kind OTHER
+      // labelled with the sub-type, and every existing payable stays valid. Naming a vendor
+      // upgrades the payee to a linked VENDOR, which buildGiverForPayable then turns into a
+      // VENDOR expenseGiver on the payment transaction.
+      if (vendorId && vendorName) return { kind: "VENDOR", refId: vendorId, label: vendorName };
+      return { kind: "OTHER", refId: null, label: subType };
+    }
     return null;
   };
 
@@ -1162,6 +1219,13 @@ function NewPayableModal({ onClose, onSuccess, toast }) {
     const payee = buildPayee();
     if (!payee?.label) {
       toast.error("Complete the payee details for this purpose");
+      return;
+    }
+    // Sub-type used to be checked implicitly — it WAS the payee label, so a blank one failed
+    // the check above. A selected vendor now supplies the label, so it needs its own guard or
+    // the payable would be filed with no expense sub-type.
+    if (GENERIC_SUBTYPE_PURPOSES.includes(purpose) && !subType) {
+      toast.error("Select the expense sub-type");
       return;
     }
     if (needsPeriod && (!month || !year)) {
@@ -1379,19 +1443,44 @@ function NewPayableModal({ onClose, onSuccess, toast }) {
           )}
 
           {GENERIC_SUBTYPE_PURPOSES.includes(purpose) && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                {PURPOSE_LABELS[purpose]} Sub-type *
-              </label>
-              <select value={subType} onChange={(e) => setSubType(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg">
-                <option value="">Select…</option>
-                {getExpenseTypes(PURPOSE_TO_CATEGORY[purpose]).map((t) => (
-                  <option key={t} value={t}>
-                    {t}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  {PURPOSE_LABELS[purpose]} Sub-type *
+                </label>
+                <select value={subType} onChange={(e) => setSubType(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                  <option value="">Select…</option>
+                  {getExpenseTypes(PURPOSE_TO_CATEGORY[purpose]).map((t) => (
+                    <option key={t} value={t}>
+                      {t}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Vendor <span className="text-gray-400 font-normal">(optional)</span>
+                </label>
+                <SearchableSelect
+                  options={vendors}
+                  value={vendorId}
+                  onChange={(v, obj) => {
+                    setVendorId(v);
+                    setVendorName(obj?.name || "");
+                  }}
+                  placeholder="Search and select a vendor..."
+                  valueKey="_id"
+                  formatOption={formatVendorOption}
+                />
+                <p className="mt-1.5 text-xs text-gray-400">
+                  Naming the vendor links this payable — and the expense it pays — to their
+                  record. Leave blank to file it under the sub-type alone.{" "}
+                  <a href="/admin/vendors/create" target="_blank" rel="noreferrer" className="text-indigo-600 hover:underline">
+                    Add a vendor
+                  </a>
+                </p>
+              </div>
+            </>
           )}
 
           {needsPeriod && (

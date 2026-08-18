@@ -92,6 +92,23 @@ const transactionSchema = new mongoose.Schema(
     // Defaults false, so every existing row keeps its current behaviour until explicitly set.
     isSettlement: { type: Boolean, default: false, index: true },
 
+    // ── Reversals ────────────────────────────────────────────────────────────────────────
+    //
+    // A reversal is an ordinary transaction carrying a NEGATIVE amount and pointing at what it
+    // reverses. Deliberately a negative amount rather than a flag with a positive one: `amount`
+    // has no `min: 0`, so a negative row already nets out correctly in every existing
+    // aggregation — revenue totals, account balances, patient amountReceived — without editing
+    // a single one of them. A flag would require finding every sum in the codebase, and any one
+    // missed is a silent wrong figure.
+    //
+    // NEVER created by the normal entry forms. Only POST /api/transactions/[id]/reverse writes
+    // these, so a user cannot type "-500" into a routine entry and leave an untraceable mess.
+    reversalOf: { type: mongoose.Schema.Types.ObjectId, ref: "Transactions", default: null, index: true },
+    // Set on the ORIGINAL, and only once it is FULLY reversed. A partially reversed original
+    // stays false so it remains open to further reversal.
+    isReversed: { type: Boolean, default: false },
+    reversalReason: { type: String, default: "" },
+
     // FIFO split of THIS transaction's amount across more than one open receivable — set only
     // when a payment spilled over from one receivable into the next (see
     // src/lib/receivableAllocation.js). receivableId above is always kept equal to this array's

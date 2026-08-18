@@ -25,9 +25,12 @@ export async function GET(req) {
     // If ID is provided, fetch single vendor
     if (id) {
       try {
-        const vendor = await vendor.findById(id).lean();
+        // Named `found`, not `vendor` — a local `const vendor` shadows the imported model
+        // for the whole block, so `vendor.findById` hit the temporal dead zone and this
+        // path threw a ReferenceError on every call.
+        const found = await vendor.findById(id).lean();
 
-        if (!vendor) {
+        if (!found) {
           return NextResponse.json(
             {
               success: false,
@@ -40,8 +43,8 @@ export async function GET(req) {
         return NextResponse.json(
           {
             success: true,
-            data: vendor,
-            vendor: vendor, // For backward compatibility
+            data: found,
+            vendor: found, // For backward compatibility
           },
           { status: 200 }
         );
@@ -127,9 +130,10 @@ export async function POST(req) {
     // If ID is provided, fetch single vendor
     if (id) {
       try {
-        const vendor = await vendor.findById(id).lean();
+        // See the GET handler above — same shadowing bug, same fix.
+        const found = await vendor.findById(id).lean();
 
-        if (!vendor) {
+        if (!found) {
           return NextResponse.json(
             {
               success: false,
@@ -142,8 +146,8 @@ export async function POST(req) {
         return NextResponse.json(
           {
             success: true,
-            data: vendor,
-            vendor: vendor,
+            data: found,
+            vendor: found,
           },
           { status: 200 }
         );

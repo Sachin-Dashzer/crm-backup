@@ -37,11 +37,14 @@ import {
   ArrowLeftRight,
   Image as ImageIcon,
   Landmark,
+  RotateCcw,
 } from "lucide-react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { METHOD_LABELS } from "@/constants/paymentMethods";
 import { UNSETTLED_METHODS, FURTHER_MODES } from "@/constants/bankRouting";
 import { EXPENSE_CATEGORIES, getExpenseTypes } from "@/constants/expenseCategories";
+import ReverseTransactionModal from "@/components/finance/ReverseTransactionModal";
+import TransactionStatusBadges from "@/components/finance/StatusBadges";
 import SuspenseManager from "@/components/SuspenseManager";
 import ContraManager from "@/components/ContraManager";
 
@@ -321,6 +324,9 @@ function TransactionBadges({ row, expanded, onToggle }) {
           <Users className="w-3 h-3" /> Collab
         </span>
       )}
+      {/* Settlement / reversal / unattributed, from the shared finance definitions so the
+          drill-down and this log can never describe the same row differently. */}
+      <TransactionStatusBadges row={row} onShowDetail={onToggle} />
     </div>
   );
 }
@@ -434,7 +440,7 @@ function TransactionDetail({ row, linkedInfo, linkedLoading }) {
 }
 
 // ========== DATA TABLE ==========
-function DataTable({ category, rows, onDelete, onSort, sortConfig, pagination, onGenerateBill }) {
+function DataTable({ category, rows, onDelete, onReverse, onSort, sortConfig, pagination, onGenerateBill }) {
   const router = useRouter();
   const [expandedId, setExpandedId] = useState(null);
   const [expandedInfo, setExpandedInfo] = useState(null);
@@ -683,6 +689,11 @@ function DataTable({ category, rows, onDelete, onSort, sortConfig, pagination, o
                       <div className="flex items-center gap-2">
                         <button onClick={() => onGenerateBill(row)} className="p-2 hover:bg-emerald-100 rounded-lg transition-colors text-emerald-600 hover:text-emerald-800" title="Generate Bill"><Bill size={18} /></button>
                         <button onClick={() => router.push(`/admin/transactions/edit/${row._id}`)} className="p-2 hover:bg-indigo-100 rounded-lg transition-colors text-indigo-600 hover:text-indigo-800" title="Edit record"><Edit2 size={18} /></button>
+                        {/* Hidden once the row is fully reversed or is itself a reversal — the route
+                            refuses both, so offering the action would be a dead end. */}
+                        {!row.reversalOf && !row.isReversed && (row.amount || 0) > 0 && (
+                          <button onClick={() => onReverse(row)} className="p-2 hover:bg-purple-100 rounded-lg transition-colors text-purple-600 hover:text-purple-800" title="Reverse / Refund"><RotateCcw size={18} /></button>
+                        )}
                         <button onClick={() => onDelete(row)} className="p-2 hover:bg-red-100 rounded-lg transition-colors text-red-600 hover:text-red-800" title="Delete record"><Trash2 size={18} /></button>
                       </div>
                     </div>
@@ -718,6 +729,9 @@ function DataTable({ category, rows, onDelete, onSort, sortConfig, pagination, o
                       <div className="flex items-center justify-end pt-3 border-t border-slate-200 gap-2">
                         <button onClick={() => onGenerateBill(row)} className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-lg text-sm font-medium hover:bg-emerald-100 transition-colors"><Bill size={14} />Bill</button>
                         <button onClick={() => router.push(`/admin/transactions/edit/${row._id}`)} className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 text-indigo-700 rounded-lg text-sm font-medium hover:bg-indigo-100 transition-colors"><Edit2 size={14} />Edit</button>
+                        {!row.reversalOf && !row.isReversed && (row.amount || 0) > 0 && (
+                          <button onClick={() => onReverse(row)} className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-50 text-purple-700 rounded-lg text-sm font-medium hover:bg-purple-100 transition-colors"><RotateCcw size={14} />Reverse</button>
+                        )}
                         <button onClick={() => onDelete(row)} className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 text-rose-700 rounded-lg text-sm font-medium hover:bg-rose-100 transition-colors"><Trash2 size={14} />Delete</button>
                       </div>
                     </div>
@@ -1155,6 +1169,8 @@ function AllTransactionsPageInner({ Sidebar }) {
     }
   };
 
+  const [reverseTarget, setReverseTarget] = useState(null);
+
   const openDeleteConfirm  = (t)  => { setDeletingTransaction(t); setShowDeleteConfirm(true); };
   const openBillGenerator  = (data) => {
     const isRevenue   = data.costType === "Revenue";
@@ -1450,6 +1466,7 @@ function AllTransactionsPageInner({ Sidebar }) {
               category={activeCategory}
               rows={transactions}
               onDelete={openDeleteConfirm}
+              onReverse={setReverseTarget}
               onGenerateBill={openBillGenerator}
               onSort={handleSort}
               sortConfig={sortConfig}
@@ -1464,6 +1481,14 @@ function AllTransactionsPageInner({ Sidebar }) {
           transaction={deletingTransaction}
           onClose={() => { setShowDeleteConfirm(false); setDeletingTransaction(null); }}
           onConfirm={handleDelete}
+        />
+      )}
+
+      {reverseTarget && (
+        <ReverseTransactionModal
+          transaction={reverseTarget}
+          onClose={() => setReverseTarget(null)}
+          onDone={fetchData}
         />
       )}
 

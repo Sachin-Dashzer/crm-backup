@@ -31,8 +31,21 @@ export async function GET(request) {
     const payerRefId = searchParams.get("payerRefId") || "";
     const payerLabel = searchParams.get("payerLabel") || "";
     const branch = searchParams.get("branch") || "";
+    const ageing = searchParams.get("ageing") || "";
 
     const txCollection = Transactions.collection.name;
+
+    // Ageing-bucketed pending totals, mirroring /api/payables/summary?ageing=1 — reused by the
+    // dashboard's receivables/payables ageing chart instead of a separate pipeline.
+    if (ageing) {
+      const byBucket = await Receivable.aggregate([
+        { $match: { isCancelled: false, ...(branch ? { branch } : {}) } },
+        ...buildReceivableAggregationStages(txCollection),
+        { $match: { pending: { $gt: 0 } } },
+        { $group: { _id: "$ageingBucket", count: { $sum: 1 }, totalPending: { $sum: "$pending" } } },
+      ]);
+      return NextResponse.json({ success: true, byBucket });
+    }
 
     const sumMatch = async (match) => {
       const [agg] = await Receivable.aggregate([

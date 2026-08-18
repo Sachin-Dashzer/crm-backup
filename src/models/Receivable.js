@@ -44,6 +44,17 @@ const receivableSchema = new mongoose.Schema(
     // Soft-close — a receivable no longer expected is cancelled, never hard-deleted.
     isCancelled: { type: Boolean, default: false },
 
+    // Whether the REVENUE this document represents has ALREADY been recognised by an earlier
+    // transaction. It drives isSettlement on the eventual receipt:
+    //   true  -> the sale was booked up front, either by a paid_to_external transaction or by
+    //            the collab flow's gross revenue row. The receipt moves cash only, so it must
+    //            be excluded from P&L totals or the amount counts twice.
+    //   false -> raised manually (patient due, refund due, advance recovery). Nothing has been
+    //            booked as revenue yet, so the receipt IS the revenue and must count normally.
+    // Stored rather than inferred: a future flow that creates receivables some third way has to
+    // make this decision explicitly instead of silently inheriting whichever guess the code made.
+    costAlreadyRecognised: { type: Boolean, default: false, index: true },
+
     // Pure concurrency fence — NOT a cached balance, never read for its value. received/pending
     // stay fully computed-on-read (see the file header); this field's only job is to give two
     // concurrent allocations against this receivable a document to genuinely conflict over.

@@ -36,6 +36,44 @@ export async function GET(request) {
     const to = searchParams.get("to") || "";
     const page = Math.max(1, parseInt(searchParams.get("page") || "1"));
     const limit = Math.min(200, Math.max(1, parseInt(searchParams.get("limit") || "50")));
+    const groupBy = searchParams.get("groupBy") || "";
+
+    // Level-1 rollup for the Liabilities drill-down (DrillDownTable, levels=2): one row per
+    // account, reshaped into the { key, label, opening, movement, settled, closing } contract
+    // every DrillDownTable section shares. Suspense has no "opening" concept of its own (an
+    // entry either exists or doesn't — nothing carries forward), so opening is always 0 and
+    // closing is simply movement (IN) minus settled (OUT).
+    if (groupBy === "account") {
+      const groupMatch = { isCancelled: { $ne: true }, isResolved: { $ne: true } };
+      if (branch) groupMatch.branch = branch;
+      if (from || to) {
+        groupMatch.date = {};
+        if (from) groupMatch.date.$gte = new Date(from);
+        if (to) groupMatch.date.$lte = new Date(`${to}T23:59:59.999Z`);
+      }
+      const grouped = await SuspenseEntry.aggregate([
+        { $match: groupMatch },
+        {
+          $group: {
+            _id: "$account",
+            movement: { $sum: { $cond: [{ $eq: ["$direction", "OUT"] }, 0, "$amount"] } },
+            settled: { $sum: { $cond: [{ $eq: ["$direction", "OUT"] }, "$amount", 0] } },
+            count: { $sum: 1 },
+          },
+        },
+        { $sort: { _id: 1 } },
+      ]);
+      const rows = grouped.map((g) => ({
+        key: g._id,
+        label: g._id,
+        opening: 0,
+        movement: Math.round((g.movement || 0) * 100) / 100,
+        settled: Math.round((g.settled || 0) * 100) / 100,
+        closing: Math.round(((g.movement || 0) - (g.settled || 0)) * 100) / 100,
+        count: g.count,
+      }));
+      return NextResponse.json({ success: true, rows });
+    }
 
     const match = { isCancelled: { $ne: true } };
     if (status === "open") match.isResolved = { $ne: true };

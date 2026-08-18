@@ -159,10 +159,16 @@ export async function POST(req, { params }) {
       furtherMode: furtherModeInput ?? routing.furtherMode ?? "",
       receipts: receipts || [],
       receivableId: receivable._id,
-      // §2.2 of the earlier spec — this moves cash for revenue already recognised at the point
-      // of sale. Without this flag every receipt double-counts as new revenue, which is the
-      // bug SETTLEMENT_EXCLUSION exists to prevent.
-      isSettlement: true,
+      // A receipt is a settlement ONLY when the revenue was already recognised elsewhere — the
+      // receivable's own recorded fact, not an assumption made here.
+      //
+      // This used to be an unconditional `true`, which holds for a receivable the
+      // paid_to_external flow (or the collab gross-revenue flow) created, but is wrong for one
+      // raised by hand — PATIENT_DUE, REFUND_DUE, ADVANCE_RECOVERY, OTHER. Nothing books revenue
+      // when those are created, so the receipt is the only revenue transaction that will ever
+      // exist for that sale, and flagging it a settlement removed it from every
+      // SETTLEMENT_EXCLUSION revenue total with nothing else counting it.
+      isSettlement: receivable.costAlreadyRecognised === true,
       externalParty: externalParty && externalParty.name ? externalParty : undefined,
       createdBy: {
         name: session.user.name,

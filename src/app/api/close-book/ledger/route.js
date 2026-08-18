@@ -206,6 +206,12 @@ export async function GET(request) {
                   patient: 1,
                   paymentId: 1,
                   remarks: 1,
+                  // So a caller can tell a reversal row from an original, and hide
+                  // Settle/Cancel Loan actions accordingly (e.g. LoanSettlementModal /
+                  // CancelLoanModal on the Assets page's loan-account ledger).
+                  reversalOf: 1,
+                  reversalReason: 1,
+                  isReversed: 1,
                   // Contra / suspense-only fields; absent on transaction rows.
                   isContra: 1,
                   isSuspense: 1,

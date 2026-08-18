@@ -1005,6 +1005,10 @@ function NewReceivableModal({ onClose, onSuccess, toast }) {
   const [employeeId, setEmployeeId] = useState("");
   const [employeeName, setEmployeeName] = useState("");
 
+  const [vendors, setVendors] = useState([]);
+  const [vendorId, setVendorId] = useState("");
+  const [vendorName, setVendorName] = useState("");
+
   const [month, setMonth] = useState(new Date().getMonth() + 1);
   const [year, setYear] = useState(new Date().getFullYear());
 
@@ -1048,9 +1052,26 @@ function NewReceivableModal({ onClose, onSuccess, toast }) {
   };
   const formatEmployeeOption = (e) => `${e.name} — ${e.role}`;
 
+  // The vendor list is small and has no search endpoint, so it is fetched once and filtered
+  // inside SearchableSelect rather than per keystroke like patients and employees.
+  const fetchVendors = async () => {
+    try {
+      const res = await fetch("/api/vendors/get");
+      if (res.ok) {
+        const data = await res.json();
+        setVendors(data.data || data.vendors || []);
+      }
+    } catch {
+      // A vendor list that fails to load leaves the picker empty; the toast on submit is
+      // enough signal, and blocking the whole modal over it would be worse.
+    }
+  };
+  const formatVendorOption = (v) => (v.DealsIn ? `${v.name} — ${v.DealsIn}` : v.name);
+
   useEffect(() => {
     fetchPatients("");
     fetchEmployees("");
+    fetchVendors();
   }, []);
 
   const needsKindPicker = ["REFUND_DUE", "ADVANCE_RECOVERY"].includes(purpose);
@@ -1069,8 +1090,13 @@ function NewReceivableModal({ onClose, onSuccess, toast }) {
     if (effectiveKind === "COLLAB_CLINIC") {
       return { kind: "COLLAB_CLINIC", refId: null, label: collabBranch };
     }
-    if (effectiveKind === "VENDOR" || effectiveKind === "OTHER") {
-      return { kind: effectiveKind, refId: null, label: manualLabel };
+    // refId links the receivable to the actual Vendor record. It used to be a free-text name
+    // with refId null, which left vendor receivables unjoinable to the vendor they belong to.
+    if (effectiveKind === "VENDOR") {
+      return { kind: "VENDOR", refId: vendorId || null, label: vendorName };
+    }
+    if (effectiveKind === "OTHER") {
+      return { kind: "OTHER", refId: null, label: manualLabel };
     }
     return null;
   };
@@ -1203,11 +1229,33 @@ function NewReceivableModal({ onClose, onSuccess, toast }) {
             </div>
           )}
 
-          {(effectiveKind === "VENDOR" || effectiveKind === "OTHER") && (
+          {effectiveKind === "VENDOR" && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                {effectiveKind === "VENDOR" ? "Vendor Name *" : "Payer Label *"}
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Vendor *</label>
+              <SearchableSelect
+                options={vendors}
+                value={vendorId}
+                onChange={(v, obj) => {
+                  setVendorId(v);
+                  setVendorName(obj?.name || "");
+                }}
+                placeholder="Search and select a vendor..."
+                valueKey="_id"
+                formatOption={formatVendorOption}
+              />
+              <p className="mt-1.5 text-xs text-gray-400">
+                Not listed?{" "}
+                <a href="/admin/vendors/create" target="_blank" rel="noreferrer" className="text-indigo-600 hover:underline">
+                  Add a vendor
+                </a>
+                , then reopen this form.
+              </p>
+            </div>
+          )}
+
+          {effectiveKind === "OTHER" && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Payer Label *</label>
               <input
                 type="text"
                 value={manualLabel}

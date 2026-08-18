@@ -52,6 +52,18 @@ const accountTransferSchema = new mongoose.Schema(
     reference: String,
     remarks: String,
     receipts: [receiptSchema],
+
+    // Set ONLY when this transfer was created by settling a specific loan-financing transaction
+    // (LoanSettlementModal — Bajaj Loan/Fibe Loan -> a real bank account). Lets a later loan
+    // cancellation find the exact settlement transfer to reverse, instead of guessing by amount
+    // and date. Optional and additive: every transfer created before this field existed, and
+    // every ordinary manual transfer, simply has it as null.
+    sourceTransactionId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Transactions",
+      default: null,
+      index: true,
+    },
     createdBy: {
       name: String,
       email: String,

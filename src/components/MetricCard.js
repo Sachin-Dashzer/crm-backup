@@ -15,7 +15,7 @@ export default function MetricCard({ title, value, icon: Icon, color, trend, onC
       </div>
       <div>
         <p className="text-gray-600 text-sm font-medium mb-1">{title}</p>
-        <p className="text-3xl font-bold text-gray-900">{value}</p>
+        <p className="text-xl font-bold text-gray-900">{value}</p>
         {trend && (
           <p className="text-xs text-green-600 mt-2 flex items-center">
             <span className="ml-1">{trend}</span> 

@@ -78,6 +78,17 @@ const payableSchema = new mongoose.Schema(
     // Soft-close — a payable that's no longer owed is cancelled, never hard-deleted.
     isCancelled: { type: Boolean, default: false },
 
+    // Whether the COST this document represents has ALREADY been recognised by an earlier
+    // transaction. It drives isSettlement on the eventual payment:
+    //   true  -> auto-created from a paid_by_other transaction that booked the full amount up
+    //            front. Its payment moves cash only, so it must be excluded from P&L totals or
+    //            the amount counts twice.
+    //   false -> raised manually (rent, salary, tax). Nothing has been expensed yet, so its
+    //            payment IS the expense and must count normally.
+    // Stored rather than inferred: a future flow that creates payables some third way has to
+    // make this decision explicitly instead of silently inheriting whichever guess the code made.
+    costAlreadyRecognised: { type: Boolean, default: false, index: true },
+
     // Append-only audit trail of the PAYABLE itself (creation, amount
     // revision, cancellation). NOT a payment log — payments live in
     // Transactions, linked via payableId.

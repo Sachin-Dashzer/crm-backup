@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import connectDB from "@/lib/db";
+import mongoose from "mongoose";
 import AccountTransfer from "@/models/AccountTransfer";
 import { ACCOUNTS } from "@/constants/bankRouting";
 import { ALL_BRANCHES } from "@/lib/branches";
@@ -23,7 +24,7 @@ export async function POST(req) {
 
     await connectDB();
 
-    const { fromAccount, toAccount, amount, date, reference, remarks, receipts, branch } =
+    const { fromAccount, toAccount, amount, date, reference, remarks, receipts, branch, sourceTransactionId } =
       await req.json();
 
     // Reject rather than silently correct — each of these is a data-entry mistake the user
@@ -54,6 +55,12 @@ export async function POST(req) {
       );
     }
 
+    // Optional — set only by LoanSettlementModal, so a later loan cancellation can find this
+    // exact transfer instead of guessing by amount and date.
+    if (sourceTransactionId && !mongoose.Types.ObjectId.isValid(sourceTransactionId)) {
+      return NextResponse.json({ error: "Invalid sourceTransactionId" }, { status: 400 });
+    }
+
     const transfer = new AccountTransfer({
       fromAccount,
       toAccount,
@@ -63,6 +70,7 @@ export async function POST(req) {
       reference: reference || "",
       remarks: remarks || "",
       receipts: Array.isArray(receipts) ? receipts : [],
+      sourceTransactionId: sourceTransactionId || null,
       createdBy: {
         name: session.user.name,
         email: session.user.email,

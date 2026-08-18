@@ -30,6 +30,8 @@ export async function GET(request) {
     const payeeRefId = searchParams.get("payeeRefId") || "";
     const payeeLabel = searchParams.get("payeeLabel") || "";
     const branch = searchParams.get("branch") || "";
+    const expenseCategory = searchParams.get("expenseCategory") || "";
+    const expenseSubType = searchParams.get("expenseSubType") || "";
     const status = searchParams.get("status") || "";
     const dateFrom = searchParams.get("dateFrom") || "";
     const dateTo = searchParams.get("dateTo") || "";
@@ -45,6 +47,10 @@ export async function GET(request) {
     if (payeeRefId) match["payee.refId"] = new mongoose.Types.ObjectId(payeeRefId);
     if (payeeLabel) match["payee.label"] = payeeLabel;
     if (branch) match.branch = branch;
+    // Exact values from src/constants/expenseCategories.js — the same tree the create form
+    // writes from, so a filter value always matches what is stored.
+    if (expenseCategory) match.expenseCategory = expenseCategory;
+    if (expenseSubType) match.expenseSubType = expenseSubType;
     if (dateFrom || dateTo) {
       match.createdAt = {};
       if (dateFrom) {

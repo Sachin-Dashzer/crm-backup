@@ -203,6 +203,10 @@ export async function createCollabCaseAtomic({
               relatedPatient: patientId,
               totalAmount: settlement.amount,
               branch: clinic,
+              // Step 2 above already booked the GROSS package as revenue, so the money the
+              // clinic is holding for us has been counted. Collecting it later moves cash for
+              // revenue already recognised — flagged so that receipt is excluded from P&L.
+              costAlreadyRecognised: true,
               remarks: `Collab settlement — ${clinic} collected ${clinicReceived} against a ${clinicShare} share for ${patientName || "patient"}`,
               createdBy,
               log: [
@@ -232,6 +236,12 @@ export async function createCollabCaseAtomic({
               relatedPatient: patientId,
               totalAmount: settlement.amount,
               branch: clinic,
+              // Deliberately false, and the asymmetry with the RECEIVABLE branch above is the
+              // point: step 2b expenses ONLY what the clinic already kept (clinicSettledNow).
+              // This payable is the REMAINDER, which is expensed when it is actually paid — see
+              // the comment there. Flagging it recognised would drop that payment from expense
+              // totals with nothing else ever counting it.
+              costAlreadyRecognised: false,
               remarks: `Collab settlement — ${clinic} collected ${clinicReceived} against a ${clinicShare} share for ${patientName || "patient"}`,
               createdBy,
               log: [

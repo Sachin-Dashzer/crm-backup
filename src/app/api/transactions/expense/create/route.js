@@ -233,11 +233,15 @@ export async function POST(req) {
       receipts: receipts || [],
       furtherMode: furtherMode || "",
       receiptMode: receiptMode || "",
-      // §2.2 of the earlier spec — an expense carrying a payableId is a PAYMENT against a cost
-      // already recognised when the payable was raised. Counting it in expense totals again
-      // double-counts the same rupee; SETTLEMENT_EXCLUSION keeps it out of P&L while
-      // accountBalances still sees the cash leave.
-      isSettlement: !!payableId,
+      // A payment is a settlement ONLY when the cost was already recognised elsewhere — which is
+      // the payable's own recorded fact, not something inferable from the presence of payableId.
+      //
+      // This used to read `!!payableId`, which was wrong for every MANUALLY raised payable (rent,
+      // salary, tax, electricity): nothing books an expense when those are created, so their
+      // payment is the only expense transaction that will ever exist for that cost. Flagging it a
+      // settlement dropped it from every SETTLEMENT_EXCLUSION report — admin/reports and
+      // super-admin/reports both compute Total Expenses that way — with nothing else counting it.
+      isSettlement: payableDoc ? payableDoc.costAlreadyRecognised === true : false,
       taxDetails: taxDetails || undefined,
       vendor: expenseGiver?.type === "VENDOR" ? expenseGiver.vendorId : null,
       approvalStatus: "APPROVED",

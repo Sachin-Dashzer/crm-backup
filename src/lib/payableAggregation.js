@@ -74,3 +74,108 @@ export function buildPayableAggregationStages(txCollectionName) {
     { $project: { paymentAgg: 0 } },
   ];
 }
+
+// ── Grouped rollup for the accounting drill-down UI (Liabilities page) ────────────────────
+//
+// Same "paid via linked APPROVED, settled Transactions" rule as buildPayableAggregationStages
+// above, rolled up by expenseCategory (HEAD, level 1) then expenseSubType (SUB-TYPE, level 2)
+// instead of per-document. A bucket's "opening" is the pending amount (raised − paid) carried in
+// from BEFORE `from` — the same carry-forward idea accountBalances.js uses for account opening
+// balances — so movement/settled inside the window plus opening reproduces closing.
+export function buildPayableGroupedStages(txCollectionName, { level, category, subType, branch, from, to } = {}) {
+  const match = { isCancelled: { $ne: true } };
+  if (branch) match.branch = branch;
+  if (level !== 1 && category) match.expenseCategory = category;
+  if (level === 2 && subType) match.expenseSubType = subType;
+
+  const fromDate = from ? new Date(from) : null;
+  const toDate = to ? new Date(to) : null;
+  const inRange = (field) => ({
+    $and: [
+      fromDate ? { $gte: [field, fromDate] } : { $literal: true },
+      toDate ? { $lte: [field, toDate] } : { $literal: true },
+    ],
+  });
+  const beforeRange = (field) => (fromDate ? { $lt: [field, fromDate] } : { $literal: false });
+
+  const groupId =
+    level === 1
+      ? { bucket: { $ifNull: ["$expenseCategory", "Uncategorised"] } }
+      : { bucket: { $ifNull: ["$expenseSubType", "Uncategorised"] } };
+
+  return [
+    { $match: match },
+    {
+      $lookup: {
+        from: txCollectionName,
+        let: { payableId: "$_id" },
+        pipeline: [
+          {
+            $match: {
+              $expr: {
+                $and: [
+                  { $eq: ["$payableId", "$$payableId"] },
+                  { $eq: ["$approvalStatus", "APPROVED"] },
+                  { $not: [{ $in: ["$method", UNSETTLED_METHODS] }] },
+                ],
+              },
+            },
+          },
+          { $project: { amount: 1, date: 1 } },
+        ],
+        as: "payments",
+      },
+    },
+    {
+      $addFields: {
+        paidBeforeRange: {
+          $sum: {
+            $map: {
+              input: { $filter: { input: "$payments", cond: beforeRange("$$this.date") } },
+              as: "p",
+              in: "$$p.amount",
+            },
+          },
+        },
+        paidInRange: {
+          $sum: {
+            $map: {
+              input: { $filter: { input: "$payments", cond: inRange("$$this.date") } },
+              as: "p",
+              in: "$$p.amount",
+            },
+          },
+        },
+        raisedBeforeRange: { $cond: [beforeRange("$createdAt"), "$totalAmount", 0] },
+        raisedInRange: { $cond: [inRange("$createdAt"), "$totalAmount", 0] },
+      },
+    },
+    {
+      $addFields: {
+        openingRow: { $max: [{ $subtract: ["$raisedBeforeRange", "$paidBeforeRange"] }, 0] },
+      },
+    },
+    {
+      $group: {
+        _id: groupId,
+        opening: { $sum: "$openingRow" },
+        movement: { $sum: "$raisedInRange" },
+        settled: { $sum: "$paidInRange" },
+        count: { $sum: 1 },
+      },
+    },
+    {
+      $project: {
+        _id: 0,
+        key: "$_id.bucket",
+        label: "$_id.bucket",
+        opening: 1,
+        movement: 1,
+        settled: 1,
+        closing: { $add: ["$opening", { $subtract: ["$movement", "$settled"] }] },
+        count: 1,
+      },
+    },
+    { $sort: { key: 1 } },
+  ];
+}

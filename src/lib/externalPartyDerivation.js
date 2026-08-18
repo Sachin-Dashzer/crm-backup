@@ -71,6 +71,10 @@ export async function createExternalReceivable({
         relatedPatient: relatedPatient || undefined,
         totalAmount: amount,
         branch,
+        // The source transaction books the full sale as revenue right now — it is only the CASH
+        // that is missing. So when this receivable is later collected, that receipt moves cash
+        // for revenue already counted and must be flagged isSettlement.
+        costAlreadyRecognised: true,
         remarks: `Paid to external party — ${name} received ₹${amount} on our behalf (their method: ${method || "unspecified"}).`,
         createdBy: { ...actor, date: new Date() },
         log: [
@@ -116,6 +120,10 @@ export async function createExternalPayable({
         relatedPatient: relatedPatient || undefined,
         totalAmount: amount,
         branch,
+        // The source transaction books the full cost as an expense right now — only the cash is
+        // outstanding. Repaying this party later moves cash for a cost already counted, so that
+        // payment must be flagged isSettlement.
+        costAlreadyRecognised: true,
         remarks: `Paid by external party — ${name} covered ₹${amount} on our behalf (their method: ${method || "unspecified"}).`,
         createdBy: { ...actor, date: new Date() },
         log: [

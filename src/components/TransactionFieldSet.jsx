@@ -25,12 +25,17 @@ export const TRANSACTION_CONTEXTS = [
   "receivable-receipt",
   "payable-payment",
   "collab-settlement",
+  "voucher",
 ];
 
 const SETTLEMENT_CONTEXTS = new Set([
   "receivable-receipt",
   "payable-payment",
   "collab-settlement",
+  // A voucher moves cash the same as any other settlement context — furtherMode is required
+  // under the identical NON_CASH_METHODS exception, so it shares the same rendering/validation
+  // rather than re-deriving it. See src/components/finance/TransactionFieldSet.jsx.
+  "voucher",
 ]);
 
 // Which transactionCategory a context routes as. Settlements inherit the category of whatever
