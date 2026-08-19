@@ -39,6 +39,13 @@ export function buildBalanceMatch({
 } = {}) {
   const match = {
     approvalStatus: { $nin: APPROVAL_EXCLUDED },
+    // Regression guard (Task 1c): this is the ONE choke point every cash/bank ledger and
+    // balance figure goes through — /api/close-book/accounts and /api/close-book/ledger both
+    // call buildBalanceMatch for their base Transactions match, and their contra/suspense
+    // $unionWith branches read from AccountTransfer/SuspenseEntry, which have no `method` field
+    // at all, so a paid_to_external/paid_by_other row can never enter a cash/bank account view
+    // through either path. Verified 2026-08-19 — do not duplicate this exclusion elsewhere;
+    // route everything through here instead.
     method: { $nin: NON_CASH_METHODS },
   };
 
@@ -175,6 +182,10 @@ export function buildContraLedgerUnionStage({
             fromAccount: 1,
             toAccount: 1,
             isContra: { $literal: true },
+            // Task 3: an explicit discriminator so the client never has to infer row type from
+            // isContra/isSuspense absence — a contra transfer lives in AccountTransfer, not
+            // Transactions, and /admin/transactions/edit/[id] cannot resolve its _id.
+            sourceKind: { $literal: "CONTRA" },
             // Inflow when the money lands in this account, outflow when it leaves it.
             signedAmount: {
               $cond: [
@@ -267,6 +278,7 @@ export function buildSuspenseLedgerUnionStage({
             branch: 1,
             isSuspense: { $literal: true },
             isContra: { $literal: false },
+            sourceKind: { $literal: "SUSPENSE" },
             signedAmount: {
               $cond: [{ $eq: ["$direction", "OUT"] }, { $multiply: ["$amount", -1] }, "$amount"],
             },

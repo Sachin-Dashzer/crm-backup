@@ -1,6 +1,6 @@
 "use client";
-import { useState, useEffect, useRef, useMemo } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useState, useEffect, useRef, useMemo } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import AdminSidebar from "@/components/Sidebars/Sidebar";
 import SearchableSelect from "@/components/SearchableSelect";
 import BankRoutingFields from "@/components/BankRoutingFields";
@@ -89,8 +89,33 @@ const getTodayIST = () =>
 const resolveDefaultBranch = (branch) =>
   branch && branch !== "All" && branch !== "Collab" ? branch : "Delhi";
 
+// Task 4 — every "New Transaction" link (DrillDownTable's header button, the Assets/Liabilities
+// drill-down, Task 6's Receipts/Payments) needs useSearchParams to read its prefill, which Next.js
+// requires a Suspense boundary around — same pattern admin/assets/page.jsx already uses.
 export default function AdminCreateTransactionPage() {
+  return (
+    <Suspense fallback={null}>
+      <AdminCreateTransactionPageInner />
+    </Suspense>
+  );
+}
+
+// Maps a Payable's expenseCategory head back to the expense tab's own sub-navigation, so a
+// prefill from DrillDownTable lands on the right sub-tab instead of the default "agent" one.
+// Best-effort: Salary/Incentive/Commision are owned by the Agent/Patient tabs' own flows (see
+// NO_GIVER_CATEGORIES in expense/create/route.js); every PAYABLE_EXPENSE_DROPDOWN_CATEGORIES
+// value goes through the generic "rent" (Payable Expenses) tab; anything else falls to "other"
+// (Direct Payment), which is the tab with no extra required fields beyond category/type.
+function resolveExpenseSection(expenseHead) {
+  if (expenseHead === "Salary" || expenseHead === "Incentive") return "agent";
+  if (expenseHead === "Commision") return "patient";
+  if (PAYABLE_EXPENSE_DROPDOWN_CATEGORIES.includes(expenseHead)) return "rent";
+  return "other";
+}
+
+function AdminCreateTransactionPageInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { data: session } = useSession();
 
   const [activeTab, setActiveTab] = useState("transplant");
@@ -246,6 +271,48 @@ export default function AdminCreateTransactionPage() {
 
     receipts: [],
   });
+
+  // Task 4 — prefill from the query string a "New Transaction" link arrives with (DrillDownTable's
+  // header button, Task 6's Receipts/Payments pages). A ONE-TIME initial-state read on mount, not
+  // a controlled binding — every field it sets stays exactly as editable afterward as if the user
+  // had picked it themselves. Runs after every tab's useState above so their setters exist.
+  useEffect(() => {
+    const category = searchParams.get("category");
+    const branch = searchParams.get("branch");
+    const furtherMode = searchParams.get("furtherMode");
+    const expenseHead = searchParams.get("expense");
+    const expenseTypeParam = searchParams.get("expenseType");
+    if (!category && !branch && !furtherMode && !expenseHead) return;
+
+    const tabByCategory = { TRANSPLANT: "transplant", SERVICE: "service", MEDICINE: "medicine", EXPENSE: "expense" };
+    const tab = tabByCategory[category];
+    if (tab) setActiveTab(tab);
+
+    const patch = {};
+    if (branch) patch.branch = branch;
+    if (furtherMode) patch.furtherMode = furtherMode;
+
+    if (tab === "transplant" && Object.keys(patch).length) {
+      setTransplantData((d) => ({ ...d, ...patch }));
+    } else if (tab === "service" && Object.keys(patch).length) {
+      setServiceData((d) => ({ ...d, ...patch }));
+    } else if (tab === "medicine" && Object.keys(patch).length) {
+      setMedicineData((d) => ({ ...d, ...patch }));
+    } else if (tab === "expense" || (!category && (expenseHead || furtherMode || branch))) {
+      const section = expenseHead ? resolveExpenseSection(expenseHead) : undefined;
+      setExpenseData((d) => ({
+        ...d,
+        ...patch,
+        ...(section ? { expenseSection: section } : {}),
+        ...(section === "rent" ? { payableCategory: expenseHead, rentSubType: expenseTypeParam || "" } : {}),
+        ...(section === "other" ? { expenseCategory: expenseHead, expenseType: expenseTypeParam || "" } : {}),
+      }));
+      if (!category) setActiveTab("expense");
+    }
+    // Deliberately run once, on mount only — after this, the form is the source of truth and a
+    // later change to the URL (there shouldn't be one) must not silently overwrite user input.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const fetchPatients = async (term = "") => {
     setPatientSearching(true);

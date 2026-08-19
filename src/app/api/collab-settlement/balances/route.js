@@ -19,8 +19,8 @@ const ALLOWED_ROLES = ["collab", "admin", "super-admin"];
 // pages use, so the three screens can never disagree.
 //
 // This deliberately no longer derives the balance from CollabCase.clinicCollections.
-// Doing both would report the same debt twice (once here, once on /admin/payables and
-// /admin/receivables) and the two would drift apart permanently: settling a
+// Doing both would report the same debt twice (once here, once on /admin/liabilities and
+// /admin/assets' Payables/Receivables drill-downs) and the two would drift apart permanently: settling a
 // CollabSettlement moved this number but never closed the payable, and paying the
 // payable never moved this number. CollabCase now carries case metadata only.
 //

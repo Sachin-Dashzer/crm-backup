@@ -5,7 +5,24 @@ import connectDB from "@/lib/db";
 import Transactions from "@/models/Transactions";
 import Patient from "@/models/Patient";
 import { resolveBranchFilter } from "@/lib/branches";
-import { UNSETTLED_METHODS, SETTLEMENT_EXCLUSION } from "@/constants/bankRouting";
+import { UNSETTLED_METHODS, SETTLEMENT_EXCLUSION, NON_CASH_METHODS } from "@/constants/bankRouting";
+
+// entryType classifies a row for the transactions list WITHOUT changing any aggregation.
+// Purely derived at read time from fields already stored — never persisted, so no migration
+// and no risk of it drifting from the flags below. Priority order matters: reversalOf beats
+// isSettlement beats UNSETTLED_METHODS beats NON_CASH_METHODS — a reversed settlement is still
+// shown as a reversal first, since that's the more surprising/audit-relevant fact about the row.
+function deriveEntryType(tx) {
+  if (tx.reversalOf) return "REVERSAL";
+  if (tx.isSettlement) {
+    return tx.costType === "Revenue" ? "RECEIPT_SETTLEMENT" : "PAYMENT_SETTLEMENT";
+  }
+  if (UNSETTLED_METHODS.includes(tx.method)) {
+    return tx.costType === "Revenue" ? "EXTERNAL_RECEIPT" : "EXTERNAL_PAYMENT";
+  }
+  if (NON_CASH_METHODS.includes(tx.method)) return "NON_CASH";
+  return "REGULAR";
+}
 import "@/models/Stock";
 import "@/models/Vendor";
 import "@/models/Employee";
@@ -41,6 +58,7 @@ export async function GET(request) {
     const approvalStatus = searchParams.get("approvalStatus") || "";
     const payableId      = searchParams.get("payableId")      || "";
     const receivableId   = searchParams.get("receivableId")   || "";
+    const entryType      = searchParams.get("entryType")      || "";
     const sortKey       = searchParams.get("sortKey")       || "date";
     const sortDir       = searchParams.get("sortDir") === "asc" ? 1 : -1;
 
@@ -161,6 +179,24 @@ export async function GET(request) {
       }
     }
 
+    // Entry Type filter (Task 1b) — narrows the LIST only. Pushed into `query`, never
+    // `statsQuery`: the category-tab totals below must keep excluding settlements/unsettled
+    // methods regardless of what the list is filtered to, or the two would silently disagree.
+    // Appends to `query.$and` rather than assigning, since the search block above may already
+    // have set one — assigning here would silently drop that search $and.
+    if (entryType === "REGULAR") {
+      query.isSettlement = { $ne: true };
+      query.reversalOf = null;
+      query.$and = [...(query.$and || []), { method: { $nin: UNSETTLED_METHODS } }];
+    } else if (entryType === "SETTLEMENT") {
+      query.isSettlement = true;
+    } else if (entryType === "EXTERNAL") {
+      query.$and = [...(query.$and || []), { method: { $in: UNSETTLED_METHODS } }];
+    } else if (entryType === "REVERSAL") {
+      query.reversalOf = { $ne: null };
+    }
+    // Default (no entryType, or an unrecognised value): no additional filter — "All".
+
     // Stats aggregation query: same filters except category (to show totals for all categories).
     // Always excludes PENDING/REJECTED regardless of the approvalStatus param — dashboard
     // totals must reflect approved money only, even when viewing a Pending Approvals list.
@@ -230,6 +266,19 @@ export async function GET(request) {
     const mappedTransactions = transactions.map((tx) => ({
       ...tx,
       transactionCategory: tx.transactionCategory || tx.category,
+      entryType: deriveEntryType(tx),
+      linkedDocId:
+        tx.receivableId ||
+        tx.payableId ||
+        tx.externalParty?.linkedReceivableId ||
+        tx.externalParty?.linkedPayableId ||
+        null,
+      linkedDocType:
+        tx.receivableId || tx.externalParty?.linkedReceivableId
+          ? "RECEIVABLE"
+          : tx.payableId || tx.externalParty?.linkedPayableId
+            ? "PAYABLE"
+            : null,
     }));
 
     return NextResponse.json({

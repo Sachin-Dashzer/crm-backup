@@ -45,6 +45,7 @@ import { UNSETTLED_METHODS, FURTHER_MODES } from "@/constants/bankRouting";
 import { EXPENSE_CATEGORIES, getExpenseTypes } from "@/constants/expenseCategories";
 import ReverseTransactionModal from "@/components/finance/ReverseTransactionModal";
 import TransactionStatusBadges from "@/components/finance/StatusBadges";
+import { ENTRY_TYPES, ENTRY_TYPE_TONE_CLASSES, ENTRY_TYPE_FILTER_OPTIONS } from "@/constants/entryTypes";
 import SuspenseManager from "@/components/SuspenseManager";
 import ContraManager from "@/components/ContraManager";
 
@@ -81,10 +82,10 @@ const SERVICE_PROCEDURES    = ["PRP", "GFC", "Alopecia", "Headwash", "Canacot"];
 const REVENUE_CATEGORIES = ["TRANSPLANT", "SERVICE", "MEDICINE"];
 // Mirrors UNTRACKED_FURTHER_MODE in src/app/api/transactions/get-all/route.js.
 const UNTRACKED_FURTHER_MODE = "__UNTRACKED__";
-const FILTER_KEYS = ["branch", "dateFrom", "dateTo", "paymentMethod", "procedure", "furtherMode", "expenseCategory", "expenseType"];
+const FILTER_KEYS = ["branch", "dateFrom", "dateTo", "paymentMethod", "procedure", "furtherMode", "expenseCategory", "expenseType", "entryType"];
 const defaultFilters = () => ({
   branch: "", dateFrom: getTodayDate(), dateTo: getTodayDate(), paymentMethod: "", procedure: "",
-  furtherMode: "", expenseCategory: "", expenseType: "",
+  furtherMode: "", expenseCategory: "", expenseType: "", entryType: "",
 });
 const filtersFromParams = (params) => ({
   branch:        params.get("branch") || "",
@@ -95,6 +96,7 @@ const filtersFromParams = (params) => ({
   furtherMode:      params.get("furtherMode") || "",
   expenseCategory:  params.get("expenseCategory") || "",
   expenseType:      params.get("expenseType") || "",
+  entryType:        params.get("entryType") || "",
 });
 
 const TRANSACTION_CATEGORIES = [
@@ -264,6 +266,33 @@ function FilterChip({ label, onRemove }) {
 
 const UNSETTLED_LABELS = { paid_to_external: "Held by external", paid_by_other: "Paid by other" };
 
+// Task 1a's Entry Type badge — folded into the existing badge row rather than a new grid
+// column (this file's own convention, see the header comment below: "Never a new column").
+// Silent for REGULAR, same as every other badge here — a badge only earns its place when it
+// tells the reader something that isn't the default. Links out to the document it settles
+// against when one exists — the URL shape Task 5 establishes for the Assets/Liabilities
+// document drill-down (?doc=<id>); harmless before that lands, since it's just a query param.
+function EntryTypeBadge({ row }) {
+  const type = ENTRY_TYPES[row.entryType];
+  if (!type || row.entryType === "REGULAR") return null;
+  const tone = ENTRY_TYPE_TONE_CLASSES[type.tone] || ENTRY_TYPE_TONE_CLASSES.gray;
+  const badge = (
+    <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold border ${tone}`}>
+      {type.label}
+    </span>
+  );
+  if (!row.linkedDocId) return badge;
+  const href =
+    row.linkedDocType === "RECEIVABLE"
+      ? `/admin/assets?section=receivables&doc=${row.linkedDocId}`
+      : `/admin/liabilities?section=payables&doc=${row.linkedDocId}`;
+  return (
+    <a href={href} className="hover:opacity-80">
+      {badge}
+    </a>
+  );
+}
+
 // Compact badge row shown under every transaction row (list view) + the "Details" toggle. Never
 // a new column — per §3, prefer badges here and put the real detail behind the toggle.
 function TransactionBadges({ row, expanded, onToggle }) {
@@ -285,6 +314,7 @@ function TransactionBadges({ row, expanded, onToggle }) {
         {expanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
         Details
       </button>
+      <EntryTypeBadge row={row} />
       {row.furtherMode && (
         <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-slate-100 text-slate-600 border border-slate-200">
           {row.costType === "Expenses" ? "Paid From" : "Received In"}: {row.furtherMode}
@@ -423,10 +453,16 @@ function TransactionDetail({ row, linkedInfo, linkedLoading }) {
                 <div className="flex justify-between font-medium text-rose-600"><dt>Pending</dt><dd>{formatCurrency(linkedInfo.data.pending)}</dd></div>
                 <button
                   type="button"
-                  onClick={() => router.push(linkedInfo.type === "payable" ? "/admin/payables" : "/admin/receivables")}
+                  onClick={() =>
+                    router.push(
+                      linkedInfo.type === "payable"
+                        ? `/admin/liabilities?section=payables&doc=${linkedInfo.data._id}`
+                        : `/admin/assets?section=receivables&doc=${linkedInfo.data._id}`,
+                    )
+                  }
                   className="mt-1 text-indigo-600 hover:underline text-xs font-medium"
                 >
-                  View in {linkedInfo.type === "payable" ? "Payables" : "Receivables"} →
+                  View in {linkedInfo.type === "payable" ? "Liabilities" : "Assets"} →
                 </button>
               </dl>
             ) : (
@@ -883,6 +919,7 @@ function AllTransactionsPageInner({ Sidebar }) {
       if (appliedFilters.furtherMode)     p.set("furtherMode",     appliedFilters.furtherMode);
       if (appliedFilters.expenseCategory) p.set("expenseCategory", appliedFilters.expenseCategory);
       if (appliedFilters.expenseType)     p.set("expenseType",     appliedFilters.expenseType);
+      if (appliedFilters.entryType)       p.set("entryType",       appliedFilters.entryType);
       if (debouncedSearch)       p.set("search",         debouncedSearch);
       if (activeCategory === "EXPENSE" && pendingOnly) p.set("approvalStatus", "PENDING");
 
@@ -943,6 +980,7 @@ function AllTransactionsPageInner({ Sidebar }) {
     if (appliedFilters.furtherMode)     params.set("furtherMode", appliedFilters.furtherMode);
     if (appliedFilters.expenseCategory) params.set("expenseCategory", appliedFilters.expenseCategory);
     if (appliedFilters.expenseType)     params.set("expenseType", appliedFilters.expenseType);
+    if (appliedFilters.entryType)       params.set("entryType", appliedFilters.entryType);
     const qs = params.toString();
     router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1000,7 +1038,8 @@ function AllTransactionsPageInner({ Sidebar }) {
   const endIdx   = Math.min(startIdx + perPage, total);
 
   const hasActiveFilters = appliedFilters.branch || appliedFilters.paymentMethod || appliedFilters.procedure ||
-    appliedFilters.furtherMode || appliedFilters.expenseCategory || appliedFilters.expenseType || tableSearch ||
+    appliedFilters.furtherMode || appliedFilters.expenseCategory || appliedFilters.expenseType ||
+    appliedFilters.entryType || tableSearch ||
     appliedFilters.dateFrom !== getTodayDate() || appliedFilters.dateTo !== getTodayDate();
 
   const exportToExcel = async () => {
@@ -1019,6 +1058,7 @@ function AllTransactionsPageInner({ Sidebar }) {
       if (appliedFilters.furtherMode)     p.set("furtherMode",     appliedFilters.furtherMode);
       if (appliedFilters.expenseCategory) p.set("expenseCategory", appliedFilters.expenseCategory);
       if (appliedFilters.expenseType)     p.set("expenseType",     appliedFilters.expenseType);
+      if (appliedFilters.entryType)       p.set("entryType",       appliedFilters.entryType);
       if (debouncedSearch)       p.set("search",        debouncedSearch);
       // Must mirror fetchData, or exporting while the Pending Approvals toggle is on silently
       // writes the APPROVED rows instead of the pending ones the user is looking at.
@@ -1047,6 +1087,7 @@ function AllTransactionsPageInner({ Sidebar }) {
         const tdsAmount = tax.tdsAmount ?? null;
         return {
           "Date":                formatDateForDisplay(t.date),
+          "Entry Type":          ENTRY_TYPES[t.entryType]?.label || "",
           "Branch":              t.branch || "",
           "Expense Category":    t.expense || t.expenseCategory || "",
           "Expense Type":        t.expenseType || "",
@@ -1095,6 +1136,7 @@ function AllTransactionsPageInner({ Sidebar }) {
 
         return {
           "Date":             formatDateForDisplay(t.date),
+          "Entry Type":       ENTRY_TYPES[t.entryType]?.label || "",
           "Patient Name":     t.patient?.personal?.name || t.patientName || "Walk-in Customer",
           "Phone":            t.patient?.personal?.phone || t.patientPhone || "",
           "Branch":           t.branch || "",
@@ -1357,6 +1399,14 @@ function AllTransactionsPageInner({ Sidebar }) {
                   <Input  label="From Date" type="date" value={draftFilters.dateFrom} onChange={(v) => setDraftFilters((f) => ({ ...f, dateFrom: v }))} icon={Calendar} />
                   <Input  label="To Date"   type="date" value={draftFilters.dateTo}   onChange={(v) => setDraftFilters((f) => ({ ...f, dateTo: v }))}   icon={Calendar} />
                   <Select label="Payment Method" value={draftFilters.paymentMethod} onChange={(v) => setDraftFilters((f) => ({ ...f, paymentMethod: v }))} options={[{ value: "", label: "All Methods" }, ...PAYMENT_METHODS.map((m) => ({ value: m, label: METHOD_LABELS[m] || m }))]} icon={CreditCard} />
+                  {!NON_TRANSACTION_TABS.includes(activeCategory) && (
+                    <Select
+                      label="Entry Type" value={draftFilters.entryType}
+                      onChange={(v) => setDraftFilters((f) => ({ ...f, entryType: v }))}
+                      options={ENTRY_TYPE_FILTER_OPTIONS}
+                      icon={Link2}
+                    />
+                  )}
                   {(activeCategory === "TRANSPLANT" || activeCategory === "SERVICE") && (
                     <Select
                       label="Procedure" value={draftFilters.procedure} onChange={(v) => setDraftFilters((f) => ({ ...f, procedure: v }))}
@@ -1439,6 +1489,12 @@ function AllTransactionsPageInner({ Sidebar }) {
                       )}
                       {appliedFilters.expenseType && (
                         <FilterChip label={`Type: ${appliedFilters.expenseType}`} onRemove={() => removeFilter("expenseType")} />
+                      )}
+                      {appliedFilters.entryType && (
+                        <FilterChip
+                          label={`Entry: ${ENTRY_TYPE_FILTER_OPTIONS.find((o) => o.value === appliedFilters.entryType)?.label || appliedFilters.entryType}`}
+                          onRemove={() => removeFilter("entryType")}
+                        />
                       )}
                       {tableSearch && (
                         <FilterChip label={`Search: "${tableSearch}"`} onRemove={() => { setTableSearch(""); setDebouncedSearch(""); }} />

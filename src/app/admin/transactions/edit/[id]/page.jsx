@@ -880,10 +880,16 @@ export default function EditTransactionPage() {
                     <div className="flex justify-between font-medium text-rose-600"><dt>Pending</dt><dd>₹{Number(linkedInfo.data.pending || 0).toLocaleString("en-IN")}</dd></div>
                     <button
                       type="button"
-                      onClick={() => router.push(linkedInfo.type === "payable" ? "/admin/payables" : "/admin/receivables")}
+                      onClick={() =>
+                        router.push(
+                          linkedInfo.type === "payable"
+                            ? `/admin/liabilities?section=payables&doc=${linkedInfo.data._id}`
+                            : `/admin/assets?section=receivables&doc=${linkedInfo.data._id}`,
+                        )
+                      }
                       className="mt-1 text-indigo-600 hover:underline text-xs font-medium"
                     >
-                      Manage in {linkedInfo.type === "payable" ? "Payables" : "Receivables"} →
+                      Manage in {linkedInfo.type === "payable" ? "Liabilities" : "Assets"} →
                     </button>
                   </dl>
                 ) : (

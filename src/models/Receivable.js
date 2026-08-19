@@ -44,6 +44,20 @@ const receivableSchema = new mongoose.Schema(
     // Soft-close — a receivable no longer expected is cancelled, never hard-deleted.
     isCancelled: { type: Boolean, default: false },
 
+    // Supporting documents for the RECEIVABLE itself — same shape as Transactions.receipts,
+    // which is for a RECEIPT's own proof instead. Added for the upgraded voucher form (Task 4);
+    // optional and additive, so every pre-existing receivable simply has an empty array.
+    receipts: [
+      {
+        url: String,
+        publicId: String,
+        fileName: String,
+        fileType: { type: String, enum: ["image", "pdf"] },
+        uploadedBy: { name: String, email: String },
+        uploadedAt: { type: Date, default: Date.now },
+      },
+    ],
+
     // Whether the REVENUE this document represents has ALREADY been recognised by an earlier
     // transaction. It drives isSettlement on the eventual receipt:
     //   true  -> the sale was booked up front, either by a paid_to_external transaction or by

@@ -7,6 +7,7 @@ import Payable, { PAYABLE_KIND_VALUES, PAYABLE_PURPOSE_VALUES } from "@/models/P
 import { getExpenseTypes, TDS_TAX_TYPES } from "@/constants/expenseCategories";
 import { ALL_BRANCHES } from "@/lib/branches";
 import { computeTaxBreakdown } from "@/lib/taxMath";
+import { checkPeriodLock } from "@/lib/periodLock";
 
 const ALLOWED_ROLES = ["admin", "super-admin"];
 const PATIENT_REQUIRED_PURPOSES = ["INCENTIVE", "PATIENT_COMMISSION"];
@@ -34,6 +35,12 @@ export async function POST(req) {
       dueDate,
       branch,
       remarks,
+      // Task 4 — whether the cost this payable represents has already been booked by another
+      // transaction. Drives isSettlement on the eventual payment; see the model comment on
+      // Payable.costAlreadyRecognised. Defaults false so every pre-existing caller (the old
+      // NewPayableModal never sent this) keeps its current behaviour.
+      costAlreadyRecognised,
+      receipts,
       // "Include GST" / "Include TDS" — when either is set, totalAmount is the BASE
       // (net-of-GST) amount. GST is recorded for display and folded into the vendor
       // payable; TDS is split off into its own linked "Taxes" payable. Both payables are
@@ -56,6 +63,17 @@ export async function POST(req) {
     if (!PAYABLE_PURPOSE_VALUES.includes(purpose)) {
       return NextResponse.json({ error: "Invalid purpose" }, { status: 400 });
     }
+    // Only these three kinds are ever backed by an actual record — RENT_UNIT/UTILITY_UNIT/
+    // COLLAB_CLINIC/OTHER legitimately carry refId: null by design (see the model comment on
+    // Payable.payee). An allowlist, not "anything but MANUAL/OTHER", or this would wrongly
+    // reject every rent/electricity/collab-clinic payable that has always had no refId.
+    const REFID_REQUIRED_KINDS = ["EMPLOYEE", "PATIENT", "VENDOR"];
+    if (REFID_REQUIRED_KINDS.includes(payee.kind) && !payee.refId) {
+      return NextResponse.json(
+        { error: `payee.refId is required when payee.kind is "${payee.kind}"` },
+        { status: 400 },
+      );
+    }
     if (PATIENT_REQUIRED_PURPOSES.includes(purpose) && !relatedPatient) {
       return NextResponse.json(
         { error: "relatedPatient is required for this purpose" },
@@ -64,6 +82,13 @@ export async function POST(req) {
     }
     if (branch && !ALL_BRANCHES.includes(branch)) {
       return NextResponse.json({ error: "Invalid branch" }, { status: 400 });
+    }
+    // A voucher has no account yet (that only exists once it's settled), so this exercises
+    // periodLock.js's "every account closed" fallback — the right semantics for an accrual with
+    // no cash side. Checked against the due date, or today when none is given.
+    const lockReason = await checkPeriodLock({ furtherMode: null, date: dueDate || new Date() });
+    if (lockReason) {
+      return NextResponse.json({ error: lockReason, periodLocked: true }, { status: 423 });
     }
     if (expenseCategory) {
       const validTypes = getExpenseTypes(expenseCategory);
@@ -128,6 +153,8 @@ export async function POST(req) {
       dueDate: dueDate ? new Date(dueDate) : undefined,
       branch: branch || session.user.branch,
       remarks: remarks || "",
+      costAlreadyRecognised: costAlreadyRecognised === true,
+      receipts: receipts || [],
       createdBy: {
         name: session.user.name,
         email: session.user.email,

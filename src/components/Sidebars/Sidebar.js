@@ -175,20 +175,8 @@ export default function AdminSidebar() {
           </NavSection>
 
           <NavSection title="Financial">
-            {/* <NavItem
-              label="Payables"
-              href="/admin/payables"
-              icon={Wallet}
-              active={isActive("/admin/payables")}
-              onClick={close}
-            />
-            <NavItem
-              label="Receivables"
-              href="/admin/receivables"
-              icon={HandCoins}
-              active={isActive("/admin/receivables")}
-              onClick={close}
-            /> */}
+            {/* Payables/Receivables were folded into Assets/Liabilities' documents drill-down
+                (Task 5) — see next.config.mjs for the redirects that keep old links working. */}
             <NavItem
               label="Assets"
               href="/admin/assets"
@@ -210,7 +198,20 @@ export default function AdminSidebar() {
               active={isActive("/admin/close-book")}
               onClick={close}
             />
-
+            <NavItem
+              label="Receipts"
+              href="/admin/receipts"
+              icon={HandCoins}
+              active={isActive("/admin/receipts")}
+              onClick={close}
+            />
+            <NavItem
+              label="Payments"
+              href="/admin/payments"
+              icon={Wallet}
+              active={isActive("/admin/payments")}
+              onClick={close}
+            />
 
             <NavItem
               label="Vouchers"

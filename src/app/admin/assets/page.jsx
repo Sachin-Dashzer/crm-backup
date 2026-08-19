@@ -2,13 +2,16 @@
 
 import { Suspense, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { Landmark, Banknote, HandCoins, AlertTriangle, ArrowRightLeft, Ban } from "lucide-react";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import { Landmark, Banknote, HandCoins, AlertTriangle, ArrowRightLeft, Ban, CheckCircle2, Clock } from "lucide-react";
 import AdminSidebar from "@/components/Sidebars/Sidebar";
 import DrillDownTable from "@/components/finance/DrillDownTable";
 import LoanSettlementModal from "@/components/finance/LoanSettlementModal";
 import CancelLoanModal from "@/components/finance/CancelLoanModal";
 import { ReversedBadge, ReversalBadge } from "@/components/finance/StatusBadges";
+import MetricCard from "@/components/MetricCard";
 import { formatCurrency } from "@/lib/financeUI";
+import { AGEING_BUCKETS } from "@/lib/ageing";
 
 // Assets = Cash & Bank + Loan-financing accounts + Receivables. Page total is the sum of the same
 // three closing figures the sections below compute — never a separate calculation, so the header
@@ -31,6 +34,10 @@ export default function AssetsPage() {
 }
 
 function AssetsPageInner() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
   const [cashTotal, setCashTotal] = useState(null);
   const [loansTotal, setLoansTotal] = useState(null);
   const [receivablesTotal, setReceivablesTotal] = useState(null);
@@ -42,6 +49,15 @@ function AssetsPageInner() {
   // remount and refetch fresh. Only bumping the loans side left the destination bank account
   // showing stale data until a full page reload, which looked exactly like nothing had happened.
   const [refreshKey, setRefreshKey] = useState(0);
+
+  // Task 5, Step 4 — summary strip + ageing chips for Receivables, ported from the old
+  // standalone Receivables page.
+  const [summary, setSummary] = useState(null);
+  const [ageingBuckets, setAgeingBuckets] = useState([]);
+  const [ageingFilter, setAgeingFilter] = useState("");
+
+  // Task 5, Step 5 — deep-link restore, same pattern as admin/liabilities/page.jsx.
+  const [receivablesInitialDrill, setReceivablesInitialDrill] = useState(undefined);
 
   const fetchLoansTotal = useCallback(() => {
     fetch("/api/close-book/accounts?filter=loans")
@@ -75,12 +91,82 @@ function AssetsPageInner() {
       })
       .catch(() => setReceivablesTotal(0));
 
+    fetch("/api/receivables/summary")
+      .then((r) => r.json())
+      .then((json) => setSummary(json.overall || null))
+      .catch(() => setSummary(null));
+
+    fetch("/api/receivables/summary?ageing=1")
+      .then((r) => r.json())
+      .then((json) => setAgeingBuckets(json.byBucket || []))
+      .catch(() => setAgeingBuckets([]));
+
     const today = new Date().toISOString().slice(0, 10);
     fetch(`/api/close-book/balance-sheet?from=1970-01-01&to=${today}`)
       .then((r) => r.json())
       .then((json) => setUnattributed(json.unattributed || { count: 0, amount: 0 }))
       .catch(() => setUnattributed({ count: 0, amount: 0 }));
   }, [fetchLoansTotal, fetchCashTotal]);
+
+  // Restores /admin/assets?section=receivables&head=Transplant&sub=PATIENT_DUE&doc=<id> — the
+  // URL Task 1's Entry Type badge points at for a settlement's linked receivable.
+  useEffect(() => {
+    const section = searchParams.get("section");
+    if (section !== "receivables") {
+      setReceivablesInitialDrill(null);
+      return;
+    }
+    const head = searchParams.get("head") || "";
+    const sub = searchParams.get("sub") || "";
+    const doc = searchParams.get("doc") || "";
+
+    if (doc) {
+      fetch(`/api/receivables/${doc}`)
+        .then((r) => r.json())
+        .then((json) => {
+          const rec = json.receivable;
+          if (!rec) {
+            setReceivablesInitialDrill(null);
+            return;
+          }
+          setReceivablesInitialDrill({
+            level: 3,
+            headKey: rec.revenueCategory,
+            headLabel: rec.revenueCategory,
+            subKey: rec.purpose || "",
+            subLabel: rec.purpose || "",
+          });
+        })
+        .catch(() => setReceivablesInitialDrill(null));
+    } else if (sub) {
+      setReceivablesInitialDrill({ level: 3, headKey: head, headLabel: head, subKey: sub, subLabel: sub });
+    } else if (head) {
+      setReceivablesInitialDrill({ level: 2, headKey: head, headLabel: head });
+    } else {
+      setReceivablesInitialDrill(null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleReceivablesDrillChange = useCallback(
+    (drill) => {
+      const params = new URLSearchParams();
+      if (drill.level > 1) {
+        params.set("section", "receivables");
+        if (drill.headKey) params.set("head", drill.headKey);
+        if (drill.subKey) params.set("sub", drill.subKey);
+        if (drill.documentId) params.set("doc", drill.documentId);
+      }
+      const qs = params.toString();
+      router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+    },
+    [router, pathname],
+  );
+
+  const ageingChipData = (bucket) => {
+    const found = ageingBuckets.find((b) => b._id === bucket.value);
+    return { count: found?.count || 0, totalPending: found?.totalPending || 0 };
+  };
 
   const handleSettlementSuccess = () => {
     fetchLoansTotal();
@@ -240,25 +326,62 @@ function AssetsPageInner() {
             />
           )}
 
+          {summary && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <MetricCard title="Total Receivable" value={formatCurrency(summary.totalReceivable)} icon={HandCoins} color="from-emerald-500 to-emerald-600" />
+              <MetricCard title="Received To Date" value={formatCurrency(summary.totalReceived)} icon={CheckCircle2} color="from-indigo-500 to-indigo-600" />
+              <MetricCard title="Open (Pending)" value={formatCurrency(summary.totalPending)} icon={Clock} color="from-amber-500 to-amber-600" />
+              <MetricCard title="Active Receivables" value={summary.count ?? 0} icon={AlertTriangle} color="from-rose-500 to-rose-600" />
+            </div>
+          )}
+
+          {ageingBuckets.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {AGEING_BUCKETS.map((b) => {
+                const chip = ageingChipData(b);
+                const active = ageingFilter === b.value;
+                return (
+                  <button
+                    key={b.value}
+                    onClick={() => setAgeingFilter((cur) => (cur === b.value ? "" : b.value))}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
+                      active
+                        ? "bg-emerald-600 text-white border-emerald-600"
+                        : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50"
+                    }`}
+                  >
+                    {b.label} · {chip.count} · {formatCurrency(chip.totalPending)}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
           <section className="space-y-3">
             <div className="flex items-center gap-2">
               <HandCoins className="w-4 h-4 text-emerald-500" />
               <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wide">Receivables</h2>
             </div>
-            <DrillDownTable
-              levels={3}
-              sectionConfig={{
-                key: "receivables",
-                apiBase: "/api/receivables",
-                title: "Receivables",
-                columnLabels: {
-                  opening: "Opening due",
-                  movement: "Raised",
-                  settled: "Received",
-                  closing: "Still due",
-                },
-              }}
-            />
+            {receivablesInitialDrill !== undefined && (
+              <DrillDownTable
+                levels={3}
+                sectionConfig={{
+                  key: "receivables",
+                  mode: "documents",
+                  apiBase: "/api/receivables",
+                  title: "Receivables",
+                  columnLabels: {
+                    opening: "Opening due",
+                    movement: "Raised",
+                    settled: "Received",
+                    closing: "Still due",
+                  },
+                }}
+                initialDrill={receivablesInitialDrill || undefined}
+                onDrillChange={handleReceivablesDrillChange}
+                extraParams={ageingFilter ? { ageing: ageingFilter } : undefined}
+              />
+            )}
           </section>
         </div>
       </main>

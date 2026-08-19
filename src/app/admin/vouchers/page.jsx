@@ -71,6 +71,23 @@ function VouchersPageInner() {
   const [taxValue, setTaxValue] = useState({});
   const [submitting, setSubmitting] = useState(false);
 
+  // Whether the expense/revenue this voucher represents has ALREADY been recognised by another
+  // transaction — see Payable.costAlreadyRecognised / Receivable.costAlreadyRecognised. Defaults
+  // false: leave unticked for a normal voucher, and this is what decides whether the eventual
+  // settlement gets flagged isSettlement, so it is never a hidden default.
+  const [costAlreadyRecognised, setCostAlreadyRecognised] = useState(false);
+
+  // Receivable-only: Transplant/Services/Medicine, mirrors the revenue taxonomy so
+  // receipt/route.js can map it back to a transactionCategory when this receivable is settled.
+  const [revenueCategory, setRevenueCategory] = useState("");
+
+  // A patient this voucher is FOR, even when the party being paid/owed isn't the patient
+  // themselves (e.g. a Collab Clinic Payment payable, or a Refund Due/Collab Settlement
+  // receivable) — mirrors NewPayableModal's needsPatient gate on the old payables page.
+  const [secondaryPatientId, setSecondaryPatientId] = useState("");
+  const [secondaryPatientOptions, setSecondaryPatientOptions] = useState([]);
+  const [secondaryPatientSearching, setSecondaryPatientSearching] = useState(false);
+
   const role = session?.user?.role;
   const authorized = role === "admin" || role === "super-admin";
 
@@ -80,6 +97,28 @@ function VouchersPageInner() {
       .then((json) => setVendorOptions(json.data || json.vendors || []))
       .catch(() => setVendorOptions([]));
   }, []);
+
+  // Default branch to the session user's own branch, once, when the session loads — the field
+  // stays a plain editable dropdown afterward (via TransactionFieldSet), same as every other
+  // pre-filled field in this codebase.
+  useEffect(() => {
+    const sessionBranch = session?.user?.branch;
+    if (sessionBranch && sessionBranch !== "All" && sessionBranch !== "Collab") {
+      setFields((f) => (f.branch ? f : { ...f, branch: sessionBranch }));
+    }
+  }, [session?.user?.branch]);
+
+  const searchSecondaryPatients = async (term) => {
+    setSecondaryPatientSearching(true);
+    try {
+      const json = await fetch(`/api/patients/get-patient?search=${encodeURIComponent(term)}`).then((r) => r.json());
+      setSecondaryPatientOptions(json.data || json.patients || []);
+    } catch {
+      setSecondaryPatientOptions([]);
+    } finally {
+      setSecondaryPatientSearching(false);
+    }
+  };
 
   const searchEmployees = async (term) => {
     setSearching(true);
@@ -115,6 +154,18 @@ function VouchersPageInner() {
 
   const subTypeOptions = useMemo(() => (category ? getExpenseTypes(category) : []), [category]);
 
+  // Patient-linked heads where the money doesn't flow through the patient directly, but the
+  // voucher is still FOR one — Collab Clinic Payment on the Payable side (Commission/Incentive
+  // aren't reachable from this form's category picker at all — see PAYABLE_EXPENSE_DROPDOWN_
+  // CATEGORIES, which deliberately excludes them), Refund Due/Collab Settlement on the
+  // Receivable side. Skipped when the party itself IS a patient — relatedPatient is already
+  // set from partyId in that case.
+  const needsSecondaryPatient =
+    partyMode !== "PATIENT" &&
+    (type === "Payable" ? category === "Collab Clinic Payment" : ["REFUND_DUE", "COLLAB_SETTLEMENT"].includes(purpose));
+
+  const dueDateInPast = dueDate && dueDate < new Date().toISOString().slice(0, 10);
+
   const handleSubmit = async () => {
     if (!authorized) return;
 
@@ -148,11 +199,13 @@ function VouchersPageInner() {
           purpose: CATEGORY_TO_PURPOSE[category] || "OTHER",
           expenseCategory: category,
           expenseSubType: subType || undefined,
-          relatedPatient: partyMode === "PATIENT" ? partyId : undefined,
+          relatedPatient: partyMode === "PATIENT" ? partyId : needsSecondaryPatient ? secondaryPatientId || undefined : undefined,
           totalAmount: parseFloat(fields.amount),
           dueDate: dueDate || undefined,
           branch: fields.branch,
           remarks,
+          costAlreadyRecognised,
+          receipts: fields.receipts,
           includeGST: taxValue.includeGST,
           gstRate: taxValue.gstRate,
           gstAmount: taxValue.gstAmount,
@@ -180,12 +233,14 @@ function VouchersPageInner() {
         const body = {
           payer: { kind, refId: partyId || undefined, label: payeeLabel },
           purpose,
-          revenueCategory: category || purpose,
-          relatedPatient: partyMode === "PATIENT" ? partyId : undefined,
+          revenueCategory: revenueCategory || undefined,
+          relatedPatient: partyMode === "PATIENT" ? partyId : needsSecondaryPatient ? secondaryPatientId || undefined : undefined,
           totalAmount: parseFloat(fields.amount),
           dueDate: dueDate || undefined,
           branch: fields.branch,
           remarks,
+          costAlreadyRecognised,
+          receipts: fields.receipts,
         };
         const res = await fetch("/api/receivables/create", {
           method: "POST",
@@ -347,18 +402,55 @@ function VouchersPageInner() {
                 </div>
               </div>
             ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Purpose</label>
+                  <select
+                    value={purpose}
+                    onChange={(e) => setPurpose(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                  >
+                    <option value="">Select purpose</option>
+                    {RECEIVABLE_PURPOSE_VALUES.map((p) => (
+                      <option key={p} value={p}>{p.replace(/_/g, " ")}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    Revenue Category <span className="text-gray-400 font-normal">(optional)</span>
+                  </label>
+                  <select
+                    value={revenueCategory}
+                    onChange={(e) => setRevenueCategory(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                  >
+                    <option value="">Not specific to one category</option>
+                    {["Transplant", "Services", "Medicine"].map((c) => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            )}
+
+            {needsSecondaryPatient && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Purpose</label>
-                <select
-                  value={purpose}
-                  onChange={(e) => setPurpose(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                >
-                  <option value="">Select purpose</option>
-                  {RECEIVABLE_PURPOSE_VALUES.map((p) => (
-                    <option key={p} value={p}>{p.replace(/_/g, " ")}</option>
-                  ))}
-                </select>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Related Patient</label>
+                <SearchableSelect
+                  options={secondaryPatientOptions}
+                  value={secondaryPatientId}
+                  onChange={(v) => setSecondaryPatientId(v)}
+                  placeholder="Search patients…"
+                  valueKey="_id"
+                  formatOption={(p) => `${p.personal?.name || ""} — ${p.personal?.phone || ""}`}
+                  onSearch={searchSecondaryPatients}
+                  searching={secondaryPatientSearching}
+                />
+                <p className="mt-1.5 text-xs text-gray-400">
+                  Who this {type === "Payable" ? "payment" : "amount"} is for, even though the
+                  party above is who it's {type === "Payable" ? "paid to" : "owed by"}.
+                </p>
               </div>
             )}
 
@@ -371,12 +463,31 @@ function VouchersPageInner() {
               taxValue={taxValue}
               onTaxChange={setTaxValue}
               showRemarks={false}
-              showReceipts={false}
+              showReceipts={true}
+              patientId={partyMode === "PATIENT" ? partyId : secondaryPatientId || undefined}
             />
             <p className="text-xs text-gray-500 -mt-2">
               This creates a new obligation. It will count as a real expense/income when it is
               eventually settled.
             </p>
+
+            {/* The single most consequential field on this form — see the model comment on
+                Payable.costAlreadyRecognised / Receivable.costAlreadyRecognised. It decides
+                whether the eventual settlement is flagged isSettlement, so it is never a hidden
+                default. */}
+            <label className="flex items-start gap-2.5 p-3 bg-amber-50 border border-amber-200 rounded-lg cursor-pointer">
+              <input
+                type="checkbox"
+                checked={costAlreadyRecognised}
+                onChange={(e) => setCostAlreadyRecognised(e.target.checked)}
+                className="mt-0.5"
+              />
+              <span className="text-xs text-amber-900">
+                <span className="font-semibold">Already booked elsewhere.</span> Tick only if the
+                expense/revenue for this amount has already been booked by another transaction.
+                Leave unticked for a normal voucher.
+              </span>
+            </label>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
@@ -387,6 +498,9 @@ function VouchersPageInner() {
                   onChange={(e) => setDueDate(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
                 />
+                {dueDateInPast && (
+                  <p className="mt-1.5 text-xs text-amber-600">This due date is in the past.</p>
+                )}
               </div>
             </div>
 

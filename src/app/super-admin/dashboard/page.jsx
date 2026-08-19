@@ -469,13 +469,13 @@ export default function SuperAdminDashboard() {
                     </div>
                     <div className="flex flex-wrap gap-3 mt-3">
                       <button
-                        onClick={() => router.push("/admin/receivables")}
+                        onClick={() => router.push("/admin/assets?section=receivables")}
                         className="flex-1 min-w-40 flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-xs font-semibold text-gray-700 hover:bg-emerald-50 hover:border-emerald-200 hover:text-emerald-700 shadow-sm transition-colors"
                       >
                         View Receivables <ExternalLink className="w-3.5 h-3.5" />
                       </button>
                       <button
-                        onClick={() => router.push("/admin/payables")}
+                        onClick={() => router.push("/admin/liabilities?section=payables")}
                         className="flex-1 min-w-40 flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-xs font-semibold text-gray-700 hover:bg-rose-50 hover:border-rose-200 hover:text-rose-700 shadow-sm transition-colors"
                       >
                         View Payables <ExternalLink className="w-3.5 h-3.5" />

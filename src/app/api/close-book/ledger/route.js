@@ -12,6 +12,7 @@ import {
   getOpeningBalance,
   round2,
 } from "@/lib/accountBalances";
+import { checkPeriodLock } from "@/lib/periodLock";
 
 const ALLOWED_ROLES = ["admin", "super-admin"];
 
@@ -104,6 +105,11 @@ export async function GET(request) {
             signedAmount: SIGNED_AMOUNT,
             isContra: { $literal: false },
             isSuspense: { $literal: false },
+            // Task 3: explicit discriminator — a plain row here IS a real Transactions
+            // document, so /admin/transactions/edit/[id] can resolve it and the ordinary
+            // DELETE_ENDPOINTS lookup applies. See buildContraLedgerUnionStage /
+            // buildSuspenseLedgerUnionStage in accountBalances.js for the other two values.
+            sourceKind: { $literal: "TRANSACTION" },
           },
         },
         ...(contraStage ? [contraStage] : []),
@@ -219,6 +225,7 @@ export async function GET(request) {
                   toAccount: 1,
                   direction: 1,
                   reference: 1,
+                  sourceKind: 1,
                 },
               },
             ],
@@ -272,10 +279,20 @@ export async function GET(request) {
     // runningDelta is cumulative movement; the displayed running balance starts from the
     // opening balance. closingBalance therefore always equals the last row's running
     // balance — asserted by the verification script.
-    const rows = (result?.rows || []).map((r) => ({
-      ...r,
-      runningBalance: round2(openingBalance + r.runningDelta),
-    }));
+    // Task 3: only real Transaction rows are ever edit/delete-locked — a contra transfer or
+    // suspense entry has its own actions (see DrillDownTable's leafActions), so checking the
+    // lock for them would be dead weight. Bounded by `limit` (<=200), same cost as the
+    // identical per-row check payables/grouped and receivables/grouped already do.
+    const rows = await Promise.all(
+      (result?.rows || []).map(async (r) => ({
+        ...r,
+        runningBalance: round2(openingBalance + r.runningDelta),
+        lockReason:
+          r.sourceKind === "TRANSACTION"
+            ? await checkPeriodLock({ furtherMode: account, date: r.date })
+            : null,
+      })),
+    );
 
     return NextResponse.json({
       success: true,

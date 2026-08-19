@@ -1,21 +1,24 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import mongoose from "mongoose";
 import connectDB from "@/lib/db";
 import Payable from "@/models/Payable";
 import Transactions from "@/models/Transactions";
-import { buildPayableGroupedStages } from "@/lib/payableAggregation";
+import { buildPayableGroupedStages, buildPayableAggregationStages } from "@/lib/payableAggregation";
 import { UNSETTLED_METHODS } from "@/constants/bankRouting";
 import { checkPeriodLock } from "@/lib/periodLock";
 
 const ALLOWED_ROLES = ["admin", "super-admin"];
 
-// Grouped payables for the Liabilities drill-down (DrillDownTable):
+// Grouped payables for the Liabilities drill-down (DrillDownTable, mode: "documents"):
 //   level=1  -> one row per expenseCategory (HEAD)
 //   level=2  -> one row per expenseSubType within ?category= (SUB-TYPE)
-//   level=3  -> the actual settling Transactions for a HEAD (+ optional SUB-TYPE) bucket, with a
-//               running "paid so far" balance — same paid/settled rule
-//               buildPayableAggregationStages uses for the flat list, just re-scoped to a bucket.
+//   level=3  -> one row per Payable DOCUMENT within the HEAD (+ optional SUB-TYPE) bucket, with
+//               live paid/pending/status/ageing — reuses buildPayableAggregationStages (Task 5,
+//               Step 2), never a second paid/pending calculation.
+//   level=4  -> the actual settling Transactions for ONE document (?documentId=), with a
+//               running "paid so far" balance.
 export async function GET(request) {
   try {
     const session = await getServerSession(authOptions);
@@ -27,12 +30,16 @@ export async function GET(request) {
     await connectDB();
 
     const { searchParams } = new URL(request.url);
-    const level = Math.min(3, Math.max(1, parseInt(searchParams.get("level") || "1")));
+    const level = Math.min(4, Math.max(1, parseInt(searchParams.get("level") || "1")));
     const category = searchParams.get("category") || "";
     const subType = searchParams.get("subType") || "";
     const branch = searchParams.get("branch") || "";
     const from = searchParams.get("from") || "";
     const to = searchParams.get("to") || "";
+    const party = searchParams.get("party") || "";
+    const status = searchParams.get("status") || "";
+    const ageing = searchParams.get("ageing") || "";
+    const documentId = searchParams.get("documentId") || "";
     const page = Math.max(1, parseInt(searchParams.get("page") || "1"));
     const limit = Math.min(200, Math.max(1, parseInt(searchParams.get("limit") || "50")));
 
@@ -50,80 +57,97 @@ export async function GET(request) {
       return NextResponse.json({ success: true, rows });
     }
 
+    if (level === 4) {
+      if (!documentId || !mongoose.Types.ObjectId.isValid(documentId)) {
+        return NextResponse.json({ error: "A valid documentId is required at level 4" }, { status: 400 });
+      }
+      const txMatch = {
+        payableId: new mongoose.Types.ObjectId(documentId),
+        approvalStatus: "APPROVED",
+        method: { $nin: UNSETTLED_METHODS },
+      };
+      if (from || to) {
+        txMatch.date = {};
+        if (from) txMatch.date.$gte = new Date(from);
+        if (to) txMatch.date.$lte = new Date(to);
+      }
+
+      const [rows, total] = await Promise.all([
+        Transactions.aggregate([
+          { $match: txMatch },
+          { $sort: { date: 1, _id: 1 } },
+          {
+            $setWindowFields: {
+              sortBy: { date: 1, _id: 1 },
+              output: {
+                runningBalance: { $sum: "$amount", window: { documents: ["unbounded", "current"] } },
+              },
+            },
+          },
+          { $sort: { date: -1, _id: -1 } },
+          { $skip: (page - 1) * limit },
+          { $limit: limit },
+          {
+            $project: {
+              date: 1,
+              narration: { $ifNull: [{ $ifNull: ["$remarks", "$expenseType"] }, "$expense"] },
+              amount: 1,
+              method: 1,
+              account: "$furtherMode",
+              runningBalance: 1,
+              branch: 1,
+              transactionCategory: 1,
+              payableId: 1,
+            },
+          },
+        ]),
+        Transactions.countDocuments(txMatch),
+      ]);
+
+      const rowsWithLock = await Promise.all(
+        rows.map(async (r) => ({
+          ...r,
+          lockReason: await checkPeriodLock({ furtherMode: r.account, date: r.date }),
+        })),
+      );
+
+      return NextResponse.json({ success: true, rows: rowsWithLock, total, page, limit });
+    }
+
+    // level 3 — one row per document, live-aggregated (never a stored paid/pending figure).
     if (!category) {
       return NextResponse.json({ error: "category is required at level 3" }, { status: 400 });
     }
+    const match = { expenseCategory: category };
+    // Cancelled documents are excluded from the base match by default (same as every other
+    // payables view); the one exception is when the caller explicitly asked to see them.
+    match.isCancelled = status === "Cancelled" ? true : { $ne: true };
+    if (subType) match.expenseSubType = subType;
+    if (branch) match.branch = branch;
+    if (party) match["payee.label"] = { $regex: party, $options: "i" };
 
-    const payableMatch = { isCancelled: { $ne: true }, expenseCategory: category };
-    if (subType) payableMatch.expenseSubType = subType;
-    if (branch) payableMatch.branch = branch;
-    // Fetched in full (not just distinct ids) so each Transaction row below can carry WHO the
-    // payable is for — the drill-down previously showed a bare narration with no way to tell
-    // whose obligation was being paid.
-    const payables = await Payable.find(payableMatch, { payee: 1, purpose: 1, dueDate: 1 }).lean();
-    const payableIds = payables.map((p) => p._id);
-    const payableMap = new Map(payables.map((p) => [String(p._id), p]));
+    const stages = [
+      { $match: match },
+      ...buildPayableAggregationStages(Transactions.collection.name),
+    ];
+    if (status && status !== "Cancelled") stages.push({ $match: { status } });
+    if (ageing) stages.push({ $match: { ageingBucket: ageing } });
+    stages.push({ $sort: { dueDate: 1, createdAt: -1 } });
 
-    const txMatch = {
-      payableId: { $in: payableIds },
-      approvalStatus: "APPROVED",
-      method: { $nin: UNSETTLED_METHODS },
-    };
-    if (from || to) {
-      txMatch.date = {};
-      if (from) txMatch.date.$gte = new Date(from);
-      if (to) txMatch.date.$lte = new Date(to);
-    }
-
-    const [rows, total] = await Promise.all([
-      Transactions.aggregate([
-        { $match: txMatch },
-        { $sort: { date: 1, _id: 1 } },
-        {
-          $setWindowFields: {
-            sortBy: { date: 1, _id: 1 },
-            output: {
-              runningBalance: { $sum: "$amount", window: { documents: ["unbounded", "current"] } },
-            },
-          },
-        },
-        { $sort: { date: -1, _id: -1 } },
-        { $skip: (page - 1) * limit },
-        { $limit: limit },
-        {
-          $project: {
-            date: 1,
-            narration: { $ifNull: [{ $ifNull: ["$remarks", "$expenseType"] }, "$expense"] },
-            amount: 1,
-            method: 1,
-            account: "$furtherMode",
-            runningBalance: 1,
-            branch: 1,
-            transactionCategory: 1,
-            payableId: 1,
-          },
-        },
-      ]),
-      Transactions.countDocuments(txMatch),
-    ]);
-
-    // A row inside a closed AccountPeriod is shown with a lock icon + reason rather than a
-    // silently-disabled edit/delete button. Bounded by `limit` (<=200), so one lock check per
-    // row per page is cheap.
-    const rowsWithLock = await Promise.all(
-      rows.map(async (r) => {
-        const payable = payableMap.get(String(r.payableId));
-        return {
-          ...r,
-          party: payable?.payee?.label || "—",
-          purpose: payable?.purpose || "",
-          dueDate: payable?.dueDate || null,
-          lockReason: await checkPeriodLock({ furtherMode: r.account, date: r.date }),
-        };
-      }),
+    const allRows = await Payable.aggregate(stages);
+    const total = allRows.length;
+    const pageRows = allRows.slice((page - 1) * limit, (page - 1) * limit + limit);
+    // A document has no account of its own — checkPeriodLock's "every account closed" fallback
+    // (furtherMode: null) is the right semantics for an accrual with no cash side yet. Bounded
+    // by `limit` (<=200), same cost as every other per-row lock check in this codebase.
+    const rows = await Promise.all(
+      pageRows.map(async (r) => ({
+        ...r,
+        lockReason: await checkPeriodLock({ furtherMode: null, date: r.dueDate || r.createdAt || new Date() }),
+      })),
     );
 
-    return NextResponse.json({ success: true, rows: rowsWithLock, total, page, limit });
+    return NextResponse.json({ success: true, rows, total, page, limit });
   } catch (error) {
     console.error("Error building grouped payables:", error);
     return NextResponse.json({ error: "Failed to load grouped payables" }, { status: 500 });

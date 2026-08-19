@@ -78,6 +78,21 @@ const payableSchema = new mongoose.Schema(
     // Soft-close — a payable that's no longer owed is cancelled, never hard-deleted.
     isCancelled: { type: Boolean, default: false },
 
+    // Supporting documents for the OBLIGATION itself (an invoice, a contract, a bill) — same
+    // shape as Transactions.receipts, which is for a PAYMENT's own proof instead. Added for the
+    // upgraded voucher form (Task 4); optional and additive, so every pre-existing payable
+    // simply has an empty array.
+    receipts: [
+      {
+        url: String,
+        publicId: String,
+        fileName: String,
+        fileType: { type: String, enum: ["image", "pdf"] },
+        uploadedBy: { name: String, email: String },
+        uploadedAt: { type: Date, default: Date.now },
+      },
+    ],
+
     // Whether the COST this document represents has ALREADY been recognised by an earlier
     // transaction. It drives isSettlement on the eventual payment:
     //   true  -> auto-created from a paid_by_other transaction that booked the full amount up
