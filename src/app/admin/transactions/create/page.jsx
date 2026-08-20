@@ -62,6 +62,16 @@ const PAYABLE_CATEGORY_KIND = {
   "Rent": "RENT_UNIT",
   "Electricity Bill": "UTILITY_UNIT",
 };
+// Categories whose payables are owed to a specific VENDOR document, not a shared category-level
+// "OTHER" bucket the way Rent/Electricity's units are. See getPayableContext's "rent" branch —
+// picking a vendor for one of these switches payeeKind/payeeRefId from the OTHER/sub-type-label
+// bucket to that vendor's own payee, so each vendor's bills (created by
+// scripts/vendor-payables-bulk-import.mjs, or by this form) are found and paid individually
+// instead of being invisible to this tab (they never matched OTHER + the sub-type label). Not
+// merged into PAYABLE_CATEGORY_KIND as a hardcoded "VENDOR" — the kind still depends on whether a
+// vendor is actually picked, so any payable already created under the shared-bucket convention
+// stays fully visible and payable when no vendor is selected.
+const VENDOR_LINKED_PAYABLE_CATEGORIES = ["Medicine Procurement", "Medical Consumables", "Professional Expenses"];
 // Patient tab → Expense sub-tab: the 2 patient-linked sub-types under
 // "Patient Related Expenses" (Refund claims the 3rd, "Patient Refunds").
 const PATIENT_EXPENSE_SUBTYPES = ["Patient Meals", "PATIENT EMI"];
@@ -259,6 +269,10 @@ function AdminCreateTransactionPageInner() {
     // Expenses, Lab Expenses, Interest Expenses, Taxes, Software/Hardware Rental Expenses).
     payableCategory: "Rent",
     rentSubType: "",
+    // Only meaningful when payableCategory is in VENDOR_LINKED_PAYABLE_CATEGORIES — a distinct
+    // field from `vendorId` above (the "other"/Direct Payment tab's own vendor picker) so picking
+    // a vendor in one tab never bleeds into the other when switching between them.
+    payableVendorId: "",
     includeGST: false,
     gstRate: "",
     gstAmount: "",
@@ -506,17 +520,26 @@ function AdminCreateTransactionPageInner() {
       if (!d.rentSubType) return null;
       const purpose = PAYABLE_CATEGORY_PURPOSE[d.payableCategory];
       if (!purpose) return null;
+
+      // A vendor-linked category still works in shared-bucket (OTHER + sub-type-label) mode when
+      // no vendor is chosen — this keeps any payable genuinely created that way (before a vendor
+      // was picked, or intentionally as a category-level bucket) fully visible and payable exactly
+      // as before. Vendor mode is additive, never a replacement for the existing behavior.
+      const isVendorLinked = VENDOR_LINKED_PAYABLE_CATEGORIES.includes(d.payableCategory);
+      const vendor =
+        isVendorLinked && d.payableVendorId ? vendors.find((v) => v._id === d.payableVendorId) : null;
+
       return {
         purpose,
-        payeeKind: PAYABLE_CATEGORY_KIND[d.payableCategory] || "OTHER",
-        payeeRefId: null,
-        payeeLabel: d.rentSubType,
+        payeeKind: vendor ? "VENDOR" : PAYABLE_CATEGORY_KIND[d.payableCategory] || "OTHER",
+        payeeRefId: vendor ? vendor._id : null,
+        payeeLabel: vendor ? vendor.name : d.rentSubType,
         expenseCategory: d.payableCategory,
         expenseSubType: d.rentSubType,
         period: null, // set when creating a payable, from the create-panel's own month/year picker
         relatedPatient: null,
         branch: d.branch,
-        giver: null,
+        giver: vendor ? { type: "VENDOR", refId: vendor._id, name: vendor.name } : null,
       };
     }
 
@@ -552,6 +575,15 @@ function AdminCreateTransactionPageInner() {
     });
     if (ctx.payeeRefId) listParams.set("payeeRefId", ctx.payeeRefId);
     else listParams.set("payeeLabel", ctx.payeeLabel);
+    // A vendor's bills can span more than one sub-type under the same category (e.g. Professional
+    // Expenses: Turkey Technician vs. Legal Consultant Fee) — payeeRefId alone would show every
+    // sub-type's bills together once a vendor is picked, silently widening the list past what the
+    // sub-type dropdown says. Non-vendor payeeKinds don't need this: their payeeLabel already IS
+    // the sub-type, so it's already an exact filter.
+    if (ctx.payeeKind === "VENDOR" && ctx.expenseSubType) {
+      summaryParams.set("expenseSubType", ctx.expenseSubType);
+      listParams.set("expenseSubType", ctx.expenseSubType);
+    }
 
     const requests = [
       fetch(`/api/payables/summary?${summaryParams}`).then((r) => r.json()),
@@ -590,6 +622,7 @@ function AdminCreateTransactionPageInner() {
     expenseData.receiverId,
     expenseData.payableCategory,
     expenseData.rentSubType,
+    expenseData.payableVendorId,
     expenseData.expenseCategory,
     expenseData.expenseType,
     payableRefreshKey,
@@ -609,6 +642,15 @@ function AdminCreateTransactionPageInner() {
     expenseData.payableCategory,
     expenseData.rentSubType,
   ]);
+
+  // A picked vendor is scoped to one payableCategory (or leaving the "rent" tab entirely) — NOT
+  // to rentSubType, since the same vendor can have bills under several sub-types (e.g. Modern
+  // Pharmaceuticals across multiple Medical Consumables sub-types) and switching sub-type should
+  // keep filtering to that vendor, not silently fall back to the shared bucket.
+  useEffect(() => {
+    setExpenseData((d) => (d.payableVendorId ? { ...d, payableVendorId: "" } : d));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [expenseData.expenseSection, expenseData.payableCategory]);
 
   const toggleExpandPayable = async (payableId) => {
     if (expandedPayableId === payableId) {
@@ -868,6 +910,10 @@ function AdminCreateTransactionPageInner() {
               </label>
             )}
           </div>
+        )}
+
+        {!payablesLoading && openPayables.length === 0 && ctx.payeeKind === "VENDOR" && (
+          <p className="text-xs text-gray-400 italic">No open bills for this vendor.</p>
         )}
 
         {openPayables.length > 0 && (
@@ -2106,6 +2152,28 @@ function AdminCreateTransactionPageInner() {
                             </option>
                           ))}
                         </select>
+
+                        {VENDOR_LINKED_PAYABLE_CATEGORIES.includes(expenseData.payableCategory) && (
+                          <div className="mt-4">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Vendor <span className="text-gray-400 font-normal">(optional — leave blank for the shared bucket)</span>
+                            </label>
+                            <SearchableSelect
+                              options={vendors}
+                              value={expenseData.payableVendorId}
+                              onChange={(v) => setExpenseData({ ...expenseData, payableVendorId: v })}
+                              placeholder="Search a vendor to see their individual bills…"
+                              valueKey="_id"
+                              formatOption={(v) => `${v.name} - ${v.contact}`}
+                            />
+                            {expenseData.payableVendorId && (
+                              <p className="text-xs text-gray-400 mt-1">
+                                Showing only this vendor's own bills under "{expenseData.payableCategory}" — clear the
+                                vendor to go back to the shared bucket.
+                              </p>
+                            )}
+                          </div>
+                        )}
 
                         {expenseData.rentSubType && (
                           <div className="mt-4 bg-gray-50 rounded-lg p-3">

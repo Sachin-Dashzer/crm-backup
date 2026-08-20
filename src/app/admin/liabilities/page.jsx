@@ -41,9 +41,17 @@ function LiabilitiesPageInner() {
   // Task A (Round 2) — ONE scope for the whole page, shared by the header total AND every
   // DrillDownTable section below. See the identical comment in admin/assets/page.jsx — same fix,
   // same reasoning, mirrored here.
+  //
+  // dateFrom defaults to the system's go-live date for regular per-transaction tracking, not "".
+  // Payables' "Opening due" column (buildPayableGroupedStages' raisedBeforeRange) is defined as
+  // "pending carried in from before dateFrom" — with no dateFrom at all, nothing can be "before"
+  // an unbounded range, so opening is unconditionally 0 regardless of how much genuinely-opening
+  // balance exists (e.g. the March 2026 Rent opening payables). Defaulting to the cutover date
+  // shows those correctly without requiring the filter to be set by hand on every visit; it's
+  // still fully editable/clearable like every other scope value.
   const [scope, setScope] = useState(() => ({
     branch: searchParams.get("branch") || "",
-    dateFrom: searchParams.get("from") || "",
+    dateFrom: searchParams.get("from") || "2026-04-01",
     dateTo: searchParams.get("to") || "",
   }));
 

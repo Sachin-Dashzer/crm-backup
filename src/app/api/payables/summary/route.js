@@ -33,6 +33,11 @@ export async function GET(request) {
     const payeeKind = searchParams.get("payeeKind") || "";
     const payeeRefId = searchParams.get("payeeRefId") || "";
     const payeeLabel = searchParams.get("payeeLabel") || "";
+    // Only meaningful alongside payeeKind/payeeRefId — narrows a vendor's totals to one sub-type,
+    // since a vendor's bills can span several (e.g. Professional Expenses: Turkey Technician vs.
+    // Legal Consultant Fee). Every other payeeKind's payeeLabel already IS the sub-type, so this
+    // stays unset for those callers.
+    const expenseSubType = searchParams.get("expenseSubType") || "";
     const branch = searchParams.get("branch") || "";
     const ageing = searchParams.get("ageing") || "";
 
@@ -86,6 +91,7 @@ export async function GET(request) {
       const payeeMatch = { ...baseMatch, "payee.kind": payeeKind };
       if (payeeRefId) payeeMatch["payee.refId"] = new mongoose.Types.ObjectId(payeeRefId);
       if (payeeLabel) payeeMatch["payee.label"] = payeeLabel;
+      if (expenseSubType) payeeMatch.expenseSubType = expenseSubType;
       byPayee = await sumMatch(payeeMatch);
     }
 

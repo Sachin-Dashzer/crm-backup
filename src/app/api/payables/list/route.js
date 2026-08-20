@@ -48,7 +48,18 @@ export async function GET(request) {
     if (payeeLabel) match["payee.label"] = payeeLabel;
     // Never trust a raw branch string from the client — this route consumes a plain Mongo match
     // object, so resolveBranchFilter's result spreads straight in.
-    Object.assign(match, resolveBranchFilter(session, searchParams.get("branch") || ""));
+    //
+    // Exception: a query already scoped to one specific vendor's own payables (payeeKind VENDOR +
+    // payeeRefId) skips the branch filter. Vendor bills (medicine/consumables/professional-service
+    // invoices) are deliberately branch-agnostic — a wholesaler isn't tied to one clinic — so they're
+    // created with branch unset, and a branch-specific admin's session would otherwise force
+    // {branch: "Delhi"} against a document with no branch at all, matching nothing. This can't leak
+    // another branch's data: the query is already narrowed to one named vendor's own documents, not
+    // a category-wide listing.
+    const skipBranchFilter = payeeKind === "VENDOR" && !!payeeRefId;
+    if (!skipBranchFilter) {
+      Object.assign(match, resolveBranchFilter(session, searchParams.get("branch") || ""));
+    }
     // Exact values from src/constants/expenseCategories.js — the same tree the create form
     // writes from, so a filter value always matches what is stored.
     if (expenseCategory) match.expenseCategory = expenseCategory;
