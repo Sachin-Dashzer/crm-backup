@@ -507,17 +507,25 @@ transactionSchema.pre("save", async function () {
     );
   }
 
+  // A discount is applied on top of the patient's package rather than editing it (see
+  // CollabCaseForm / cases/create/route.js — both already split the NET, post-discount
+  // figure). This transaction's own `discount` field is the same discount that split was
+  // computed against, so it must net out here too — comparing against the untouched gross
+  // totalPackage would reject every discounted collab case by exactly the discount amount.
+  const discount = this.discount || 0;
+  const netPackage = Math.round((totalPackage - discount) * 100) / 100;
+
   // Rupee amounts can carry paise; compare with a tolerance instead of ===.
   const EPSILON = 0.01;
-  if (Math.abs(ourShare + clinicShare - totalPackage) > EPSILON) {
+  if (Math.abs(ourShare + clinicShare - netPackage) > EPSILON) {
     throw new Error(
-      `Collab split must equal the package total: ourShare (${ourShare}) + clinicShare (${clinicShare}) = ${ourShare + clinicShare}, but the package is ${totalPackage}`,
+      `Collab split must equal the package total: ourShare (${ourShare}) + clinicShare (${clinicShare}) = ${ourShare + clinicShare}, but the package is ${totalPackage}${discount ? ` minus a discount of ${discount} = ${netPackage}` : ""}`,
     );
   }
 
-  if (ourReceived + clinicReceived - totalPackage > EPSILON) {
+  if (ourReceived + clinicReceived - netPackage > EPSILON) {
     throw new Error(
-      `Collected amount exceeds the package: ourReceived (${ourReceived}) + clinicReceived (${clinicReceived}) = ${ourReceived + clinicReceived}, but the package is only ${totalPackage}`,
+      `Collected amount exceeds the package: ourReceived (${ourReceived}) + clinicReceived (${clinicReceived}) = ${ourReceived + clinicReceived}, but the package is only ${netPackage}`,
     );
   }
 });
