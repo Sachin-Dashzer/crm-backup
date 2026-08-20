@@ -1,0 +1,36 @@
+{
+  "created": [
+    {
+      "subType": "Rent-Backend Basement",
+      "id": "6a85a46f90a35fbb000336da",
+      "amount": 34400
+    },
+    {
+      "subType": "Rent-Backend upper ground floor",
+      "id": "6a85a46f90a35fbb000336db",
+      "amount": 67547.1
+    },
+    {
+      "subType": "Rent-GD clinic",
+      "id": "6a85a46f90a35fbb000336dc",
+      "amount": 262880
+    },
+    {
+      "subType": "Rent-Manu Vaishali Clinic",
+      "id": "6a85a46f90a35fbb000336dd",
+      "amount": 91240
+    },
+    {
+      "subType": "Rent-Mansi Vaishali clinic",
+      "id": "6a85a46f90a35fbb000336de",
+      "amount": 91240
+    },
+    {
+      "subType": "Rent-Hyderebad Clinic",
+      "id": "6a85a46f90a35fbb000336df",
+      "amount": 199800
+    }
+  ],
+  "skipped": [],
+  "failed": []
+}

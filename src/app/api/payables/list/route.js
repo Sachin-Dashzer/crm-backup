@@ -7,6 +7,7 @@ import Payable from "@/models/Payable";
 import Transactions from "@/models/Transactions";
 import { buildPayableAggregationStages } from "@/lib/payableAggregation";
 import { AGEING_SORT } from "@/lib/ageing";
+import { resolveBranchFilter } from "@/lib/branches";
 
 const ALLOWED_ROLES = ["admin", "super-admin"];
 
@@ -29,7 +30,6 @@ export async function GET(request) {
     const payeeKind = searchParams.get("payeeKind") || "";
     const payeeRefId = searchParams.get("payeeRefId") || "";
     const payeeLabel = searchParams.get("payeeLabel") || "";
-    const branch = searchParams.get("branch") || "";
     const expenseCategory = searchParams.get("expenseCategory") || "";
     const expenseSubType = searchParams.get("expenseSubType") || "";
     const status = searchParams.get("status") || "";
@@ -46,7 +46,9 @@ export async function GET(request) {
     if (payeeKind) match["payee.kind"] = payeeKind;
     if (payeeRefId) match["payee.refId"] = new mongoose.Types.ObjectId(payeeRefId);
     if (payeeLabel) match["payee.label"] = payeeLabel;
-    if (branch) match.branch = branch;
+    // Never trust a raw branch string from the client — this route consumes a plain Mongo match
+    // object, so resolveBranchFilter's result spreads straight in.
+    Object.assign(match, resolveBranchFilter(session, searchParams.get("branch") || ""));
     // Exact values from src/constants/expenseCategories.js — the same tree the create form
     // writes from, so a filter value always matches what is stored.
     if (expenseCategory) match.expenseCategory = expenseCategory;

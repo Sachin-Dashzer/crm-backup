@@ -5,7 +5,7 @@ import connectDB from "@/lib/db";
 import mongoose from "mongoose";
 import SuspenseEntry from "@/models/SuspenseEntry";
 import { ACCOUNTS } from "@/constants/bankRouting";
-import { ALL_BRANCHES } from "@/lib/branches";
+import { ALL_BRANCHES, resolveBranchFilter } from "@/lib/branches";
 
 // Suspense entries — unexplained bank movement. See src/models/SuspenseEntry.js for why these
 // live in their own collection and never touch a revenue or expense total.
@@ -31,12 +31,17 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url);
     const status = searchParams.get("status") || "open";
     const account = searchParams.get("account") || "";
-    const branch = searchParams.get("branch") || "";
+    // Never trust a raw branch string from the client — same resolver every branch-scoped route
+    // uses; extracted back to a plain string since every match below keys on a single branch
+    // NAME, not a Mongo filter shape.
+    const branchFilterObj = resolveBranchFilter(session, searchParams.get("branch") || "");
+    const branch = typeof branchFilterObj.branch === "string" ? branchFilterObj.branch : "";
     const from = searchParams.get("from") || "";
     const to = searchParams.get("to") || "";
     const page = Math.max(1, parseInt(searchParams.get("page") || "1"));
     const limit = Math.min(200, Math.max(1, parseInt(searchParams.get("limit") || "50")));
     const groupBy = searchParams.get("groupBy") || "";
+    const accountsParam = searchParams.get("accounts") || "";
 
     // Level-1 rollup for the Liabilities drill-down (DrillDownTable, levels=2): one row per
     // account, reshaped into the { key, label, opening, movement, settled, closing } contract
@@ -46,6 +51,10 @@ export async function GET(request) {
     if (groupBy === "account") {
       const groupMatch = { isCancelled: { $ne: true }, isResolved: { $ne: true } };
       if (branch) groupMatch.branch = branch;
+      // Task C4 (dashboard) — an explicit account selection narrows server-side, matching
+      // close-book/accounts' identical `accounts=` support, instead of the caller filtering the
+      // full result set in JS afterward.
+      if (accountsParam) groupMatch.account = { $in: accountsParam.split(",") };
       if (from || to) {
         groupMatch.date = {};
         if (from) groupMatch.date.$gte = new Date(from);

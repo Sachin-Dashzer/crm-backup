@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   ChevronRight,
@@ -14,6 +14,7 @@ import {
   History,
   Ban,
   X,
+  Eye,
 } from "lucide-react";
 import AccountingTable from "./AccountingTable";
 import { formatCurrency, formatDate, StatusBadge } from "@/lib/financeUI";
@@ -29,6 +30,8 @@ import RecordReceiptModal from "./RecordReceiptModal";
 import RevisePayableModal from "./RevisePayableModal";
 import ReviseReceivableModal from "./ReviseReceivableModal";
 import DocumentHistory from "./DocumentHistory";
+import TransactionDetailModal from "./TransactionDetailModal";
+import DocumentDetailModal from "./DocumentDetailModal";
 
 const DELETE_ENDPOINTS = {
   TRANSPLANT: "/api/transactions/transplant/delete",
@@ -61,6 +64,8 @@ export default function DrillDownTable({
   extraParams,
   initialDrill,
   onDrillChange,
+  scope: controlledScope,
+  onScopeChange,
 }) {
   const router = useRouter();
   const toast = useToast();
@@ -73,7 +78,42 @@ export default function DrillDownTable({
   const isGrouped = isDocuments || sectionConfig.mode === "grouped" || key === "payables" || key === "receivables";
   const deepestLevel = isDocuments ? 4 : levels;
 
-  const [scope, setScope] = useState({ branch: "", dateFrom: "", dateTo: "", party: "", status: "", ageing: "" });
+  // Task A (Round 2) — branch/dateFrom/dateTo become controlled when the caller passes `scope`
+  // (Assets/Liabilities lift ONE scope to the page so the header total and every section agree —
+  // see those pages' header comment). party/status/ageing (documents mode only) are never lifted
+  // — they're a per-section drill-down refinement, not a page-level total filter — so they always
+  // live in internal state regardless of controlled/uncontrolled.
+  const [internalScope, setInternalScope] = useState({ branch: "", dateFrom: "", dateTo: "", party: "", status: "", ageing: "" });
+  const isControlled = !!controlledScope;
+  // Memoized on the underlying PRIMITIVES, not on internalScope/controlledScope's object
+  // identity — those two combine into a new object literal every render when controlled, and an
+  // unmemoized `scope` would give `qs`/`load` below a new reference every render, re-running the
+  // fetch effect on every render rather than only when a filter actually changes.
+  const scope = useMemo(
+    () =>
+      isControlled
+        ? { ...internalScope, branch: controlledScope.branch ?? "", dateFrom: controlledScope.dateFrom ?? "", dateTo: controlledScope.dateTo ?? "" }
+        : internalScope,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [
+      isControlled,
+      controlledScope?.branch,
+      controlledScope?.dateFrom,
+      controlledScope?.dateTo,
+      internalScope,
+    ],
+  );
+  const CONTROLLED_KEYS = ["branch", "dateFrom", "dateTo"];
+  const updateScope = (patch) => {
+    const toParent = {};
+    const toLocal = {};
+    Object.entries(patch).forEach(([k, v]) => {
+      if (isControlled && CONTROLLED_KEYS.includes(k)) toParent[k] = v;
+      else toLocal[k] = v;
+    });
+    if (Object.keys(toParent).length) onScopeChange?.({ ...scope, ...toParent });
+    if (Object.keys(toLocal).length) setInternalScope((s) => ({ ...s, ...toLocal }));
+  };
   // Task 5, Step 5 — `initialDrill` seeds the drill path from a deep link (e.g.
   // /admin/liabilities?section=payables&head=Rent&doc=<id>, the URL Task 1's Entry Type badge
   // points at); read once on mount, same "one-time initial state" pattern the create page's
@@ -91,6 +131,8 @@ export default function DrillDownTable({
   const [historyDoc, setHistoryDoc] = useState(null);
   const [historyTx, setHistoryTx] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
+  const [viewTxId, setViewTxId] = useState(null);
+  const [viewDoc, setViewDoc] = useState(null); // the Payable/Receivable row being viewed
 
   const qs = useCallback(
     (extra = {}) => {
@@ -372,15 +414,66 @@ export default function DrillDownTable({
   // guard above. They get their own actions instead. `renderLeafRowActions` (the Loans section's
   // Settle/Cancel Loan) is composed in, not replaced — it still wins over the generic Edit/Delete
   // for a plain, unlocked, non-reversed transaction row when the caller supplies it.
+  // "View" opens the complete-detail modal (TransactionDetailModal, fetched fresh from
+  // /api/transactions/get-by-id — the leaf columns here only ever project a handful of fields).
+  // Only real Transactions have that endpoint's row shape; CONTRA transfers (AccountTransfer) and
+  // SUSPENSE entries (SuspenseEntry) don't, so they're excluded before this button ever renders.
+  // Available on every OTHER leaf row regardless of lock/reversal state — those states restrict
+  // what you can DO to a row, never whether you can look at it.
+  // Cash & Bank/Loans' level-2 ledger (unlike the documents-mode leaf) mixes real Transactions
+  // with contra transfers and suspense entries in one list WITHOUT tagging them via sourceKind —
+  // isContra/isSuspense (set in the load() mapping above) are what distinguish them there.
+  const isRealTransaction = (row) => !row.isContra && !row.isSuspense;
+
+  const viewButton = (row) =>
+    isRealTransaction(row) ? (
+      <button
+        onClick={() => setViewTxId(row._id)}
+        title="View full details"
+        className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500"
+      >
+        <Eye className="w-3.5 h-3.5" />
+      </button>
+    ) : null;
+
   const leafActions = (row) => {
     if (row.sourceKind === "CONTRA") return <ContraRowActions />;
     if (row.sourceKind === "SUSPENSE") return <SuspenseRowActions />;
-    if (row.lockReason) return <LockedBadge reason={row.lockReason} />;
-    if (row.reversalOf) return <ReversalBadge reason={row.reversalReason} />;
-    if (row.isReversed) return <ReversedBadge />;
-    if (renderLeafRowActions) return renderLeafRowActions(row);
+    if (row.lockReason) {
+      return (
+        <div className="flex items-center justify-end gap-2">
+          {viewButton(row)}
+          <LockedBadge reason={row.lockReason} />
+        </div>
+      );
+    }
+    if (row.reversalOf) {
+      return (
+        <div className="flex items-center justify-end gap-2">
+          {viewButton(row)}
+          <ReversalBadge reason={row.reversalReason} />
+        </div>
+      );
+    }
+    if (row.isReversed) {
+      return (
+        <div className="flex items-center justify-end gap-2">
+          {viewButton(row)}
+          <ReversedBadge />
+        </div>
+      );
+    }
+    if (renderLeafRowActions) {
+      return (
+        <div className="flex items-center justify-end gap-2">
+          {viewButton(row)}
+          {renderLeafRowActions(row)}
+        </div>
+      );
+    }
     return (
       <div className="flex items-center justify-end gap-2">
+        {viewButton(row)}
         <button
           onClick={() => router.push(`/admin/transactions/edit/${row._id}`)}
           className="p-1.5 rounded-lg hover:bg-indigo-50 text-indigo-600"
@@ -465,6 +558,13 @@ export default function DrillDownTable({
             )}
           </>
         )}
+        <button
+          onClick={() => setViewDoc(row)}
+          title="View full details"
+          className="p-1.5 rounded-lg bg-gray-50 text-gray-500 hover:bg-gray-100"
+        >
+          <Eye className="w-3.5 h-3.5" />
+        </button>
         <button
           onClick={() => openHistory(row)}
           title="View History"
@@ -598,19 +698,21 @@ export default function DrillDownTable({
 
         <div className="flex items-center gap-2 flex-wrap">
           {/* Task 5, Step 5 — party/status/ageing only matter (and only render) at the documents
-              level; branch/date scope the whole section regardless of level. */}
+              level; branch/date scope the whole section regardless of level, but are hidden here
+              entirely when the page above has taken them over (Task A, Round 2) — one filter bar,
+              one truth, not a second one repeating what the page already shows. */}
           {atDocuments && (
             <>
               <input
                 type="text"
                 value={scope.party}
-                onChange={(e) => setScope((s) => ({ ...s, party: e.target.value }))}
+                onChange={(e) => updateScope({ party: e.target.value })}
                 placeholder="Search party…"
                 className="px-2.5 py-1.5 border border-gray-300 rounded-lg text-xs w-32"
               />
               <select
                 value={scope.status}
-                onChange={(e) => setScope((s) => ({ ...s, status: e.target.value }))}
+                onChange={(e) => updateScope({ status: e.target.value })}
                 className="px-2.5 py-1.5 border border-gray-300 rounded-lg text-xs bg-white"
               >
                 <option value="">All statuses</option>
@@ -620,7 +722,7 @@ export default function DrillDownTable({
               </select>
               <select
                 value={scope.ageing}
-                onChange={(e) => setScope((s) => ({ ...s, ageing: e.target.value }))}
+                onChange={(e) => updateScope({ ageing: e.target.value })}
                 className="px-2.5 py-1.5 border border-gray-300 rounded-lg text-xs bg-white"
               >
                 <option value="">All ages</option>
@@ -630,28 +732,32 @@ export default function DrillDownTable({
               </select>
             </>
           )}
-          <select
-            value={scope.branch}
-            onChange={(e) => setScope((s) => ({ ...s, branch: e.target.value }))}
-            className="px-2.5 py-1.5 border border-gray-300 rounded-lg text-xs bg-white"
-          >
-            <option value="">All branches</option>
-            {ALL_BRANCHES.map((b) => (
-              <option key={b} value={b}>{b}</option>
-            ))}
-          </select>
-          <input
-            type="date"
-            value={scope.dateFrom}
-            onChange={(e) => setScope((s) => ({ ...s, dateFrom: e.target.value }))}
-            className="px-2.5 py-1.5 border border-gray-300 rounded-lg text-xs"
-          />
-          <input
-            type="date"
-            value={scope.dateTo}
-            onChange={(e) => setScope((s) => ({ ...s, dateTo: e.target.value }))}
-            className="px-2.5 py-1.5 border border-gray-300 rounded-lg text-xs"
-          />
+          {!isControlled && (
+            <>
+              <select
+                value={scope.branch}
+                onChange={(e) => updateScope({ branch: e.target.value })}
+                className="px-2.5 py-1.5 border border-gray-300 rounded-lg text-xs bg-white"
+              >
+                <option value="">All branches</option>
+                {ALL_BRANCHES.map((b) => (
+                  <option key={b} value={b}>{b}</option>
+                ))}
+              </select>
+              <input
+                type="date"
+                value={scope.dateFrom}
+                onChange={(e) => updateScope({ dateFrom: e.target.value })}
+                className="px-2.5 py-1.5 border border-gray-300 rounded-lg text-xs"
+              />
+              <input
+                type="date"
+                value={scope.dateTo}
+                onChange={(e) => updateScope({ dateTo: e.target.value })}
+                className="px-2.5 py-1.5 border border-gray-300 rounded-lg text-xs"
+              />
+            </>
+          )}
           {showVoucherButton && (
             <button
               onClick={() => router.push(voucherHref)}
@@ -756,6 +862,16 @@ export default function DrillDownTable({
             }}
           />
         ))}
+
+      {viewTxId && <TransactionDetailModal transactionId={viewTxId} onClose={() => setViewTxId(null)} />}
+
+      {viewDoc && (
+        <DocumentDetailModal
+          documentId={viewDoc._id}
+          kind={isPayableSection ? "payable" : "receivable"}
+          onClose={() => setViewDoc(null)}
+        />
+      )}
 
       {historyDoc && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">

@@ -8,6 +8,7 @@ import Transactions from "@/models/Transactions";
 import { buildPayableGroupedStages, buildPayableAggregationStages } from "@/lib/payableAggregation";
 import { UNSETTLED_METHODS } from "@/constants/bankRouting";
 import { checkPeriodLock } from "@/lib/periodLock";
+import { resolveBranchFilter } from "@/lib/branches";
 
 const ALLOWED_ROLES = ["admin", "super-admin"];
 
@@ -33,7 +34,17 @@ export async function GET(request) {
     const level = Math.min(4, Math.max(1, parseInt(searchParams.get("level") || "1")));
     const category = searchParams.get("category") || "";
     const subType = searchParams.get("subType") || "";
-    const branch = searchParams.get("branch") || "";
+    // Vendors page (Task: vendor ledger) — rolls up by payee.refId instead of expenseCategory,
+    // single level (no sub-type tier), then jumps straight to that vendor's documents at level 3
+    // via vendorId instead of category. See buildPayableGroupedStages' groupBy param.
+    const groupBy = searchParams.get("groupBy") === "vendor" ? "vendor" : "category";
+    const vendorId = searchParams.get("vendorId") || "";
+    // Never trust a raw branch string from the client — same resolver every branch-scoped route
+    // uses. Extracted back to a plain string since buildPayableGroupedStages and the match below
+    // both key on a single branch NAME (a collab session's expanded {$in: [...]} shape, were one
+    // ever to reach this admin-only route, falls back to no filter rather than crashing).
+    const branchFilterObj = resolveBranchFilter(session, searchParams.get("branch") || "");
+    const branch = typeof branchFilterObj.branch === "string" ? branchFilterObj.branch : "";
     const from = searchParams.get("from") || "";
     const to = searchParams.get("to") || "";
     const party = searchParams.get("party") || "";
@@ -52,6 +63,7 @@ export async function GET(request) {
           branch,
           from,
           to,
+          groupBy,
         }),
       );
       return NextResponse.json({ success: true, rows });
@@ -115,14 +127,24 @@ export async function GET(request) {
     }
 
     // level 3 — one row per document, live-aggregated (never a stored paid/pending figure).
-    if (!category) {
-      return NextResponse.json({ error: "category is required at level 3" }, { status: 400 });
+    // Vendor mode skips the category/sub-type tier entirely and matches on payee.refId instead —
+    // a vendor's bills can legitimately span several expense categories.
+    let match;
+    if (groupBy === "vendor") {
+      if (!vendorId || !mongoose.Types.ObjectId.isValid(vendorId)) {
+        return NextResponse.json({ error: "A valid vendorId is required at level 3 in vendor mode" }, { status: 400 });
+      }
+      match = { "payee.kind": "VENDOR", "payee.refId": new mongoose.Types.ObjectId(vendorId) };
+    } else {
+      if (!category) {
+        return NextResponse.json({ error: "category is required at level 3" }, { status: 400 });
+      }
+      match = { expenseCategory: category };
+      if (subType) match.expenseSubType = subType;
     }
-    const match = { expenseCategory: category };
     // Cancelled documents are excluded from the base match by default (same as every other
     // payables view); the one exception is when the caller explicitly asked to see them.
     match.isCancelled = status === "Cancelled" ? true : { $ne: true };
-    if (subType) match.expenseSubType = subType;
     if (branch) match.branch = branch;
     if (party) match["payee.label"] = { $regex: party, $options: "i" };
 

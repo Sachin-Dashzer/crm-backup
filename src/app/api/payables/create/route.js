@@ -147,6 +147,19 @@ export async function POST(req) {
     }
 
     const performedBy = { name: session.user.name, email: session.user.email };
+
+    // A Rent payable's obligation is recognised on the 1st of the month it's FOR, not whatever
+    // day someone happened to enter it — dateFrom/dateTo filtering and the opening/closing
+    // rollups on the Liabilities page both key off createdAt (see buildPayableGroupedStages'
+    // raisedInRange/raisedBeforeRange), so a rent payable entered on the 20th would otherwise
+    // land in the wrong month's "raised" bucket and be invisible to a filter for its actual
+    // period. Mongoose's timestamps plugin only defaults createdAt when it isn't already set, so
+    // passing it here is honoured rather than overwritten on save.
+    const periodStartDate =
+      purpose === "RENT" && period?.month && period?.year
+        ? new Date(Date.UTC(period.year, period.month - 1, 1))
+        : undefined;
+
     const commonFields = {
       period: period?.month && period?.year ? period : undefined,
       relatedPatient: relatedPatient || undefined,
@@ -155,6 +168,7 @@ export async function POST(req) {
       remarks: remarks || "",
       costAlreadyRecognised: costAlreadyRecognised === true,
       receipts: receipts || [],
+      ...(periodStartDate ? { createdAt: periodStartDate } : {}),
       createdBy: {
         name: session.user.name,
         email: session.user.email,

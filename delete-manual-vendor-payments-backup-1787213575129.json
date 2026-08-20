@@ -1,0 +1,4306 @@
+[
+  {
+    "_id": "6a7db38ac4618224a042fc7c",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-08-09T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 60000,
+    "expense": "Medicine Procurement",
+    "expenseType": "Medicine Procurement",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "helpsure bill payment"
+    },
+    "method": "icici_medihub_bank_transfer",
+    "furtherMode": "ICICI Medihub",
+    "remarks": "helpsure bill payment [Delhi Backend]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-13T12:07:38.185Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.509Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7db38ac4618224a042fc5f",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-08-08T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 108318,
+    "expense": "Medicine Procurement",
+    "expenseType": "Medicine Procurement",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "301 BILL OT STOCK PAYMENT"
+    },
+    "method": "hdfc_skin_bank_transfer",
+    "furtherMode": "HDFC Skin",
+    "remarks": "301 BILL OT STOCK PAYMENT [Delhi Backend]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-13T12:07:38.185Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.509Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7db38ac4618224a042fcbc",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-08-06T00:00:00.000Z",
+    "branch": "Hyderabad",
+    "amount": 65750,
+    "expense": "Medical Consumables",
+    "expenseType": "Medical Consumables-OT",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "hyd ot bed payment ADEQUATEELE"
+    },
+    "method": "icici_medihub_bank_transfer",
+    "furtherMode": "ICICI Medihub",
+    "remarks": "hyd ot bed payment ADEQUATEELE [Hyderabad Clinic]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Hyderabad",
+      "date": "2026-08-13T12:07:38.185Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.509Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7db38ac4618224a042fbfe",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-08-03T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 40000,
+    "expense": "Medicine Procurement",
+    "expenseType": "Medicine Procurement",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "Bhawani drugs medicine payment"
+    },
+    "method": "hdfc_skin_bank_transfer",
+    "furtherMode": "HDFC Skin",
+    "remarks": "Bhawani drugs medicine payment [Delhi Backend]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-13T12:07:38.184Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.510Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7db38ac4618224a042fbe8",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-08-02T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 137000,
+    "expense": "Medicine Procurement",
+    "expenseType": "Medicine Procurement",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "Helpsure health medicine part payment"
+    },
+    "method": "icici_medihub_bank_transfer",
+    "furtherMode": "ICICI Medihub",
+    "remarks": "Helpsure health medicine part payment [Delhi Backend]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-13T12:07:38.184Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.510Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7db38ac4618224a042fbe9",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-08-02T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 13000,
+    "expense": "Medicine Procurement",
+    "expenseType": "Medicine Procurement",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "Helpsure health medicine part payment"
+    },
+    "method": "icici_medihub_bank_transfer",
+    "furtherMode": "ICICI Medihub",
+    "remarks": "Helpsure health medicine part payment [Delhi Backend]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-13T12:07:38.184Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.510Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7c6596154922083e1b2ea6",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-07-21T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 40000,
+    "expense": "Medical Consumables",
+    "expenseType": "Medical Consumables-Others",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "Ganpati folirich payment"
+    },
+    "method": "hdfc_skin_bank_transfer",
+    "furtherMode": "HDFC Skin",
+    "remarks": "Ganpati folirich payment [Delhi Center]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-12T12:22:44.308Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.510Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7c6596154922083e1b2e54",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-07-20T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 127855,
+    "expense": "Medical Consumables",
+    "expenseType": "Medical Consumables-OT",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "modern pharma bill payment"
+    },
+    "method": "hdfc_skin_bank_transfer",
+    "furtherMode": "HDFC Skin",
+    "remarks": "modern pharma bill payment [Delhi Center]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-12T12:22:44.308Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.510Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7c6596154922083e1b2e59",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-07-20T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 30000,
+    "expense": "Medical Consumables",
+    "expenseType": "Medical Consumables-Others",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "Sacgin mishra surgical"
+    },
+    "method": "hdfc_skin_bank_transfer",
+    "furtherMode": "HDFC Skin",
+    "remarks": "Sacgin mishra surgical [Delhi Center]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-12T12:22:44.308Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.510Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7c6596154922083e1b2e3d",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-07-19T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 100000,
+    "expense": "Medicine Procurement",
+    "expenseType": "Medicine Procurement",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "Shree ji pharma"
+    },
+    "method": "icici_medihub_bank_transfer",
+    "furtherMode": "ICICI Medihub",
+    "remarks": "Shree ji pharma [Delhi Center]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-12T12:22:44.308Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.510Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7c6596154922083e1b2de7",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-07-17T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 150000,
+    "expense": "Medicine Procurement",
+    "expenseType": "Medicine Procurement",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "helpsure health medicine payment"
+    },
+    "method": "icici_medihub_bank_transfer",
+    "furtherMode": "ICICI Medihub",
+    "remarks": "helpsure health medicine payment [Delhi Center]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-12T12:22:44.308Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.510Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7c6596154922083e1b2d98",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-07-16T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 5000,
+    "expense": "Medical Consumables",
+    "expenseType": "Medical Consumables-Others",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "GFC PAYMENT"
+    },
+    "method": "cash",
+    "furtherMode": "Cash Book",
+    "remarks": "GFC PAYMENT [Delhi Center]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-12T12:22:44.308Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.510Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7c6596154922083e1b2d3a",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-07-14T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 5000,
+    "expense": "Medical Consumables",
+    "expenseType": "Medical Consumables-Others",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "gfc payment"
+    },
+    "method": "cash",
+    "furtherMode": "Cash Book",
+    "remarks": "gfc payment [Delhi Center]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-12T12:22:44.308Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.510Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7c6596154922083e1b2d55",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-07-14T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 22050,
+    "expense": "Medical Consumables",
+    "expenseType": "Medical Consumables-Others",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "medono 339 bill payment"
+    },
+    "method": "hdfc_skin_bank_transfer",
+    "furtherMode": "HDFC Skin",
+    "remarks": "medono 339 bill payment [Delhi Center]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-12T12:22:44.308Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.510Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7c6596154922083e1b2d56",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-07-14T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 47190,
+    "expense": "Medicine Procurement",
+    "expenseType": "Medicine Procurement",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "gnvs medicine bill payment"
+    },
+    "method": "hdfc_skin_bank_transfer",
+    "furtherMode": "HDFC Skin",
+    "remarks": "gnvs medicine bill payment [Delhi Center]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-12T12:22:44.308Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.510Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7c6596154922083e1b2d64",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-07-14T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 24276,
+    "expense": "Medical Consumables",
+    "expenseType": "Medical Consumables-Others",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "kusum scientific bill payment"
+    },
+    "method": "hdfc_skin_bank_transfer",
+    "furtherMode": "HDFC Skin",
+    "remarks": "kusum scientific bill payment [Delhi Center]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-12T12:22:44.308Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.510Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7c6595154922083e1b2c69",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-07-09T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 50000,
+    "expense": "Medical Consumables",
+    "expenseType": "Medical Consumables-OT",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "modern Pharma Bill Payment"
+    },
+    "method": "hdfc_skin_bank_transfer",
+    "furtherMode": "HDFC Skin",
+    "remarks": "modern Pharma Bill Payment [Delhi Center]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-12T12:22:44.308Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.510Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7c6595154922083e1b2c44",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-07-08T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 100000,
+    "expense": "Medical Consumables",
+    "expenseType": "Medical Consumables-OT",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "modern pharma part payment"
+    },
+    "method": "hdfc_skin_bank_transfer",
+    "furtherMode": "HDFC Skin",
+    "remarks": "modern pharma part payment [Delhi Center]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-12T12:22:44.308Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.510Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7c6595154922083e1b2c47",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-07-08T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 50000,
+    "expense": "Medical Consumables",
+    "expenseType": "Medical Consumables-OT",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "modern pharma part payment"
+    },
+    "method": "hdfc_skin_bank_transfer",
+    "furtherMode": "HDFC Skin",
+    "remarks": "modern pharma part payment [Delhi Center]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-12T12:22:44.308Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.510Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7c6595154922083e1b2c4e",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-07-08T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 50000,
+    "expense": "Medicine Procurement",
+    "expenseType": "Medicine Procurement",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "helpsure health part payment"
+    },
+    "method": "icici_medihub_bank_transfer",
+    "furtherMode": "ICICI Medihub",
+    "remarks": "helpsure health part payment [Delhi Center]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-12T12:22:44.308Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.510Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7c6595154922083e1b2c12",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-07-07T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 20446,
+    "expense": "Medical Consumables",
+    "expenseType": "Medical Consumables-Others",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "medono india bill part payment"
+    },
+    "method": "hdfc_skin_bank_transfer",
+    "furtherMode": "HDFC Skin",
+    "remarks": "medono india bill part payment [Delhi Center]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-12T12:22:44.308Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.510Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7c6595154922083e1b2c13",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-07-07T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 9450,
+    "expense": "Medical Consumables",
+    "expenseType": "Medical Consumables-Others",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "medono india bill part payment"
+    },
+    "method": "hdfc_skin_bank_transfer",
+    "furtherMode": "HDFC Skin",
+    "remarks": "medono india bill part payment [Delhi Center]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-12T12:22:44.308Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.510Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7c6595154922083e1b2bd4",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-07-06T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 24570,
+    "expense": "Medical Consumables",
+    "expenseType": "Medical Consumables-Others",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "GNVS pharmaceuticals bill Payment"
+    },
+    "method": "hdfc_skin_bank_transfer",
+    "furtherMode": "HDFC Skin",
+    "remarks": "GNVS pharmaceuticals bill Payment [Delhi Center]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-12T12:22:44.308Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.510Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7c6595154922083e1b2bd6",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-07-06T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 37100,
+    "expense": "Medicine Procurement",
+    "expenseType": "Medicine Procurement",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "Shivoham Bill payment"
+    },
+    "method": "hdfc_skin_bank_transfer",
+    "furtherMode": "HDFC Skin",
+    "remarks": "Shivoham Bill payment [Delhi Center]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-12T12:22:44.308Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.510Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7c6595154922083e1b2bdd",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-07-06T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 16612,
+    "expense": "Medicine Procurement",
+    "expenseType": "Medicine Procurement",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "crossQderma Bill Payment"
+    },
+    "method": "hdfc_skin_bank_transfer",
+    "furtherMode": "HDFC Skin",
+    "remarks": "crossQderma Bill Payment [Delhi Center]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-12T12:22:44.308Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.510Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7c6595154922083e1b2bdf",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-07-06T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 16612,
+    "expense": "Medicine Procurement",
+    "expenseType": "Medicine Procurement",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "crossQderma Bill Payment"
+    },
+    "method": "hdfc_skin_bank_transfer",
+    "furtherMode": "HDFC Skin",
+    "remarks": "crossQderma Bill Payment [Delhi Center]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-12T12:22:44.308Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.510Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7c6595154922083e1b2be4",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-07-06T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 64800,
+    "expense": "Professional Expenses",
+    "expenseType": "Finance Consultant Fee",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "Phmg jan bill clear"
+    },
+    "method": "icici_medihub_bank_transfer",
+    "furtherMode": "ICICI Medihub",
+    "remarks": "Phmg jan bill clear [Delhi Center]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-12T12:22:44.308Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.510Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7c6595154922083e1b2be5",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-07-06T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 64800,
+    "expense": "Professional Expenses",
+    "expenseType": "Finance Consultant Fee",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "Phmg feb bill clear"
+    },
+    "method": "icici_medihub_bank_transfer",
+    "furtherMode": "ICICI Medihub",
+    "remarks": "Phmg feb bill clear [Delhi Center]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-12T12:22:44.308Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.510Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7c6595154922083e1b2ba2",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-07-05T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 50000,
+    "expense": "Medicine Procurement",
+    "expenseType": "Medicine Procurement",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "shree ji pharma Bill Payment"
+    },
+    "method": "icici_medihub_bank_transfer",
+    "furtherMode": "ICICI Medihub",
+    "remarks": "shree ji pharma Bill Payment [Delhi Center]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-12T12:22:44.308Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.510Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7c6595154922083e1b2ba3",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-07-05T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 50000,
+    "expense": "Medicine Procurement",
+    "expenseType": "Medicine Procurement",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "helpsure health Bill payment"
+    },
+    "method": "icici_medihub_bank_transfer",
+    "furtherMode": "ICICI Medihub",
+    "remarks": "helpsure health Bill payment [Delhi Center]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-12T12:22:44.308Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.510Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7c6595154922083e1b2b51",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-07-03T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 50000,
+    "expense": "Medicine Procurement",
+    "expenseType": "Medicine Procurement",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "helpsure health medicine part payment"
+    },
+    "method": "icici_medihub_bank_transfer",
+    "furtherMode": "ICICI Medihub",
+    "remarks": "helpsure health medicine part payment [Delhi Center]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-12T12:22:44.308Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.510Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7c6595154922083e1b2b16",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-07-02T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 60000,
+    "expense": "Medicine Procurement",
+    "expenseType": "Medicine Procurement",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "helpsure health medicine part payment"
+    },
+    "method": "icici_medihub_bank_transfer",
+    "furtherMode": "ICICI Medihub",
+    "remarks": "helpsure health medicine part payment [Delhi Center]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-12T12:22:44.308Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.510Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7c6595154922083e1b2ad1",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-07-01T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 24276,
+    "expense": "Medical Consumables",
+    "expenseType": "Medical Consumables-Others",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "Kusum scientific card bill payment"
+    },
+    "method": "hdfc_skin_bank_transfer",
+    "furtherMode": "HDFC Skin",
+    "remarks": "Kusum scientific card bill payment [Delhi Center]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-12T12:22:44.307Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.510Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7c6595154922083e1b2adb",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-07-01T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 55000,
+    "expense": "Medical Consumables",
+    "expenseType": "Medical Consumables-OT",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "modern pharma bill part payment"
+    },
+    "method": "hdfc_skin_bank_transfer",
+    "furtherMode": "HDFC Skin",
+    "remarks": "modern pharma bill part payment [Delhi Center]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-12T12:22:44.307Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.510Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7c6595154922083e1b2a40",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-06-28T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 12000,
+    "expense": "Medical Consumables",
+    "expenseType": "Medical Consumables-Others",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "medono india bill payment"
+    },
+    "method": "hdfc_skin_bank_transfer",
+    "furtherMode": "HDFC Skin",
+    "remarks": "medono india bill payment [Delhi Backend]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-12T12:22:44.307Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.514Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7c6595154922083e1b2a56",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-06-28T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 50000,
+    "expense": "Medicine Procurement",
+    "expenseType": "Medicine Procurement",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "shree jii pharma"
+    },
+    "method": "icici_medihub_bank_transfer",
+    "furtherMode": "ICICI Medihub",
+    "remarks": "shree jii pharma [Delhi Backend]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-12T12:22:44.307Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.514Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7c6595154922083e1b2a0c",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-06-27T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 150000,
+    "expense": "Medical Consumables",
+    "expenseType": "Medical Consumables-OT",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "modern pharma ot staock part payment"
+    },
+    "method": "hdfc_skin_bank_transfer",
+    "furtherMode": "HDFC Skin",
+    "remarks": "modern pharma ot staock part payment [Delhi Backend]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-12T12:22:44.307Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.514Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7c6595154922083e1b2a05",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-06-26T00:00:00.000Z",
+    "branch": "Hyderabad",
+    "amount": 94400,
+    "expense": "Asset Based Payment",
+    "expenseType": "Hardware-Laptop/Computer/Mobile etc",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "hyd ot bed payment ADEQUATEELE"
+    },
+    "method": "icici_medihub_bank_transfer",
+    "furtherMode": "ICICI Medihub",
+    "remarks": "hyd ot bed payment ADEQUATEELE [Hyderabad Clinic]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Hyderabad",
+      "date": "2026-08-12T12:22:44.307Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.514Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7c6595154922083e1b29ae",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-06-25T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 21560,
+    "expense": "Professional Expenses",
+    "expenseType": "Finance Consultant Fee",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "MIneni ca Bill Payment april increment"
+    },
+    "method": "icici_medihub_bank_transfer",
+    "furtherMode": "ICICI Medihub",
+    "remarks": "MIneni ca Bill Payment april increment [Delhi Backend]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-12T12:22:44.307Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.514Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7c6595154922083e1b2965",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-06-24T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 6300,
+    "expense": "Medical Consumables",
+    "expenseType": "Medical Consumables-Others",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "Kusum scientific bill payment"
+    },
+    "method": "hdfc_skin_bank_transfer",
+    "furtherMode": "HDFC Skin",
+    "remarks": "Kusum scientific bill payment [Delhi Backend]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-12T12:22:44.307Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.514Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7c6595154922083e1b292e",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-06-23T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 30000,
+    "expense": "Medical Consumables",
+    "expenseType": "Medical Consumables-Others",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "Medono india bill part payment"
+    },
+    "method": "hdfc_skin_bank_transfer",
+    "furtherMode": "HDFC Skin",
+    "remarks": "Medono india bill part payment [Delhi Backend]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-12T12:22:44.307Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.514Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7c6595154922083e1b289b",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-06-20T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 102160,
+    "expense": "Professional Expenses",
+    "expenseType": "Finance Consultant Fee",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "mininee ca bill payment"
+    },
+    "method": "icici_medihub_bank_transfer",
+    "furtherMode": "ICICI Medihub",
+    "remarks": "mininee ca bill payment [Delhi Backend]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-12T12:22:44.307Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.514Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7c6595154922083e1b2857",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-06-19T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 193088,
+    "expense": "Medical Consumables",
+    "expenseType": "Medical Consumables-OT",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "modern pharma bill payment"
+    },
+    "method": "hdfc_skin_bank_transfer",
+    "furtherMode": "HDFC Skin",
+    "remarks": "modern pharma bill payment [Delhi Backend]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-12T12:22:44.307Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.514Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7c6595154922083e1b27d1",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-06-16T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 37499,
+    "expense": "Medical Consumables",
+    "expenseType": "Medical Consumables-Others",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "medono india medical equipment payment"
+    },
+    "method": "hdfc_skin_bank_transfer",
+    "furtherMode": "HDFC Skin",
+    "remarks": "medono india medical equipment payment [Delhi Backend]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-12T12:22:44.307Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.514Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7c6595154922083e1b27d5",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-06-16T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 13860,
+    "expense": "Medical Consumables",
+    "expenseType": "Medical Consumables-Others",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "medica solutions bill payment"
+    },
+    "method": "hdfc_skin_bank_transfer",
+    "furtherMode": "HDFC Skin",
+    "remarks": "medica solutions bill payment [Delhi Backend]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-12T12:22:44.307Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.514Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7c6595154922083e1b2768",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-06-14T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 24276,
+    "expense": "Medical Consumables",
+    "expenseType": "Medical Consumables-Others",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "kusum scientific card bill payment"
+    },
+    "method": "hdfc_skin_bank_transfer",
+    "furtherMode": "HDFC Skin",
+    "remarks": "kusum scientific card bill payment [Delhi Backend]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-12T12:22:44.307Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.514Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7c6595154922083e1b2769",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-06-14T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 13860,
+    "expense": "Medical Consumables",
+    "expenseType": "Medical Consumables-Others",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "medica solutions bill payment"
+    },
+    "method": "hdfc_skin_bank_transfer",
+    "furtherMode": "HDFC Skin",
+    "remarks": "medica solutions bill payment [Delhi Backend]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-12T12:22:44.307Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.514Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7c6595154922083e1b26a3",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-06-10T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 40000,
+    "expense": "Medicine Procurement",
+    "expenseType": "Medicine Procurement",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "Bhawani hairfact medicine part payment"
+    },
+    "method": "cash",
+    "furtherMode": "Cash ( backend )",
+    "remarks": "Bhawani hairfact medicine part payment [Delhi Backend]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-12T12:22:44.306Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Backfill Script",
+        "email": "system@backfill",
+        "branch": "All",
+        "date": "2026-08-14T07:22:26.682Z",
+        "updatedFields": [
+          {
+            "name": "furtherMode",
+            "previousValue": "Cash ( backend )",
+            "newValue": "Cash Book"
+          }
+        ]
+      },
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.514Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      },
+      {
+        "name": "Revert Script",
+        "email": "system@revert-cash-backend",
+        "branch": "All",
+        "date": "2026-08-14T09:54:01.473Z",
+        "updatedFields": [
+          {
+            "name": "furtherMode",
+            "previousValue": "Cash Book",
+            "newValue": "Cash ( backend )",
+            "note": "Reverting backfill-bank-routing.mjs --overwrite run of 2026-08-14, which incorrectly treated a deliberately-entered Cash ( backend ) as drift."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7c6595154922083e1b2631",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-06-07T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 50000,
+    "expense": "Medicine Procurement",
+    "expenseType": "Medicine Procurement",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "helpsure health"
+    },
+    "method": "hdfc_skin_bank_transfer",
+    "furtherMode": "HDFC Skin",
+    "remarks": "helpsure health [Delhi Backend]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-12T12:22:44.306Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.514Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7c6595154922083e1b2633",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-06-07T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 30000,
+    "expense": "Medicine Procurement",
+    "expenseType": "Medicine Procurement",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "helpsure health"
+    },
+    "method": "hdfc_skin_bank_transfer",
+    "furtherMode": "HDFC Skin",
+    "remarks": "helpsure health [Delhi Backend]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-12T12:22:44.306Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.514Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7c6595154922083e1b2634",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-06-07T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 30000,
+    "expense": "Medical Consumables",
+    "expenseType": "Medical Consumables-Others",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "mishra surcigal prp payment"
+    },
+    "method": "hdfc_skin_bank_transfer",
+    "furtherMode": "HDFC Skin",
+    "remarks": "mishra surcigal prp payment [Delhi Backend]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-12T12:22:44.306Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.514Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7c6595154922083e1b263d",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-06-07T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 85000,
+    "expense": "Professional Expenses",
+    "expenseType": "Finance Consultant Fee",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "mininee ca bill payment"
+    },
+    "method": "icici_medihub_bank_transfer",
+    "furtherMode": "ICICI Medihub",
+    "remarks": "mininee ca bill payment [Delhi Backend]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-12T12:22:44.306Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.514Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7c6595154922083e1b251d",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-06-01T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 5000,
+    "expense": "Medical Consumables",
+    "expenseType": "Medical Consumables-Others",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "KAPIL SIR GFC PAYMENT"
+    },
+    "method": "cash",
+    "furtherMode": "Cash Book",
+    "remarks": "KAPIL SIR GFC PAYMENT [Delhi Center]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-12T12:22:44.306Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.514Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7c6595154922083e1b2506",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-06-01T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 166748,
+    "expense": "Medical Consumables",
+    "expenseType": "Medical Consumables-OT",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "modern pharma bill payment"
+    },
+    "method": "hdfc_skin_bank_transfer",
+    "furtherMode": "HDFC Skin",
+    "remarks": "modern pharma bill payment [Delhi Backend]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-12T12:22:44.306Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.514Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7c6595154922083e1b24e8",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-05-31T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 70000,
+    "expense": "Medicine Procurement",
+    "expenseType": "Medicine Procurement",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "Helpsure health medicine payment"
+    },
+    "method": "hdfc_skin_bank_transfer",
+    "furtherMode": "HDFC Skin",
+    "remarks": "Helpsure health medicine payment [Delhi Backend]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-12T12:22:44.306Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.514Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7c6595154922083e1b2489",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-05-29T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 30576,
+    "expense": "Medical Consumables",
+    "expenseType": "Medical Consumables-Others",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "kusum scientific bill payment"
+    },
+    "method": "hdfc_skin_bank_transfer",
+    "furtherMode": "HDFC Skin",
+    "remarks": "kusum scientific bill payment [Delhi Backend]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-12T12:22:44.306Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.514Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7c6594154922083e1b241f",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-05-27T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 30000,
+    "expense": "Medicine Procurement",
+    "expenseType": "Medicine Procurement",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "shri ji pharma medicine bill payment"
+    },
+    "method": "icici_medihub_bank_transfer",
+    "furtherMode": "ICICI Medihub",
+    "remarks": "shri ji pharma medicine bill payment [Delhi Backend]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-12T12:22:44.306Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.514Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7c6594154922083e1b23c3",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-05-25T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 100000,
+    "expense": "Medicine Procurement",
+    "expenseType": "Medicine Procurement",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "helpsure heath vendor payment"
+    },
+    "method": "hdfc_skin_bank_transfer",
+    "furtherMode": "HDFC Skin",
+    "remarks": "helpsure heath vendor payment [Delhi Backend]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-12T12:22:44.306Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.514Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7c6594154922083e1b233a",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-05-23T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 25000,
+    "expense": "Medicine Procurement",
+    "expenseType": "Medicine Procurement",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "surender ji medicine payment helpsure"
+    },
+    "method": "cash",
+    "furtherMode": "Cash ( backend )",
+    "remarks": "surender ji medicine payment helpsure [Delhi Backend]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-12T12:22:44.306Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Backfill Script",
+        "email": "system@backfill",
+        "branch": "All",
+        "date": "2026-08-14T07:22:26.682Z",
+        "updatedFields": [
+          {
+            "name": "furtherMode",
+            "previousValue": "Cash ( backend )",
+            "newValue": "Cash Book"
+          }
+        ]
+      },
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.514Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      },
+      {
+        "name": "Revert Script",
+        "email": "system@revert-cash-backend",
+        "branch": "All",
+        "date": "2026-08-14T09:54:01.473Z",
+        "updatedFields": [
+          {
+            "name": "furtherMode",
+            "previousValue": "Cash Book",
+            "newValue": "Cash ( backend )",
+            "note": "Reverting backfill-bank-routing.mjs --overwrite run of 2026-08-14, which incorrectly treated a deliberately-entered Cash ( backend ) as drift."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7c6594154922083e1b234e",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-05-23T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 50000,
+    "expense": "Medicine Procurement",
+    "expenseType": "Medicine Procurement",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "helpsure heath vendor payment"
+    },
+    "method": "hdfc_skin_bank_transfer",
+    "furtherMode": "HDFC Skin",
+    "remarks": "helpsure heath vendor payment [Delhi Backend]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-12T12:22:44.306Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.514Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7c6594154922083e1b234f",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-05-23T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 25000,
+    "expense": "Medicine Procurement",
+    "expenseType": "Medicine Procurement",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "helpsure heath vendor payment"
+    },
+    "method": "hdfc_skin_bank_transfer",
+    "furtherMode": "HDFC Skin",
+    "remarks": "helpsure heath vendor payment [Delhi Backend]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-12T12:22:44.306Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.514Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7c6594154922083e1b225d",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-05-18T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 33500,
+    "expense": "Medical Consumables",
+    "expenseType": "Medical Consumables-Others",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "kusum scientific bill payment"
+    },
+    "method": "hdfc_skin_bank_transfer",
+    "furtherMode": "HDFC Skin",
+    "remarks": "kusum scientific bill payment [Delhi Backend]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-12T12:22:44.305Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.514Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7c6594154922083e1b225e",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-05-18T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 16612,
+    "expense": "Medicine Procurement",
+    "expenseType": "Medicine Procurement",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "medicine bill payment"
+    },
+    "method": "hdfc_skin_bank_transfer",
+    "furtherMode": "HDFC Skin",
+    "remarks": "medicine bill payment [Delhi Backend]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-12T12:22:44.305Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.514Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7c6594154922083e1b221f",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-05-17T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 11800,
+    "expense": "Medical Consumables",
+    "expenseType": "Medical Consumables-Others",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "medono india bill payment"
+    },
+    "method": "hdfc_skin_bank_transfer",
+    "furtherMode": "HDFC Skin",
+    "remarks": "medono india bill payment [Delhi Backend]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-12T12:22:44.305Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.514Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7c6594154922083e1b2220",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-05-17T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 13338,
+    "expense": "Medical Consumables",
+    "expenseType": "Medical Consumables-Others",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "medono india bill payment"
+    },
+    "method": "hdfc_skin_bank_transfer",
+    "furtherMode": "HDFC Skin",
+    "remarks": "medono india bill payment [Delhi Backend]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-12T12:22:44.305Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.514Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7c6594154922083e1b2233",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-05-17T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 25000,
+    "expense": "Medicine Procurement",
+    "expenseType": "Medicine Procurement",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "shri ji pharma medicine payment"
+    },
+    "method": "icici_medihub_bank_transfer",
+    "furtherMode": "ICICI Medihub",
+    "remarks": "shri ji pharma medicine payment [Delhi Backend]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-12T12:22:44.305Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.514Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7c6594154922083e1b21f3",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-05-16T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 37100,
+    "expense": "Medicine Procurement",
+    "expenseType": "Medicine Procurement",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "Shivoham dermatology"
+    },
+    "method": "hdfc_skin_bank_transfer",
+    "furtherMode": "HDFC Skin",
+    "remarks": "Shivoham dermatology [Delhi Backend]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-12T12:22:44.305Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.514Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7c6594154922083e1b21f5",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-05-16T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 25000,
+    "expense": "Medicine Procurement",
+    "expenseType": "Medicine Procurement",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "shri ji pharma medicine payment"
+    },
+    "method": "icici_medihub_bank_transfer",
+    "furtherMode": "ICICI Medihub",
+    "remarks": "shri ji pharma medicine payment [Delhi Backend]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-12T12:22:44.305Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.514Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7c6594154922083e1b21cb",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-05-15T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 36186,
+    "expense": "Medicine Procurement",
+    "expenseType": "Medicine Procurement",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "moderm phharma bill payment"
+    },
+    "method": "hdfc_skin_bank_transfer",
+    "furtherMode": "HDFC Skin",
+    "remarks": "moderm phharma bill payment [Delhi Backend]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-12T12:22:44.305Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.514Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7c6594154922083e1b21d3",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-05-15T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 30000,
+    "expense": "Medicine Procurement",
+    "expenseType": "Medicine Procurement",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "shri ji pharma medicine payment"
+    },
+    "method": "icici_medihub_bank_transfer",
+    "furtherMode": "ICICI Medihub",
+    "remarks": "shri ji pharma medicine payment [Delhi Backend]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-12T12:22:44.305Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.514Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7c6594154922083e1b21af",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-05-14T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 120000,
+    "expense": "Medical Consumables",
+    "expenseType": "Medical Consumables-OT",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "modern part payment"
+    },
+    "method": "hdfc_skin_bank_transfer",
+    "furtherMode": "HDFC Skin",
+    "remarks": "modern part payment [Delhi Backend]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-12T12:22:44.305Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.514Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7c6594154922083e1b218f",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-05-13T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 24276,
+    "expense": "Medical Consumables",
+    "expenseType": "Medical Consumables-Others",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "kusum scientific last bill payment"
+    },
+    "method": "hdfc_skin_bank_transfer",
+    "furtherMode": "HDFC Skin",
+    "remarks": "kusum scientific last bill payment [Delhi Backend]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-12T12:22:44.305Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.515Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7c6594154922083e1b2107",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-05-10T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 82769,
+    "expense": "Medicine Procurement",
+    "expenseType": "Medicine Procurement",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "moderm phharma bill payment"
+    },
+    "method": "hdfc_skin_bank_transfer",
+    "furtherMode": "HDFC Skin",
+    "remarks": "moderm phharma bill payment [Delhi Backend]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-12T12:22:44.305Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.515Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7c6594154922083e1b2118",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-05-10T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 50000,
+    "expense": "Professional Expenses",
+    "expenseType": "Finance Consultant Fee",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "mininee ca bill payment"
+    },
+    "method": "icici_medihub_bank_transfer",
+    "furtherMode": "ICICI Medihub",
+    "remarks": "mininee ca bill payment [Delhi Backend]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-12T12:22:44.305Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.515Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7c6594154922083e1b202b",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-05-05T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 46875,
+    "expense": "Medical Consumables",
+    "expenseType": "Medical Consumables-Others",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "Ganpati biotech Limited"
+    },
+    "method": "hdfc_skin_bank_transfer",
+    "furtherMode": "HDFC Skin",
+    "remarks": "Ganpati biotech Limited [Delhi Backend]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-12T12:22:44.304Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.515Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7c6594154922083e1b2002",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-05-04T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 50000,
+    "expense": "Medicine Procurement",
+    "expenseType": "Medicine Procurement",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "cranix pharma medicine bill payment"
+    },
+    "method": "icici_medihub_bank_transfer",
+    "furtherMode": "ICICI Medihub",
+    "remarks": "cranix pharma medicine bill payment [Delhi Backend]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-12T12:22:44.304Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.515Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7c6594154922083e1b1fa3",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-05-02T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 5000,
+    "expense": "Medical Consumables",
+    "expenseType": "Medical Consumables-Others",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "KAPIL SIR GFC PAYMENT"
+    },
+    "method": "cash",
+    "furtherMode": "Cash Book",
+    "remarks": "KAPIL SIR GFC PAYMENT [Delhi Center]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-12T12:22:44.304Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.515Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7c6594154922083e1b1f66",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-05-01T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 21328,
+    "expense": "Medical Consumables",
+    "expenseType": "Medical Consumables-Others",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "vejovis ns medicine"
+    },
+    "method": "hdfc_skin_bank_transfer",
+    "furtherMode": "HDFC Skin",
+    "remarks": "vejovis ns medicine [Delhi Backend]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-12T12:22:44.304Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.515Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7c09e9d3599abb2637a764",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-04-30T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 60000,
+    "expense": "Medicine Procurement",
+    "expenseType": "Medicine Procurement",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "helpsure health medicine bill payment"
+    },
+    "method": "hdfc_skin_bank_transfer",
+    "furtherMode": "HDFC Skin",
+    "remarks": "helpsure health medicine bill payment [Delhi Backend]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-12T05:51:31.163Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.515Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7c09e3d3599abb2637a49f",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-04-29T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 5000,
+    "expense": "Medical Consumables",
+    "expenseType": "Medical Consumables-Others",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "KAPIL SIR PAYMENT GFC"
+    },
+    "method": "cash",
+    "furtherMode": "Cash Book",
+    "remarks": "KAPIL SIR PAYMENT GFC [Delhi Center]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-12T05:51:31.161Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.515Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7c09e9d3599abb2637a74c",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-04-29T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 70000,
+    "expense": "Medicine Procurement",
+    "expenseType": "Medicine Procurement",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "helpsure health medicine bill payment"
+    },
+    "method": "hdfc_skin_bank_transfer",
+    "furtherMode": "HDFC Skin",
+    "remarks": "helpsure health medicine bill payment [Delhi Backend]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-12T05:51:31.163Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.515Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7c09e9d3599abb2637a752",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-04-29T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 24276,
+    "expense": "Medical Consumables",
+    "expenseType": "Medical Consumables-Others",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "Kusum scientific card payment"
+    },
+    "method": "hdfc_skin_bank_transfer",
+    "furtherMode": "HDFC Skin",
+    "remarks": "Kusum scientific card payment [Delhi Backend]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-12T05:51:31.163Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.515Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7c09e9d3599abb2637a71c",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-04-27T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 90000,
+    "expense": "Medical Consumables",
+    "expenseType": "Medical Consumables-OT",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "modern Pharma bill part payment"
+    },
+    "method": "hdfc_skin_bank_transfer",
+    "furtherMode": "HDFC Skin",
+    "remarks": "modern Pharma bill part payment [Delhi Backend]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-12T05:51:31.162Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.515Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7c09e9d3599abb2637a71e",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-04-27T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 10000,
+    "expense": "Medical Consumables",
+    "expenseType": "Medical Consumables-OT",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "modern Pharma bill part payment"
+    },
+    "method": "hdfc_skin_bank_transfer",
+    "furtherMode": "HDFC Skin",
+    "remarks": "modern Pharma bill part payment [Delhi Backend]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-12T05:51:31.162Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.515Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7c09e9d3599abb2637a72d",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-04-27T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 50000,
+    "expense": "Medicine Procurement",
+    "expenseType": "Medicine Procurement",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "helpsure health medicine bill payment"
+    },
+    "method": "hdfc_skin_bank_transfer",
+    "furtherMode": "HDFC Skin",
+    "remarks": "helpsure health medicine bill payment [Delhi Backend]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-12T05:51:31.162Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.515Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7c09e9d3599abb2637a709",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-04-26T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 6300,
+    "expense": "Medical Consumables",
+    "expenseType": "Medical Consumables-Others",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "kusum scientific bill payment 17"
+    },
+    "method": "hdfc_skin_bank_transfer",
+    "furtherMode": "HDFC Skin",
+    "remarks": "kusum scientific bill payment 17 [Delhi Backend]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-12T05:51:31.162Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.515Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7c09e9d3599abb2637a710",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-04-26T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 60000,
+    "expense": "Medicine Procurement",
+    "expenseType": "Medicine Procurement",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "helpsure health medicine bill payment"
+    },
+    "method": "hdfc_skin_bank_transfer",
+    "furtherMode": "HDFC Skin",
+    "remarks": "helpsure health medicine bill payment [Delhi Backend]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-12T05:51:31.162Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.515Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7c09e9d3599abb2637a78f",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-04-26T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 60000,
+    "expense": "Medicine Procurement",
+    "expenseType": "Medicine Procurement",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "Shree ji pharma"
+    },
+    "method": "icici_medihub_bank_transfer",
+    "furtherMode": "ICICI Medihub",
+    "remarks": "Shree ji pharma [Delhi Backend]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-12T05:51:31.163Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.515Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7c09e9d3599abb2637a790",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-04-26T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 48500,
+    "expense": "Professional Expenses",
+    "expenseType": "Finance Consultant Fee",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "Mininee ca payment"
+    },
+    "method": "icici_medihub_bank_transfer",
+    "furtherMode": "ICICI Medihub",
+    "remarks": "Mininee ca payment [Delhi Backend]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-12T05:51:31.163Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.515Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7c09e8d3599abb2637a6fc",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-04-25T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 40000,
+    "expense": "Medicine Procurement",
+    "expenseType": "Medicine Procurement",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "helpsure health medicine vendor"
+    },
+    "method": "hdfc_skin_bank_transfer",
+    "furtherMode": "HDFC Skin",
+    "remarks": "helpsure health medicine vendor [Delhi Backend]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-12T05:51:31.162Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.515Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7c09e3d3599abb2637a476",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-04-24T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 5000,
+    "expense": "Medical Consumables",
+    "expenseType": "Medical Consumables-Others",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "KAPIL GFC PAYMENT"
+    },
+    "method": "cash",
+    "furtherMode": "Cash Book",
+    "remarks": "KAPIL GFC PAYMENT [Delhi Center]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-12T05:51:31.161Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.515Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7c09e8d3599abb2637a686",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-04-19T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 50000,
+    "expense": "Medicine Procurement",
+    "expenseType": "Medicine Procurement",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "helpsure health medicine part payment"
+    },
+    "method": "hdfc_skin_bank_transfer",
+    "furtherMode": "HDFC Skin",
+    "remarks": "helpsure health medicine part payment [Delhi Backend]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-12T05:51:31.162Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.515Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7c09e9d3599abb2637a782",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-04-19T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 50000,
+    "expense": "Medicine Procurement",
+    "expenseType": "Medicine Procurement",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "shri ji pharma medicine part payment"
+    },
+    "method": "icici_medihub_bank_transfer",
+    "furtherMode": "ICICI Medihub",
+    "remarks": "shri ji pharma medicine part payment [Delhi Backend]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-12T05:51:31.163Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.515Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7c09e8d3599abb2637a668",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-04-18T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 50000,
+    "expense": "Medicine Procurement",
+    "expenseType": "Medicine Procurement",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "helpsure health medicine part payment"
+    },
+    "method": "hdfc_skin_bank_transfer",
+    "furtherMode": "HDFC Skin",
+    "remarks": "helpsure health medicine part payment [Delhi Backend]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-12T05:51:31.162Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.515Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7c09e9d3599abb2637a77c",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-04-15T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 45000,
+    "expense": "Medicine Procurement",
+    "expenseType": "Medicine Procurement",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "shri ji pharma medicie vendor"
+    },
+    "method": "icici_medihub_bank_transfer",
+    "furtherMode": "ICICI Medihub",
+    "remarks": "shri ji pharma medicie vendor [Delhi Backend]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-12T05:51:31.163Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.515Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7c09e9d3599abb2637a77d",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-04-15T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 30000,
+    "expense": "Medicine Procurement",
+    "expenseType": "Medicine Procurement",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "shri ji pharma medicie vendor"
+    },
+    "method": "icici_medihub_bank_transfer",
+    "furtherMode": "ICICI Medihub",
+    "remarks": "shri ji pharma medicie vendor [Delhi Backend]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-12T05:51:31.163Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.515Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7c09e7d3599abb2637a601",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-04-12T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 14280,
+    "expense": "Medical Consumables",
+    "expenseType": "Medical Consumables-Others",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "kusum scientific bill payment"
+    },
+    "method": "hdfc_skin_bank_transfer",
+    "furtherMode": "HDFC Skin",
+    "remarks": "kusum scientific bill payment [Delhi Backend]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-12T05:51:31.162Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.515Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7c09e7d3599abb2637a602",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-04-12T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 13860,
+    "expense": "Medical Consumables",
+    "expenseType": "Medical Consumables-Others",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "kusum scientific bill payment"
+    },
+    "method": "hdfc_skin_bank_transfer",
+    "furtherMode": "HDFC Skin",
+    "remarks": "kusum scientific bill payment [Delhi Backend]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-12T05:51:31.162Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.515Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7c09e9d3599abb2637a776",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-04-11T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 110000,
+    "expense": "Professional Expenses",
+    "expenseType": "Finance Consultant Fee",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "Mininee Ca Bill Payment"
+    },
+    "method": "icici_medihub_bank_transfer",
+    "furtherMode": "ICICI Medihub",
+    "remarks": "Mininee Ca Bill Payment [Delhi Backend]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-12T05:51:31.163Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.515Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7c09e7d3599abb2637a5c0",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-04-08T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 138863,
+    "expense": "Medical Consumables",
+    "expenseType": "Medical Consumables-OT",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "modern pharma bill payment for ot stock"
+    },
+    "method": "hdfc_skin_bank_transfer",
+    "furtherMode": "HDFC Skin",
+    "remarks": "modern pharma bill payment for ot stock [Delhi Backend]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-12T05:51:31.162Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.515Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7c09e3d3599abb2637a3f0",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-04-07T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 5000,
+    "expense": "Medical Consumables",
+    "expenseType": "Medical Consumables-Others",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "KAPIL SIR GFC PAYMENT"
+    },
+    "method": "cash",
+    "furtherMode": "Cash Book",
+    "remarks": "KAPIL SIR GFC PAYMENT [Delhi Center]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-12T05:51:31.161Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Fix Script",
+        "email": "system@fix-costtype",
+        "branch": "All",
+        "date": "2026-08-14T08:11:52.515Z",
+        "updatedFields": [
+          {
+            "name": "costType",
+            "previousValue": "Expense",
+            "newValue": "Expenses"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "6a7b0241497d20f76ebe5fee",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-04-05T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 50000,
+    "expense": "Medicine Procurement",
+    "expenseType": "Medicine Procurement",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "shri ji pharma bill payment"
+    },
+    "expenseGiverOld": "shri ji pharma bill payment",
+    "method": "icici_medihub_bank_transfer",
+    "furtherMode": "ICICI Medihub",
+    "remarks": "shri ji pharma bill payment [Delhi Backend]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-11T11:06:41.954Z"
+    },
+    "__v": 0
+  },
+  {
+    "_id": "6a7b0241497d20f76ebe5fc2",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-04-04T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 24276,
+    "expense": "Medical Consumables",
+    "expenseType": "Medical Consumables-Others",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "kusum scientific card bill payment"
+    },
+    "expenseGiverOld": "kusum scientific card bill payment",
+    "method": "hdfc_skin_bank_transfer",
+    "furtherMode": "HDFC Skin",
+    "remarks": "kusum scientific card bill payment [Delhi Backend]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-11T11:06:41.954Z"
+    },
+    "__v": 0
+  },
+  {
+    "_id": "6a7b0241497d20f76ebe5fec",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-04-04T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 50000,
+    "expense": "Medicine Procurement",
+    "expenseType": "Medicine Procurement",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "cranix pharma bill part payment"
+    },
+    "expenseGiverOld": "cranix pharma bill part payment",
+    "method": "icici_medihub_bank_transfer",
+    "furtherMode": "ICICI Medihub",
+    "remarks": "cranix pharma bill part payment [Delhi Backend]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-11T11:06:41.954Z"
+    },
+    "__v": 0
+  },
+  {
+    "_id": "6a7b0241497d20f76ebe5fb4",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-04-03T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 28455,
+    "expense": "Medical Consumables",
+    "expenseType": "Medical Consumables-Others",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "medono india bill payment"
+    },
+    "expenseGiverOld": "medono india bill payment",
+    "method": "hdfc_skin_bank_transfer",
+    "furtherMode": "HDFC Skin",
+    "remarks": "medono india bill payment [Delhi Backend]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-11T11:06:41.954Z"
+    },
+    "__v": 0
+  },
+  {
+    "_id": "6a7b0241497d20f76ebe5fa5",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-04-02T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 84477,
+    "expense": "Medical Consumables",
+    "expenseType": "Medical Consumables-OT",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "modern pharma latest bill clear"
+    },
+    "expenseGiverOld": "modern pharma latest bill clear",
+    "method": "hdfc_skin_bank_transfer",
+    "furtherMode": "HDFC Skin",
+    "remarks": "modern pharma latest bill clear [Delhi Backend]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-11T11:06:41.954Z"
+    },
+    "__v": 0
+  },
+  {
+    "_id": "6a7b0241497d20f76ebe5ffd",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-04-02T00:00:00.000Z",
+    "branch": "Hyderabad",
+    "amount": 40000,
+    "expense": "Medicine Procurement",
+    "expenseType": "Medicine Procurement",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "cranix pharma medicine bill part payment"
+    },
+    "expenseGiverOld": "cranix pharma medicine bill part payment",
+    "method": "icici_medihub_bank_transfer",
+    "furtherMode": "ICICI Medihub",
+    "remarks": "cranix pharma medicine bill part payment [Hyderabad Clinic]",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Hyderabad",
+      "date": "2026-08-11T11:06:41.954Z"
+    },
+    "__v": 0
+  },
+  {
+    "_id": "6a79b65b98a01e0b7eaebe13",
+    "transactionCategory": "EXPENSE",
+    "costType": "Expenses",
+    "approvalStatus": "APPROVED",
+    "date": "2026-04-01T00:00:00.000Z",
+    "branch": "Delhi",
+    "amount": 40000,
+    "expense": "Medical Consumables",
+    "expenseType": "Medical Consumables-Others",
+    "expenseGiver": {
+      "type": "MANUAL",
+      "name": "mishra surgical prp wiles payment"
+    },
+    "expenseGiverOld": "mishra surgical prp wiles payment",
+    "method": "hdfc_skin_bank_transfer",
+    "furtherMode": "HDFC Skin",
+    "remarks": "mishra surgical prp wiles payment",
+    "createdBy": {
+      "name": "Bulk Import",
+      "email": "import@system",
+      "branch": "Delhi",
+      "date": "2026-08-10T11:30:35.691Z"
+    },
+    "__v": 0,
+    "editors": [
+      {
+        "name": "Backfill Script",
+        "email": "system@backfill",
+        "branch": "All",
+        "date": "2026-08-10T11:49:39.445Z",
+        "updatedFields": [
+          {
+            "name": "furtherMode",
+            "previousValue": "HDFC Skin",
+            "newValue": "Delhi ( Backend )"
+          }
+        ]
+      },
+      {
+        "name": "Backfill Script",
+        "email": "system@backfill",
+        "branch": "All",
+        "date": "2026-08-10T11:54:41.556Z",
+        "updatedFields": [
+          {
+            "name": "furtherMode",
+            "previousValue": "Delhi ( Backend )",
+            "newValue": "HDFC Skin"
+          }
+        ]
+      }
+    ]
+  }
+]

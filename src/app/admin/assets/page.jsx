@@ -3,15 +3,19 @@
 import { Suspense, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import { Landmark, Banknote, HandCoins, AlertTriangle, ArrowRightLeft, Ban, CheckCircle2, Clock } from "lucide-react";
+import { Landmark, Banknote, HandCoins, AlertTriangle, CheckCircle2, Clock, Download, Loader2 } from "lucide-react";
 import AdminSidebar from "@/components/Sidebars/Sidebar";
 import DrillDownTable from "@/components/finance/DrillDownTable";
 import LoanSettlementModal from "@/components/finance/LoanSettlementModal";
 import CancelLoanModal from "@/components/finance/CancelLoanModal";
-import { ReversedBadge, ReversalBadge } from "@/components/finance/StatusBadges";
+import LoanRowActions from "@/components/finance/LoanRowActions";
 import MetricCard from "@/components/MetricCard";
-import { formatCurrency } from "@/lib/financeUI";
+import { formatCurrency, formatDate } from "@/lib/financeUI";
 import { AGEING_BUCKETS } from "@/lib/ageing";
+import { ALL_BRANCHES } from "@/lib/branches";
+import { ENTRY_TYPES } from "@/constants/entryTypes";
+import { exportWorkbook, filterProvenanceRows } from "@/lib/exportToExcel";
+import { useToast } from "@/components/Toast";
 
 // Assets = Cash & Bank + Loan-financing accounts + Receivables. Page total is the sum of the same
 // three closing figures the sections below compute — never a separate calculation, so the header
@@ -37,11 +41,28 @@ function AssetsPageInner() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const toast = useToast();
+
+  // Task A (Round 2) — ONE scope for the whole page, shared by the header total AND every
+  // DrillDownTable section below (passed down as the `scope`/`onScopeChange` controlled props).
+  // Before this fix the header fetched with no params at all while each section filtered itself
+  // independently — the numbers only ever agreed on a completely unfiltered page. Seeded once
+  // from the URL on mount so a link with ?branch=&from=&to= (the dashboard's card links, Task C)
+  // opens already filtered.
+  const [scope, setScope] = useState(() => ({
+    branch: searchParams.get("branch") || "",
+    dateFrom: searchParams.get("from") || "",
+    dateTo: searchParams.get("to") || "",
+  }));
 
   const [cashTotal, setCashTotal] = useState(null);
   const [loansTotal, setLoansTotal] = useState(null);
   const [receivablesTotal, setReceivablesTotal] = useState(null);
   const [unattributed, setUnattributed] = useState(null);
+  // Distinct from the initial `null` totals: `refetching` is true only while a FILTER CHANGE is
+  // in flight, so a filter change shows a skeleton instead of leaving the previous (now stale)
+  // total sitting there looking current.
+  const [refetching, setRefetching] = useState(false);
   const [settleTx, setSettleTx] = useState(null); // { transactionId, account, amount, narration, date } | null
   const [cancelTx, setCancelTx] = useState(null); // the row being cancelled, or null
   // Bumped on every successful settlement/cancellation — passed as `key` to BOTH the Loan
@@ -56,60 +77,64 @@ function AssetsPageInner() {
   const [ageingBuckets, setAgeingBuckets] = useState([]);
   const [ageingFilter, setAgeingFilter] = useState("");
 
-  // Task 5, Step 5 — deep-link restore, same pattern as admin/liabilities/page.jsx.
+  // Task 5, Step 5 — deep-link restore (section/head/sub/doc), now written back to the URL
+  // ALONGSIDE `scope` by the single sync effect below rather than its own separate one.
   const [receivablesInitialDrill, setReceivablesInitialDrill] = useState(undefined);
+  const [receivablesDrill, setReceivablesDrill] = useState(null);
+  const [exporting, setExporting] = useState(false);
 
-  const fetchLoansTotal = useCallback(() => {
-    fetch("/api/close-book/accounts?filter=loans")
-      .then((r) => r.json())
-      .then((json) => {
-        const rows = json.rows || [];
-        setLoansTotal(rows.reduce((s, r) => s + (r.closing || 0), 0));
-      })
-      .catch(() => setLoansTotal(0));
-  }, []);
+  // Balances (Cash & Bank / Loans / Receivables closing) are POINT-IN-TIME, not a flow — a
+  // closing figure reads "everything up to this date", not "movement within this date range".
+  // So the header total sends `to` only and DELIBERATELY OMITS `from`; close-book/accounts and
+  // receivables/grouped both already default `from` internally to "1970-01-01" when it's absent,
+  // which is exactly "as of `to`". `from`, when the user sets it, still reaches each section's
+  // own opening/movement columns via the controlled `scope` prop below — this comment describes
+  // ONLY the header total fetch. Do not "fix" this back to sending both.
+  const closingQS = useCallback(
+    (extra = {}) => {
+      const p = new URLSearchParams();
+      if (scope.branch) p.set("branch", scope.branch);
+      p.set("to", scope.dateTo || new Date().toISOString().slice(0, 10));
+      Object.entries(extra).forEach(([k, v]) => { if (v) p.set(k, v); });
+      return p.toString();
+    },
+    [scope],
+  );
 
-  const fetchCashTotal = useCallback(() => {
-    fetch("/api/close-book/accounts?filter=cash")
-      .then((r) => r.json())
-      .then((json) => {
-        const rows = json.rows || [];
-        setCashTotal(rows.reduce((s, r) => s + (r.closing || 0), 0));
+  const fetchHeaderTotals = useCallback(() => {
+    setRefetching(true);
+    Promise.all([
+      fetch(`/api/close-book/accounts?filter=cash&${closingQS()}`).then((r) => r.json()),
+      fetch(`/api/close-book/accounts?filter=loans&${closingQS()}`).then((r) => r.json()),
+      fetch(`/api/receivables/grouped?level=1&${closingQS()}`).then((r) => r.json()),
+      fetch(`/api/receivables/summary${scope.branch ? `?branch=${scope.branch}` : ""}`).then((r) => r.json()),
+      fetch(`/api/receivables/summary?ageing=1${scope.branch ? `&branch=${scope.branch}` : ""}`).then((r) => r.json()),
+      fetch(`/api/close-book/balance-sheet?${closingQS({ from: "1970-01-01" })}`).then((r) => r.json()),
+    ])
+      .then(([cashJson, loansJson, recJson, summaryJson, ageingJson, unattrJson]) => {
+        setCashTotal((cashJson.rows || []).reduce((s, r) => s + (r.closing || 0), 0));
+        setLoansTotal((loansJson.rows || []).reduce((s, r) => s + (r.closing || 0), 0));
+        setReceivablesTotal((recJson.rows || []).reduce((s, r) => s + (r.closing || 0), 0));
+        setSummary(summaryJson.overall || null);
+        setAgeingBuckets(ageingJson.byBucket || []);
+        setUnattributed(unattrJson.unattributed || { count: 0, amount: 0 });
       })
-      .catch(() => setCashTotal(0));
-  }, []);
+      .catch(() => {
+        setCashTotal(0);
+        setLoansTotal(0);
+        setReceivablesTotal(0);
+      })
+      .finally(() => setRefetching(false));
+  }, [closingQS, scope.branch]);
 
   useEffect(() => {
-    fetchCashTotal();
-    fetchLoansTotal();
-
-    fetch("/api/receivables/grouped?level=1")
-      .then((r) => r.json())
-      .then((json) => {
-        const rows = json.rows || [];
-        setReceivablesTotal(rows.reduce((s, r) => s + (r.closing || 0), 0));
-      })
-      .catch(() => setReceivablesTotal(0));
-
-    fetch("/api/receivables/summary")
-      .then((r) => r.json())
-      .then((json) => setSummary(json.overall || null))
-      .catch(() => setSummary(null));
-
-    fetch("/api/receivables/summary?ageing=1")
-      .then((r) => r.json())
-      .then((json) => setAgeingBuckets(json.byBucket || []))
-      .catch(() => setAgeingBuckets([]));
-
-    const today = new Date().toISOString().slice(0, 10);
-    fetch(`/api/close-book/balance-sheet?from=1970-01-01&to=${today}`)
-      .then((r) => r.json())
-      .then((json) => setUnattributed(json.unattributed || { count: 0, amount: 0 }))
-      .catch(() => setUnattributed({ count: 0, amount: 0 }));
-  }, [fetchLoansTotal, fetchCashTotal]);
+    fetchHeaderTotals();
+  }, [fetchHeaderTotals]);
 
   // Restores /admin/assets?section=receivables&head=Transplant&sub=PATIENT_DUE&doc=<id> — the
-  // URL Task 1's Entry Type badge points at for a settlement's linked receivable.
+  // URL Task 1's Entry Type badge points at for a settlement's linked receivable. `scope` itself
+  // is already seeded synchronously in useState above; this only needs the drill path, which
+  // requires a fetch when `doc` is present.
   useEffect(() => {
     const section = searchParams.get("section");
     if (section !== "receivables") {
@@ -148,20 +173,23 @@ function AssetsPageInner() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleReceivablesDrillChange = useCallback(
-    (drill) => {
-      const params = new URLSearchParams();
-      if (drill.level > 1) {
-        params.set("section", "receivables");
-        if (drill.headKey) params.set("head", drill.headKey);
-        if (drill.subKey) params.set("sub", drill.subKey);
-        if (drill.documentId) params.set("doc", drill.documentId);
-      }
-      const qs = params.toString();
-      router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
-    },
-    [router, pathname],
-  );
+  // Single sync point for the URL — `scope` (branch/from/to) AND the receivables drill path
+  // (section/head/sub/doc) are written together, so neither overwrites the other's params.
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (scope.branch) params.set("branch", scope.branch);
+    if (scope.dateFrom) params.set("from", scope.dateFrom);
+    if (scope.dateTo) params.set("to", scope.dateTo);
+    if (receivablesDrill && receivablesDrill.level > 1) {
+      params.set("section", "receivables");
+      if (receivablesDrill.headKey) params.set("head", receivablesDrill.headKey);
+      if (receivablesDrill.subKey) params.set("sub", receivablesDrill.subKey);
+      if (receivablesDrill.documentId) params.set("doc", receivablesDrill.documentId);
+    }
+    const qs = params.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scope, receivablesDrill]);
 
   const ageingChipData = (bucket) => {
     const found = ageingBuckets.find((b) => b._id === bucket.value);
@@ -169,8 +197,7 @@ function AssetsPageInner() {
   };
 
   const handleSettlementSuccess = () => {
-    fetchLoansTotal();
-    fetchCashTotal();
+    fetchHeaderTotals();
     // DrillDownTable has no external refresh hook, so a key bump is the clean way to force both
     // subtrees to remount and refetch — see the refreshKey comment above.
     setRefreshKey((k) => k + 1);
@@ -178,13 +205,103 @@ function AssetsPageInner() {
   };
 
   const handleCancelDone = () => {
-    fetchLoansTotal();
-    fetchCashTotal();
+    fetchHeaderTotals();
     setRefreshKey((k) => k + 1);
   };
 
   const total = (cashTotal ?? 0) + (loansTotal ?? 0) + (receivablesTotal ?? 0);
   const loaded = cashTotal !== null && loansTotal !== null && receivablesTotal !== null;
+  const asOfLabel = `As of ${formatDate(scope.dateTo || new Date())}${scope.branch ? ` · ${scope.branch}` : ""}`;
+
+  // Task B — export exactly what the current filters produce: the same params, the same
+  // endpoints, refetched fresh at limit=10000 rather than exported from the paginated in-memory
+  // rows any table on screen is currently holding.
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      // /api/receivables/list and /api/transactions/get-all both key their date range on
+      // dateFrom/dateTo, not from/to (close-book's own convention) — this is THEIR param name,
+      // not a re-derivation of the balance-vs-flow rule above.
+      const flowQS = (() => {
+        const p = new URLSearchParams();
+        if (scope.branch) p.set("branch", scope.branch);
+        if (scope.dateFrom) p.set("dateFrom", scope.dateFrom);
+        if (scope.dateTo) p.set("dateTo", scope.dateTo);
+        return p.toString();
+      })();
+
+      const [cashJson, loansJson, receivablesJson, txJson] = await Promise.all([
+        fetch(`/api/close-book/accounts?filter=cash&${closingQS()}`).then((r) => r.json()),
+        fetch(`/api/close-book/accounts?filter=loans&${closingQS()}`).then((r) => r.json()),
+        fetch(`/api/receivables/list?limit=10000&${flowQS}`).then((r) => r.json()),
+        fetch(`/api/transactions/get-all?limit=10000&${flowQS}`).then((r) => r.json()),
+      ]);
+
+      const cashRows = (cashJson.rows || []).map((r) => ({
+        Account: r.label,
+        Opening: r.opening,
+        "Money In": r.movement,
+        "Money Out": r.settled,
+        Closing: r.closing,
+      }));
+      const loanRows = (loansJson.rows || []).map((r) => ({
+        Account: r.label,
+        Opening: r.opening,
+        "Money In": r.movement,
+        "Money Out": r.settled,
+        Closing: r.closing,
+      }));
+      const receivableRows = (receivablesJson.receivables || []).map((r) => ({
+        Head: r.revenueCategory || "—",
+        "Sub-type": (r.purpose || "").replace(/_/g, " "),
+        Party: r.payer?.label || "—",
+        Total: r.totalAmount,
+        Received: r.received,
+        Pending: r.pending,
+        "Due Date": r.dueDate ? new Date(r.dueDate) : null,
+        Ageing: r.ageingBucket || "—",
+        Status: r.isCancelled ? "Cancelled" : r.status,
+      }));
+      // Every Revenue/Expense transaction in the filtered period, flat — running balance is
+      // deliberately not a column here: it's only meaningful WITHIN one account's own ledger
+      // (see Cash & Bank/Loan Accounts sheets for those), not across a combined multi-account,
+      // multi-category list.
+      const txRows = (txJson.transactions || []).map((t) => ({
+        Date: new Date(t.date),
+        "Account/Head": t.furtherMode || t.expense || "—",
+        Party: t.patient?.personal?.name || t.patientName || t.expenseGiver?.name || "—",
+        Narration: t.remarks || t.procedure || t.expenseType || "—",
+        "Entry Type": ENTRY_TYPES[t.entryType]?.label || "Regular",
+        Method: t.method || "—",
+        Amount: t.amount,
+      }));
+
+      const summaryRows = [
+        ...filterProvenanceRows({ branch: scope.branch, dateFrom: scope.dateFrom, dateTo: scope.dateTo }),
+        { Field: "Cash & Bank", Value: cashTotal },
+        { Field: "Loan Accounts", Value: loansTotal },
+        { Field: "Receivables", Value: receivablesTotal },
+        { Field: "Total Assets", Value: total },
+      ];
+
+      await exportWorkbook({
+        filename: `Assets_${scope.branch || "All"}_${scope.dateFrom || "start"}_to_${scope.dateTo || "today"}.xlsx`,
+        sheets: [
+          { name: "Summary", rows: summaryRows, colWidths: [22, 20] },
+          { name: "Cash & Bank", rows: cashRows, colWidths: [22, 16, 16, 16, 16], currencyCols: ["Opening", "Money In", "Money Out", "Closing"] },
+          { name: "Loan Accounts", rows: loanRows, colWidths: [22, 16, 16, 16, 16], currencyCols: ["Opening", "Money In", "Money Out", "Closing"] },
+          { name: "Receivables", rows: receivableRows, colWidths: [16, 18, 22, 14, 14, 14, 14, 10, 16], currencyCols: ["Total", "Received", "Pending"] },
+          { name: "Transactions", rows: txRows, colWidths: [12, 20, 22, 30, 18, 12, 14], currencyCols: ["Amount"] },
+        ],
+      });
+      toast.success("Assets exported");
+    } catch (error) {
+      console.error("Error exporting assets:", error);
+      toast.error("Failed to export");
+    } finally {
+      setExporting(false);
+    }
+  };
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -199,11 +316,58 @@ function AssetsPageInner() {
             </p>
           </div>
 
+          {/* Task A — the ONE filter bar for this page. Every section below is controlled by
+              this same `scope`, so the header total and every table under it can never disagree. */}
+          <div className="flex flex-wrap items-center gap-2">
+            <select
+              value={scope.branch}
+              onChange={(e) => setScope((s) => ({ ...s, branch: e.target.value }))}
+              className="px-3 py-2 border border-gray-200 rounded-xl text-sm bg-white shadow-sm"
+            >
+              <option value="">All branches</option>
+              {ALL_BRANCHES.map((b) => (
+                <option key={b} value={b}>{b}</option>
+              ))}
+            </select>
+            <input
+              type="date"
+              value={scope.dateFrom}
+              onChange={(e) => setScope((s) => ({ ...s, dateFrom: e.target.value }))}
+              className="px-3 py-2 border border-gray-200 rounded-xl text-sm bg-white shadow-sm"
+            />
+            <span className="text-xs text-gray-400">to</span>
+            <input
+              type="date"
+              value={scope.dateTo}
+              onChange={(e) => setScope((s) => ({ ...s, dateTo: e.target.value }))}
+              className="px-3 py-2 border border-gray-200 rounded-xl text-sm bg-white shadow-sm"
+            />
+            {(scope.branch || scope.dateFrom || scope.dateTo) && (
+              <button
+                onClick={() => setScope({ branch: "", dateFrom: "", dateTo: "" })}
+                className="text-xs font-medium text-indigo-700 hover:text-indigo-800"
+              >
+                Clear filters
+              </button>
+            )}
+            <button
+              onClick={handleExport}
+              disabled={exporting}
+              className="ml-auto inline-flex items-center gap-1.5 px-3.5 py-2 bg-white border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50 disabled:opacity-50"
+            >
+              {exporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+              Download Excel
+            </button>
+          </div>
+
           <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Total Assets</p>
-            <p className="text-3xl font-bold text-gray-900 mt-1">
-              {loaded ? formatCurrency(total) : "…"}
-            </p>
+            {refetching || !loaded ? (
+              <div className="h-9 w-48 bg-gray-100 rounded animate-pulse mt-1" />
+            ) : (
+              <p className="text-3xl font-bold text-gray-900 mt-1">{formatCurrency(total)}</p>
+            )}
+            <p className="text-xs text-gray-400 mt-1">{asOfLabel}</p>
             <div className="flex flex-wrap gap-6 mt-3 text-sm text-gray-500">
               <span>Cash &amp; Bank: <strong className="text-gray-800">{loaded ? formatCurrency(cashTotal) : "…"}</strong></span>
               <span>Loan Accounts: <strong className="text-gray-800">{loaded ? formatCurrency(loansTotal) : "…"}</strong></span>
@@ -244,6 +408,8 @@ function AssetsPageInner() {
                   closing: "Balance",
                 },
               }}
+              scope={scope}
+              onScopeChange={setScope}
             />
           </section>
 
@@ -266,37 +432,24 @@ function AssetsPageInner() {
                   closing: "Balance",
                 },
               }}
-              renderLeafRowActions={(row) => {
-                // A reversal row (negative amount, points at the original) or an original that
-                // has already been fully reversed gets a badge instead of Settle/Cancel — you
-                // can't settle or re-cancel a loan that's already been undone.
-                if (row.reversalOf) return <ReversalBadge reason={row.reversalReason} />;
-                if (row.isReversed) return <ReversedBadge />;
-                return (
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() =>
-                        setSettleTx({
-                          transactionId: row._id,
-                          account: row.account,
-                          amount: row.amount,
-                          narration: row.narration,
-                          date: row.date,
-                        })
-                      }
-                      className="inline-flex items-center gap-1 px-2.5 py-1 bg-orange-50 text-orange-700 border border-orange-200 text-xs font-semibold rounded-lg hover:bg-orange-100"
-                    >
-                      <ArrowRightLeft className="w-3.5 h-3.5" /> Settle
-                    </button>
-                    <button
-                      onClick={() => setCancelTx(row)}
-                      className="inline-flex items-center gap-1 px-2.5 py-1 bg-red-50 text-red-700 border border-red-200 text-xs font-semibold rounded-lg hover:bg-red-100"
-                    >
-                      <Ban className="w-3.5 h-3.5" /> Cancel Loan
-                    </button>
-                  </div>
-                );
-              }}
+              scope={scope}
+              onScopeChange={setScope}
+              renderLeafRowActions={(row) => (
+                <LoanRowActions
+                  row={row}
+                  onSettle={() =>
+                    setSettleTx({
+                      transactionId: row._id,
+                      account: row.account,
+                      amount: row.amount,
+                      narration: row.narration,
+                      date: row.date,
+                      branch: row.branch,
+                    })
+                  }
+                  onCancel={() => setCancelTx(row)}
+                />
+              )}
             />
           </section>
 
@@ -306,6 +459,7 @@ function AssetsPageInner() {
               defaultAmount={settleTx.amount}
               contextLabel={settleTx.narration}
               sourceTransactionId={settleTx.transactionId}
+              branch={settleTx.branch}
               onClose={() => setSettleTx(null)}
               onSuccess={handleSettlementSuccess}
             />
@@ -378,7 +532,9 @@ function AssetsPageInner() {
                   },
                 }}
                 initialDrill={receivablesInitialDrill || undefined}
-                onDrillChange={handleReceivablesDrillChange}
+                onDrillChange={setReceivablesDrill}
+                scope={scope}
+                onScopeChange={setScope}
                 extraParams={ageingFilter ? { ageing: ageingFilter } : undefined}
               />
             )}

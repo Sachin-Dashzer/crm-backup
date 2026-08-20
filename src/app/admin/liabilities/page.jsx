@@ -2,12 +2,16 @@
 
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import { Wallet, HelpCircle, CheckCircle2, Clock, AlertTriangle } from "lucide-react";
+import { Wallet, HelpCircle, CheckCircle2, Clock, AlertTriangle, Download, Loader2 } from "lucide-react";
 import AdminSidebar from "@/components/Sidebars/Sidebar";
 import DrillDownTable from "@/components/finance/DrillDownTable";
 import MetricCard from "@/components/MetricCard";
-import { formatCurrency } from "@/lib/financeUI";
+import { formatCurrency, formatDate } from "@/lib/financeUI";
 import { AGEING_BUCKETS } from "@/lib/ageing";
+import { ALL_BRANCHES } from "@/lib/branches";
+import { ENTRY_TYPES } from "@/constants/entryTypes";
+import { exportWorkbook, filterProvenanceRows } from "@/lib/exportToExcel";
+import { useToast } from "@/components/Toast";
 
 // Liabilities = Payables + Suspense (unresolved unexplained bank movement — a liability until
 // it's identified, since it's money we can't yet say we own). Page total is the sum of the same
@@ -32,9 +36,21 @@ function LiabilitiesPageInner() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const toast = useToast();
+
+  // Task A (Round 2) — ONE scope for the whole page, shared by the header total AND every
+  // DrillDownTable section below. See the identical comment in admin/assets/page.jsx — same fix,
+  // same reasoning, mirrored here.
+  const [scope, setScope] = useState(() => ({
+    branch: searchParams.get("branch") || "",
+    dateFrom: searchParams.get("from") || "",
+    dateTo: searchParams.get("to") || "",
+  }));
 
   const [payablesTotal, setPayablesTotal] = useState(null);
   const [suspenseTotal, setSuspenseTotal] = useState(null);
+  const [refetching, setRefetching] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   // Task 5, Step 4 — summary strip + ageing chips, ported from the old standalone Payables page.
   const [summary, setSummary] = useState(null);
@@ -45,34 +61,47 @@ function LiabilitiesPageInner() {
   // and risk a flash at level 1 before jumping to the right level); `null` = resolved, nothing
   // to restore.
   const [payablesInitialDrill, setPayablesInitialDrill] = useState(undefined);
+  const [payablesDrill, setPayablesDrill] = useState(null);
+
+  // Balances (Payables/Suspense closing) are POINT-IN-TIME — send `to` only, never `from`. See
+  // the identical, longer comment in admin/assets/page.jsx; both routes below already default
+  // `from` internally to "1970-01-01" when it's omitted, which IS "as of `to`". Do not "fix"
+  // this back to sending both.
+  const closingQS = useCallback(
+    (extra = {}) => {
+      const p = new URLSearchParams();
+      if (scope.branch) p.set("branch", scope.branch);
+      p.set("to", scope.dateTo || new Date().toISOString().slice(0, 10));
+      Object.entries(extra).forEach(([k, v]) => { if (v) p.set(k, v); });
+      return p.toString();
+    },
+    [scope],
+  );
+
+  const fetchHeaderTotals = useCallback(() => {
+    setRefetching(true);
+    Promise.all([
+      fetch(`/api/payables/grouped?level=1&${closingQS()}`).then((r) => r.json()),
+      fetch(`/api/suspense?groupBy=account&${closingQS()}`).then((r) => r.json()),
+      fetch(`/api/payables/summary${scope.branch ? `?branch=${scope.branch}` : ""}`).then((r) => r.json()),
+      fetch(`/api/payables/summary?ageing=1${scope.branch ? `&branch=${scope.branch}` : ""}`).then((r) => r.json()),
+    ])
+      .then(([payablesJson, suspenseJson, summaryJson, ageingJson]) => {
+        setPayablesTotal((payablesJson.rows || []).reduce((s, r) => s + (r.closing || 0), 0));
+        setSuspenseTotal((suspenseJson.rows || []).reduce((s, r) => s + (r.closing || 0), 0));
+        setSummary(summaryJson.overall || null);
+        setAgeingBuckets(ageingJson.byBucket || []);
+      })
+      .catch(() => {
+        setPayablesTotal(0);
+        setSuspenseTotal(0);
+      })
+      .finally(() => setRefetching(false));
+  }, [closingQS, scope.branch]);
 
   useEffect(() => {
-    fetch("/api/payables/grouped?level=1")
-      .then((r) => r.json())
-      .then((json) => {
-        const rows = json.rows || [];
-        setPayablesTotal(rows.reduce((s, r) => s + (r.closing || 0), 0));
-      })
-      .catch(() => setPayablesTotal(0));
-
-    fetch("/api/suspense?groupBy=account")
-      .then((r) => r.json())
-      .then((json) => {
-        const rows = json.rows || [];
-        setSuspenseTotal(rows.reduce((s, r) => s + (r.closing || 0), 0));
-      })
-      .catch(() => setSuspenseTotal(0));
-
-    fetch("/api/payables/summary")
-      .then((r) => r.json())
-      .then((json) => setSummary(json.overall || null))
-      .catch(() => setSummary(null));
-
-    fetch("/api/payables/summary?ageing=1")
-      .then((r) => r.json())
-      .then((json) => setAgeingBuckets(json.byBucket || []))
-      .catch(() => setAgeingBuckets([]));
-  }, []);
+    fetchHeaderTotals();
+  }, [fetchHeaderTotals]);
 
   // Restores /admin/liabilities?section=payables&head=Rent&sub=Office%20Rent&doc=<id> — the URL
   // Task 1's Entry Type badge points at for a settlement's linked payable. `doc` alone (no
@@ -117,20 +146,23 @@ function LiabilitiesPageInner() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handlePayablesDrillChange = useCallback(
-    (drill) => {
-      const params = new URLSearchParams();
-      if (drill.level > 1) {
-        params.set("section", "payables");
-        if (drill.headKey) params.set("head", drill.headKey);
-        if (drill.subKey) params.set("sub", drill.subKey);
-        if (drill.documentId) params.set("doc", drill.documentId);
-      }
-      const qs = params.toString();
-      router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
-    },
-    [router, pathname],
-  );
+  // Single sync point for the URL — `scope` (branch/from/to) AND the payables drill path
+  // (section/head/sub/doc) are written together, so neither overwrites the other's params.
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (scope.branch) params.set("branch", scope.branch);
+    if (scope.dateFrom) params.set("from", scope.dateFrom);
+    if (scope.dateTo) params.set("to", scope.dateTo);
+    if (payablesDrill && payablesDrill.level > 1) {
+      params.set("section", "payables");
+      if (payablesDrill.headKey) params.set("head", payablesDrill.headKey);
+      if (payablesDrill.subKey) params.set("sub", payablesDrill.subKey);
+      if (payablesDrill.documentId) params.set("doc", payablesDrill.documentId);
+    }
+    const qs = params.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scope, payablesDrill]);
 
   const ageingChipData = (bucket) => {
     const found = ageingBuckets.find((b) => b._id === bucket.value);
@@ -139,6 +171,91 @@ function LiabilitiesPageInner() {
 
   const loaded = payablesTotal !== null && suspenseTotal !== null;
   const total = (payablesTotal ?? 0) + (suspenseTotal ?? 0);
+  const asOfLabel = `As of ${formatDate(scope.dateTo || new Date())}${scope.branch ? ` · ${scope.branch}` : ""}`;
+
+  // Task B — export exactly what the current filters produce, refetched fresh at limit=10000.
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      // /api/payables/list and /api/transactions/get-all key their date range on dateFrom/dateTo;
+      // /api/suspense's entries list uses from/to instead — each fetch below uses its own
+      // endpoint's actual param names rather than one shared (and wrong for at least one of them)
+      // querystring.
+      const listFlowQS = (() => {
+        const p = new URLSearchParams();
+        if (scope.branch) p.set("branch", scope.branch);
+        if (scope.dateFrom) p.set("dateFrom", scope.dateFrom);
+        if (scope.dateTo) p.set("dateTo", scope.dateTo);
+        return p.toString();
+      })();
+      const suspenseFlowQS = (() => {
+        const p = new URLSearchParams();
+        if (scope.branch) p.set("branch", scope.branch);
+        if (scope.dateFrom) p.set("from", scope.dateFrom);
+        if (scope.dateTo) p.set("to", scope.dateTo);
+        return p.toString();
+      })();
+
+      const [payablesJson, suspenseGroupJson, suspenseListJson, txJson] = await Promise.all([
+        fetch(`/api/payables/list?limit=10000&${listFlowQS}`).then((r) => r.json()),
+        fetch(`/api/suspense?groupBy=account&${closingQS()}`).then((r) => r.json()),
+        fetch(`/api/suspense?status=all&limit=10000&${suspenseFlowQS}`).then((r) => r.json()),
+        fetch(`/api/transactions/get-all?limit=10000&${listFlowQS}`).then((r) => r.json()),
+      ]);
+
+      const payableRows = (payablesJson.payables || []).map((p) => ({
+        Head: p.expenseCategory || "—",
+        "Sub-type": p.expenseSubType || "—",
+        Party: p.payee?.label || "—",
+        Total: p.totalAmount,
+        Paid: p.paid,
+        Pending: p.pending,
+        "Due Date": p.dueDate ? new Date(p.dueDate) : null,
+        Ageing: p.ageingBucket || "—",
+        Status: p.isCancelled ? "Cancelled" : p.status,
+      }));
+      const suspenseRows = (suspenseListJson.entries || []).map((s) => ({
+        Date: new Date(s.date),
+        Account: s.account,
+        Direction: s.direction,
+        Amount: s.amount,
+        Remarks: s.remarks || s.reference || "—",
+        Status: s.isResolved ? "Resolved" : s.isCancelled ? "Cancelled" : "Open",
+      }));
+      const txRows = (txJson.transactions || []).map((t) => ({
+        Date: new Date(t.date),
+        "Account/Head": t.furtherMode || t.expense || "—",
+        Party: t.patient?.personal?.name || t.patientName || t.expenseGiver?.name || "—",
+        Narration: t.remarks || t.procedure || t.expenseType || "—",
+        "Entry Type": ENTRY_TYPES[t.entryType]?.label || "Regular",
+        Method: t.method || "—",
+        Amount: t.amount,
+      }));
+
+      const summaryRows = [
+        ...filterProvenanceRows({ branch: scope.branch, dateFrom: scope.dateFrom, dateTo: scope.dateTo }),
+        { Field: "Payables", Value: payablesTotal },
+        { Field: "Suspense", Value: (suspenseGroupJson.rows || []).reduce((s, r) => s + (r.closing || 0), 0) },
+        { Field: "Total Liabilities", Value: total },
+      ];
+
+      await exportWorkbook({
+        filename: `Liabilities_${scope.branch || "All"}_${scope.dateFrom || "start"}_to_${scope.dateTo || "today"}.xlsx`,
+        sheets: [
+          { name: "Summary", rows: summaryRows, colWidths: [22, 20] },
+          { name: "Payables", rows: payableRows, colWidths: [18, 18, 22, 14, 14, 14, 14, 10, 16], currencyCols: ["Total", "Paid", "Pending"] },
+          { name: "Suspense", rows: suspenseRows, colWidths: [12, 20, 10, 14, 30, 12], currencyCols: ["Amount"] },
+          { name: "Transactions", rows: txRows, colWidths: [12, 20, 22, 30, 18, 12, 14], currencyCols: ["Amount"] },
+        ],
+      });
+      toast.success("Liabilities exported");
+    } catch (error) {
+      console.error("Error exporting liabilities:", error);
+      toast.error("Failed to export");
+    } finally {
+      setExporting(false);
+    }
+  };
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -152,11 +269,57 @@ function LiabilitiesPageInner() {
             </p>
           </div>
 
+          {/* Task A — the ONE filter bar for this page. */}
+          <div className="flex flex-wrap items-center gap-2">
+            <select
+              value={scope.branch}
+              onChange={(e) => setScope((s) => ({ ...s, branch: e.target.value }))}
+              className="px-3 py-2 border border-gray-200 rounded-xl text-sm bg-white shadow-sm"
+            >
+              <option value="">All branches</option>
+              {ALL_BRANCHES.map((b) => (
+                <option key={b} value={b}>{b}</option>
+              ))}
+            </select>
+            <input
+              type="date"
+              value={scope.dateFrom}
+              onChange={(e) => setScope((s) => ({ ...s, dateFrom: e.target.value }))}
+              className="px-3 py-2 border border-gray-200 rounded-xl text-sm bg-white shadow-sm"
+            />
+            <span className="text-xs text-gray-400">to</span>
+            <input
+              type="date"
+              value={scope.dateTo}
+              onChange={(e) => setScope((s) => ({ ...s, dateTo: e.target.value }))}
+              className="px-3 py-2 border border-gray-200 rounded-xl text-sm bg-white shadow-sm"
+            />
+            {(scope.branch || scope.dateFrom || scope.dateTo) && (
+              <button
+                onClick={() => setScope({ branch: "", dateFrom: "", dateTo: "" })}
+                className="text-xs font-medium text-indigo-700 hover:text-indigo-800"
+              >
+                Clear filters
+              </button>
+            )}
+            <button
+              onClick={handleExport}
+              disabled={exporting}
+              className="ml-auto inline-flex items-center gap-1.5 px-3.5 py-2 bg-white border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50 disabled:opacity-50"
+            >
+              {exporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+              Download Excel
+            </button>
+          </div>
+
           <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Total Liabilities</p>
-            <p className="text-3xl font-bold text-gray-900 mt-1">
-              {loaded ? formatCurrency(total) : "…"}
-            </p>
+            {refetching || !loaded ? (
+              <div className="h-9 w-48 bg-gray-100 rounded animate-pulse mt-1" />
+            ) : (
+              <p className="text-3xl font-bold text-gray-900 mt-1">{formatCurrency(total)}</p>
+            )}
+            <p className="text-xs text-gray-400 mt-1">{asOfLabel}</p>
             <div className="flex flex-wrap gap-6 mt-3 text-sm text-gray-500">
               <span>Payables: <strong className="text-gray-800">{loaded ? formatCurrency(payablesTotal) : "…"}</strong></span>
               <span>Suspense: <strong className="text-gray-800">{loaded ? formatCurrency(suspenseTotal) : "…"}</strong></span>
@@ -215,7 +378,9 @@ function LiabilitiesPageInner() {
                   },
                 }}
                 initialDrill={payablesInitialDrill || undefined}
-                onDrillChange={handlePayablesDrillChange}
+                onDrillChange={setPayablesDrill}
+                scope={scope}
+                onScopeChange={setScope}
                 extraParams={ageingFilter ? { ageing: ageingFilter } : undefined}
               />
             )}
@@ -239,6 +404,8 @@ function LiabilitiesPageInner() {
                   closing: "Unresolved",
                 },
               }}
+              scope={scope}
+              onScopeChange={setScope}
             />
           </section>
         </div>

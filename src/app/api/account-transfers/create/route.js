@@ -4,9 +4,13 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import connectDB from "@/lib/db";
 import mongoose from "mongoose";
 import AccountTransfer from "@/models/AccountTransfer";
+import Transactions from "@/models/Transactions";
 import { ACCOUNTS } from "@/constants/bankRouting";
 import { ALL_BRANCHES } from "@/lib/branches";
 import { getAccountBalance } from "@/lib/accountBalances";
+import { checkPeriodLock } from "@/lib/periodLock";
+
+const TRANSFER_KINDS = ["MANUAL", "LOAN_SETTLEMENT", "LOAN_CANCELLATION"];
 
 // Contra entries move money between company-level accounts, so they are admin-only. The gate
 // lives here, not only in the UI — a UI-only restriction is bypassed by calling the endpoint.
@@ -24,8 +28,20 @@ export async function POST(req) {
 
     await connectDB();
 
-    const { fromAccount, toAccount, amount, date, reference, remarks, receipts, branch, sourceTransactionId } =
-      await req.json();
+    const {
+      fromAccount,
+      toAccount,
+      amount,
+      date,
+      reference,
+      remarks,
+      receipts,
+      branch,
+      sourceTransactionId,
+      transferKind,
+      reversesTransferId,
+      allowOverSettlement,
+    } = await req.json();
 
     // Reject rather than silently correct — each of these is a data-entry mistake the user
     // needs to see, not something to normalise away.
@@ -60,17 +76,67 @@ export async function POST(req) {
     if (sourceTransactionId && !mongoose.Types.ObjectId.isValid(sourceTransactionId)) {
       return NextResponse.json({ error: "Invalid sourceTransactionId" }, { status: 400 });
     }
+    const kind = transferKind && TRANSFER_KINDS.includes(transferKind) ? transferKind : "MANUAL";
+
+    // This IS "the settlement path" — LoanSettlementModal is just one caller of this endpoint —
+    // so both fixes below close the gap for every contra entry, not only loans.
+    //
+    // Period lock: a contra entry writes a dated financial fact on BOTH accounts, so either side
+    // being closed must refuse the write, exactly like an ordinary transaction would.
+    const transferDate = date ? new Date(date) : new Date();
+    const fromLock = await checkPeriodLock({ furtherMode: fromAccount, date: transferDate });
+    if (fromLock) {
+      return NextResponse.json({ error: fromLock, periodLocked: true }, { status: 423 });
+    }
+    const toLock = await checkPeriodLock({ furtherMode: toAccount, date: transferDate });
+    if (toLock) {
+      return NextResponse.json({ error: toLock, periodLocked: true }, { status: 423 });
+    }
+
+    // Over-settlement guard — scoped to LOAN_SETTLEMENT transfers only. A plain MANUAL transfer
+    // between two accounts has no "budget" to exceed; a loan settlement does, because it's
+    // standing in for money owed against a specific transaction of a known amount.
+    if (kind === "LOAN_SETTLEMENT" && sourceTransactionId) {
+      const sourceTx = await Transactions.findById(sourceTransactionId).lean();
+      if (!sourceTx) {
+        return NextResponse.json({ error: "Source transaction not found" }, { status: 404 });
+      }
+      const [alreadyAgg] = await AccountTransfer.aggregate([
+        {
+          $match: {
+            sourceTransactionId: new mongoose.Types.ObjectId(sourceTransactionId),
+            transferKind: "LOAN_SETTLEMENT",
+            isCancelled: { $ne: true },
+          },
+        },
+        { $group: { _id: null, total: { $sum: "$amount" } } },
+      ]);
+      const alreadySettled = alreadyAgg?.total || 0;
+      const remaining = Math.round(((sourceTx.amount || 0) - alreadySettled) * 100) / 100;
+      if (parsedAmount > remaining && !allowOverSettlement) {
+        return NextResponse.json(
+          {
+            error: `Settling ₹${parsedAmount.toLocaleString("en-IN")} would exceed the loan amount. ₹${alreadySettled.toLocaleString("en-IN")} of ₹${(sourceTx.amount || 0).toLocaleString("en-IN")} is already settled; ₹${remaining.toLocaleString("en-IN")} remains. Pass allowOverSettlement to record it anyway.`,
+            alreadySettled,
+            remaining,
+          },
+          { status: 400 },
+        );
+      }
+    }
 
     const transfer = new AccountTransfer({
       fromAccount,
       toAccount,
       amount: parsedAmount,
       branch: branch || null,
-      date: date ? new Date(date) : new Date(),
+      date: transferDate,
       reference: reference || "",
       remarks: remarks || "",
       receipts: Array.isArray(receipts) ? receipts : [],
       sourceTransactionId: sourceTransactionId || null,
+      transferKind: kind,
+      reversesTransferId: reversesTransferId || null,
       createdBy: {
         name: session.user.name,
         email: session.user.email,

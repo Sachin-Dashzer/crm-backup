@@ -64,6 +64,28 @@ const accountTransferSchema = new mongoose.Schema(
       default: null,
       index: true,
     },
+
+    // Discriminates WHY a transfer exists, so a lookup by sourceTransactionId is never
+    // ambiguous. Before this field, a settlement and the cancellation that later reversed it
+    // both carried the SAME sourceTransactionId — an unsorted findOne({sourceTransactionId, ...})
+    // could return either one, and a second cancellation attempt could reverse the reversal
+    // instead of refusing. Always query by (sourceTransactionId, transferKind) together now, not
+    // sourceTransactionId alone. Defaults to MANUAL so every pre-existing transfer (and every
+    // ordinary contra entry going forward) is unambiguous without a migration.
+    transferKind: {
+      type: String,
+      enum: ["MANUAL", "LOAN_SETTLEMENT", "LOAN_CANCELLATION"],
+      default: "MANUAL",
+      index: true,
+    },
+    // Set ONLY on a LOAN_CANCELLATION transfer — points at the specific LOAN_SETTLEMENT transfer
+    // it undoes. Lets "is this settlement already reversed?" be answered by existence of a
+    // transfer with THIS reversesTransferId, rather than by sourceTransactionId collision.
+    reversesTransferId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "AccountTransfer",
+      default: null,
+    },
     createdBy: {
       name: String,
       email: String,

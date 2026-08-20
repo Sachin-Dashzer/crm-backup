@@ -8,6 +8,7 @@ import Transactions from "@/models/Transactions";
 import { buildReceivableGroupedStages, buildReceivableAggregationStages } from "@/lib/receivableAggregation";
 import { UNSETTLED_METHODS } from "@/constants/bankRouting";
 import { checkPeriodLock } from "@/lib/periodLock";
+import { resolveBranchFilter } from "@/lib/branches";
 
 const ALLOWED_ROLES = ["admin", "super-admin"];
 
@@ -34,7 +35,11 @@ export async function GET(request) {
     const level = Math.min(4, Math.max(1, parseInt(searchParams.get("level") || "1")));
     const category = searchParams.get("category") || "";
     const subType = searchParams.get("subType") || "";
-    const branch = searchParams.get("branch") || "";
+    // Never trust a raw branch string from the client — same resolver every branch-scoped route
+    // uses; extracted back to a plain string since buildReceivableGroupedStages and the match
+    // below both key on a single branch NAME.
+    const branchFilterObj = resolveBranchFilter(session, searchParams.get("branch") || "");
+    const branch = typeof branchFilterObj.branch === "string" ? branchFilterObj.branch : "";
     const from = searchParams.get("from") || "";
     const to = searchParams.get("to") || "";
     const party = searchParams.get("party") || "";

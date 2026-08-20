@@ -7,6 +7,7 @@ import Receivable from "@/models/Receivable";
 import Transactions from "@/models/Transactions";
 import { buildReceivableAggregationStages } from "@/lib/receivableAggregation";
 import { AGEING_SORT } from "@/lib/ageing";
+import { resolveBranchFilter } from "@/lib/branches";
 
 const ALLOWED_ROLES = ["admin", "super-admin"];
 
@@ -29,7 +30,6 @@ export async function GET(request) {
     const payerKind = searchParams.get("payerKind") || "";
     const payerRefId = searchParams.get("payerRefId") || "";
     const payerLabel = searchParams.get("payerLabel") || "";
-    const branch = searchParams.get("branch") || "";
     const status = searchParams.get("status") || "";
     const dateFrom = searchParams.get("dateFrom") || "";
     const dateTo = searchParams.get("dateTo") || "";
@@ -44,7 +44,10 @@ export async function GET(request) {
     if (payerKind) match["payer.kind"] = payerKind;
     if (payerRefId) match["payer.refId"] = new mongoose.Types.ObjectId(payerRefId);
     if (payerLabel) match["payer.label"] = payerLabel;
-    if (branch) match.branch = branch;
+    // Never trust a raw branch string from the client — this route consumes a plain Mongo match
+    // object, so resolveBranchFilter's result (a collab session's {$in: COLLAB_BRANCHES} shape
+    // included) spreads straight in, unlike the string-keyed accountBalances.js helpers.
+    Object.assign(match, resolveBranchFilter(session, searchParams.get("branch") || ""));
     if (dateFrom || dateTo) {
       match.createdAt = {};
       if (dateFrom) {

@@ -82,11 +82,20 @@ export function buildPayableAggregationStages(txCollectionName) {
 // instead of per-document. A bucket's "opening" is the pending amount (raised − paid) carried in
 // from BEFORE `from` — the same carry-forward idea accountBalances.js uses for account opening
 // balances — so movement/settled inside the window plus opening reproduces closing.
-export function buildPayableGroupedStages(txCollectionName, { level, category, subType, branch, from, to } = {}) {
+//
+// groupBy: "vendor" (Vendors page) rolls up by payee.refId instead of expenseCategory/
+// expenseSubType — same carry-forward math, restricted to payee.kind: "VENDOR" (the only kind
+// with a stable refId to group on), single level (vendors aren't organised in a category tree,
+// so there's no level-2 sub-bucket the way expenseCategory has expenseSubType).
+export function buildPayableGroupedStages(txCollectionName, { level, category, subType, branch, from, to, groupBy = "category" } = {}) {
+  const isVendor = groupBy === "vendor";
   const match = { isCancelled: { $ne: true } };
+  if (isVendor) match["payee.kind"] = "VENDOR";
   if (branch) match.branch = branch;
-  if (level !== 1 && category) match.expenseCategory = category;
-  if (level === 2 && subType) match.expenseSubType = subType;
+  if (!isVendor) {
+    if (level !== 1 && category) match.expenseCategory = category;
+    if (level === 2 && subType) match.expenseSubType = subType;
+  }
 
   const fromDate = from ? new Date(from) : null;
   const toDate = to ? new Date(to) : null;
@@ -98,8 +107,9 @@ export function buildPayableGroupedStages(txCollectionName, { level, category, s
   });
   const beforeRange = (field) => (fromDate ? { $lt: [field, fromDate] } : { $literal: false });
 
-  const groupId =
-    level === 1
+  const groupId = isVendor
+    ? { bucket: "$payee.refId" }
+    : level === 1
       ? { bucket: { $ifNull: ["$expenseCategory", "Uncategorised"] } }
       : { bucket: { $ifNull: ["$expenseSubType", "Uncategorised"] } };
 
@@ -158,6 +168,7 @@ export function buildPayableGroupedStages(txCollectionName, { level, category, s
     {
       $group: {
         _id: groupId,
+        ...(isVendor ? { label: { $first: "$payee.label" } } : {}),
         opening: { $sum: "$openingRow" },
         movement: { $sum: "$raisedInRange" },
         settled: { $sum: "$paidInRange" },
@@ -167,8 +178,10 @@ export function buildPayableGroupedStages(txCollectionName, { level, category, s
     {
       $project: {
         _id: 0,
-        key: "$_id.bucket",
-        label: "$_id.bucket",
+        // ObjectId as a string — this key rides in a URL query param on the way back for the
+        // vendor's document drill, unlike the category/sub-type bucket string it replaces.
+        key: isVendor ? { $toString: "$_id.bucket" } : "$_id.bucket",
+        label: isVendor ? "$label" : "$_id.bucket",
         opening: 1,
         movement: 1,
         settled: 1,
@@ -176,6 +189,8 @@ export function buildPayableGroupedStages(txCollectionName, { level, category, s
         count: 1,
       },
     },
-    { $sort: { key: 1 } },
+    // Vendors sort by outstanding balance (worst first) — an alphabetical vendor-name sort would
+    // need the label, which post-dates the group stage; closing is already the field of interest.
+    { $sort: isVendor ? { closing: -1 } : { key: 1 } },
   ];
 }

@@ -1,30 +1,5 @@
 import AccountPeriod from "@/models/AccountPeriod";
 import { ACCOUNTS, NON_CASH_METHODS } from "@/constants/bankRouting";
-
-// Balance computation for the accounts in ACCOUNTS. Every figure on the close-book page comes
-// through here, so the ledger and the balance sheet cannot disagree about what counts.
-//
-//   closingBalance = openingBalance
-//                  + SUM(revenue in period WHERE furtherMode = account)
-//                  - SUM(expense in period WHERE furtherMode = account)
-//
-// Three rules that decide whether a row counts at all — all applied in ONE place below:
-//
-//  1. NON_CASH_METHODS are excluded. No cash moves through our accounts for offset
-//     settlements, package-included medicine, or money an external party handled, so
-//     counting them makes every balance wrong. Imported from the constant, never listed
-//     inline — new non-cash methods must take effect here automatically.
-//
-//  2. approvalStatus must not be PENDING or REJECTED. It is deliberately NOT an equality
-//     test against "APPROVED": 22,073 of the 22,636 rows in this database predate the
-//     approvalStatus field and carry null, and every one of them is a real, settled
-//     historical transaction. A strict === "APPROVED" filter would silently drop 97.5% of
-//     the data and report near-zero balances. This matches the convention already used by
-//     the collab cases aggregation.
-//
-//  3. furtherMode must equal the account. That field is "Received In Account" on revenue
-//     and "Paid From Account" on expenses — same field, direction inferred from costType.
-
 export const APPROVAL_EXCLUDED = ["PENDING", "REJECTED"];
 
 // The single source of truth for "does this row move an account balance".
@@ -39,13 +14,6 @@ export function buildBalanceMatch({
 } = {}) {
   const match = {
     approvalStatus: { $nin: APPROVAL_EXCLUDED },
-    // Regression guard (Task 1c): this is the ONE choke point every cash/bank ledger and
-    // balance figure goes through — /api/close-book/accounts and /api/close-book/ledger both
-    // call buildBalanceMatch for their base Transactions match, and their contra/suspense
-    // $unionWith branches read from AccountTransfer/SuspenseEntry, which have no `method` field
-    // at all, so a paid_to_external/paid_by_other row can never enter a cash/bank account view
-    // through either path. Verified 2026-08-19 — do not duplicate this exclusion elsewhere;
-    // route everything through here instead.
     method: { $nin: NON_CASH_METHODS },
   };
 

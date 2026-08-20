@@ -6,25 +6,47 @@ import connectDB from "@/lib/db";
 import Transactions from "@/models/Transactions";
 import AccountTransfer from "@/models/AccountTransfer";
 import { reverseTransaction, ReversalError } from "@/lib/reverseTransaction";
+import { checkPeriodLock } from "@/lib/periodLock";
 
 // Loan cancellation — the purpose-built front end onto the existing, proven reversal mechanism
 // (src/lib/reverseTransaction.js, the same guards api/transactions/[id]/reverse enforces),
-// plus — only when the loan was already settled — a second write reversing the settlement's
-// AccountTransfer. NOT a second reversal implementation: reverseTransaction() is called exactly
-// as the reverse route calls it, just inside this route's own db session so both writes commit
-// or neither does.
+// plus — only when the loan was already settled — a second write per settlement reversing that
+// settlement's AccountTransfer. NOT a second reversal implementation: reverseTransaction() is
+// called exactly as the reverse route calls it, just inside this route's own db session so every
+// write commits or none does.
 //
 //   Case A — not yet settled: reverseTransaction() alone.
-//   Case B — already settled (found via AccountTransfer.sourceTransactionId, set by
-//            LoanSettlementModal): reverseTransaction() + a NEW AccountTransfer in the opposite
-//            direction (bank -> loan account), same amount as the settlement. The original
-//            settlement transfer is left untouched and still visible — a cancelled-but-hidden
-//            transfer would be exactly as unreconcilable as a hidden reversal.
+//   Case B — already settled (one or more times — see D2 below): reverseTransaction() + one NEW
+//            AccountTransfer per outstanding settlement, in the opposite direction (bank -> loan
+//            account), same amount as that settlement. The original settlement transfers are
+//            left untouched and still visible — a cancelled-but-hidden transfer would be exactly
+//            as unreconcilable as a hidden reversal.
+//
+// D1 FIX — the bug this rewrite exists for: a cancellation's reversing transfer used to be
+// created with sourceTransactionId: id, the SAME id the original settlement transfer carries.
+// Both this GET probe and the POST handler then looked up
+// `AccountTransfer.findOne({ sourceTransactionId: id, isCancelled: { $ne: true } })` — with no
+// sort, that could return either the settlement OR the transfer that reversed it, so a second
+// cancellation attempt could reverse the reversal and move money back again. Every lookup below
+// is scoped by `transferKind: "LOAN_SETTLEMENT"` instead, which only the ORIGINAL settlement
+// ever carries — the reversal is tagged LOAN_CANCELLATION and is never returned by this query.
 
 const ALLOWED_ROLES = ["admin", "super-admin"];
 const LOAN_ACCOUNTS = ["Bajaj Loan", "Fibe Loan"];
 
+async function findSettlementTransfers(id, session = null) {
+  const q = AccountTransfer.find({
+    sourceTransactionId: id,
+    transferKind: "LOAN_SETTLEMENT",
+    isCancelled: { $ne: true },
+  });
+  if (session) q.session(session);
+  return q;
+}
+
 // Read-only: which case applies, so the confirmation dialog can say so before the user commits.
+// Also doubles as the "how much is already settled" probe LoanSettlementModal uses to pre-fill
+// the remaining amount (D6).
 export async function GET(request, { params }) {
   try {
     const session = await getServerSession(authOptions);
@@ -46,19 +68,20 @@ export async function GET(request, { params }) {
       return NextResponse.json({
         success: true,
         isLoanTransaction: false,
-        settlementTransfer: null,
+        settlementTransfers: [],
+        totalSettled: 0,
       });
     }
 
-    const settlementTransfer = await AccountTransfer.findOne({
-      sourceTransactionId: id,
-      isCancelled: { $ne: true },
-    }).lean();
+    const settlementTransfers = await findSettlementTransfers(id).lean();
+    const totalSettled = settlementTransfers.reduce((s, t) => s + (t.amount || 0), 0);
 
     return NextResponse.json({
       success: true,
       isLoanTransaction: true,
-      settlementTransfer,
+      settlementTransfers,
+      totalSettled: Math.round(totalSettled * 100) / 100,
+      remaining: Math.round(((original.amount || 0) - totalSettled) * 100) / 100,
     });
   } catch (error) {
     console.error("Error reading loan cancellation state:", error);
@@ -91,7 +114,7 @@ export async function POST(request, { params }) {
     };
 
     let result;
-    let reversalTransfer = null;
+    const reversalTransfers = [];
     let loanCase = "A";
 
     await dbSession.withTransaction(async () => {
@@ -119,15 +142,32 @@ export async function POST(request, { params }) {
         dbSession,
       });
 
-      // Case B: this loan was already settled — reverse that transfer too, same session, same
-      // atomic unit as the transaction reversal above.
-      const settlementTransfer = await AccountTransfer.findOne({
-        sourceTransactionId: id,
-        isCancelled: { $ne: true },
-      }).session(dbSession);
+      // Case B: this loan was already settled, possibly more than once (D2) — reverse EVERY
+      // outstanding settlement transfer, not just one, same session as the transaction reversal
+      // above so all of it commits or none does.
+      const settlementTransfers = await findSettlementTransfers(id, dbSession);
 
-      if (settlementTransfer) {
+      for (const settlementTransfer of settlementTransfers) {
         loanCase = "B";
+
+        // D4 — period lock, checked against the REVERSAL's effective date (result.reversal.date
+        // may differ from the request date if the original's own period was closed — see
+        // reverseTransaction's comment), on both accounts this transfer touches.
+        const fromLock = await checkPeriodLock({
+          furtherMode: settlementTransfer.toAccount,
+          date: result.reversal.date,
+        });
+        if (fromLock) {
+          throw new ReversalError(423, { error: fromLock, periodLocked: true });
+        }
+        const toLock = await checkPeriodLock({
+          furtherMode: settlementTransfer.fromAccount,
+          date: result.reversal.date,
+        });
+        if (toLock) {
+          throw new ReversalError(423, { error: toLock, periodLocked: true });
+        }
+
         const [transfer] = await AccountTransfer.create(
           [
             {
@@ -139,6 +179,8 @@ export async function POST(request, { params }) {
               reference: settlementTransfer.reference,
               remarks: `Loan cancellation — reversing settlement ${settlementTransfer._id}`,
               sourceTransactionId: id,
+              transferKind: "LOAN_CANCELLATION",
+              reversesTransferId: settlementTransfer._id,
               createdBy: { ...actor, date: new Date() },
               log: [
                 {
@@ -153,7 +195,7 @@ export async function POST(request, { params }) {
           ],
           { session: dbSession },
         );
-        reversalTransfer = transfer;
+        reversalTransfers.push(transfer);
       }
     });
 
@@ -163,10 +205,12 @@ export async function POST(request, { params }) {
         case: loanCase,
         message:
           loanCase === "B"
-            ? "Loan cancelled — revenue reversed and the settlement transfer undone"
+            ? reversalTransfers.length > 1
+              ? `Loan cancelled — revenue reversed and ${reversalTransfers.length} settlement transfers undone`
+              : "Loan cancelled — revenue reversed and the settlement transfer undone"
             : "Loan cancelled — revenue reversed",
         reversal: result.reversal,
-        reversalTransfer,
+        reversalTransfers,
         original: {
           _id: result.original._id,
           amount: result.original.amount,

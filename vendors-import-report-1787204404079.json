@@ -1,0 +1,254 @@
+{
+  "created": [
+    {
+      "rowNum": 3,
+      "name": "Modern Pharmaceuticals",
+      "id": "6a869333b3ed95761ff38892",
+      "openingBalance": 377374
+    },
+    {
+      "rowNum": 5,
+      "name": "Cranix Pharma",
+      "id": "6a869333b3ed95761ff38893",
+      "openingBalance": 345353
+    },
+    {
+      "rowNum": 7,
+      "name": "Cross Q-Derma",
+      "id": "6a869333b3ed95761ff38894",
+      "openingBalance": 0
+    },
+    {
+      "rowNum": 8,
+      "name": "Gnvs Pharmaceuticals",
+      "id": "6a869333b3ed95761ff38895",
+      "openingBalance": 41370
+    },
+    {
+      "rowNum": 9,
+      "name": "Godiva Bioadvances Pvt. Ltd.",
+      "id": "6a869333b3ed95761ff38896",
+      "openingBalance": 0
+    },
+    {
+      "rowNum": 10,
+      "name": "Mishra Surgical",
+      "id": "6a869333b3ed95761ff38897",
+      "openingBalance": 78000
+    },
+    {
+      "rowNum": 11,
+      "name": "Ganapati Bio-Tech Ltd.",
+      "id": "6a869333b3ed95761ff38898",
+      "openingBalance": 46875
+    },
+    {
+      "rowNum": 13,
+      "name": "KAPIL GFC",
+      "id": "6a869333b3ed95761ff38899",
+      "openingBalance": 5000
+    },
+    {
+      "rowNum": 14,
+      "name": "KAPIL GLUTA",
+      "id": "6a869333b3ed95761ff3889a",
+      "openingBalance": 38400
+    },
+    {
+      "rowNum": 15,
+      "name": "VEJOVIS MEDLINE",
+      "id": "6a869333b3ed95761ff3889b",
+      "openingBalance": 0
+    },
+    {
+      "rowNum": 16,
+      "name": "Raaveetech Pharma",
+      "id": "6a869333b3ed95761ff3889c",
+      "openingBalance": 0
+    },
+    {
+      "rowNum": 18,
+      "name": "Kusum Scientific",
+      "id": "6a869333b3ed95761ff3889d",
+      "openingBalance": 24276
+    },
+    {
+      "rowNum": 19,
+      "name": "Yurexa Wellness",
+      "id": "6a869333b3ed95761ff3889e",
+      "openingBalance": 0
+    },
+    {
+      "rowNum": 20,
+      "name": "Medica Solutions",
+      "id": "6a869333b3ed95761ff3889f",
+      "openingBalance": 75
+    },
+    {
+      "rowNum": 21,
+      "name": "Shivoham Dermatology Private Limited",
+      "id": "6a869333b3ed95761ff388a0",
+      "openingBalance": 37100
+    },
+    {
+      "rowNum": 22,
+      "name": "A Square Pharmaceuticals",
+      "id": "6a869333b3ed95761ff388a1",
+      "openingBalance": 0
+    },
+    {
+      "rowNum": 23,
+      "name": "Minenii Corporate Services Private Limited",
+      "id": "6a869333b3ed95761ff388a2",
+      "openingBalance": 50700
+    },
+    {
+      "rowNum": 24,
+      "name": "Phmg and Associates",
+      "id": "6a869333b3ed95761ff388a3",
+      "openingBalance": 233200
+    },
+    {
+      "rowNum": 25,
+      "name": "Adequate Electro Mechinical Engineering",
+      "id": "6a869333b3ed95761ff388a4",
+      "openingBalance": 0
+    }
+  ],
+  "updated": [
+    {
+      "rowNum": 2,
+      "name": "Helpsure Healthcare Private Limited",
+      "id": "69c9ffb72558ac66f40cba82",
+      "changes": [
+        {
+          "field": "name",
+          "from": "HELPSURE HEALTHCARE PVT LTD\t",
+          "to": "Helpsure Healthcare Private Limited"
+        },
+        {
+          "field": "email",
+          "from": "HELPSURE@GMAIL.COM",
+          "to": "HELPSUREHEALTHCARE@GMAIL.COM"
+        },
+        {
+          "field": "address",
+          "from": "NEW DELHI",
+          "to": "Contact person: SURRENDRA | H NO. 359 G/F NEW LAHORE COLONY SHASTRI NAGAR"
+        },
+        {
+          "field": "gstNumber",
+          "from": "",
+          "to": "07AAECH4722K1ZJ"
+        },
+        {
+          "field": "DealsIn",
+          "from": "TAB. HAIR SERUM SHAMPOO ",
+          "to": "Medicine"
+        }
+      ]
+    },
+    {
+      "rowNum": 4,
+      "name": "Shri Ji Pharma",
+      "id": "69c9febb2558ac66f40cba43",
+      "changes": [
+        {
+          "field": "name",
+          "from": "SHEI JI PHARMA\t",
+          "to": "Shri Ji Pharma"
+        },
+        {
+          "field": "email",
+          "from": "9811573313@GMAIL.COM",
+          "to": "shrijipharma2009@gmail.com"
+        },
+        {
+          "field": "address",
+          "from": "DELHI NEW",
+          "to": "Contact person: ABHISHEK SETHIA | SHOP NO-103 FIRST FLOOR PROPRTY NO-173/RAM GALI MANGAL"
+        },
+        {
+          "field": "gstNumber",
+          "from": "98115AFTHH73313",
+          "to": "07BMOPS2003N1ZP"
+        },
+        {
+          "field": "DealsIn",
+          "from": "SHAMPOO , MINOXIDIL , TAB.",
+          "to": "Medicine"
+        }
+      ]
+    },
+    {
+      "rowNum": 6,
+      "name": "Bhawani Drugs Distributors",
+      "id": "6a2d60fdc70df94cba213e68",
+      "changes": [
+        {
+          "field": "name",
+          "from": "BHAWANI DRUGS",
+          "to": "Bhawani Drugs Distributors"
+        },
+        {
+          "field": "address",
+          "from": "",
+          "to": "Contact person: ARUN | GODOWN NO / KHASRA NO 1307 - 1310 DELHI MEERUT ROAD, MORTA GHAZIABAD UTTAR PRADESH 201001"
+        },
+        {
+          "field": "gstNumber",
+          "from": "",
+          "to": "09AAFFB3250L1ZF"
+        },
+        {
+          "field": "DealsIn",
+          "from": "",
+          "to": "Medicine"
+        }
+      ]
+    },
+    {
+      "rowNum": 17,
+      "name": "Medono India",
+      "id": "69e06a9a9e2424b84f0408b5",
+      "changes": [
+        {
+          "field": "name",
+          "from": "MEDONO INDIA\t",
+          "to": "Medono India"
+        },
+        {
+          "field": "email",
+          "from": "ryanreception@gmail.com",
+          "to": "info@medonoindia.com"
+        },
+        {
+          "field": "address",
+          "from": "NEW DELHI",
+          "to": "KH. NO. 894 NEW-115, Ground Floor, Landmark Near Water Tank, Lal Dora, Village Alipur, North West Delhi, Delhi - 110036 | Alt contact: 8500008712"
+        },
+        {
+          "field": "gstNumber",
+          "from": "07LYSPS2547H2ZI",
+          "to": "07GVSPK9534A1Z7"
+        },
+        {
+          "field": "DealsIn",
+          "from": "Surgical Equipment",
+          "to": "Medical Equipment"
+        }
+      ]
+    }
+  ],
+  "riskyUpdatesApplied": [],
+  "riskyUpdatesSkipped": [
+    {
+      "rowNum": 12,
+      "name": "Pharmachem Distributors",
+      "existingId": "69ce65e577c15134af23acd6",
+      "existingName": "CUTISOINS COSMECEUTICALS PVT LTD"
+    }
+  ],
+  "createFailed": [],
+  "updateFailed": []
+}

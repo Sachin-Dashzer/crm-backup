@@ -1,0 +1,557 @@
+{
+  "deleted": [
+    {
+      "id": "6a7db38ac4618224a042fc7c",
+      "amount": 60000,
+      "expenseGiverName": "helpsure bill payment"
+    },
+    {
+      "id": "6a7db38ac4618224a042fc5f",
+      "amount": 108318,
+      "expenseGiverName": "301 BILL OT STOCK PAYMENT"
+    },
+    {
+      "id": "6a7db38ac4618224a042fcbc",
+      "amount": 65750,
+      "expenseGiverName": "hyd ot bed payment ADEQUATEELE"
+    },
+    {
+      "id": "6a7db38ac4618224a042fbfe",
+      "amount": 40000,
+      "expenseGiverName": "Bhawani drugs medicine payment"
+    },
+    {
+      "id": "6a7db38ac4618224a042fbe8",
+      "amount": 137000,
+      "expenseGiverName": "Helpsure health medicine part payment"
+    },
+    {
+      "id": "6a7db38ac4618224a042fbe9",
+      "amount": 13000,
+      "expenseGiverName": "Helpsure health medicine part payment"
+    },
+    {
+      "id": "6a7c6596154922083e1b2ea6",
+      "amount": 40000,
+      "expenseGiverName": "Ganpati folirich payment"
+    },
+    {
+      "id": "6a7c6596154922083e1b2e54",
+      "amount": 127855,
+      "expenseGiverName": "modern pharma bill payment"
+    },
+    {
+      "id": "6a7c6596154922083e1b2e59",
+      "amount": 30000,
+      "expenseGiverName": "Sacgin mishra surgical"
+    },
+    {
+      "id": "6a7c6596154922083e1b2e3d",
+      "amount": 100000,
+      "expenseGiverName": "Shree ji pharma"
+    },
+    {
+      "id": "6a7c6596154922083e1b2de7",
+      "amount": 150000,
+      "expenseGiverName": "helpsure health medicine payment"
+    },
+    {
+      "id": "6a7c6596154922083e1b2d98",
+      "amount": 5000,
+      "expenseGiverName": "GFC PAYMENT"
+    },
+    {
+      "id": "6a7c6596154922083e1b2d3a",
+      "amount": 5000,
+      "expenseGiverName": "gfc payment"
+    },
+    {
+      "id": "6a7c6596154922083e1b2d55",
+      "amount": 22050,
+      "expenseGiverName": "medono 339 bill payment"
+    },
+    {
+      "id": "6a7c6596154922083e1b2d56",
+      "amount": 47190,
+      "expenseGiverName": "gnvs medicine bill payment"
+    },
+    {
+      "id": "6a7c6596154922083e1b2d64",
+      "amount": 24276,
+      "expenseGiverName": "kusum scientific bill payment"
+    },
+    {
+      "id": "6a7c6595154922083e1b2c69",
+      "amount": 50000,
+      "expenseGiverName": "modern Pharma Bill Payment"
+    },
+    {
+      "id": "6a7c6595154922083e1b2c44",
+      "amount": 100000,
+      "expenseGiverName": "modern pharma part payment"
+    },
+    {
+      "id": "6a7c6595154922083e1b2c47",
+      "amount": 50000,
+      "expenseGiverName": "modern pharma part payment"
+    },
+    {
+      "id": "6a7c6595154922083e1b2c4e",
+      "amount": 50000,
+      "expenseGiverName": "helpsure health part payment"
+    },
+    {
+      "id": "6a7c6595154922083e1b2c12",
+      "amount": 20446,
+      "expenseGiverName": "medono india bill part payment"
+    },
+    {
+      "id": "6a7c6595154922083e1b2c13",
+      "amount": 9450,
+      "expenseGiverName": "medono india bill part payment"
+    },
+    {
+      "id": "6a7c6595154922083e1b2bd4",
+      "amount": 24570,
+      "expenseGiverName": "GNVS pharmaceuticals bill Payment"
+    },
+    {
+      "id": "6a7c6595154922083e1b2bd6",
+      "amount": 37100,
+      "expenseGiverName": "Shivoham Bill payment"
+    },
+    {
+      "id": "6a7c6595154922083e1b2bdd",
+      "amount": 16612,
+      "expenseGiverName": "crossQderma Bill Payment"
+    },
+    {
+      "id": "6a7c6595154922083e1b2bdf",
+      "amount": 16612,
+      "expenseGiverName": "crossQderma Bill Payment"
+    },
+    {
+      "id": "6a7c6595154922083e1b2be4",
+      "amount": 64800,
+      "expenseGiverName": "Phmg jan bill clear"
+    },
+    {
+      "id": "6a7c6595154922083e1b2be5",
+      "amount": 64800,
+      "expenseGiverName": "Phmg feb bill clear"
+    },
+    {
+      "id": "6a7c6595154922083e1b2ba2",
+      "amount": 50000,
+      "expenseGiverName": "shree ji pharma Bill Payment"
+    },
+    {
+      "id": "6a7c6595154922083e1b2ba3",
+      "amount": 50000,
+      "expenseGiverName": "helpsure health Bill payment"
+    },
+    {
+      "id": "6a7c6595154922083e1b2b51",
+      "amount": 50000,
+      "expenseGiverName": "helpsure health medicine part payment"
+    },
+    {
+      "id": "6a7c6595154922083e1b2b16",
+      "amount": 60000,
+      "expenseGiverName": "helpsure health medicine part payment"
+    },
+    {
+      "id": "6a7c6595154922083e1b2ad1",
+      "amount": 24276,
+      "expenseGiverName": "Kusum scientific card bill payment"
+    },
+    {
+      "id": "6a7c6595154922083e1b2adb",
+      "amount": 55000,
+      "expenseGiverName": "modern pharma bill part payment"
+    },
+    {
+      "id": "6a7c6595154922083e1b2a40",
+      "amount": 12000,
+      "expenseGiverName": "medono india bill payment"
+    },
+    {
+      "id": "6a7c6595154922083e1b2a56",
+      "amount": 50000,
+      "expenseGiverName": "shree jii pharma"
+    },
+    {
+      "id": "6a7c6595154922083e1b2a0c",
+      "amount": 150000,
+      "expenseGiverName": "modern pharma ot staock part payment"
+    },
+    {
+      "id": "6a7c6595154922083e1b2a05",
+      "amount": 94400,
+      "expenseGiverName": "hyd ot bed payment ADEQUATEELE"
+    },
+    {
+      "id": "6a7c6595154922083e1b29ae",
+      "amount": 21560,
+      "expenseGiverName": "MIneni ca Bill Payment april increment"
+    },
+    {
+      "id": "6a7c6595154922083e1b2965",
+      "amount": 6300,
+      "expenseGiverName": "Kusum scientific bill payment"
+    },
+    {
+      "id": "6a7c6595154922083e1b292e",
+      "amount": 30000,
+      "expenseGiverName": "Medono india bill part payment"
+    },
+    {
+      "id": "6a7c6595154922083e1b289b",
+      "amount": 102160,
+      "expenseGiverName": "mininee ca bill payment"
+    },
+    {
+      "id": "6a7c6595154922083e1b2857",
+      "amount": 193088,
+      "expenseGiverName": "modern pharma bill payment"
+    },
+    {
+      "id": "6a7c6595154922083e1b27d1",
+      "amount": 37499,
+      "expenseGiverName": "medono india medical equipment payment"
+    },
+    {
+      "id": "6a7c6595154922083e1b27d5",
+      "amount": 13860,
+      "expenseGiverName": "medica solutions bill payment"
+    },
+    {
+      "id": "6a7c6595154922083e1b2768",
+      "amount": 24276,
+      "expenseGiverName": "kusum scientific card bill payment"
+    },
+    {
+      "id": "6a7c6595154922083e1b2769",
+      "amount": 13860,
+      "expenseGiverName": "medica solutions bill payment"
+    },
+    {
+      "id": "6a7c6595154922083e1b26a3",
+      "amount": 40000,
+      "expenseGiverName": "Bhawani hairfact medicine part payment"
+    },
+    {
+      "id": "6a7c6595154922083e1b2631",
+      "amount": 50000,
+      "expenseGiverName": "helpsure health"
+    },
+    {
+      "id": "6a7c6595154922083e1b2633",
+      "amount": 30000,
+      "expenseGiverName": "helpsure health"
+    },
+    {
+      "id": "6a7c6595154922083e1b2634",
+      "amount": 30000,
+      "expenseGiverName": "mishra surcigal prp payment"
+    },
+    {
+      "id": "6a7c6595154922083e1b263d",
+      "amount": 85000,
+      "expenseGiverName": "mininee ca bill payment"
+    },
+    {
+      "id": "6a7c6595154922083e1b251d",
+      "amount": 5000,
+      "expenseGiverName": "KAPIL SIR GFC PAYMENT"
+    },
+    {
+      "id": "6a7c6595154922083e1b2506",
+      "amount": 166748,
+      "expenseGiverName": "modern pharma bill payment"
+    },
+    {
+      "id": "6a7c6595154922083e1b24e8",
+      "amount": 70000,
+      "expenseGiverName": "Helpsure health medicine payment"
+    },
+    {
+      "id": "6a7c6595154922083e1b2489",
+      "amount": 30576,
+      "expenseGiverName": "kusum scientific bill payment"
+    },
+    {
+      "id": "6a7c6594154922083e1b241f",
+      "amount": 30000,
+      "expenseGiverName": "shri ji pharma medicine bill payment"
+    },
+    {
+      "id": "6a7c6594154922083e1b23c3",
+      "amount": 100000,
+      "expenseGiverName": "helpsure heath vendor payment"
+    },
+    {
+      "id": "6a7c6594154922083e1b233a",
+      "amount": 25000,
+      "expenseGiverName": "surender ji medicine payment helpsure"
+    },
+    {
+      "id": "6a7c6594154922083e1b234e",
+      "amount": 50000,
+      "expenseGiverName": "helpsure heath vendor payment"
+    },
+    {
+      "id": "6a7c6594154922083e1b234f",
+      "amount": 25000,
+      "expenseGiverName": "helpsure heath vendor payment"
+    },
+    {
+      "id": "6a7c6594154922083e1b225d",
+      "amount": 33500,
+      "expenseGiverName": "kusum scientific bill payment"
+    },
+    {
+      "id": "6a7c6594154922083e1b225e",
+      "amount": 16612,
+      "expenseGiverName": "medicine bill payment"
+    },
+    {
+      "id": "6a7c6594154922083e1b221f",
+      "amount": 11800,
+      "expenseGiverName": "medono india bill payment"
+    },
+    {
+      "id": "6a7c6594154922083e1b2220",
+      "amount": 13338,
+      "expenseGiverName": "medono india bill payment"
+    },
+    {
+      "id": "6a7c6594154922083e1b2233",
+      "amount": 25000,
+      "expenseGiverName": "shri ji pharma medicine payment"
+    },
+    {
+      "id": "6a7c6594154922083e1b21f3",
+      "amount": 37100,
+      "expenseGiverName": "Shivoham dermatology"
+    },
+    {
+      "id": "6a7c6594154922083e1b21f5",
+      "amount": 25000,
+      "expenseGiverName": "shri ji pharma medicine payment"
+    },
+    {
+      "id": "6a7c6594154922083e1b21cb",
+      "amount": 36186,
+      "expenseGiverName": "moderm phharma bill payment"
+    },
+    {
+      "id": "6a7c6594154922083e1b21d3",
+      "amount": 30000,
+      "expenseGiverName": "shri ji pharma medicine payment"
+    },
+    {
+      "id": "6a7c6594154922083e1b21af",
+      "amount": 120000,
+      "expenseGiverName": "modern part payment"
+    },
+    {
+      "id": "6a7c6594154922083e1b218f",
+      "amount": 24276,
+      "expenseGiverName": "kusum scientific last bill payment"
+    },
+    {
+      "id": "6a7c6594154922083e1b2107",
+      "amount": 82769,
+      "expenseGiverName": "moderm phharma bill payment"
+    },
+    {
+      "id": "6a7c6594154922083e1b2118",
+      "amount": 50000,
+      "expenseGiverName": "mininee ca bill payment"
+    },
+    {
+      "id": "6a7c6594154922083e1b202b",
+      "amount": 46875,
+      "expenseGiverName": "Ganpati biotech Limited"
+    },
+    {
+      "id": "6a7c6594154922083e1b2002",
+      "amount": 50000,
+      "expenseGiverName": "cranix pharma medicine bill payment"
+    },
+    {
+      "id": "6a7c6594154922083e1b1fa3",
+      "amount": 5000,
+      "expenseGiverName": "KAPIL SIR GFC PAYMENT"
+    },
+    {
+      "id": "6a7c6594154922083e1b1f66",
+      "amount": 21328,
+      "expenseGiverName": "vejovis ns medicine"
+    },
+    {
+      "id": "6a7c09e9d3599abb2637a764",
+      "amount": 60000,
+      "expenseGiverName": "helpsure health medicine bill payment"
+    },
+    {
+      "id": "6a7c09e3d3599abb2637a49f",
+      "amount": 5000,
+      "expenseGiverName": "KAPIL SIR PAYMENT GFC"
+    },
+    {
+      "id": "6a7c09e9d3599abb2637a74c",
+      "amount": 70000,
+      "expenseGiverName": "helpsure health medicine bill payment"
+    },
+    {
+      "id": "6a7c09e9d3599abb2637a752",
+      "amount": 24276,
+      "expenseGiverName": "Kusum scientific card payment"
+    },
+    {
+      "id": "6a7c09e9d3599abb2637a71c",
+      "amount": 90000,
+      "expenseGiverName": "modern Pharma bill part payment"
+    },
+    {
+      "id": "6a7c09e9d3599abb2637a71e",
+      "amount": 10000,
+      "expenseGiverName": "modern Pharma bill part payment"
+    },
+    {
+      "id": "6a7c09e9d3599abb2637a72d",
+      "amount": 50000,
+      "expenseGiverName": "helpsure health medicine bill payment"
+    },
+    {
+      "id": "6a7c09e9d3599abb2637a709",
+      "amount": 6300,
+      "expenseGiverName": "kusum scientific bill payment 17"
+    },
+    {
+      "id": "6a7c09e9d3599abb2637a710",
+      "amount": 60000,
+      "expenseGiverName": "helpsure health medicine bill payment"
+    },
+    {
+      "id": "6a7c09e9d3599abb2637a78f",
+      "amount": 60000,
+      "expenseGiverName": "Shree ji pharma"
+    },
+    {
+      "id": "6a7c09e9d3599abb2637a790",
+      "amount": 48500,
+      "expenseGiverName": "Mininee ca payment"
+    },
+    {
+      "id": "6a7c09e8d3599abb2637a6fc",
+      "amount": 40000,
+      "expenseGiverName": "helpsure health medicine vendor"
+    },
+    {
+      "id": "6a7c09e3d3599abb2637a476",
+      "amount": 5000,
+      "expenseGiverName": "KAPIL GFC PAYMENT"
+    },
+    {
+      "id": "6a7c09e8d3599abb2637a686",
+      "amount": 50000,
+      "expenseGiverName": "helpsure health medicine part payment"
+    },
+    {
+      "id": "6a7c09e9d3599abb2637a782",
+      "amount": 50000,
+      "expenseGiverName": "shri ji pharma medicine part payment"
+    },
+    {
+      "id": "6a7c09e8d3599abb2637a668",
+      "amount": 50000,
+      "expenseGiverName": "helpsure health medicine part payment"
+    },
+    {
+      "id": "6a7c09e9d3599abb2637a77c",
+      "amount": 45000,
+      "expenseGiverName": "shri ji pharma medicie vendor"
+    },
+    {
+      "id": "6a7c09e9d3599abb2637a77d",
+      "amount": 30000,
+      "expenseGiverName": "shri ji pharma medicie vendor"
+    },
+    {
+      "id": "6a7c09e7d3599abb2637a601",
+      "amount": 14280,
+      "expenseGiverName": "kusum scientific bill payment"
+    },
+    {
+      "id": "6a7c09e7d3599abb2637a602",
+      "amount": 13860,
+      "expenseGiverName": "kusum scientific bill payment"
+    },
+    {
+      "id": "6a7c09e9d3599abb2637a776",
+      "amount": 110000,
+      "expenseGiverName": "Mininee Ca Bill Payment"
+    },
+    {
+      "id": "6a7c09e7d3599abb2637a5c0",
+      "amount": 138863,
+      "expenseGiverName": "modern pharma bill payment for ot stock"
+    },
+    {
+      "id": "6a7c09e3d3599abb2637a3f0",
+      "amount": 5000,
+      "expenseGiverName": "KAPIL SIR GFC PAYMENT"
+    },
+    {
+      "id": "6a7b0241497d20f76ebe5fee",
+      "amount": 50000,
+      "expenseGiverName": "shri ji pharma bill payment"
+    },
+    {
+      "id": "6a7b0241497d20f76ebe5fc2",
+      "amount": 24276,
+      "expenseGiverName": "kusum scientific card bill payment"
+    },
+    {
+      "id": "6a7b0241497d20f76ebe5fec",
+      "amount": 50000,
+      "expenseGiverName": "cranix pharma bill part payment"
+    },
+    {
+      "id": "6a7b0241497d20f76ebe5fb4",
+      "amount": 28455,
+      "expenseGiverName": "medono india bill payment"
+    },
+    {
+      "id": "6a7b0241497d20f76ebe5fa5",
+      "amount": 84477,
+      "expenseGiverName": "modern pharma latest bill clear"
+    },
+    {
+      "id": "6a7b0241497d20f76ebe5ffd",
+      "amount": 40000,
+      "expenseGiverName": "cranix pharma medicine bill part payment"
+    },
+    {
+      "id": "6a79b65b98a01e0b7eaebe13",
+      "amount": 40000,
+      "expenseGiverName": "mishra surgical prp wiles payment"
+    }
+  ],
+  "failed": [],
+  "skippedCountMismatch": [
+    {
+      "date": "2026-04-01",
+      "amount": 50000,
+      "expense": "Medicine Procurement",
+      "expenseType": "Medicine Procurement",
+      "expected": 1,
+      "found": 2
+    }
+  ],
+  "skippedBlocked": [],
+  "backupFile": "delete-manual-vendor-payments-backup-1787213629115.json"
+}

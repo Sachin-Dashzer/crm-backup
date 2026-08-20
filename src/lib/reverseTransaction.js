@@ -220,17 +220,18 @@ export async function reverseTransaction({
       patient.payments.transactions = patient.payments.transactions || [];
       patient.payments.transactions.push(reversal._id);
 
-      // The hook only re-derives pendingAmount when counselling.finlpackage is set. Without
-      // it a stale pendingAmount <= 0 would leave the patient on SURGERY_BOOKED even though
-      // the money is gone — see the original route's history for the 22-patient incident this
-      // fixed. Recompute it here so the status the hook derives is based on a current figure.
-      if (!patient.counselling?.finlpackage) {
-        const total = patient.payments.totalAmount || 0;
-        patient.payments.pendingAmount = Math.max(
-          0,
-          total - patient.payments.amountReceived - (patient.payments.discount || 0),
-        );
-      }
+      // Always recompute here rather than leaving it to the pre-save hook — the hook only
+      // re-derives pendingAmount when counselling.finlpackage is set AND the path wasn't
+      // already modified this save, so a reversal on a patient without a finlpackage (or any
+      // future save-path change) could otherwise leave a stale pendingAmount <= 0, keeping the
+      // patient on SURGERY_BOOKED even though the money is gone — see the original route's
+      // history for the 22-patient incident this fixed. Setting it explicitly here also marks
+      // the path modified, so the hook's own recompute is skipped rather than double-applied.
+      const total = patient.payments.totalAmount || patient.counselling?.finlpackage || 0;
+      patient.payments.pendingAmount = Math.max(
+        0,
+        total - patient.payments.amountReceived - (patient.payments.discount || 0),
+      );
 
       await patient.save({ session: dbSession });
       patientStatus = { before, after: patient.ops?.status, amountReceived: patient.payments.amountReceived };

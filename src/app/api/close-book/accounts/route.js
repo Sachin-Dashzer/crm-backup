@@ -4,6 +4,7 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import connectDB from "@/lib/db";
 import Transactions from "@/models/Transactions";
 import { ACCOUNTS } from "@/constants/bankRouting";
+import { resolveBranchFilter } from "@/lib/branches";
 import {
   buildBalanceMatch,
   buildContraUnionStage,
@@ -39,8 +40,19 @@ export async function GET(request) {
     const filter = searchParams.get("filter") || "";
     const from = searchParams.get("from") || "";
     const to = searchParams.get("to") || new Date().toISOString();
-    const branch = searchParams.get("branch") || "";
+    const branchParam = searchParams.get("branch") || "";
     const seriesDays = searchParams.get("series") || "";
+    const accountsParam = searchParams.get("accounts") || "";
+
+    // Never trust a raw branch string from the client — run it through the same session-aware
+    // resolver every other branch-scoped query in this codebase uses. This route (and its
+    // downstream helpers in accountBalances.js) work with a single branch NAME, not a Mongo
+    // filter, so a collab session's expanded {$in: COLLAB_BRANCHES} shape (which these
+    // string-keyed helpers can't consume) falls back to "no branch filter" rather than crashing
+    // — moot in practice since this route is admin/super-admin only and neither role is ever
+    // branch-locked, but this is the same convention every branch-scoped route follows.
+    const branchFilterObj = resolveBranchFilter(session, branchParam);
+    const branch = typeof branchFilterObj.branch === "string" ? branchFilterObj.branch : "";
 
     // Combined cash-account balance over the trailing N days, for the dashboard's line chart.
     // Contra transfers are deliberately excluded: summed across the FULL combined set they net to
@@ -88,12 +100,18 @@ export async function GET(request) {
       return NextResponse.json({ success: true, series });
     }
 
-    const accounts =
+    const filterAccounts =
       filter === "loans"
         ? LOAN_ACCOUNTS
         : filter === "cash"
           ? ACCOUNTS.filter((a) => !LOAN_ACCOUNTS.includes(a))
           : ACCOUNTS;
+    // Task C4 (dashboard) — an explicit account selection narrows further, server-side, instead
+    // of the caller fetching everything and filtering in JS afterward (which the dashboard used
+    // to do, and which can only ever agree with a server-side filter by coincidence).
+    const accounts = accountsParam
+      ? filterAccounts.filter((a) => accountsParam.split(",").includes(a))
+      : filterAccounts;
 
     const openingFrom = from || "1970-01-01";
     const contraStage = buildContraUnionStage({ from: openingFrom, to, branch });

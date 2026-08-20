@@ -1,0 +1,734 @@
+{
+  "source": "patient-vouncher.xlsx",
+  "created": [
+    {
+      "rowNum": 2,
+      "vendorName": "Helpsure Healthcare Private Limited",
+      "id": "6a86ce0d238d7cd17e7535cd",
+      "amount": 150000
+    },
+    {
+      "rowNum": 3,
+      "vendorName": "Helpsure Healthcare Private Limited",
+      "id": "6a86ce0d238d7cd17e7535ce",
+      "amount": 74617
+    },
+    {
+      "rowNum": 4,
+      "vendorName": "Helpsure Healthcare Private Limited",
+      "id": "6a86ce0d238d7cd17e7535cf",
+      "amount": 127840
+    },
+    {
+      "rowNum": 5,
+      "vendorName": "Helpsure Healthcare Private Limited",
+      "id": "6a86ce0d238d7cd17e7535d0",
+      "amount": 111750
+    },
+    {
+      "rowNum": 6,
+      "vendorName": "Helpsure Healthcare Private Limited",
+      "id": "6a86ce0d238d7cd17e7535d1",
+      "amount": 134039
+    },
+    {
+      "rowNum": 7,
+      "vendorName": "Helpsure Healthcare Private Limited",
+      "id": "6a86ce0d238d7cd17e7535d2",
+      "amount": 161674
+    },
+    {
+      "rowNum": 8,
+      "vendorName": "Helpsure Healthcare Private Limited",
+      "id": "6a86ce0d238d7cd17e7535d3",
+      "amount": 41013
+    },
+    {
+      "rowNum": 9,
+      "vendorName": "Helpsure Healthcare Private Limited",
+      "id": "6a86ce0d238d7cd17e7535d4",
+      "amount": 41013
+    },
+    {
+      "rowNum": 10,
+      "vendorName": "Helpsure Healthcare Private Limited",
+      "id": "6a86ce0d238d7cd17e7535d5",
+      "amount": 183579.48
+    },
+    {
+      "rowNum": 11,
+      "vendorName": "Helpsure Healthcare Private Limited",
+      "id": "6a86ce0d238d7cd17e7535d6",
+      "amount": 41013
+    },
+    {
+      "rowNum": 12,
+      "vendorName": "Helpsure Healthcare Private Limited",
+      "id": "6a86ce0d238d7cd17e7535d7",
+      "amount": 286444
+    },
+    {
+      "rowNum": 13,
+      "vendorName": "Helpsure Healthcare Private Limited",
+      "id": "6a86ce0d238d7cd17e7535d8",
+      "amount": 115000
+    },
+    {
+      "rowNum": 14,
+      "vendorName": "Helpsure Healthcare Private Limited",
+      "id": "6a86ce0d238d7cd17e7535d9",
+      "amount": 679561
+    },
+    {
+      "rowNum": 15,
+      "vendorName": "Helpsure Healthcare Private Limited",
+      "id": "6a86ce0d238d7cd17e7535da",
+      "amount": 367401
+    },
+    {
+      "rowNum": 16,
+      "vendorName": "Helpsure Healthcare Private Limited",
+      "id": "6a86ce0d238d7cd17e7535db",
+      "amount": 214116
+    },
+    {
+      "rowNum": 17,
+      "vendorName": "Modern Pharmaceuticals",
+      "id": "6a86ce0d238d7cd17e7535dc",
+      "amount": 377374
+    },
+    {
+      "rowNum": 18,
+      "vendorName": "Modern Pharmaceuticals",
+      "id": "6a86ce0d238d7cd17e7535dd",
+      "amount": 140963
+    },
+    {
+      "rowNum": 19,
+      "vendorName": "Modern Pharmaceuticals",
+      "id": "6a86ce0d238d7cd17e7535de",
+      "amount": 182769
+    },
+    {
+      "rowNum": 20,
+      "vendorName": "Modern Pharmaceuticals",
+      "id": "6a86ce0d238d7cd17e7535df",
+      "amount": 156186
+    },
+    {
+      "rowNum": 21,
+      "vendorName": "Modern Pharmaceuticals",
+      "id": "6a86ce0d238d7cd17e7535e0",
+      "amount": 79900.8
+    },
+    {
+      "rowNum": 22,
+      "vendorName": "Modern Pharmaceuticals",
+      "id": "6a86ce0d238d7cd17e7535e1",
+      "amount": 61533
+    },
+    {
+      "rowNum": 23,
+      "vendorName": "Modern Pharmaceuticals",
+      "id": "6a86ce0e238d7cd17e7535e2",
+      "amount": 51660
+    },
+    {
+      "rowNum": 24,
+      "vendorName": "Modern Pharmaceuticals",
+      "id": "6a86ce0e238d7cd17e7535e3",
+      "amount": 82593
+    },
+    {
+      "rowNum": 25,
+      "vendorName": "Modern Pharmaceuticals",
+      "id": "6a86ce0e238d7cd17e7535e4",
+      "amount": 87084
+    },
+    {
+      "rowNum": 26,
+      "vendorName": "Modern Pharmaceuticals",
+      "id": "6a86ce0e238d7cd17e7535e5",
+      "amount": 45145.5
+    },
+    {
+      "rowNum": 27,
+      "vendorName": "Modern Pharmaceuticals",
+      "id": "6a86ce0e238d7cd17e7535e6",
+      "amount": 84156.06
+    },
+    {
+      "rowNum": 28,
+      "vendorName": "Modern Pharmaceuticals",
+      "id": "6a86ce0e238d7cd17e7535e7",
+      "amount": 76829
+    },
+    {
+      "rowNum": 29,
+      "vendorName": "Modern Pharmaceuticals",
+      "id": "6a86ce0e238d7cd17e7535e8",
+      "amount": 60341
+    },
+    {
+      "rowNum": 30,
+      "vendorName": "Modern Pharmaceuticals",
+      "id": "6a86ce0e238d7cd17e7535e9",
+      "amount": 12642
+    },
+    {
+      "rowNum": 31,
+      "vendorName": "Modern Pharmaceuticals",
+      "id": "6a86ce0e238d7cd17e7535ea",
+      "amount": 70350
+    },
+    {
+      "rowNum": 32,
+      "vendorName": "Modern Pharmaceuticals",
+      "id": "6a86ce0e238d7cd17e7535eb",
+      "amount": 64098
+    },
+    {
+      "rowNum": 33,
+      "vendorName": "Modern Pharmaceuticals",
+      "id": "6a86ce0e238d7cd17e7535ec",
+      "amount": 108318
+    },
+    {
+      "rowNum": 34,
+      "vendorName": "Modern Pharmaceuticals",
+      "id": "6a86ce0e238d7cd17e7535ed",
+      "amount": 171265
+    },
+    {
+      "rowNum": 35,
+      "vendorName": "Shri Ji Pharma",
+      "id": "6a86ce0e238d7cd17e7535ee",
+      "amount": 410803
+    },
+    {
+      "rowNum": 36,
+      "vendorName": "Shri Ji Pharma",
+      "id": "6a86ce0e238d7cd17e7535ef",
+      "amount": 70445
+    },
+    {
+      "rowNum": 37,
+      "vendorName": "Shri Ji Pharma",
+      "id": "6a86ce0e238d7cd17e7535f0",
+      "amount": 72129
+    },
+    {
+      "rowNum": 38,
+      "vendorName": "Shri Ji Pharma",
+      "id": "6a86ce0e238d7cd17e7535f1",
+      "amount": 8175
+    },
+    {
+      "rowNum": 39,
+      "vendorName": "Shri Ji Pharma",
+      "id": "6a86ce0e238d7cd17e7535f2",
+      "amount": 83692
+    },
+    {
+      "rowNum": 40,
+      "vendorName": "Shri Ji Pharma",
+      "id": "6a86ce0e238d7cd17e7535f3",
+      "amount": 11901
+    },
+    {
+      "rowNum": 41,
+      "vendorName": "Shri Ji Pharma",
+      "id": "6a86ce0e238d7cd17e7535f4",
+      "amount": 136160
+    },
+    {
+      "rowNum": 42,
+      "vendorName": "Shri Ji Pharma",
+      "id": "6a86ce0e238d7cd17e7535f5",
+      "amount": 17184
+    },
+    {
+      "rowNum": 43,
+      "vendorName": "Shri Ji Pharma",
+      "id": "6a86ce0e238d7cd17e7535f6",
+      "amount": 78720
+    },
+    {
+      "rowNum": 44,
+      "vendorName": "Cranix Pharma",
+      "id": "6a86ce0e238d7cd17e7535f7",
+      "amount": 345353
+    },
+    {
+      "rowNum": 45,
+      "vendorName": "Cranix Pharma",
+      "id": "6a86ce0e238d7cd17e7535f8",
+      "amount": 67725
+    },
+    {
+      "rowNum": 46,
+      "vendorName": "Bhawani Drugs Distributors",
+      "id": "6a86ce0e238d7cd17e7535f9",
+      "amount": 210364
+    },
+    {
+      "rowNum": 47,
+      "vendorName": "Bhawani Drugs Distributors",
+      "id": "6a86ce0e238d7cd17e7535fa",
+      "amount": 30359
+    },
+    {
+      "rowNum": 48,
+      "vendorName": "Bhawani Drugs Distributors",
+      "id": "6a86ce0e238d7cd17e7535fb",
+      "amount": 30359
+    },
+    {
+      "rowNum": 49,
+      "vendorName": "Cross Q-Derma",
+      "id": "6a86ce0e238d7cd17e7535fc",
+      "amount": 16612
+    },
+    {
+      "rowNum": 50,
+      "vendorName": "Cross Q-Derma",
+      "id": "6a86ce0e238d7cd17e7535fd",
+      "amount": 16612
+    },
+    {
+      "rowNum": 51,
+      "vendorName": "Cross Q-Derma",
+      "id": "6a86ce0e238d7cd17e7535fe",
+      "amount": 16612
+    },
+    {
+      "rowNum": 52,
+      "vendorName": "Cross Q-Derma",
+      "id": "6a86ce0e238d7cd17e7535ff",
+      "amount": 38350
+    },
+    {
+      "rowNum": 53,
+      "vendorName": "Cross Q-Derma",
+      "id": "6a86ce0e238d7cd17e753600",
+      "amount": 6854
+    },
+    {
+      "rowNum": 54,
+      "vendorName": "Cross Q-Derma",
+      "id": "6a86ce0e238d7cd17e753601",
+      "amount": 16612
+    },
+    {
+      "rowNum": 55,
+      "vendorName": "Cross Q-Derma",
+      "id": "6a86ce0f238d7cd17e753602",
+      "amount": 26315
+    },
+    {
+      "rowNum": 56,
+      "vendorName": "Cross Q-Derma",
+      "id": "6a86ce0f238d7cd17e753603",
+      "amount": 36474
+    },
+    {
+      "rowNum": 57,
+      "vendorName": "Gnvs Pharmaceuticals",
+      "id": "6a86ce0f238d7cd17e753604",
+      "amount": 41370
+    },
+    {
+      "rowNum": 58,
+      "vendorName": "Gnvs Pharmaceuticals",
+      "id": "6a86ce0f238d7cd17e753605",
+      "amount": 24570
+    },
+    {
+      "rowNum": 59,
+      "vendorName": "Gnvs Pharmaceuticals",
+      "id": "6a86ce0f238d7cd17e753606",
+      "amount": 47190.15
+    },
+    {
+      "rowNum": 60,
+      "vendorName": "Gnvs Pharmaceuticals",
+      "id": "6a86ce0f238d7cd17e753607",
+      "amount": 56026.11
+    },
+    {
+      "rowNum": 61,
+      "vendorName": "Godiva Bioadvances Pvt. Ltd.",
+      "id": "6a86ce0f238d7cd17e753608",
+      "amount": 23626
+    },
+    {
+      "rowNum": 62,
+      "vendorName": "Godiva Bioadvances Pvt. Ltd.",
+      "id": "6a86ce0f238d7cd17e753609",
+      "amount": 11450
+    },
+    {
+      "rowNum": 63,
+      "vendorName": "Godiva Bioadvances Pvt. Ltd.",
+      "id": "6a86ce0f238d7cd17e75360a",
+      "amount": 16020
+    },
+    {
+      "rowNum": 64,
+      "vendorName": "Godiva Bioadvances Pvt. Ltd.",
+      "id": "6a86ce0f238d7cd17e75360b",
+      "amount": 28620
+    },
+    {
+      "rowNum": 65,
+      "vendorName": "Mishra Surgical",
+      "id": "6a86ce0f238d7cd17e75360c",
+      "amount": 78000
+    },
+    {
+      "rowNum": 66,
+      "vendorName": "Mishra Surgical",
+      "id": "6a86ce0f238d7cd17e75360d",
+      "amount": 58000
+    },
+    {
+      "rowNum": 67,
+      "vendorName": "Mishra Surgical",
+      "id": "6a86ce0f238d7cd17e75360e",
+      "amount": 38000
+    },
+    {
+      "rowNum": 68,
+      "vendorName": "Ganapati Bio-Tech Ltd.",
+      "id": "6a86ce0f238d7cd17e75360f",
+      "amount": 46875
+    },
+    {
+      "rowNum": 69,
+      "vendorName": "Ganapati Bio-Tech Ltd.",
+      "id": "6a86ce0f238d7cd17e753610",
+      "amount": 93750
+    },
+    {
+      "rowNum": 70,
+      "vendorName": "Pharmachem Distributors",
+      "id": "6a86ce0f238d7cd17e753611",
+      "amount": 52500
+    },
+    {
+      "rowNum": 71,
+      "vendorName": "KAPIL GFC",
+      "id": "6a86ce0f238d7cd17e753612",
+      "amount": 5000
+    },
+    {
+      "rowNum": 72,
+      "vendorName": "KAPIL GFC",
+      "id": "6a86ce0f238d7cd17e753613",
+      "amount": 20000
+    },
+    {
+      "rowNum": 73,
+      "vendorName": "KAPIL GLUTA",
+      "id": "6a86ce0f238d7cd17e753614",
+      "amount": 38400
+    },
+    {
+      "rowNum": 74,
+      "vendorName": "KAPIL GLUTA",
+      "id": "6a86ce0f238d7cd17e753615",
+      "amount": 7000
+    },
+    {
+      "rowNum": 75,
+      "vendorName": "KAPIL GLUTA",
+      "id": "6a86ce0f238d7cd17e753616",
+      "amount": 14000
+    },
+    {
+      "rowNum": 76,
+      "vendorName": "VEJOVIS MEDLINE",
+      "id": "6a86ce0f238d7cd17e753617",
+      "amount": 22750
+    },
+    {
+      "rowNum": 77,
+      "vendorName": "VEJOVIS MEDLINE",
+      "id": "6a86ce0f238d7cd17e753618",
+      "amount": 42656
+    },
+    {
+      "rowNum": 78,
+      "vendorName": "Raaveetech Pharma",
+      "id": "6a86ce0f238d7cd17e753619",
+      "amount": 20506
+    },
+    {
+      "rowNum": 79,
+      "vendorName": "Raaveetech Pharma",
+      "id": "6a86ce0f238d7cd17e75361a",
+      "amount": 20506
+    },
+    {
+      "rowNum": 80,
+      "vendorName": "Medono India",
+      "id": "6a86ce0f238d7cd17e75361b",
+      "amount": 37255
+    },
+    {
+      "rowNum": 81,
+      "vendorName": "Medono India",
+      "id": "6a86ce0f238d7cd17e75361c",
+      "amount": 11800
+    },
+    {
+      "rowNum": 82,
+      "vendorName": "Medono India",
+      "id": "6a86ce0f238d7cd17e75361d",
+      "amount": 13338
+    },
+    {
+      "rowNum": 83,
+      "vendorName": "Medono India",
+      "id": "6a86ce0f238d7cd17e75361e",
+      "amount": 67499
+    },
+    {
+      "rowNum": 84,
+      "vendorName": "Medono India",
+      "id": "6a86ce0f238d7cd17e75361f",
+      "amount": 20446
+    },
+    {
+      "rowNum": 85,
+      "vendorName": "Kusum Scientific",
+      "id": "6a86ce0f238d7cd17e753620",
+      "amount": 24276
+    },
+    {
+      "rowNum": 86,
+      "vendorName": "Kusum Scientific",
+      "id": "6a86ce10238d7cd17e753621",
+      "amount": 13860
+    },
+    {
+      "rowNum": 87,
+      "vendorName": "Kusum Scientific",
+      "id": "6a86ce10238d7cd17e753622",
+      "amount": 14280
+    },
+    {
+      "rowNum": 88,
+      "vendorName": "Kusum Scientific",
+      "id": "6a86ce10238d7cd17e753623",
+      "amount": 24276
+    },
+    {
+      "rowNum": 89,
+      "vendorName": "Kusum Scientific",
+      "id": "6a86ce10238d7cd17e753624",
+      "amount": 6300
+    },
+    {
+      "rowNum": 90,
+      "vendorName": "Kusum Scientific",
+      "id": "6a86ce10238d7cd17e753625",
+      "amount": 24276
+    },
+    {
+      "rowNum": 91,
+      "vendorName": "Kusum Scientific",
+      "id": "6a86ce10238d7cd17e753626",
+      "amount": 30576
+    },
+    {
+      "rowNum": 92,
+      "vendorName": "Kusum Scientific",
+      "id": "6a86ce10238d7cd17e753627",
+      "amount": 33500
+    },
+    {
+      "rowNum": 93,
+      "vendorName": "Kusum Scientific",
+      "id": "6a86ce10238d7cd17e753628",
+      "amount": 24276
+    },
+    {
+      "rowNum": 94,
+      "vendorName": "Kusum Scientific",
+      "id": "6a86ce10238d7cd17e753629",
+      "amount": 24276
+    },
+    {
+      "rowNum": 95,
+      "vendorName": "Kusum Scientific",
+      "id": "6a86ce10238d7cd17e75362a",
+      "amount": 6300
+    },
+    {
+      "rowNum": 96,
+      "vendorName": "Kusum Scientific",
+      "id": "6a86ce10238d7cd17e75362b",
+      "amount": 24276
+    },
+    {
+      "rowNum": 97,
+      "vendorName": "Kusum Scientific",
+      "id": "6a86ce10238d7cd17e75362c",
+      "amount": 24276
+    },
+    {
+      "rowNum": 98,
+      "vendorName": "Yurexa Wellness",
+      "id": "6a86ce10238d7cd17e75362d",
+      "amount": 19200
+    },
+    {
+      "rowNum": 99,
+      "vendorName": "Medica Solutions",
+      "id": "6a86ce10238d7cd17e75362e",
+      "amount": 75
+    },
+    {
+      "rowNum": 100,
+      "vendorName": "Medica Solutions",
+      "id": "6a86ce10238d7cd17e75362f",
+      "amount": 13860
+    },
+    {
+      "rowNum": 101,
+      "vendorName": "Medica Solutions",
+      "id": "6a86ce10238d7cd17e753630",
+      "amount": 13860
+    },
+    {
+      "rowNum": 102,
+      "vendorName": "Medica Solutions",
+      "id": "6a86ce10238d7cd17e753631",
+      "amount": 13860
+    },
+    {
+      "rowNum": 103,
+      "vendorName": "Shivoham Dermatology Private Limited",
+      "id": "6a86ce10238d7cd17e753632",
+      "amount": 37100
+    },
+    {
+      "rowNum": 104,
+      "vendorName": "Shivoham Dermatology Private Limited",
+      "id": "6a86ce10238d7cd17e753633",
+      "amount": 4294
+    },
+    {
+      "rowNum": 105,
+      "vendorName": "Shivoham Dermatology Private Limited",
+      "id": "6a86ce10238d7cd17e753634",
+      "amount": 4294
+    },
+    {
+      "rowNum": 106,
+      "vendorName": "A Square Pharmaceuticals",
+      "id": "6a86ce10238d7cd17e753635",
+      "amount": 5500
+    },
+    {
+      "rowNum": 107,
+      "vendorName": "Minenii Corporate Services Private Limited",
+      "id": "6a86ce10238d7cd17e753636",
+      "amount": 50700
+    },
+    {
+      "rowNum": 108,
+      "vendorName": "Minenii Corporate Services Private Limited",
+      "id": "6a86ce10238d7cd17e753637",
+      "amount": 107800
+    },
+    {
+      "rowNum": 109,
+      "vendorName": "Minenii Corporate Services Private Limited",
+      "id": "6a86ce10238d7cd17e753638",
+      "amount": 107800
+    },
+    {
+      "rowNum": 110,
+      "vendorName": "Minenii Corporate Services Private Limited",
+      "id": "6a86ce10238d7cd17e753639",
+      "amount": 129360
+    },
+    {
+      "rowNum": 111,
+      "vendorName": "Minenii Corporate Services Private Limited",
+      "id": "6a86ce10238d7cd17e75363a",
+      "amount": 43120
+    },
+    {
+      "rowNum": 112,
+      "vendorName": "Minenii Corporate Services Private Limited",
+      "id": "6a86ce10238d7cd17e75363b",
+      "amount": 129360
+    },
+    {
+      "rowNum": 113,
+      "vendorName": "Minenii Corporate Services Private Limited",
+      "id": "6a86ce10238d7cd17e75363c",
+      "amount": 129360
+    },
+    {
+      "rowNum": 114,
+      "vendorName": "Phmg and Associates",
+      "id": "6a86ce10238d7cd17e75363d",
+      "amount": 233200
+    },
+    {
+      "rowNum": 115,
+      "vendorName": "Phmg and Associates",
+      "id": "6a86ce10238d7cd17e75363e",
+      "amount": 64800
+    },
+    {
+      "rowNum": 116,
+      "vendorName": "Phmg and Associates",
+      "id": "6a86ce10238d7cd17e75363f",
+      "amount": 64800
+    },
+    {
+      "rowNum": 117,
+      "vendorName": "Phmg and Associates",
+      "id": "6a86ce10238d7cd17e753640",
+      "amount": 64800
+    },
+    {
+      "rowNum": 118,
+      "vendorName": "Phmg and Associates",
+      "id": "6a86ce10238d7cd17e753641",
+      "amount": 25920
+    },
+    {
+      "rowNum": 119,
+      "vendorName": "Phmg and Associates",
+      "id": "6a86ce10238d7cd17e753642",
+      "amount": 12960
+    },
+    {
+      "rowNum": 120,
+      "vendorName": "Phmg and Associates",
+      "id": "6a86ce11238d7cd17e753643",
+      "amount": 77760
+    },
+    {
+      "rowNum": 121,
+      "vendorName": "Phmg and Associates",
+      "id": "6a86ce11238d7cd17e753644",
+      "amount": 77760
+    },
+    {
+      "rowNum": 122,
+      "vendorName": "Adequate Electro Mechinical Engineering",
+      "id": "6a86ce11238d7cd17e753645",
+      "amount": 160150
+    }
+  ],
+  "failed": [],
+  "skippedVendorNotFound": [],
+  "alreadyImported": []
+}

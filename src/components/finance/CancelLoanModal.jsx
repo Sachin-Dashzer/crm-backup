@@ -21,6 +21,7 @@ export default function CancelLoanModal({ transaction, onClose, onDone }) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const [reason, setReason] = useState("Loan cancelled");
+  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [done, setDone] = useState(null); // result payload once submitted
 
   const id = transaction?._id;
@@ -50,8 +51,11 @@ export default function CancelLoanModal({ transaction, onClose, onDone }) {
     };
   }, [id]);
 
-  const settlementTransfer = loanState?.settlementTransfer || null;
-  const isCaseB = !!settlementTransfer;
+  // D1/D2 — the probe now returns EVERY outstanding settlement, not one, since a loan can be
+  // settled more than once (e.g. a fee-adjusted partial settlement followed by a top-up).
+  const settlementTransfers = loanState?.settlementTransfers || [];
+  const isCaseB = settlementTransfers.length > 0;
+  const totalSettled = loanState?.totalSettled || 0;
   const blocked = state?.blockedReason;
   const amount = state?.remaining ?? transaction?.amount ?? 0;
 
@@ -64,7 +68,7 @@ export default function CancelLoanModal({ transaction, onClose, onDone }) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ reason: reason.trim() }),
+        body: JSON.stringify({ reason: reason.trim(), date }),
       });
       const d = await res.json();
       if (!res.ok) {
@@ -103,6 +107,15 @@ export default function CancelLoanModal({ transaction, onClose, onDone }) {
             <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">
               {done.message}
             </div>
+            {/* D7 — reversing a transplant payment can move the patient off SURGERY_BOOKED; show
+                that consequence rather than leaving it to be discovered on the patient's own page. */}
+            {done.patientStatus && done.patientStatus.before !== done.patientStatus.after && (
+              <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
+                Patient status changed: <b>{done.patientStatus.before || "—"}</b> →{" "}
+                <b>{done.patientStatus.after || "—"}</b> (amount received now{" "}
+                {formatCurrency(done.patientStatus.amountReceived)})
+              </div>
+            )}
             <button
               onClick={onClose}
               className="w-full py-2.5 bg-gray-100 text-gray-700 font-semibold rounded-xl hover:bg-gray-200"
@@ -130,7 +143,11 @@ export default function CancelLoanModal({ transaction, onClose, onDone }) {
               <div className="flex justify-between pt-1 border-t border-gray-200 mt-1">
                 <span className="text-gray-500">Status</span>
                 <span className={`font-medium ${isCaseB ? "text-sky-700" : "text-gray-700"}`}>
-                  {isCaseB ? `Settled → ${settlementTransfer.toAccount}` : "Not yet settled"}
+                  {isCaseB
+                    ? settlementTransfers.length > 1
+                      ? `Settled in ${settlementTransfers.length} parts → ${formatCurrency(totalSettled)}`
+                      : `Settled → ${settlementTransfers[0].toAccount}`
+                    : "Not yet settled"}
                 </span>
               </div>
             </div>
@@ -141,13 +158,26 @@ export default function CancelLoanModal({ transaction, onClose, onDone }) {
               </div>
             ) : (
               <>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Reason *</label>
-                  <input
-                    value={reason}
-                    onChange={(e) => setReason(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                  />
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                      Cancellation date
+                    </label>
+                    <input
+                      type="date"
+                      value={date}
+                      onChange={(e) => setDate(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Reason *</label>
+                    <input
+                      value={reason}
+                      onChange={(e) => setReason(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                    />
+                  </div>
                 </div>
 
                 {/* The consequence, in words, with real figures — before the button is pressed. */}
@@ -164,10 +194,20 @@ export default function CancelLoanModal({ transaction, onClose, onDone }) {
                           for <b>{patientName}</b>
                         </>
                       ) : null}{" "}
-                      and undo the transfer of <b>{formatCurrency(settlementTransfer.amount)}</b> from{" "}
-                      <b>{account}</b> to <b>{settlementTransfer.toAccount}</b>. Revenue drops by{" "}
-                      {formatCurrency(amount)}; both account balances return to where they were
-                      before settlement.
+                      and undo{" "}
+                      {settlementTransfers.length > 1 ? (
+                        <>
+                          <b>{settlementTransfers.length}</b> settlement transfers totalling{" "}
+                          <b>{formatCurrency(totalSettled)}</b> out of <b>{account}</b>
+                        </>
+                      ) : (
+                        <>
+                          the transfer of <b>{formatCurrency(settlementTransfers[0].amount)}</b> from{" "}
+                          <b>{account}</b> to <b>{settlementTransfers[0].toAccount}</b>
+                        </>
+                      )}
+                      . Revenue drops by {formatCurrency(amount)}; every account balance involved
+                      returns to where it was before settlement.
                     </p>
                   ) : (
                     <p>
