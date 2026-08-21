@@ -1,35 +1,3 @@
-// scripts/rent-opening-payables-march-2026.mjs
-//
-// Creates the missing March 2026 "opening payable" (pre-April) Rent payables — the root cause
-// of the 12 "NO MATCHING PAYABLE" rows scripts/rent-expense-transactions-import.mjs reported.
-// Those 12 transaction rows all reference period 3/2026, which predates every payables-import
-// script (they start at April), so no Payable existed for them to settle against.
-//
-// The six amounts below come directly from Dashzer's own "Opening Payable (pre-Apr)" figures
-// and were cross-checked against the transactions.xlsx source data before being embedded: they
-// equal, exactly, the sum of every "3/2026"-period Allocated Amount in that sheet for the same
-// sub-type. That agreement is what confirms these are the right totals to open with — a
-// payable sized to exactly what the historical payments were clearing, not an arbitrary figure.
-//   Rent-Backend Basement             34,400.00   = row2
-//   Rent-Backend upper ground floor   67,547.10   = row29
-//   Rent-GD clinic                   262,880.00   = row6 + row17 + row28 + row37
-//   Rent-Manu Vaishali Clinic         91,240.00   = row4 + row19
-//   Rent-Mansi Vaishali clinic        91,240.00   = row5 + row21
-//   Rent-Hyderebad Clinic            199,800.00   = row16 + row39
-// The other six Rent sub-types (1st Floor, 4th floor/Top floor, CD Clinic, Staff Flat, Deepak
-// staff flat, P House Rent) have no opening balance ("-" in the source) and are NOT created —
-// there is nothing pre-April for them to owe.
-//
-// AFTER this script runs successfully, re-run rent-expense-transactions-import.mjs — its
-// payable lookup is live (queried at run time, never cached), so it will pick up these newly
-// created March payables automatically and import the 12 previously-unmatched rows without any
-// further change.
-//
-// Usage:
-//   node scripts/rent-opening-payables-march-2026.mjs                  # dry run
-//   node scripts/rent-opening-payables-march-2026.mjs --dump-json      # write PAYLOAD out, no DB
-//   node scripts/rent-opening-payables-march-2026.mjs --apply          # write
-//   node scripts/rent-opening-payables-march-2026.mjs --apply --allow-duplicates
 
 import mongoose from "mongoose";
 import fs from "fs";
@@ -58,17 +26,21 @@ const PAYLOAD = {
   meta: {
     source: "Dashzer-provided opening balance image, cross-checked against transactions.xlsx",
     period: { month: 3, year: 2026 },
-    totalOpeningPayable: 747107.1,
+    totalOpeningPayable: 877867.1,
   },
   entries: [
-    { expenseSubType: "Rent-Backend Basement", totalAmount: 34400.0, branch: "Delhi" },
-    { expenseSubType: "Rent-Backend upper ground floor", totalAmount: 67547.1, branch: "Delhi" },
-    { expenseSubType: "Rent-GD clinic", totalAmount: 262880.0, branch: "Delhi" },
-    { expenseSubType: "Rent-Manu Vaishali Clinic", totalAmount: 91240.0, branch: "Delhi" },
-    { expenseSubType: "Rent-Mansi Vaishali clinic", totalAmount: 91240.0, branch: "Delhi" },
-    { expenseSubType: "Rent-Hyderebad Clinic", totalAmount: 199800.0, branch: "Hyderabad" },
+    { expenseSubType: "Rent-Backend Basement", totalAmount: 34400.0, branch: "Delhi" , landlord: "Satpal Singh" },
+    { expenseSubType: "Rent-Backend upper ground floor", totalAmount: 198307.10, branch: "Delhi" , landlord: "Satpal Singh" },
+    { expenseSubType: "Rent-GD clinic", totalAmount: 262880.0, branch: "Delhi" , landlord: "NARESH PAMNANI" },
+    { expenseSubType: "Rent-Manu Vaishali Clinic", totalAmount: 91240.0, branch: "Delhi" , landlord: "MANU AGGARWAL" },
+    { expenseSubType: "Rent-Mansi Vaishali clinic", totalAmount: 91240.0, branch: "Delhi" , landlord: "MANSI AGGARWAL" },
+    { expenseSubType: "Rent-Hyderebad Clinic", totalAmount: 199800.0, branch: "Hyderabad" , landlord: "VENKATA ROA YALAMANCHI" },
   ],
 };
+
+// Landlord names above are spelled to match rent-payables-apr-jul-2026.mjs exactly (same
+// physical units, same landlords, before April's rent changes) so both scripts resolve to the
+// identical vendor record rather than creating near-duplicate vendors for typo'd spellings.
 
 // --- args ------------------------------------------------------------------
 const args = process.argv.slice(2);
@@ -79,6 +51,17 @@ const DUMP_JSON = args.includes("--dump-json");
 const IMPORT_IDENTITY = { name: "Bulk Import", email: "import@system", branch: "" };
 const inr = (n) => "Rs " + Number(n).toLocaleString("en-IN", { maximumFractionDigits: 2 });
 const r2 = (n) => Math.round((Number(n) || 0) * 100) / 100;
+
+// --- landlord -> vendor resolution ------------------------------------------
+// Same mechanism as rent-payables-apr-jul-2026.mjs: explicit overrides checked first
+// (confirmed against the real vendor DB), otherwise a case-insensitive exact-name match,
+// otherwise (on --apply) a new vendor is created.
+const normalizeLandlord = (name) => String(name || "").trim().replace(/\s+/g, " ");
+const escapeRegExp = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+const LANDLORD_VENDOR_OVERRIDES = {
+  "VENKATA ROA YALAMANCHI": "6a882241ec4354da4e5eca13",
+};
 
 if (DUMP_JSON) {
   const out = "rent-opening-payables-march-2026.json";
@@ -132,13 +115,78 @@ async function run() {
 
   await mongoose.connect(MONGODB_URI, { serverSelectionTimeoutMS: 8000 });
   const Payable = mongoose.models.Payable || mongoose.model("Payable", new mongoose.Schema({}, { strict: false, collection: "payables" }));
+  const Vendor = mongoose.models.Vendor || mongoose.model("Vendor", new mongoose.Schema({}, { strict: false, collection: "vendors" }));
+
+  // --- resolve each unique landlord name to a Vendor, creating one if none exists ---
+  console.log("Resolving landlords against the vendor database...");
+  const uniqueLandlords = new Map(); // normalized-lowercase -> first-seen display name
+  for (const e of PAYLOAD.entries) {
+    const label = normalizeLandlord(e.landlord);
+    if (!label) continue;
+    const key = label.toLowerCase();
+    if (!uniqueLandlords.has(key)) uniqueLandlords.set(key, label);
+  }
+
+  const vendorByKey = new Map(); // normalized-lowercase -> { _id, name } | null (not yet created, dry run only)
+  const overridden = [];
+  const matchedVendors = [];
+  const vendorsToCreate = [];
+  for (const [key, label] of uniqueLandlords) {
+    const overrideId = LANDLORD_VENDOR_OVERRIDES[label];
+    if (overrideId) {
+      const vendor = await Vendor.findById(overrideId).select("_id name").lean();
+      if (!vendor) {
+        throw new Error(`LANDLORD_VENDOR_OVERRIDES["${label}"] = "${overrideId}" does not match any vendor — check the ID.`);
+      }
+      vendorByKey.set(key, vendor);
+      overridden.push({ landlord: label, vendorId: String(vendor._id), vendorName: vendor.name });
+      continue;
+    }
+
+    const existing = await Vendor.findOne({ name: { $regex: `^${escapeRegExp(label)}$`, $options: "i" } })
+      .select("_id name")
+      .lean();
+    if (existing) {
+      vendorByKey.set(key, existing);
+      matchedVendors.push({ landlord: label, vendorId: String(existing._id), vendorName: existing.name });
+    } else if (APPLY) {
+      const created = await Vendor.create({
+        name: label,
+        DealsIn: "Rent",
+        createdBy: { ...IMPORT_IDENTITY, date: new Date() },
+        editors: [],
+      });
+      vendorByKey.set(key, { _id: created._id, name: created.name });
+      vendorsToCreate.push({ landlord: label, vendorId: String(created._id) });
+    } else {
+      vendorByKey.set(key, null); // resolved at --apply time
+      vendorsToCreate.push({ landlord: label, vendorId: null });
+    }
+  }
+
+  console.log(`  ${overridden.length} landlord(s) resolved via explicit override:`);
+  overridden.forEach((m) => console.log(`    "${m.landlord}" -> ${m.vendorName} (${m.vendorId})`));
+  console.log(`  ${matchedVendors.length} landlord(s) matched an existing vendor by name:`);
+  matchedVendors.forEach((m) => console.log(`    "${m.landlord}" -> ${m.vendorName} (${m.vendorId})`));
+  console.log(`  ${vendorsToCreate.length} landlord(s) ${APPLY ? "had no existing vendor — created" : "would need a NEW vendor created on --apply"}:`);
+  vendorsToCreate.forEach((v) => console.log(`    "${v.landlord}"${v.vendorId ? ` -> ${v.vendorId}` : ""}`));
+  console.log("");
+
+  const vendorFor = (e) => {
+    const label = normalizeLandlord(e.landlord);
+    return label ? vendorByKey.get(label.toLowerCase()) : null;
+  };
 
   console.log("Checking the monthly duplicate guard (payee.kind + payee.label + purpose + period)...");
   const dupes = [];
   for (const e of PAYLOAD.entries) {
+    const vendor = vendorFor(e);
+    if (APPLY === false && vendor === null && normalizeLandlord(e.landlord)) continue;
+    const query = vendor
+      ? { "payee.kind": "VENDOR", "payee.refId": vendor._id, "payee.label": `${vendor.name} — ${e.expenseSubType}` }
+      : { "payee.kind": "RENT_UNIT", "payee.label": e.expenseSubType };
     const existing = await Payable.findOne({
-      "payee.kind": "RENT_UNIT",
-      "payee.label": e.expenseSubType,
+      ...query,
       purpose: "RENT",
       "period.month": PAYLOAD.meta.period.month,
       "period.year": PAYLOAD.meta.period.year,
@@ -180,8 +228,11 @@ async function run() {
       continue;
     }
     try {
+      const vendor = vendorFor(e);
       const doc = await Payable.create({
-        payee: { kind: "RENT_UNIT", refId: null, label: e.expenseSubType },
+        payee: vendor
+          ? { kind: "VENDOR", refId: vendor._id, label: `${vendor.name} — ${e.expenseSubType}` }
+          : { kind: "RENT_UNIT", refId: null, label: e.expenseSubType },
         purpose: "RENT",
         expenseCategory: "Rent",
         expenseSubType: e.expenseSubType,
@@ -192,6 +243,10 @@ async function run() {
         remarks: "Opening payable (pre-April 2026) — bulk import",
         isCancelled: false,
         costAlreadyRecognised: false,
+        // Anchored to the 1st of the opening period, not whatever day this script runs — the
+        // Liabilities page's opening/closing rollups key off createdAt (buildPayableGroupedStages),
+        // and a bare `{ strict: false }` schema with no timestamps:true leaves it unset otherwise.
+        createdAt: new Date(Date.UTC(PAYLOAD.meta.period.year, PAYLOAD.meta.period.month - 1, 1)),
         createdBy: { ...IMPORT_IDENTITY, branch: e.branch, date: new Date() },
         log: [
           {

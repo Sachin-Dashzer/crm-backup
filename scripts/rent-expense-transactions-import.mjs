@@ -1958,9 +1958,12 @@ async function run() {
       continue;
     }
 
+    // Matched on expenseSubType (a top-level Payable field set by both payable-creation
+    // scripts) rather than payee.kind/payee.label — those two scripts now link rent payables
+    // to a real Vendor (payee.kind: "VENDOR", payee.label: "<vendor> — <sub-type>"), so a
+    // payee.kind: "RENT_UNIT" match would silently find nothing once that ran.
     const payable = await Payable.findOne({
-      "payee.kind": "RENT_UNIT",
-      "payee.label": e.expenseSubType,
+      expenseSubType: e.expenseSubType,
       purpose: "RENT",
       "period.month": e.period.month,
       "period.year": e.period.year,
