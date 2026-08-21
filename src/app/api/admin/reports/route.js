@@ -130,7 +130,7 @@ export async function GET(request) {
 
       // ==================== STAFF REPORTS ====================
       case "employees-all":
-        data = await generateEmployeesAllReport({ branch, employees: allEmployees });
+        data = await generateEmployeesAllReport();
         break;
 
       case "counsellors":
@@ -1396,28 +1396,46 @@ async function generateBranchPatientsReport(filters) {
   return branchData;
 }
 
-async function generateEmployeesAllReport({ branch, employees }) {
-  const patientCounts = await Patient.aggregate([
-    ...(branch ? [{ $match: { "personal.branch": branch } }] : []),
-    { $group: { _id: "$counselling.counsellor", count: { $sum: 1 } } },
-  ]);
-  const countMap = {};
-  patientCounts.forEach(({ _id, count }) => {
-    if (_id) countMap[_id.toString()] = count;
-  });
+// Independent fetch, deliberately not reusing the route's shared `allEmployees` — that one is
+// pre-filtered to isactive:true and pre-projected to 4 fields for the OTHER staff reports
+// (Counsellor/Agent/Doctor/etc. performance, which only need name/role/email/phone). "All
+// Employees Report" means all of them — active AND inactive, every real field on the document.
+//
+// Two real bugs this replaces:
+//   - e.branch / e.isactive were read from a query that never selected either field, so every
+//     row showed a blank Branch and "Inactive" (even for active staff) regardless of reality —
+//     and since e.branch was always undefined, the branch filter's `!e.branch || ...` was
+//     always true, silently showing every branch no matter what was selected.
+//   - "Patient Count" was a Patient aggregation keyed on counselling.counsellor ONLY, so every
+//     non-Counsellor role (Doctor/Technician/Implanter/Agent/HR) always showed 0 regardless of
+//     how many patients they actually handled.
+// There is in fact no `branch` field on the Employee model at all (see src/models/Employee.js)
+// — staff aren't branch-scoped here — so this report no longer pretends to filter by one.
+async function generateEmployeesAllReport() {
+  const employees = await Employee.find({})
+    .select("name role email phone isactive salaryStructure incentiveRate patient createdAt updatedAt")
+    .sort({ name: 1 })
+    .lean();
 
-  const filtered = branch
-    ? employees.filter((e) => !e.branch || e.branch === branch)
-    : employees;
-
-  return filtered.map((e) => ({
+  return employees.map((e) => ({
+    "Employee ID": e._id.toString(),
     Name: e.name || "",
     Role: e.role || "",
     Email: e.email || "",
     Phone: e.phone || "",
-    Branch: e.branch || "",
-    "Patient Count": countMap[e._id.toString()] || 0,
     Status: e.isactive ? "Active" : "Inactive",
+    // Employee.patient[] is kept in sync by the patient create/update/delete routes — the same
+    // field src/app/api/employees/get-patients/route.js already treats as authoritative,
+    // covering every role (not just counsellors).
+    "Total Patients": Array.isArray(e.patient) ? e.patient.length : 0,
+    "Base Salary": e.salaryStructure?.baseSalary ?? "",
+    "Salary Type": e.salaryStructure?.salaryType || "",
+    "Salary Effective From": e.salaryStructure?.effectiveFrom
+      ? new Date(e.salaryStructure.effectiveFrom).toLocaleDateString()
+      : "",
+    "Incentive Rate": e.incentiveRate ?? "",
+    "Joined On": e.createdAt ? new Date(e.createdAt).toLocaleDateString() : "",
+    "Last Updated": e.updatedAt ? new Date(e.updatedAt).toLocaleDateString() : "",
   }));
 }
 

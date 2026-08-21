@@ -173,7 +173,9 @@ export async function GET(request) {
       ...buildReceivableAggregationStages(Transactions.collection.name),
     ];
     if (status && status !== "Cancelled") stages.push({ $match: { status } });
-    if (ageing) stages.push({ $match: { ageingBucket: ageing } });
+    // Matches the ageing chips' own definition (pending: { $gt: 0 }) — see the identical fix and
+    // comment in payables/grouped/route.js.
+    if (ageing) stages.push({ $match: { ageingBucket: ageing, pending: { $gt: 0 } } });
     stages.push({ $sort: { dueDate: 1, createdAt: -1 } });
 
     const allRows = await Receivable.aggregate(stages);

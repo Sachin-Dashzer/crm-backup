@@ -103,7 +103,7 @@ export default function AdminCollabSettlementPage() {
 
   const deleteSettlement = async (s) => {
     const linkedCount =
-      (s.linkedTransaction ? 1 : 0) + (s.linkedRevenueTransactions?.length || 0);
+      s.generatedTransactions?.length || 0;
     const ok = window.confirm(
       `Permanently delete this settlement?\n\n` +
         `  ${s.clinic} · ${s.direction === "THEY_PAID" ? "They paid us" : "We paid them"} · ${formatCurrency(s.amount)}\n` +
@@ -586,7 +586,7 @@ export default function AdminCollabSettlementPage() {
                   <div className="divide-y divide-gray-100 border border-gray-200 rounded-lg">
                     {settlements.map((s) => {
                       const linkedCount =
-                        (s.linkedTransaction ? 1 : 0) + (s.linkedRevenueTransactions?.length || 0);
+                        s.generatedTransactions?.length || 0;
                       return (
                         <div
                           key={s._id}
@@ -971,10 +971,15 @@ function SettleModal({ clinic, balance, openCases, onClose, onSuccess, toast }) 
   const [furtherMode, setFurtherMode] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  // Optional per-case revenue allocation — THEY_PAID only. Cases with a
-  // positive caseNet (clinic collected more than their share for that case)
-  // are the ones that can be attributed as revenue when settled.
-  const eligibleCases = openCases.filter((c) => c.caseNet > 0);
+  // Optional per-case allocation, for either direction. THEY_PAID: cases with a positive
+  // caseNet (clinic collected more than their share) each carry their own Receivable
+  // (CollabCase.clinicShareReceivable) that an allocation settles. WE_PAID: cases with a
+  // negative caseNet each carry their own Payable (clinicSharePayable) that an allocation pays
+  // down. See settlements/create/route.js — an allocated amount is what actually clears that
+  // case's own document; unallocated amount is a lump settlement not tied to any one case.
+  const eligibleCases = openCases.filter((c) =>
+    direction === "THEY_PAID" ? c.caseNet > 0 : c.caseNet < 0,
+  );
   const [allocations, setAllocations] = useState({}); // caseId -> amount string
 
   const allocatedTotal = Object.values(allocations).reduce(
@@ -986,6 +991,13 @@ function SettleModal({ clinic, balance, openCases, onClose, onSuccess, toast }) 
   const setAllocation = (caseId, value) => {
     setAllocations((prev) => ({ ...prev, [caseId]: value }));
   };
+
+  // eligibleCases is a different case SET per direction (positive vs. negative caseNet) — a
+  // stale allocation entered under one direction must not silently ride along after switching
+  // to the other, where it would be sent for a case no longer even shown as allocatable.
+  useEffect(() => {
+    setAllocations({});
+  }, [direction]);
 
   const handleSubmit = async () => {
     if (!amount || parseFloat(amount) <= 0) {
@@ -1021,7 +1033,7 @@ function SettleModal({ clinic, balance, openCases, onClose, onSuccess, toast }) 
           remarks,
           receiptMode: direction === "THEY_PAID" ? receiptMode : "",
           furtherMode,
-          coveredCases: direction === "THEY_PAID" ? coveredCases : undefined,
+          coveredCases,
         }),
       });
       const data = await res.json();
@@ -1167,14 +1179,15 @@ function SettleModal({ clinic, balance, openCases, onClose, onSuccess, toast }) 
             />
           </div>
 
-          {direction === "THEY_PAID" && eligibleCases.length > 0 && (
+          {eligibleCases.length > 0 && (
             <div className="border-t border-gray-100 pt-4">
               <p className="text-sm font-medium text-gray-700 mb-1">
                 Attribute to cases (optional)
               </p>
               <p className="text-xs text-gray-500 mb-3">
-                Only allocated amounts generate revenue for a patient's case. Unallocated amount just
-                settles the balance with no revenue recognised.
+                {direction === "THEY_PAID"
+                  ? "Only allocated amounts settle that case's receivable and recognise revenue. Unallocated amount just settles the balance with no revenue recognised."
+                  : "Only allocated amounts pay down that case's own payable. Unallocated amount just settles the balance without closing any specific case."}
               </p>
               <div className="space-y-2 max-h-50 overflow-y-auto">
                 {eligibleCases.map((c) => (
@@ -1188,7 +1201,7 @@ function SettleModal({ clinic, balance, openCases, onClose, onSuccess, toast }) 
                       value={allocations[c._id] || ""}
                       onChange={(e) => setAllocation(c._id, e.target.value)}
                       min="0"
-                      max={c.caseNet}
+                      max={Math.abs(c.caseNet)}
                       className="w-28 px-2 py-1 border border-gray-300 rounded text-sm"
                       placeholder="0"
                     />

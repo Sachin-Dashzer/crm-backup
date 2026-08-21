@@ -1,41 +1,3 @@
-// scripts/rent-expense-transactions-import.mjs
-//
-// Bulk-imports EXPENSE transactions AGAINST the Rent payables already created by
-// scripts/rent-payables-apr-jul-2026.mjs (and scripts/april-rent-payables.mjs before it) —
-// each row is one PAYMENT LEG, settling a specific month's payable by a specific amount.
-//
-// WHY "legs": a single real-world payment (same date + narration + total Payment Amount) can
-// cover more than one month's payable — e.g. clearing an old balance plus part of the current
-// month in one bank transfer. The source sheet already splits those into one row per leg, each
-// carrying its own Allocated Amount and its own Payable Match Key (sub-type + month/year). This
-// script creates ONE Transaction per row/leg — never one per physical payment — because each
-// Payable's paid/pending is aggregated from Transactions carrying that Payable's own _id, and a
-// leg is money against ONE specific month's payable.
-//
-// THE PAYABLE LOOKUP IS LIVE, NOT EMBEDDED: unlike the payables-import script, a payableId can't
-// be known until the matching Payable document actually exists in this database. For every row
-// this script queries Payable by (payee.kind=RENT_UNIT, payee.label=<sub-type>, purpose=RENT,
-// period.month, period.year, isCancelled:false) at run time. A row whose payable doesn't exist
-// yet is SKIPPED and reported — never silently created with a guessed amount.
-//
-// EXPECT SOME ROWS TO NOT MATCH: 12 rows reference "3/2026" (March 2026) as an opening payable
-// that predates every payables-import script (which starts at April). These will not match
-// anything unless a March 2026 opening payable was created separately, and that is flagged
-// clearly rather than silently skipped — see meta.knownUnmatched.
-//
-// Mirrors src/app/api/transactions/expense/create/route.js field-for-field: same overpayment
-// check (live aggregation, excluding UNSETTLED_METHODS, against payable.totalAmount), same
-// isSettlement rule (payableDoc.costAlreadyRecognised — false for every manually-raised RENT
-// payable, so these payments correctly count as real expenses, not settlements).
-//
-// Usage:
-//   node scripts/rent-expense-transactions-import.mjs                            # dry run
-//   node scripts/rent-expense-transactions-import.mjs --dump-json                # write entries out, no DB
-//   node scripts/rent-expense-transactions-import.mjs --apply                   # write (blocked while unmatched rows unconfirmed)
-//   node scripts/rent-expense-transactions-import.mjs --apply --confirm-unmatched
-//   node scripts/rent-expense-transactions-import.mjs --apply --confirm-unmatched --allow-overpayment
-//   node scripts/rent-expense-transactions-import.mjs --apply --rows=2,3,4       # only these source rows
-
 import mongoose from "mongoose";
 import fs from "fs";
 
@@ -50,14 +12,6 @@ for (const f of [".env.local", ".env"]) {
   }
 }
 const MONGODB_URI = process.env.MONGODB_URI;
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// THE DATA — parsed from transactions.xlsx, one entry per payment leg. "furtherMode" is the
-// sheet's own "Paid From Account" value taken as-is (matches src/constants/bankRouting.js
-// ACCOUNTS exactly) — NOT derived from getExpenseFurtherModeDefault(method), because the sheet
-// has both "Cash Book" and "Cash ( backend )" for method "cash", i.e. a real choice the entry
-// form lets a user override, not something inferable from the method alone.
-// ═══════════════════════════════════════════════════════════════════════════════
 const TXN_ENTRIES = [
   {
     "rowNum": 2,

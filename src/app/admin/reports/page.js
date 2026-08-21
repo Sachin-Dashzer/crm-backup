@@ -133,9 +133,10 @@ const REPORTS = [
   {
     id: 8, type: "employees-all", category: "Staff Reports",
     name: "All Employees Report",
-    description: "Complete employee list with role, branch, contact details, and patient count",
+    description: "Every employee (active & inactive) — role, contact, status, salary, incentive rate, and total patients",
     icon: Users, color: "blue",
-    filters: ["branch"],
+    // Employees aren't branch-scoped in this schema — no branch filter to offer here.
+    filters: [],
   },
   {
     id: 9, type: "counsellors", category: "Staff Reports",

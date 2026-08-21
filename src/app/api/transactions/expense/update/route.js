@@ -185,6 +185,28 @@ export async function PUT(req) {
       }
     }
 
+    // If this transaction is a PAYMENT against a payable (payableId set — Direction B, no
+    // cascade needed per the comment above) and the edit moves it to a different expense
+    // category, sub-type, or branch than it was recorded under, the OLD payable would keep
+    // counting this payment forever (paid/pending is aggregated live off payableId, which this
+    // update otherwise never touches), while the payable the transaction is NOW labelled for
+    // never sees it at all — exactly the "editing a transaction doesn't update the payable"
+    // symptom. There's no safe way to guess which of possibly several open payables under the
+    // new category/period it should link to instead (a Transaction carries no period), so the
+    // stale link is cleared rather than silently left wrong — re-link via "Pay against payable"
+    // if this payment is still meant to settle a specific payable.
+    let payableUnlinkedNote = null;
+    if (
+      existingTransaction.payableId &&
+      (existingTransaction.expense !== expenseCategory ||
+        (existingTransaction.expenseType || "") !== (expenseType || "") ||
+        existingTransaction.branch !== branch)
+    ) {
+      payableUnlinkedNote =
+        "This payment was unlinked from its previous payable — the category, sub-type, or branch changed, so it no longer counts against that payable's pending balance. Use \"Pay against payable\" to re-link it to the correct one if this is still meant to settle a specific payable.";
+      existingTransaction.payableId = null;
+    }
+
     // Update transaction
     existingTransaction.expense = expenseCategory;
     existingTransaction.expenseType = expenseType || "";
@@ -254,6 +276,7 @@ export async function PUT(req) {
       success: true,
       message: "Expense transaction updated successfully",
       transaction: existingTransaction,
+      ...(payableUnlinkedNote ? { warning: payableUnlinkedNote } : {}),
     });
   } catch (error) {
     console.error("Error updating expense transaction:", error);

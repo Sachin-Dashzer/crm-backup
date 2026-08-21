@@ -621,11 +621,15 @@ export default function DrillDownTable({
       key: "ageing",
       label: "Due",
       render: (r) => {
+        // daysOverdue/ageingBucket are computed from dueDate vs. today regardless of whether
+        // anything is still owed — a document paid off long after its due date would otherwise
+        // keep showing "140 days overdue" forever. Only meaningful while something is pending.
+        const cleared = !(r.pending > 0.5);
         const info = formatAgeing(r.daysOverdue);
         return (
           <div>
             <p className="text-xs text-gray-600">{formatDate(r.dueDate)}</p>
-            <p className={`text-[10px] ${AGEING_TONE_CLASSES[info.tone]}`}>{info.text}</p>
+            {!cleared && <p className={`text-[10px] ${AGEING_TONE_CLASSES[info.tone]}`}>{info.text}</p>}
           </div>
         );
       },

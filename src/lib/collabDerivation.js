@@ -26,7 +26,7 @@ function categoryForProcedure(procedure) {
   if (TRANSPLANT_PROCEDURES.includes(procedure)) return "TRANSPLANT";
   if (SERVICE_PROCEDURES.includes(procedure)) return "SERVICE";
   if (procedure === "Medicine") return "MEDICINE";
-  return "TRANSPLANT";
+  return "SERVICE"; // "Other" / unmatched — generic fallback, never TRANSPLANT by default
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -262,9 +262,14 @@ export async function createCollabCaseAtomic({
         await transaction.save({ session });
       }
 
-      // Back-link the case to whichever document carries the clinic balance.
+      // Back-link the case to whichever document carries the clinic balance, so a later
+      // CollabSettlement can find and settle it (see settlements/create/route.js) instead of
+      // having no way to locate it at all.
       if (created.payable) {
         collabCase.clinicSharePayable = created.payable._id;
+        await collabCase.save({ session });
+      } else if (created.receivable) {
+        collabCase.clinicShareReceivable = created.receivable._id;
         await collabCase.save({ session });
       }
     });

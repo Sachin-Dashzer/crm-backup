@@ -153,7 +153,11 @@ export async function GET(request) {
       ...buildPayableAggregationStages(Transactions.collection.name),
     ];
     if (status && status !== "Cancelled") stages.push({ $match: { status } });
-    if (ageing) stages.push({ $match: { ageingBucket: ageing } });
+    // Matches the ageing chips' own definition (/api/payables/summary?ageing=1, which sums
+    // { pending: { $gt: 0 } } into these buckets) — a document that's since been fully paid off
+    // still carries whatever ageingBucket its (now irrelevant) dueDate computes to, so without
+    // this a cleared document could appear in a "90+ days" filter the chip's own count says is 0.
+    if (ageing) stages.push({ $match: { ageingBucket: ageing, pending: { $gt: 0 } } });
     stages.push({ $sort: { dueDate: 1, createdAt: -1 } });
 
     const allRows = await Payable.aggregate(stages);

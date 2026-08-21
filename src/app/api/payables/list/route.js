@@ -92,7 +92,10 @@ export async function GET(request) {
     if (status) basePipeline.push({ $match: { status } });
     // ageingBucket is derived inside the aggregation, so it can only be filtered after those
     // stages have run — hence a second $match here rather than an entry in the initial one.
-    if (ageingBucket) basePipeline.push({ $match: { ageingBucket } });
+    // pending > 0 matches the ageing chips' own definition (/api/payables/summary?ageing=1) — a
+    // document that's since been paid off still carries whatever bucket its now-irrelevant
+    // dueDate computes to, so without this it could wrongly appear in an ageing-filtered list.
+    if (ageingBucket) basePipeline.push({ $match: { ageingBucket, pending: { $gt: 0 } } });
     // Worst-overdue first by default; ?sort=createdAt restores newest-first.
     basePipeline.push({ $sort: sort === "createdAt" ? { createdAt: -1 } : AGEING_SORT });
 

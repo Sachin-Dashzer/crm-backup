@@ -75,6 +75,16 @@ const collabCaseSchema = new mongoose.Schema(
       ref: "Payable",
       default: null,
     },
+    // Mirror of clinicSharePayable for the opposite imbalance — set when the clinic collected
+    // MORE than its share (deriveClinicSettlement's RECEIVABLE branch), so a later
+    // CollabSettlement (THEY_PAID) can find and settle the specific Receivable this case
+    // created instead of guessing or re-recognising revenue that step 2 of
+    // createCollabCaseAtomic already booked in full.
+    clinicShareReceivable: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Receivable",
+      default: null,
+    },
 
     status: {
       type: String,

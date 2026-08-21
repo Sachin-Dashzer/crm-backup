@@ -1,18 +1,14 @@
-/**
- * Expense Category -> Expense Type tree.
- * Used only for EXPENSE transactions. Every category has at least one
- * Expense Type option (some categories are single-option, mirroring the
- * category name itself). Single source of truth — imported by every
- * panel's expense form, validation, CSV export, WhatsApp approval
- * message, and reports.
- */
+
 export const EXPENSE_CATEGORY_TREE = {
   "Salary": ["Salary"],
   "Rent": [
-    "Rent-Backend Basement",
-    "Rent-Backend upper ground floor",
+    "Rent-Backend Basement ( Satpal singh )",
+    "Rent-Backend Basement ( Manjeet Lodha )",
+    "Rent-Backend upper ground floor ( Satpal singh )",
+    "Rent-Backend upper ground floor ( Pramod Gautam )",
     "Rent-Backend ground floor",
     "Rent-Backend 1st Floor",
+    "Rent-Backend Parking",
     "Rent-Backend 4th floor / Top floor",
     "Rent-CD Clinic",
     "Rent-GD clinic",

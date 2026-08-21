@@ -697,8 +697,15 @@ export default function EditTransactionPage() {
 
       const data = await res.json();
       if (res.ok) {
-        showToast("Expense transaction updated successfully!", "success");
-        setTimeout(() => router.back(), 1500);
+        // A payable-relink warning means something the user should actually read, not a
+        // "success and gone in 1.5s" toast — give it real time on screen before navigating away.
+        if (data.warning) {
+          showToast(data.warning, "info");
+          setTimeout(() => router.back(), 4000);
+        } else {
+          showToast("Expense transaction updated successfully!", "success");
+          setTimeout(() => router.back(), 1500);
+        }
       } else {
         showToast(data.error || "Failed to update transaction", "error");
       }

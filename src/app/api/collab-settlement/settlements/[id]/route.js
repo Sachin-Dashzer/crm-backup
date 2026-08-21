@@ -39,10 +39,7 @@ export async function DELETE(req, { params }) {
       return NextResponse.json({ error: "Settlement not found" }, { status: 404 });
     }
 
-    const linkedIds = [
-      ...(settlement.linkedTransaction ? [settlement.linkedTransaction] : []),
-      ...(settlement.linkedRevenueTransactions || []),
-    ];
+    const linkedIds = settlement.generatedTransactions || [];
 
     // Snapshot what those transactions actually were before removing them — an ID alone in the
     // audit trail is not enough to reconstruct what was undone.
