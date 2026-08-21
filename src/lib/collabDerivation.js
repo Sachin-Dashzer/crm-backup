@@ -1,10 +1,13 @@
 import mongoose from "mongoose";
 import Transactions from "@/models/Transactions";
 import CollabCase from "@/models/CollabCase";
+import Patient from "@/models/Patient";
 import Payable from "@/models/Payable";
 import Receivable from "@/models/Receivable";
 import { COLLAB_BRANCHES } from "@/lib/branches";
 import { deriveClinicSettlement } from "@/lib/collabFormula";
+import { buildPayableAggregationStages } from "@/lib/payableAggregation";
+import { buildReceivableAggregationStages } from "@/lib/receivableAggregation";
 
 // THE formula lives in src/lib/collabFormula.js (dependency-free) so the client
 // form imports the identical function for its live preview. Re-exported here so
@@ -111,9 +114,11 @@ export async function createCollabCaseAtomic({
       created.collabCase = collabCase;
 
       // 2. GROSS revenue transaction — the full package, never the net margin.
-      //    Deliberately NOT pushed onto Patient.payments.transactions: money the
-      //    patient handed the partner clinic must not advance the patient's
-      //    payment status until the clinic settles (see Patient.payments rule).
+      //    Not pushed onto Patient.payments.transactions here — money the patient handed
+      //    the partner clinic must not advance the patient's payment status until the
+      //    clinic settles (see Patient.payments rule). Money collected DIRECTLY BY US is
+      //    handled separately in step 2c below, since that reasoning doesn't apply to it —
+      //    we already physically hold that cash, same as any normal payment.
       const [transaction] = await Transactions.create(
         [
           {
@@ -138,6 +143,32 @@ export async function createCollabCaseAtomic({
         { session },
       );
       created.transaction = transaction;
+
+      // 2c. The ourReceived portion is money we already physically hold — exactly like any
+      // normal transplant/service payment — so it must advance the patient's own payment
+      // record the same way, or the patient permanently shows full pendingAmount despite
+      // having actually paid (only visible here, on the collab side, not on their own
+      // profile/dashboard/status, which all read Patient.payments). Only ourReceived; money
+      // the clinic holds is deliberately left untouched until it's actually settled (see the
+      // comment on step 2 above). Mirrors reverseTransaction.js's identical pattern: recompute
+      // pendingAmount explicitly here rather than relying on the Patient pre-save hook, which
+      // only auto-derives it when counselling.finlpackage is set.
+      if (ourReceived > 0) {
+        const patient = await Patient.findById(patientId).session(session);
+        if (patient) {
+          patient.payments = patient.payments || {};
+          patient.payments.amountReceived =
+            Math.round(((patient.payments.amountReceived || 0) + ourReceived) * 100) / 100;
+          patient.payments.transactions = patient.payments.transactions || [];
+          patient.payments.transactions.push(transaction._id);
+          const total = patient.payments.totalAmount || patient.counselling?.finlpackage || 0;
+          patient.payments.pendingAmount = Math.max(
+            0,
+            total - patient.payments.amountReceived - (patient.payments.discount || 0),
+          );
+          await patient.save({ session });
+        }
+      }
 
       // 2b. The clinic-share EXPENSE that makes the gross booking above net out
       //     correctly. Without it a 50,000 package booked 50,000 revenue and no
@@ -292,4 +323,228 @@ export async function createCollabCaseAtomic({
       derivedAmount: settlement.amount,
     },
   };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Appends a clinicCollections entry (money the PATIENT paid DIRECTLY TO THE PARTNER CLINIC)
+// and keeps the case's own Payable/Receivable — the obligation BETWEEN THE CLINIC AND US —
+// resized to match. Deliberately does NOT create a settling payment: recording that the
+// patient paid the clinic does not establish that the clinic has forwarded that money to us:
+// that is a separate real event (see settlements/create/route.js's "Settle" flow). Called by
+// cases/[id]/collection/route.js; separated out (same reasoning as createCollabCaseAtomic) so
+// it can be exercised directly by a test/verification script without a mocked HTTP session.
+//
+// Refuses (throws) if the direction needs to flip (PAYABLE <-> RECEIVABLE <-> NONE) and the
+// EXISTING document already has a real payment/receipt against it — resolving which of two
+// different obligations that payment actually belongs to is a human decision, not something to
+// silently guess at.
+export async function recordClinicCollectionAtomic({ caseId, amount, date, mode, reference, note, actor }) {
+  const parsedAmount = Number(amount);
+  if (!parsedAmount || parsedAmount <= 0) {
+    throw new Error("Collection amount must be greater than 0");
+  }
+
+  const performedBy = { name: actor?.name, email: actor?.email };
+  const when = date ? new Date(date) : new Date();
+
+  const collabCase = await CollabCase.findById(caseId);
+  if (!collabCase) throw new Error("Collab case not found");
+  if (collabCase.status === "CANCELLED") throw new Error("This case has been cancelled");
+
+  const oldCollectedByClinic = collabCase.clinicCollections.reduce((sum, c) => sum + c.amount, 0);
+  const newCollectedByClinic = oldCollectedByClinic + parsedAmount;
+  const clinicShare = collabCase.clinicShare;
+
+  const oldSettlement = deriveClinicSettlement({ clinicReceived: oldCollectedByClinic, clinicShare });
+  const newSettlement = deriveClinicSettlement({ clinicReceived: newCollectedByClinic, clinicShare });
+
+  const originTx = await Transactions.findOne({ "collabRef.caseId": collabCase._id, costType: "Revenue" });
+
+  const session = await mongoose.startSession();
+  try {
+    await session.withTransaction(async () => {
+      collabCase.clinicCollections.push({
+        amount: parsedAmount,
+        date: when,
+        mode,
+        reference: reference || "",
+        note: note || "",
+        recordedBy: performedBy,
+        recordedAt: new Date(),
+      });
+      collabCase.log.push({
+        action: "Collection Added",
+        newValue: String(parsedAmount),
+        note,
+        performedBy,
+        performedAt: new Date(),
+      });
+
+      // ── Top up the clinic-share expense (mirrors step 2b above) ──
+      const oldClinicSettledNow = Math.min(oldCollectedByClinic, clinicShare);
+      const newClinicSettledNow = Math.min(newCollectedByClinic, clinicShare);
+      const topUp = Math.round((newClinicSettledNow - oldClinicSettledNow) * 100) / 100;
+      if (topUp > 0.005) {
+        await Transactions.create(
+          [
+            {
+              transactionCategory: "EXPENSE",
+              costType: "Expenses",
+              expense: "Collab Clinic Payment",
+              expenseType: "Collab Clinic Payment",
+              expenseGiver: { type: "MANUAL", name: collabCase.clinic },
+              amount: topUp,
+              method: "offset_settlement",
+              branch: collabCase.clinic,
+              date: when,
+              remarks: `Clinic share retained by ${collabCase.clinic} — top-up from a new collection`,
+              approvalStatus: "APPROVED",
+              collabRef: { caseId: collabCase._id },
+              createdBy: { ...performedBy, date: new Date() },
+            },
+          ],
+          { session },
+        );
+      }
+
+      // ── Resize / flip the case's own Payable or Receivable to match the new obligation ──
+      if (oldSettlement.kind === newSettlement.kind && newSettlement.kind !== "NONE") {
+        if (Math.abs(oldSettlement.amount - newSettlement.amount) > 0.005) {
+          const Model = newSettlement.kind === "PAYABLE" ? Payable : Receivable;
+          const docId = newSettlement.kind === "PAYABLE" ? collabCase.clinicSharePayable : collabCase.clinicShareReceivable;
+          const doc = docId ? await Model.findById(docId).session(session) : null;
+          if (doc) {
+            doc.log.push({
+              action: "Amount Revised",
+              previousValue: String(doc.totalAmount),
+              newValue: String(newSettlement.amount),
+              note: `Resized after a new clinic collection of ₹${parsedAmount} — clinicReceived ${newCollectedByClinic}, clinicShare ${clinicShare}`,
+              performedBy,
+              performedAt: new Date(),
+            });
+            doc.totalAmount = newSettlement.amount;
+            await doc.save({ session });
+          }
+        }
+      } else if (oldSettlement.kind !== newSettlement.kind) {
+        if (oldSettlement.kind === "PAYABLE" && collabCase.clinicSharePayable) {
+          const [agg] = await Payable.aggregate([
+            { $match: { _id: collabCase.clinicSharePayable } },
+            ...buildPayableAggregationStages(Transactions.collection.name),
+          ]).session(session);
+          if ((agg?.paid || 0) > 0) {
+            throw new Error(
+              `This case's payable already has ₹${agg.paid} paid against it. Recording this collection would flip it to a different obligation — settle or reconcile that payment first.`,
+            );
+          }
+          const oldPayable = await Payable.findById(collabCase.clinicSharePayable).session(session);
+          if (oldPayable) {
+            oldPayable.isCancelled = true;
+            oldPayable.log.push({
+              action: "Cancelled",
+              previousValue: "false",
+              newValue: "true",
+              note: `Superseded — a new clinic collection changed the obligation direction (now ${newSettlement.kind === "NONE" ? "balanced" : newSettlement.kind}).`,
+              performedBy,
+              performedAt: new Date(),
+            });
+            await oldPayable.save({ session });
+          }
+          collabCase.clinicSharePayable = null;
+          if (originTx) originTx.collabRef.payableId = null;
+        } else if (oldSettlement.kind === "RECEIVABLE" && collabCase.clinicShareReceivable) {
+          const [agg] = await Receivable.aggregate([
+            { $match: { _id: collabCase.clinicShareReceivable } },
+            ...buildReceivableAggregationStages(Transactions.collection.name),
+          ]).session(session);
+          if ((agg?.received || 0) > 0) {
+            throw new Error(
+              `This case's receivable already has ₹${agg.received} received against it. Recording this collection would flip it to a different obligation — settle or reconcile that receipt first.`,
+            );
+          }
+          const oldReceivable = await Receivable.findById(collabCase.clinicShareReceivable).session(session);
+          if (oldReceivable) {
+            oldReceivable.isCancelled = true;
+            oldReceivable.log.push({
+              action: "Cancelled",
+              previousValue: "false",
+              newValue: "true",
+              note: `Superseded — a new clinic collection changed the obligation direction (now ${newSettlement.kind === "NONE" ? "balanced" : newSettlement.kind}).`,
+              performedBy,
+              performedAt: new Date(),
+            });
+            await oldReceivable.save({ session });
+          }
+          collabCase.clinicShareReceivable = null;
+          if (originTx) originTx.collabRef.receivableId = null;
+        }
+
+        if (newSettlement.kind === "RECEIVABLE") {
+          const [receivable] = await Receivable.create(
+            [
+              {
+                payer: { kind: "COLLAB_CLINIC", label: collabCase.clinic },
+                purpose: "COLLAB_SETTLEMENT",
+                revenueCategory: categoryForProcedure(collabCase.procedure),
+                relatedPatient: collabCase.patient,
+                totalAmount: newSettlement.amount,
+                branch: collabCase.clinic,
+                costAlreadyRecognised: true,
+                remarks: `Collab settlement — ${collabCase.clinic} collected ${newCollectedByClinic} against a ${clinicShare} share`,
+                createdBy: { ...performedBy, date: new Date() },
+                log: [
+                  {
+                    action: "Created",
+                    newValue: String(newSettlement.amount),
+                    note: `Derived after a new clinic collection: clinicReceived ${newCollectedByClinic} - clinicShare ${clinicShare}`,
+                    performedBy,
+                    performedAt: new Date(),
+                  },
+                ],
+              },
+            ],
+            { session },
+          );
+          collabCase.clinicShareReceivable = receivable._id;
+          if (originTx) originTx.collabRef.receivableId = receivable._id;
+        } else if (newSettlement.kind === "PAYABLE") {
+          const [payable] = await Payable.create(
+            [
+              {
+                payee: { kind: "COLLAB_CLINIC", label: collabCase.clinic },
+                purpose: "COLLAB_CLINIC",
+                expenseCategory: "Collab Clinic Payment",
+                expenseSubType: "Collab Clinic Payment",
+                relatedPatient: collabCase.patient,
+                totalAmount: newSettlement.amount,
+                branch: collabCase.clinic,
+                costAlreadyRecognised: false,
+                remarks: `Collab settlement — ${collabCase.clinic} collected ${newCollectedByClinic} against a ${clinicShare} share`,
+                createdBy: { ...performedBy, date: new Date() },
+                log: [
+                  {
+                    action: "Created",
+                    newValue: String(newSettlement.amount),
+                    note: `Derived after a new clinic collection: clinicShare ${clinicShare} - clinicReceived ${newCollectedByClinic}`,
+                    performedBy,
+                    performedAt: new Date(),
+                  },
+                ],
+              },
+            ],
+            { session },
+          );
+          collabCase.clinicSharePayable = payable._id;
+          if (originTx) originTx.collabRef.payableId = payable._id;
+        }
+      }
+
+      if (originTx) await originTx.save({ session });
+      await collabCase.save({ session });
+    });
+  } finally {
+    await session.endSession();
+  }
+
+  return { collabCase, oldSettlement, newSettlement };
 }

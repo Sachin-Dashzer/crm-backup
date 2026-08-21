@@ -6,6 +6,7 @@ import mongoose from "mongoose";
 import CollabCase from "@/models/CollabCase";
 import CollabSettlement from "@/models/CollabSettlement";
 import Transactions from "@/models/Transactions";
+import Patient from "@/models/Patient";
 import Payable from "@/models/Payable";
 import Receivable from "@/models/Receivable";
 import DeleteLog from "@/models/DeleteLog";
@@ -144,8 +145,14 @@ export async function DELETE(req, { params }) {
     // Everything this case spawned, found by its own back-reference rather than by re-deriving
     // the amounts — collabRef.caseId is set on both transactions at creation time.
     const linkedTx = await Transactions.find({ "collabRef.caseId": collabCase._id })
-      .select("transactionCategory costType amount date collabRef")
+      .select("transactionCategory costType amount date collabRef collabSplit")
       .lean();
+
+    // Money collected DIRECTLY BY US (collabSplit.ourReceived) advances the patient's own
+    // payment record at creation time (see createCollabCaseAtomic) — deleting the case that
+    // recorded it must reverse that too, or the patient permanently shows money "received" with
+    // no transaction left to back it up.
+    const ourReceivedTotal = linkedTx.reduce((sum, t) => sum + (t.collabSplit?.ourReceived || 0), 0);
 
     const payableIds = [
       collabCase.clinicSharePayable,
@@ -205,6 +212,25 @@ export async function DELETE(req, { params }) {
         }
         if (receivableIds.length) {
           await Receivable.deleteMany({ _id: { $in: receivableIds } }, { session: dbSession });
+        }
+        if (ourReceivedTotal > 0 && collabCase.patient) {
+          const patient = await Patient.findById(collabCase.patient).session(dbSession);
+          if (patient) {
+            patient.payments = patient.payments || {};
+            patient.payments.amountReceived = Math.max(
+              0,
+              Math.round(((patient.payments.amountReceived || 0) - ourReceivedTotal) * 100) / 100,
+            );
+            patient.payments.transactions = (patient.payments.transactions || []).filter(
+              (txId) => !linkedTx.some((t) => String(t._id) === String(txId)),
+            );
+            const total = patient.payments.totalAmount || patient.counselling?.finlpackage || 0;
+            patient.payments.pendingAmount = Math.max(
+              0,
+              total - patient.payments.amountReceived - (patient.payments.discount || 0),
+            );
+            await patient.save({ session: dbSession });
+          }
         }
         await CollabCase.deleteOne({ _id: collabCase._id }, { session: dbSession });
       });

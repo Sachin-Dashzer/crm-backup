@@ -111,13 +111,21 @@ export async function GET(request) {
       },
       {
         $addFields: {
-          // New collab flow: authoritative split off the linked transaction.
-          // Legacy fallback: cases created before collabSplit existed still carry
-          // their money in clinicCollections[], so old rows keep displaying correctly.
           collectedByUs: { $ifNull: [{ $arrayElemAt: ["$revenueAgg.ourReceived", 0] }, 0] },
+          // ADDITIVE, not either/or — collabSplit.clinicReceived is a snapshot of what the
+          // clinic had collected AT CASE-CREATION time; clinicCollections[] is every collection
+          // recorded AFTER that (via "Record Clinic Collection" — see cases/[id]/collection/
+          // route.js, which only ever appends to this array and never touches collabSplit). The
+          // previous $ifNull treated these as alternatives, so for every case with a real linked
+          // transaction (i.e. every case created through the current flow, which always sets
+          // collabSplit.clinicReceived even when 0) any collection recorded after creation was
+          // silently invisible here — Patient Outstanding, Case Net, and settlement-allocation
+          // eligibility never moved no matter how many collections were added. For a legacy case
+          // with no linked transaction, revenueAgg.clinicReceived is null -> $ifNull's 0 keeps
+          // this identical to the old fallback, so old rows are unaffected.
           collectedByClinic: {
-            $ifNull: [
-              { $arrayElemAt: ["$revenueAgg.clinicReceived", 0] },
+            $add: [
+              { $ifNull: [{ $arrayElemAt: ["$revenueAgg.clinicReceived", 0] }, 0] },
               { $sum: "$clinicCollections.amount" },
             ],
           },

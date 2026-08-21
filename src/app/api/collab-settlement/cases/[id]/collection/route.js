@@ -5,15 +5,17 @@ import connectDB from "@/lib/db";
 import CollabCase from "@/models/CollabCase";
 import Transactions from "@/models/Transactions";
 import { UNSETTLED_METHODS } from "@/constants/bankRouting";
+import { recordClinicCollectionAtomic } from "@/lib/collabDerivation";
 
 // The collab team enters the case in the first place, so they also record what the patient
-// later paid the clinic directly — this only appends to clinicCollections and never creates a
-// Transaction or touches Patient.payments (see the note below).
+// later paid the clinic directly — this appends to clinicCollections AND keeps the case's own
+// Payable/Receivable (the OBLIGATION between the clinic and us — see clinicSharePayable/
+// clinicShareReceivable on CollabCase) resized to match, so "how much does this case still owe"
+// is never stale. See recordClinicCollectionAtomic (src/lib/collabDerivation.js) for the actual
+// resize/flip logic and why it deliberately never creates a SETTLING payment here — that's a
+// separate real event (see settlements/create/route.js's "Settle" flow).
 const ALLOWED_ROLES = ["collab", "admin", "super-admin"];
 
-// Appends a clinicCollections entry — money the PATIENT paid DIRECTLY TO THE
-// PARTNER CLINIC. Never touches Patient.payments or creates a Transaction;
-// that money isn't ours until the clinic settles it (see CollabSettlement).
 export async function POST(req, { params }) {
   try {
     const session = await getServerSession(authOptions);
@@ -37,7 +39,7 @@ export async function POST(req, { params }) {
       );
     }
 
-    const collabCase = await CollabCase.findById(id);
+    const collabCase = await CollabCase.findById(id).lean();
     if (!collabCase) {
       return NextResponse.json({ error: "Collab case not found" }, { status: 404 });
     }
@@ -58,7 +60,7 @@ export async function POST(req, { params }) {
       { $group: { _id: null, total: { $sum: "$amount" } } },
     ]);
     const collectedByUs = revenueAgg?.total || 0;
-    const collectedByClinic = collabCase.clinicCollections.reduce((sum, c) => sum + c.amount, 0);
+    const collectedByClinic = (collabCase.clinicCollections || []).reduce((sum, c) => sum + c.amount, 0);
     const remaining = collabCase.packageAmount - collectedByUs - collectedByClinic;
 
     if (parsedAmount > remaining && !allowOverpayment) {
@@ -70,31 +72,19 @@ export async function POST(req, { params }) {
       );
     }
 
-    const performedBy = { name: session.user.name, email: session.user.email };
-
-    collabCase.clinicCollections.push({
+    const { collabCase: updated } = await recordClinicCollectionAtomic({
+      caseId: id,
       amount: parsedAmount,
-      date: date ? new Date(date) : new Date(),
+      date,
       mode,
-      reference: reference || "",
-      note: note || "",
-      recordedBy: performedBy,
-      recordedAt: new Date(),
-    });
-
-    collabCase.log.push({
-      action: "Collection Added",
-      newValue: String(parsedAmount),
+      reference,
       note,
-      performedBy,
-      performedAt: new Date(),
+      actor: { name: session.user.name, email: session.user.email },
     });
 
-    await collabCase.save();
-
-    return NextResponse.json({ message: "Collection recorded", collabCase });
+    return NextResponse.json({ message: "Collection recorded", collabCase: updated });
   } catch (error) {
     console.error("Error recording collab collection:", error);
-    return NextResponse.json({ error: "Failed to record collection" }, { status: 500 });
+    return NextResponse.json({ error: error.message || "Failed to record collection" }, { status: 500 });
   }
 }

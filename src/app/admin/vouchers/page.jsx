@@ -49,6 +49,11 @@ function VouchersPageInner() {
   const [partyId, setPartyId] = useState("");
   const [partyLabel, setPartyLabel] = useState("");
   const [manualLabel, setManualLabel] = useState("");
+  // Vendor mode's own manual fallback — a party that isn't in the vendor list yet, without
+  // forcing a switch to the separate top-level "Manual entry" mode. Kept as its own state
+  // (not reusing manualLabel) so toggling it never bleeds into the unrelated MANUAL mode's text.
+  const [vendorManual, setVendorManual] = useState(false);
+  const [vendorManualLabel, setVendorManualLabel] = useState("");
   const [vendorOptions, setVendorOptions] = useState([]);
   const [employeeOptions, setEmployeeOptions] = useState([]);
   const [patientOptions, setPatientOptions] = useState([]);
@@ -169,7 +174,13 @@ function VouchersPageInner() {
   const handleSubmit = async () => {
     if (!authorized) return;
 
-    const payeeLabel = partyMode === "MANUAL" ? manualLabel.trim() : partyLabel;
+    const vendorEnteredManually = partyMode === "VENDOR" && vendorManual;
+    const payeeLabel =
+      partyMode === "MANUAL"
+        ? manualLabel.trim()
+        : vendorEnteredManually
+          ? vendorManualLabel.trim()
+          : partyLabel;
     if (!payeeLabel) {
       toast.error("Select or enter a party");
       return;
@@ -184,7 +195,10 @@ function VouchersPageInner() {
       return;
     }
 
-    const kind = partyMode === "MANUAL" ? "OTHER" : partyMode;
+    // A manually-typed vendor has no real Vendor document behind it, same as top-level MANUAL —
+    // recorded as OTHER, not VENDOR, so nothing downstream mistakes payeeLabel for a real vendor
+    // record (payee.refId is already correctly left undefined below, since partyId stays "").
+    const kind = partyMode === "MANUAL" || vendorEnteredManually ? "OTHER" : partyMode;
 
     setSubmitting(true);
     try {
@@ -307,7 +321,13 @@ function VouchersPageInner() {
                 {["VENDOR", "EMPLOYEE", "PATIENT", "MANUAL"].map((m) => (
                   <button
                     key={m}
-                    onClick={() => { setPartyMode(m); setPartyId(""); setPartyLabel(""); }}
+                    onClick={() => {
+                      setPartyMode(m);
+                      setPartyId("");
+                      setPartyLabel("");
+                      setVendorManual(false);
+                      setVendorManualLabel("");
+                    }}
                     className={`px-2.5 py-1 text-xs font-semibold rounded-lg border ${
                       partyMode === m ? "border-indigo-300 bg-indigo-50 text-indigo-700" : "border-gray-200 text-gray-500"
                     }`}
@@ -318,14 +338,41 @@ function VouchersPageInner() {
               </div>
 
               {partyMode === "VENDOR" && (
-                <SearchableSelect
-                  options={vendorOptions}
-                  value={partyId}
-                  onChange={(v, obj) => { setPartyId(v); setPartyLabel(obj?.name || ""); }}
-                  placeholder="Search vendors…"
-                  valueKey="_id"
-                  formatOption={(v) => v.name}
-                />
+                <div>
+                  {vendorManual ? (
+                    <input
+                      type="text"
+                      value={vendorManualLabel}
+                      onChange={(e) => setVendorManualLabel(e.target.value)}
+                      placeholder="Vendor name"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                    />
+                  ) : (
+                    <SearchableSelect
+                      options={vendorOptions}
+                      value={partyId}
+                      onChange={(v, obj) => { setPartyId(v); setPartyLabel(obj?.name || ""); }}
+                      placeholder="Search vendors…"
+                      valueKey="_id"
+                      formatOption={(v) => v.name}
+                    />
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const next = !vendorManual;
+                      setVendorManual(next);
+                      // Switching either direction starts clean — a stale vendor pick left over
+                      // from before typing manually (or vice versa) must not silently submit.
+                      setPartyId("");
+                      setPartyLabel("");
+                      setVendorManualLabel("");
+                    }}
+                    className="mt-1.5 text-xs text-indigo-600 hover:text-indigo-700 font-medium"
+                  >
+                    {vendorManual ? "← Pick from vendor list instead" : "Can't find them? Type the name manually"}
+                  </button>
+                </div>
               )}
               {partyMode === "EMPLOYEE" && (
                 <SearchableSelect
