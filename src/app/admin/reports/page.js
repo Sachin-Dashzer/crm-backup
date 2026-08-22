@@ -217,6 +217,20 @@ const REPORTS = [
     icon: TrendingUp, color: "amber",
     filters: [],
   },
+  {
+    id: 26, type: "payables-all", category: "Financial Reports",
+    name: "Payables Report",
+    description: "Every outstanding obligation — vendor, rent, salary, tax — with live paid/pending and ageing",
+    icon: IndianRupee, color: "red",
+    filters: ["branch"],
+  },
+  {
+    id: 27, type: "receivables-all", category: "Financial Reports",
+    name: "Receivables Report",
+    description: "Every amount owed to us — patient dues, collab settlements, refunds — with live received/pending and ageing",
+    icon: IndianRupee, color: "green",
+    filters: ["branch"],
+  },
 
   // Inventory Reports
   {
@@ -938,7 +952,7 @@ export default function AdminReportsPage() {
                 {[
                   { label: "Patient Reports",   count: 7, color: "bg-blue-50 text-blue-700 border-blue-200",     icon: HeartPulse,  cat: "Patient Reports" },
                   { label: "Staff Reports",     count: 6, color: "bg-purple-50 text-purple-700 border-purple-200", icon: Users,       cat: "Staff Reports" },
-                  { label: "Financial Reports", count: 6, color: "bg-emerald-50 text-emerald-700 border-emerald-200", icon: IndianRupee, cat: "Financial Reports" },
+                  { label: "Financial Reports", count: 8, color: "bg-emerald-50 text-emerald-700 border-emerald-200", icon: IndianRupee, cat: "Financial Reports" },
                   { label: "Inventory Reports", count: 2, color: "bg-orange-50 text-orange-700 border-orange-200",  icon: Package,     cat: "Inventory Reports" },
                   { label: "Audit Logs",        count: 4, color: "bg-red-50 text-red-700 border-red-200",           icon: ShieldAlert, cat: "Audit Logs" },
                 ].map((item) => (

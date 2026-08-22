@@ -7,6 +7,10 @@ import Employee from "@/models/Employee";
 import Transactions from "@/models/Transactions";
 import Stock from "@/models/Stock";
 import Vendor from "@/models/Vendor";
+import Payable from "@/models/Payable";
+import Receivable from "@/models/Receivable";
+import { buildPayableAggregationStages } from "@/lib/payableAggregation";
+import { buildReceivableAggregationStages } from "@/lib/receivableAggregation";
 import { ALL_BRANCHES, COLLAB_BRANCHES } from "@/lib/branches";
 import { UNSETTLED_METHODS, SETTLEMENT_EXCLUSION } from "@/constants/bankRouting";
 
@@ -73,11 +77,15 @@ export async function GET(request) {
     // Patients are filtered by personal.visitDate; transactions by their date field.
     const patientDateFilter = {};
     const transactionDateFilter = {};
+    // Payable/Receivable have no "transaction date" of their own — createdAt is when the
+    // obligation was RAISED, the same field the Liabilities/Assets pages filter and roll up by.
+    const obligationDateFilter = {};
     if (from && to) {
       const fromDate = new Date(from);
       const toDate = new Date(to);
       patientDateFilter["personal.visitDate"] = { $gte: fromDate, $lte: toDate };
       transactionDateFilter["date"] = { $gte: fromDate, $lte: toDate };
+      obligationDateFilter["createdAt"] = { $gte: fromDate, $lte: toDate };
     }
 
     switch (type) {
@@ -237,6 +245,14 @@ export async function GET(request) {
           branch,
           procedureFilter,
         });
+        break;
+
+      case "payables-all":
+        data = await generatePayablesAllReport({ dateFilter: obligationDateFilter, branch });
+        break;
+
+      case "receivables-all":
+        data = await generateReceivablesAllReport({ dateFilter: obligationDateFilter, branch });
         break;
 
       // ==================== BRANCH REPORTS ====================
@@ -1220,6 +1236,77 @@ async function generateProcedureRevenueReport(filters) {
   });
 
   return Object.values(procedureData);
+}
+
+// paid/pending/status are computed live from linked Transactions (buildPayableAggregationStages
+// — same aggregation the Liabilities page uses), never stored on the Payable itself. Cancelled
+// payables are excluded, matching every other financial report on this page.
+async function generatePayablesAllReport(filters) {
+  const match = { isCancelled: { $ne: true }, ...filters.dateFilter };
+  if (filters.branch) match.branch = filters.branch;
+
+  const txCollection = Transactions.collection.name;
+  const rows = await Payable.aggregate([
+    { $match: match },
+    ...buildPayableAggregationStages(txCollection),
+    { $sort: { createdAt: -1 } },
+    { $limit: 5000 },
+  ]);
+
+  return rows.map((p) => ({
+    "Payee": p.payee?.label || "",
+    "Payee Type": p.payee?.kind || "",
+    Purpose: p.purpose || "",
+    "Expense Category": p.expenseCategory || "",
+    "Expense Sub-Type": p.expenseSubType || "",
+    Period: p.period?.month && p.period?.year ? `${p.period.month}/${p.period.year}` : "",
+    Branch: p.branch || "",
+    "Total Amount": p.totalAmount || 0,
+    Paid: p.paid || 0,
+    Pending: p.pending || 0,
+    Status: p.status || "",
+    "Due Date": p.dueDate ? new Date(p.dueDate).toLocaleDateString() : "",
+    // Blank once fully paid — an ageing bucket/day-count on a cleared obligation is stale
+    // information carried over from its now-irrelevant due date, the same bug already fixed on
+    // the Liabilities page's own ageing display.
+    "Ageing Bucket": p.pending > 0 ? p.ageingBucket || "" : "",
+    "Days Overdue": p.pending > 0 ? (p.daysOverdue ?? "") : "",
+    Remarks: p.remarks || "",
+    "Raised On": p.createdAt ? new Date(p.createdAt).toLocaleDateString() : "",
+  }));
+}
+
+// Mirror of generatePayablesAllReport — see its comment. Uses buildReceivableAggregationStages,
+// which keys "received" off linked Revenue transactions instead of Expense ones.
+async function generateReceivablesAllReport(filters) {
+  const match = { isCancelled: { $ne: true }, ...filters.dateFilter };
+  if (filters.branch) match.branch = filters.branch;
+
+  const txCollection = Transactions.collection.name;
+  const rows = await Receivable.aggregate([
+    { $match: match },
+    ...buildReceivableAggregationStages(txCollection),
+    { $sort: { createdAt: -1 } },
+    { $limit: 5000 },
+  ]);
+
+  return rows.map((r) => ({
+    Payer: r.payer?.label || "",
+    "Payer Type": r.payer?.kind || "",
+    Purpose: r.purpose || "",
+    "Revenue Category": r.revenueCategory || "",
+    Period: r.period?.month && r.period?.year ? `${r.period.month}/${r.period.year}` : "",
+    Branch: r.branch || "",
+    "Total Amount": r.totalAmount || 0,
+    Received: r.received || 0,
+    Pending: r.pending || 0,
+    Status: r.status || "",
+    "Due Date": r.dueDate ? new Date(r.dueDate).toLocaleDateString() : "",
+    "Ageing Bucket": r.pending > 0 ? r.ageingBucket || "" : "",
+    "Days Overdue": r.pending > 0 ? (r.daysOverdue ?? "") : "",
+    Remarks: r.remarks || "",
+    "Raised On": r.createdAt ? new Date(r.createdAt).toLocaleDateString() : "",
+  }));
 }
 
 async function generateBranchComparisonReport(filters) {

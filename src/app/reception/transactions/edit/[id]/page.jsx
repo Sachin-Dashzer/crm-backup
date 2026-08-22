@@ -9,6 +9,7 @@ import DirectExpenseSection from "@/components/DirectExpenseSection";
 import { MAIN_BRANCHES } from "@/lib/branches";
 import { useSession } from "next-auth/react";
 import { getExpenseTypes } from "@/constants/expenseCategories";
+import { fetchWithLinkedConfirm } from "@/lib/fetchWithLinkedConfirm";
 import {
   ArrowLeft,
   Scissors,
@@ -387,35 +388,30 @@ export default function EditTransactionPage() {
 
     setLoading(true);
     try {
-      const res = await fetch("/api/transactions/transplant/update", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          transactionId: transactionId,
-          patientId: transplantData.patient,
-          procedure: transplantData.procedure,
-          paymentType: transplantData.paymentType,
-          amount: transplantData.amount,
-          discount: transplantData.discount,
-          method: transplantData.method,
-          paymentId: transplantData.paymentId,
-          branch: transplantData.branch,
-          date: transplantData.date,
-          remarks: transplantData.remarks,
-          receiptMode: transplantData.receiptMode,
-          furtherMode: transplantData.furtherMode,
-          externalParty: transplantData.method === "paid_to_external" ? transplantData.externalParty : undefined,
-          receipts: transplantData.receipts,
-          receivableId: transplantData.receivableId || null,
-        }),
-      });
+      const { res, data, cancelled } = await fetchWithLinkedConfirm("/api/transactions/transplant/update", () => ({
+        transactionId: transactionId,
+        patientId: transplantData.patient,
+        procedure: transplantData.procedure,
+        paymentType: transplantData.paymentType,
+        amount: transplantData.amount,
+        discount: transplantData.discount,
+        method: transplantData.method,
+        paymentId: transplantData.paymentId,
+        branch: transplantData.branch,
+        date: transplantData.date,
+        remarks: transplantData.remarks,
+        receiptMode: transplantData.receiptMode,
+        furtherMode: transplantData.furtherMode,
+        externalParty: transplantData.method === "paid_to_external" ? transplantData.externalParty : undefined,
+        receipts: transplantData.receipts,
+        receivableId: transplantData.receivableId || null,
+      }));
 
-      const data = await res.json();
       if (res.ok) {
         showToast("Transplant transaction updated successfully!", "success");
         setTimeout(() => router.back(), 1500);
-      } else {
-        showToast(data.error || "Failed to update transaction", "error");
+      } else if (!cancelled) {
+        showToast(data.message || data.error || "Failed to update transaction", "error");
       }
     } catch (error) {
       console.error("Error updating transplant:", error);
@@ -458,37 +454,32 @@ export default function EditTransactionPage() {
 
     setLoading(true);
     try {
-      const res = await fetch("/api/transactions/service/update", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          transactionId: transactionId,
-          patientId: serviceData.isWalkIn ? null : serviceData.patient,
-          patientName: serviceData.patientName,
-          patientPhone: serviceData.patientPhone,
-          procedure: serviceData.procedure,
-          quantity: serviceData.quantity,
-          perSessionCost: serviceData.perSessionCost,
-          discount: serviceData.discount,
-          method: serviceData.method,
-          paymentId: serviceData.paymentId,
-          branch: serviceData.branch,
-          date: serviceData.date,
-          remarks: serviceData.remarks,
-          receiptMode: serviceData.receiptMode,
-          furtherMode: serviceData.furtherMode,
-          externalParty: serviceData.method === "paid_to_external" ? serviceData.externalParty : undefined,
-          receipts: serviceData.receipts,
-          receivableId: serviceData.receivableId || null,
-        }),
-      });
+      const { res, data, cancelled } = await fetchWithLinkedConfirm("/api/transactions/service/update", () => ({
+        transactionId: transactionId,
+        patientId: serviceData.isWalkIn ? null : serviceData.patient,
+        patientName: serviceData.patientName,
+        patientPhone: serviceData.patientPhone,
+        procedure: serviceData.procedure,
+        quantity: serviceData.quantity,
+        perSessionCost: serviceData.perSessionCost,
+        discount: serviceData.discount,
+        method: serviceData.method,
+        paymentId: serviceData.paymentId,
+        branch: serviceData.branch,
+        date: serviceData.date,
+        remarks: serviceData.remarks,
+        receiptMode: serviceData.receiptMode,
+        furtherMode: serviceData.furtherMode,
+        externalParty: serviceData.method === "paid_to_external" ? serviceData.externalParty : undefined,
+        receipts: serviceData.receipts,
+        receivableId: serviceData.receivableId || null,
+      }));
 
-      const data = await res.json();
       if (res.ok) {
         showToast("Service transaction updated successfully!", "success");
         setTimeout(() => router.back(), 1500);
-      } else {
-        showToast(data.error || "Failed to update transaction", "error");
+      } else if (!cancelled) {
+        showToast(data.message || data.error || "Failed to update transaction", "error");
       }
     } catch (error) {
       console.error("Error updating service:", error);
@@ -542,37 +533,32 @@ export default function EditTransactionPage() {
 
     setLoading(true);
     try {
-      const res = await fetch("/api/transactions/medicine/update", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          transactionId: transactionId,
-          patientId: medicineData.isWalkIn ? null : medicineData.patient,
-          patientName: medicineData.patientName,
-          patientPhone: medicineData.patientPhone,
-          medicineId: medicineData.medicineId,
-          quantity: medicineData.quantity,
-          perUnitCost: medicineData.perUnitCost,
-          discount: medicineData.discount,
-          method: medicineData.method,
-          paymentId: medicineData.paymentId,
-          branch: medicineData.branch,
-          date: medicineData.date,
-          remarks: medicineData.remarks,
-          receiptMode: medicineData.receiptMode,
-          furtherMode: medicineData.furtherMode,
-          externalParty: medicineData.method === "paid_to_external" ? medicineData.externalParty : undefined,
-          receipts: medicineData.receipts,
-          receivableId: medicineData.receivableId || null,
-        }),
-      });
+      const { res, data, cancelled } = await fetchWithLinkedConfirm("/api/transactions/medicine/update", () => ({
+        transactionId: transactionId,
+        patientId: medicineData.isWalkIn ? null : medicineData.patient,
+        patientName: medicineData.patientName,
+        patientPhone: medicineData.patientPhone,
+        medicineId: medicineData.medicineId,
+        quantity: medicineData.quantity,
+        perUnitCost: medicineData.perUnitCost,
+        discount: medicineData.discount,
+        method: medicineData.method,
+        paymentId: medicineData.paymentId,
+        branch: medicineData.branch,
+        date: medicineData.date,
+        remarks: medicineData.remarks,
+        receiptMode: medicineData.receiptMode,
+        furtherMode: medicineData.furtherMode,
+        externalParty: medicineData.method === "paid_to_external" ? medicineData.externalParty : undefined,
+        receipts: medicineData.receipts,
+        receivableId: medicineData.receivableId || null,
+      }));
 
-      const data = await res.json();
       if (res.ok) {
         showToast("Medicine sale updated successfully!", "success");
         setTimeout(() => router.back(), 1500);
-      } else {
-        showToast(data.error || "Failed to update transaction", "error");
+      } else if (!cancelled) {
+        showToast(data.message || data.error || "Failed to update transaction", "error");
       }
     } catch (error) {
       console.error("Error updating medicine:", error);
@@ -623,38 +609,33 @@ export default function EditTransactionPage() {
     setLoading(true);
     try {
       const vendor = vendors.find((v) => v._id === expenseData.vendorId);
-      const res = await fetch("/api/transactions/expense/update", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          transactionId: transactionId,
-          expenseCategory: expenseData.expenseCategory,
-          expenseType: expenseData.expenseType,
-          expenseGiver: {
-            type: expenseData.isVendor ? "VENDOR" : "MANUAL",
-            vendorId: expenseData.isVendor ? expenseData.vendorId : "",
-            name: expenseData.isVendor
-              ? vendor?.name
-              : expenseData.expenseGiverName,
-          },
-          amount: expenseData.amount,
-          method: expenseData.method,
-          paymentId: expenseData.paymentId,
-          branch: expenseData.branch,
-          date: expenseData.date,
-          remarks: expenseData.remarks,
-          receipts: expenseData.receipts,
-          furtherMode: expenseData.furtherMode,
-          externalParty: expenseData.method === "paid_by_other" ? expenseData.externalParty : undefined,
-        }),
-      });
+      const { res, data, cancelled } = await fetchWithLinkedConfirm("/api/transactions/expense/update", () => ({
+        transactionId: transactionId,
+        expenseCategory: expenseData.expenseCategory,
+        expenseType: expenseData.expenseType,
+        expenseGiver: {
+          type: expenseData.isVendor ? "VENDOR" : "MANUAL",
+          vendorId: expenseData.isVendor ? expenseData.vendorId : "",
+          name: expenseData.isVendor
+            ? vendor?.name
+            : expenseData.expenseGiverName,
+        },
+        amount: expenseData.amount,
+        method: expenseData.method,
+        paymentId: expenseData.paymentId,
+        branch: expenseData.branch,
+        date: expenseData.date,
+        remarks: expenseData.remarks,
+        receipts: expenseData.receipts,
+        furtherMode: expenseData.furtherMode,
+        externalParty: expenseData.method === "paid_by_other" ? expenseData.externalParty : undefined,
+      }));
 
-      const data = await res.json();
       if (res.ok) {
         showToast("Expense transaction updated successfully!", "success");
         setTimeout(() => router.back(), 1500);
-      } else {
-        showToast(data.error || "Failed to update transaction", "error");
+      } else if (!cancelled) {
+        showToast(data.message || data.error || "Failed to update transaction", "error");
       }
     } catch (error) {
       console.error("Error updating expense:", error);

@@ -1,0 +1,82 @@
+{
+  "updated": [
+    {
+      "name": "Dr, Ashalata Roy",
+      "phone": "9971125678",
+      "id": "693fe75982eaa1deb8bda397",
+      "changes": [
+        {
+          "field": "name",
+          "from": "Dr. Ashalata Roy",
+          "to": "Dr, Ashalata Roy"
+        }
+      ]
+    },
+    {
+      "name": "MOHIT SHAH",
+      "phone": "9958741089",
+      "id": "691e9d24164751f6ae6a312f",
+      "changes": [
+        {
+          "field": "role",
+          "from": "Others",
+          "to": "Implanter"
+        }
+      ]
+    },
+    {
+      "name": "SUNIL KUMAR BAIRWA",
+      "phone": "7240515815",
+      "id": "691e9d24164751f6ae6a3117",
+      "changes": [
+        {
+          "field": "name",
+          "from": "SUNIL BHAIRWA",
+          "to": "SUNIL KUMAR BAIRWA"
+        }
+      ]
+    },
+    {
+      "name": "Sheetal",
+      "phone": "7988415814",
+      "id": "691e9d24164751f6ae6a30e9",
+      "changes": [
+        {
+          "field": "name",
+          "from": "Sheetal Bhatiya",
+          "to": "Sheetal"
+        },
+        {
+          "field": "role",
+          "from": "Implanter",
+          "to": "Technician"
+        }
+      ]
+    }
+  ],
+  "riskyUpdatesApplied": [],
+  "placeholderUpdatesApplied": [],
+  "skippedBlankPhone": [
+    "Anjali Mathur"
+  ],
+  "skippedPlaceholderPhone": [
+    {
+      "name": "Rahul",
+      "phone": "1111111111"
+    },
+    {
+      "name": "Yakshi",
+      "phone": "1111111111"
+    }
+  ],
+  "skippedNotFound": [],
+  "skippedRiskyUpdates": [
+    {
+      "name": "Ritu Afterservice",
+      "phone": "9355906593",
+      "existingId": "691e9d24164751f6ae6a30bb",
+      "existingName": "Nishi Afterservice"
+    }
+  ],
+  "failed": []
+}
