@@ -3984,6 +3984,7 @@ function nameSimilarity(a, b) {
   for (const w of wa) if (wb.has(w)) shared++;
   return shared / Math.min(wa.size, wb.size);
 }
+const normExact = (s) => (s || "").trim().toLowerCase().replace(/\s+/g, " ");
 // Same rule scripts/employees-bulk-update.mjs settled on after "Nishi Afterservice" / "Ritu
 // Afterservice" proved a plain overlap ratio isn't reliable at the boundary: safe only when the
 // first word (the actual given name) matches, or overall overlap clears a much higher 75% bar.
@@ -4034,26 +4035,52 @@ async function run() {
   for (const r of SALARY_ROWS) {
     let employee = null;
     let matchedBy = null;
+    let ambiguous = null; // set when phone or name collides across more than one real employee
 
     if (r.employeePhone) {
-      employee = await Employee.findOne({ phone: r.employeePhone }).select("_id name phone").lean();
-      if (employee) matchedBy = "phone";
-    }
-    if (!employee) {
-      // Name fallback — only reached when the sheet had no usable phone (r.employeePhone is
-      // null for those rows), or a phone lookup found nothing.
-      employee = await Employee.findOne({ name: new RegExp(`^\\s*${r.employeeName.trim()}\\s*$`, "i") })
-        .select("_id name phone")
-        .lean();
-      if (employee) matchedBy = "name";
+      const byPhone = await Employee.find({ phone: r.employeePhone }).select("_id name phone").lean();
+      if (byPhone.length === 1) {
+        employee = byPhone[0];
+        matchedBy = "phone";
+      } else if (byPhone.length > 1) {
+        // The Employee model has no unique index on phone — two real people CAN share one.
+        // Picking either arbitrarily risks paying the wrong person's salary against the wrong
+        // employee record, so this is never auto-resolved.
+        ambiguous = { reason: "phone", candidates: byPhone };
+      }
     }
 
+    if (!employee && !ambiguous) {
+      // Name fallback — reached when the sheet had no usable phone, or the phone matched no
+      // one. Matches on EXACT name (case/whitespace-insensitive), which is itself a strong
+      // identity signal — but the same collision risk applies: two different real employees
+      // can share one exact name (very plausible with 300+ staff and common first names).
+      const byName = await Employee.find({ name: new RegExp(`^\\s*${r.employeeName.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*$`, "i") })
+        .select("_id name phone")
+        .lean();
+      if (byName.length === 1) {
+        employee = byName[0];
+        matchedBy = "name";
+      } else if (byName.length > 1) {
+        ambiguous = { reason: "name", candidates: byName };
+      }
+    }
+
+    if (ambiguous) {
+      resolved.push({ r, status: "ambiguous", ambiguous });
+      continue;
+    }
     if (!employee) {
       resolved.push({ r, status: "not-found" });
       continue;
     }
 
-    const safe = matchedBy === "phone" && isSafeNameMatch(r.employeeName, employee.name);
+    // An EXACT name match (matchedBy === "name", or a phone match whose stored name is
+    // identical up to case/whitespace) is a stronger signal than the word-overlap heuristic —
+    // trust it outright. Only a phone match against a NON-exact, merely word-overlapping name
+    // needs the coarser isSafeNameMatch check, and anything short of that is held for review.
+    const exact = normExact(r.employeeName) === normExact(employee.name);
+    const safe = exact || (matchedBy === "phone" && isSafeNameMatch(r.employeeName, employee.name));
     if (!safe) {
       resolved.push({ r, status: "needs-confirm", employee, matchedBy, similarity: nameSimilarity(r.employeeName, employee.name) });
       continue;
@@ -4079,11 +4106,22 @@ async function run() {
   const needsConfirm = resolved.filter((x) => x.status === "needs-confirm");
   const notFound = resolved.filter((x) => x.status === "not-found");
   const alreadyExists = resolved.filter((x) => x.status === "already-exists");
+  const ambiguousRows = resolved.filter((x) => x.status === "ambiguous");
 
   console.log(`  OK to create              : ${ok.length}`);
   console.log(`  Needs confirmation (name)  : ${needsConfirm.length}  (needs --confirm-name-matches)`);
+  console.log(`  Ambiguous (multiple match) : ${ambiguousRows.length}  (never auto-resolved)`);
   console.log(`  Employee not found         : ${notFound.length}`);
   console.log(`  Payable already exists     : ${alreadyExists.length}`);
+
+  if (ambiguousRows.length) {
+    console.log("\n--- AMBIGUOUS — more than one employee matched, cannot safely pick one (skipped) ---");
+    ambiguousRows.forEach(({ r, ambiguous }) => {
+      console.log(`  "${r.employeeName}" (${r.employeePhoneRaw})  ${inr(r.amount)}  — ${ambiguous.candidates.length} employees share this ${ambiguous.reason}:`);
+      ambiguous.candidates.forEach((c) => console.log(`      ${c._id}  "${c.name}"  (${c.phone})`));
+    });
+    console.log("These need manual resolution — pick the right _id and update the source data, or handle directly.");
+  }
 
   if (notFound.length) {
     console.log("\n--- EMPLOYEE NOT FOUND (skipped) ---");
@@ -4202,6 +4240,7 @@ async function run() {
         created,
         failed,
         skippedNotFound: notFound.map(({ r }) => ({ name: r.employeeName, phone: r.employeePhoneRaw, amount: r.amount })),
+        skippedAmbiguous: ambiguousRows.map(({ r, ambiguous }) => ({ name: r.employeeName, phone: r.employeePhoneRaw, amount: r.amount, reason: ambiguous.reason, candidateIds: ambiguous.candidates.map((c) => String(c._id)) })),
         skippedAlreadyExists: alreadyExists.map(({ r, existingId }) => ({ name: r.employeeName, existingId, amount: r.amount })),
         skippedNeedsConfirm: CONFIRM_NAME_MATCHES ? [] : needsConfirm.map(({ r, employee }) => ({ name: r.employeeName, existingName: employee.name, existingId: String(employee._id), amount: r.amount })),
       },

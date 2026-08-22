@@ -1,7 +1,99 @@
 // src/components/InputField.js
 "use client";
 
-import { useId } from "react";
+import { useId, useEffect, useRef, useState } from "react";
+
+// Combobox variant of the plain <select> — a text input that filters the option list as you
+// type, for dropdowns long enough that scrolling to find a name (e.g. every Agent) is slower
+// than typing a few letters of it.
+function SearchableSelect({ id, value, onChange, options, label, placeholder, required, disabled }) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const wrapperRef = useRef(null);
+
+  const selected = options.find((o) => o.value === value);
+
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target)) {
+        setOpen(false);
+        setQuery("");
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const filtered = query
+    ? options.filter((o) => o.label.toLowerCase().includes(query.toLowerCase()))
+    : options;
+
+  return (
+    <div className="relative" ref={wrapperRef}>
+      <input
+        id={id}
+        type="text"
+        className={`
+          w-full px-4 py-3 rounded-lg border border-gray-300
+          focus:ring-2 focus:ring-blue-500 focus:border-transparent
+          transition-all duration-200 ease-in-out
+          placeholder:text-gray-400
+          ${disabled ? "bg-gray-100 cursor-not-allowed" : "bg-white"}
+        `}
+        value={open ? query : selected?.label || ""}
+        onChange={(e) => {
+          setQuery(e.target.value);
+          if (!open) setOpen(true);
+        }}
+        onFocus={() => {
+          setOpen(true);
+          setQuery("");
+        }}
+        placeholder={placeholder || `Search ${label || ""}`}
+        required={required}
+        disabled={disabled}
+        autoComplete="off"
+      />
+      {open && !disabled && (
+        <ul className="absolute z-20 mt-1 w-full max-h-60 overflow-auto rounded-lg border border-gray-300 bg-white shadow-lg">
+          {!query && (
+            <li
+              onMouseDown={(e) => {
+                e.preventDefault();
+                onChange({ target: { value: "" } });
+                setOpen(false);
+                setQuery("");
+              }}
+              className="px-4 py-2 text-sm text-gray-400 cursor-pointer hover:bg-gray-50"
+            >
+              Select {label}
+            </li>
+          )}
+          {filtered.length === 0 ? (
+            <li className="px-4 py-2 text-sm text-gray-400">No matches</li>
+          ) : (
+            filtered.map((option) => (
+              <li
+                key={option.value}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  onChange({ target: { value: option.value } });
+                  setOpen(false);
+                  setQuery("");
+                }}
+                className={`px-4 py-2 text-sm cursor-pointer hover:bg-blue-50 ${
+                  option.value === value ? "bg-blue-100 font-medium" : ""
+                }`}
+              >
+                {option.label}
+              </li>
+            ))
+          )}
+        </ul>
+      )}
+    </div>
+  );
+}
 
 export default function InputField({
   label,
@@ -66,6 +158,17 @@ export default function InputField({
             </option>
           ))}
         </select>
+      ) : type === "searchable-select" ? (
+        <SearchableSelect
+          id={id}
+          value={value}
+          onChange={onChange}
+          options={options}
+          label={label}
+          placeholder={placeholder}
+          required={required}
+          disabled={disabled}
+        />
       ) : type === "radio" ? (
         <div className="flex flex-wrap gap-3">
           {options.map((option) => {

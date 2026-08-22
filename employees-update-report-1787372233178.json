@@ -1,0 +1,5577 @@
+{
+  "updated": [
+    {
+      "name": "(Gudiya)Anjali",
+      "phone": "9310767886",
+      "id": "691e9d24164751f6ae6a30a7",
+      "changes": [
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 17700
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "AMAAN MIRZA",
+      "phone": "9810334104",
+      "id": "691e9d24164751f6ae6a3113",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 35000
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "AMIT KUMAR",
+      "phone": "6283884492",
+      "id": "691e9d24164751f6ae6a310f",
+      "changes": [
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 30000
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "ANAS SAIFI",
+      "phone": "9667523078",
+      "id": "6944f2986351226e5001ad16",
+      "changes": [
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "ANKIT",
+      "phone": "9310136418",
+      "id": "691e9d24164751f6ae6a30ee",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "ANKUR KHUSHWAHA",
+      "phone": "8527596280",
+      "id": "6944f56d6351226e5001ad66",
+      "changes": [
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 30000
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "ARCHANA",
+      "phone": "8076350538",
+      "id": "691e9d24164751f6ae6a3110",
+      "changes": [
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 18000
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "ARMAN MALIK",
+      "phone": "7982653957",
+      "id": "696e25fa0112a894890ae034",
+      "changes": [
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 14000
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "ARTI",
+      "phone": "9958741086",
+      "id": "691e9d24164751f6ae6a312d",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "AVINASH PRAJAPATI",
+      "phone": "9026706272",
+      "id": "6944f5be6351226e5001ad81",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Aachal Chaturvedi",
+      "phone": "8448306374",
+      "id": "691e9d24164751f6ae6a30b6",
+      "changes": [
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 15000
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Aachal Kanaujiya",
+      "phone": "8423674383",
+      "id": "6944f8dd9bf2fb764f00e4f4",
+      "changes": [
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 11000
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Aachal Panchal",
+      "phone": "9211246549",
+      "id": "691e9d24164751f6ae6a30d6",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Aakash Sharma",
+      "phone": "9818732337",
+      "id": "691e9d24164751f6ae6a30ad",
+      "changes": [
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Aalim",
+      "phone": "8920086967",
+      "id": "696e2419087dc6cc2d1040ba",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Aarti Thakur",
+      "phone": "9220586763",
+      "id": "696e2471087dc6cc2d104a59",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Aarti sharma",
+      "phone": "7065727692",
+      "id": "696cd39370262bc92e990364",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Abhijeet Kumar Mandal",
+      "phone": "8527691963",
+      "id": "6944f0db71989d90c0570803",
+      "changes": [
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 12000
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Abhilasha",
+      "phone": "8303047886",
+      "id": "696e237d087dc6cc2d103f1d",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Abhishek Abhua",
+      "phone": "8810404741",
+      "id": "691e9d24164751f6ae6a30af",
+      "changes": [
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Aditya Maurya",
+      "phone": "9711581421",
+      "id": "691e9d24164751f6ae6a313a",
+      "changes": [
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 25000
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Aisha Khan",
+      "phone": "7428922270",
+      "id": "691e9d24164751f6ae6a30de",
+      "changes": [
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 16000
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Akansha",
+      "phone": "9560304922",
+      "id": "696cd73b8afb5e6fc6573f24",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Akansha S",
+      "phone": "7011345996",
+      "id": "691e9d24164751f6ae6a30c8",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Akash",
+      "phone": "9582018065",
+      "id": "691ea8d6164751f6ae6a31b9",
+      "changes": [
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Alisha",
+      "phone": "8527753871",
+      "id": "691e9d24164751f6ae6a30b0",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 12000
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Amar Shinde",
+      "phone": "9503806069",
+      "id": "6944f21c6351226e5001ad06",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Anam",
+      "phone": "7042124866",
+      "id": "691e9d24164751f6ae6a30b5",
+      "changes": [
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 20000
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Anjali",
+      "phone": "9821737758",
+      "id": "691e9d24164751f6ae6a3127",
+      "changes": [
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 15000
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Anjali Gupta",
+      "phone": "9021496519",
+      "id": "691e9d24164751f6ae6a30bf",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Anjali Sharma",
+      "phone": "9354003546",
+      "id": "691e9d24164751f6ae6a30d1",
+      "changes": [
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 13000
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Anjali singh",
+      "phone": "7303878190",
+      "id": "691e9d24164751f6ae6a30c2",
+      "changes": [
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 20000
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Anju",
+      "phone": "9354506934",
+      "id": "691e9d24164751f6ae6a30b4",
+      "changes": [
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Arvind Vishwakarma",
+      "phone": "7065653356",
+      "id": "691e9d24164751f6ae6a30e1",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Aryan",
+      "phone": "7703854864",
+      "id": "696cd5028afb5e6fc6573d0d",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Ashish Kumar",
+      "phone": "7011287734",
+      "id": "691e9d24164751f6ae6a30b2",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Ashu",
+      "phone": "7838699102",
+      "id": "691e9d24164751f6ae6a30b9",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 30000
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Ayesha",
+      "phone": "9971915864",
+      "id": "691e9d24164751f6ae6a30a5",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Ayush srivastav",
+      "phone": "8595382355",
+      "id": "696e26560112a894890ae03b",
+      "changes": [
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 13000
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Ayushi",
+      "phone": "9217453055",
+      "id": "697f4098bf69b1889ad77a5e",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Babita",
+      "phone": "8933064653",
+      "id": "691e9d24164751f6ae6a311a",
+      "changes": [
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 15000
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Beauty Chodhery",
+      "phone": "9717674612",
+      "id": "691e9d24164751f6ae6a30a6",
+      "changes": [
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 15000
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Bhagwan Jii Mandal",
+      "phone": "7070441788",
+      "id": "6944f8bf6351226e5001adb0",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Bharat Goswami",
+      "phone": "8527193995",
+      "id": "691e9d24164751f6ae6a30a9",
+      "changes": [
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 100000
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Bhavey Singh Rana",
+      "phone": "9266821609",
+      "id": "691e9d24164751f6ae6a30e2",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Bhavishay Sharma",
+      "phone": "7836866524",
+      "id": "696e25cc0112a894890ae032",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Bhavishay sharma",
+      "phone": "9643897813",
+      "id": "69d49718b386c04aaa5ebd7a",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Bhawana",
+      "phone": "8198971158",
+      "id": "691e9d24164751f6ae6a30dc",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Bhawna Tyagi",
+      "phone": "9643921282",
+      "id": "691ea5d6164751f6ae6a317d",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "CHANDAN KUMAR",
+      "phone": "9334059199",
+      "id": "691e9d24164751f6ae6a3100",
+      "changes": [
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 25000
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "CHETNA",
+      "phone": "8287867897",
+      "id": "691e9d24164751f6ae6a312e",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Chanchal",
+      "phone": "9643853913",
+      "id": "697edce0a757571bceab4b30",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "DEEPAK KUSHWAHA",
+      "phone": "9958741077",
+      "id": "691e9d24164751f6ae6a30f8",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "DR PARNAV",
+      "phone": "8368912370",
+      "id": "691e9d24164751f6ae6a311e",
+      "changes": [
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 90000
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "DR SURAKSHA POOJARY",
+      "phone": "7718008212",
+      "id": "6944f24e6351226e5001ad0e",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "DURGESH GUPTA",
+      "phone": "9289147963",
+      "id": "691e9d24164751f6ae6a310d",
+      "changes": [
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 15000
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Deshraj Kumar Bairwa",
+      "phone": "9660544875",
+      "id": "691e9d24164751f6ae6a30f0",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Devraj",
+      "phone": "9953365762",
+      "id": "691e9d24164751f6ae6a30e4",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 13000
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Dharmendra Tiwari",
+      "phone": "7738749683",
+      "id": "6a0456d3d062138799fbf337",
+      "changes": [
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Dinesh Kumar",
+      "phone": "8809139030",
+      "id": "691e9d24164751f6ae6a310a",
+      "changes": [
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Disha",
+      "phone": "8375851336",
+      "id": "691e9d24164751f6ae6a311d",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Diya",
+      "phone": "9643599516",
+      "id": "691ea8eb164751f6ae6a31bb",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Dr Ishika",
+      "phone": "2121212121",
+      "id": "6a589e6c5b712bcdd080d965",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Dr Tanya Arora",
+      "phone": "8368021354",
+      "id": "691e9d24164751f6ae6a3114",
+      "changes": [
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Dr, Ashalata Roy",
+      "phone": "9971125678",
+      "id": "693fe75982eaa1deb8bda397",
+      "changes": [
+        {
+          "field": "name",
+          "from": "Dr. Ashalata Roy",
+          "to": "Dr, Ashalata Roy"
+        },
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 60000
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Dr. Ashalata Roy",
+      "phone": "9971125678",
+      "id": "693fe75982eaa1deb8bda397",
+      "changes": [
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 60000
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Dr. Pranendra Singh",
+      "phone": "8923964333",
+      "id": "691e9d24164751f6ae6a313c",
+      "changes": [
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 130000
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Dr.Mansi Bajpai",
+      "phone": "8755211994",
+      "id": "691e9d24164751f6ae6a3109",
+      "changes": [
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 25000
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "EKTA",
+      "phone": "9910534023",
+      "id": "691e9d24164751f6ae6a30ec",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Farheen Ansari",
+      "phone": "7056457004",
+      "id": "691e9d24164751f6ae6a30d2",
+      "changes": [
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "GOURI SAGAR",
+      "phone": "9266571543",
+      "id": "691e9d24164751f6ae6a3101",
+      "changes": [
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 18000
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "GUDIYA",
+      "phone": "9582273771",
+      "id": "6944f6ba6351226e5001ad95",
+      "changes": [
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 17000
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "GUNJAN",
+      "phone": "9818697541",
+      "id": "691e9d24164751f6ae6a30ff",
+      "changes": [
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 18000
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "HIMANSHU KUMAR",
+      "phone": "9958741110",
+      "id": "691e9d24164751f6ae6a30fd",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Harshada Rakh",
+      "phone": "9356333964",
+      "id": "6a045716d062138799fbf339",
+      "changes": [
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Harshita Rai",
+      "phone": "7827516971",
+      "id": "691e9d24164751f6ae6a30b7",
+      "changes": [
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 15000
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Harsshita Sabarwal",
+      "phone": "9625220513",
+      "id": "691e9d24164751f6ae6a30d5",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Himanshi Kaushik",
+      "phone": "8882750475",
+      "id": "691e9d24164751f6ae6a30e6",
+      "changes": [
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 14000
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Himanshi Ravi",
+      "phone": "8109289175",
+      "id": "691e9d24164751f6ae6a30ab",
+      "changes": [
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Himanshu Verma",
+      "phone": "9212131233",
+      "id": "691e9d24164751f6ae6a30ae",
+      "changes": [
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 25000
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Hr Anamta",
+      "phone": "9643929618",
+      "id": "6a27ff34d3eb9b2325233664",
+      "changes": [
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Hr Muskan",
+      "phone": "9667970342",
+      "id": "69bd264a9777c5b4424121d9",
+      "changes": [
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 20000
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Hr Priya",
+      "phone": "9217974938",
+      "id": "69bd26169777c5b4424121cd",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Hr Simran Kaur",
+      "phone": "7290864105",
+      "id": "69bd25df9777c5b4424121c1",
+      "changes": [
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Hr Tulsi",
+      "phone": "9355906648",
+      "id": "69bd26769777c5b4424121e7",
+      "changes": [
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "JAHANA",
+      "phone": "9199329315",
+      "id": "691e9d24164751f6ae6a3130",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "JATIN",
+      "phone": "8700130897",
+      "id": "691e9d24164751f6ae6a30eb",
+      "changes": [
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 18000
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "JATIN Jarwal",
+      "phone": "9216203543",
+      "id": "691e9d24164751f6ae6a3124",
+      "changes": [
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "JYOTI Kumari",
+      "phone": "9355658634",
+      "id": "691e9d24164751f6ae6a3103",
+      "changes": [
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 12500
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Janvi Gupta",
+      "phone": "9958530105",
+      "id": "691e9d24164751f6ae6a30dd",
+      "changes": [
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Janvi afterservice",
+      "phone": "8376849263",
+      "id": "691e9d24164751f6ae6a30cd",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Jashan",
+      "phone": "8908550003",
+      "id": "691e9d24164751f6ae6a3129",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Jatin",
+      "phone": "9654858988",
+      "id": "691e9d24164751f6ae6a30c1",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Jyoti Gautam",
+      "phone": "9289415086",
+      "id": "691e9d24164751f6ae6a30c0",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Kamal Bairwa",
+      "phone": "8058892785",
+      "id": "691e9d24164751f6ae6a30f6",
+      "changes": [
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 10000
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Kanika",
+      "phone": "8882388207",
+      "id": "691e9d24164751f6ae6a30c7",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Kavaljeet Kaur",
+      "phone": "8742958182",
+      "id": "691e9d24164751f6ae6a30fe",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Khushboo",
+      "phone": "8742914820",
+      "id": "691ea983164751f6ae6a31c1",
+      "changes": [
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Khushbu Mathur",
+      "phone": "9318481377",
+      "id": "691e9d24164751f6ae6a30be",
+      "changes": [
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 13000
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Khushi Afterservice",
+      "phone": "9643230280",
+      "id": "691e9d24164751f6ae6a30cc",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Kiran",
+      "phone": "9873343501",
+      "id": "691e9d24164751f6ae6a3126",
+      "changes": [
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 16000
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Kiran",
+      "phone": "9355170578",
+      "id": "691ea845164751f6ae6a31b7",
+      "changes": [
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Komal Thakur",
+      "phone": "9582588988",
+      "id": "696e2457087dc6cc2d104a55",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Kumkum Rajput",
+      "phone": "9718587101",
+      "id": "691e9d24164751f6ae6a30d4",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 13000
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Laiba",
+      "phone": "9643197719",
+      "id": "691e9d24164751f6ae6a30e5",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Lata",
+      "phone": "7290824383",
+      "id": "691ea9da164751f6ae6a31c3",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Lavanaya Thapa",
+      "phone": "9540035067",
+      "id": "697dd7117339577efcf71d82",
+      "changes": [
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Lucky Tanwar",
+      "phone": "7217767823",
+      "id": "691e9d24164751f6ae6a30c9",
+      "changes": [
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 15000
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "MANISHA GADEKAR",
+      "phone": "9930100351",
+      "id": "6944f4aa6351226e5001ad46",
+      "changes": [
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "MOHIT SHAH",
+      "phone": "9958741089",
+      "id": "691e9d24164751f6ae6a312f",
+      "changes": [
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "MOHIT SHAH",
+      "phone": "9958741089",
+      "id": "691e9d24164751f6ae6a312f",
+      "changes": [
+        {
+          "field": "role",
+          "from": "Others",
+          "to": "Implanter"
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "MUKUL TYAGI",
+      "phone": "7838507297",
+      "id": "691e9d24164751f6ae6a311f",
+      "changes": [
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": "2026-08-21",
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "MUMTAJ",
+      "phone": "9667436799",
+      "id": "691e9d24164751f6ae6a3132",
+      "changes": [
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 15000
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "MUSKAN KARAR (MANNU)",
+      "phone": "9958741095",
+      "id": "6944ef9571989d90c05707f3",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Manisha Kumari",
+      "phone": "8287178328",
+      "id": "696e22b0087dc6cc2d103f10",
+      "changes": [
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 13000
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Manmohan Bairwa",
+      "phone": "7877279502",
+      "id": "691e9d24164751f6ae6a30f7",
+      "changes": [
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 10000
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Mannat Singh",
+      "phone": "9217827351",
+      "id": "697edcf9a757571bceab4b32",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Mansi Gupta",
+      "phone": "9899910359",
+      "id": "696e24e70112a894890ae024",
+      "changes": [
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 13000
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Md Sarfaraz",
+      "phone": "9625670667",
+      "id": "691e9d24164751f6ae6a30f5",
+      "changes": [
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 10000
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Meenu",
+      "phone": "9667901689",
+      "id": "69d4999b09c2c5ec77bca413",
+      "changes": [
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 15000
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Mehak Bansal",
+      "phone": "9289581506",
+      "id": "69d498815622b433cde70916",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Mehzabi",
+      "phone": "7048914773",
+      "id": "691e9d24164751f6ae6a30e7",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Mohit",
+      "phone": "9560130321",
+      "id": "6932c562b1ce4b6c9f2cd25c",
+      "changes": [
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Mushkan Sharma - External",
+      "phone": "8527541877",
+      "id": "691e9d24164751f6ae6a30d3",
+      "changes": [
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 20000
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "NARENDRA",
+      "phone": "8851212224",
+      "id": "691e9d24164751f6ae6a30f3",
+      "changes": [
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 85000
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "NISHANT KUSHWAHA",
+      "phone": "8171385980",
+      "id": "691e9d24164751f6ae6a30ea",
+      "changes": [
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 85000
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "NITESH ( NIKKI)",
+      "phone": "9205069771",
+      "id": "691e9d24164751f6ae6a3128",
+      "changes": [
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 35000
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Nandani",
+      "phone": "9643038211",
+      "id": "691ea711164751f6ae6a3199",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Nargish",
+      "phone": "8527544328",
+      "id": "696e253d0112a894890ae02a",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Neha",
+      "phone": "8595096127",
+      "id": "6944f15271989d90c0570817",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Neha",
+      "phone": "9711968178",
+      "id": "691ea79f164751f6ae6a31a7",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Nikhil arora",
+      "phone": "7835858826",
+      "id": "696e26200112a894890ae037",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 13000
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Nikita Nikki",
+      "phone": "8750887588",
+      "id": "691e9d24164751f6ae6a30c5",
+      "changes": [
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 20000
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Nikita Yadav",
+      "phone": "9821574518",
+      "id": "691e9d24164751f6ae6a30b8",
+      "changes": [
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 20000
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Nilesh",
+      "phone": "9756722934",
+      "id": "691e9d24164751f6ae6a3106",
+      "changes": [
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 70000
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Nisha (Rajiya)",
+      "phone": "8287608586",
+      "id": "691e9d24164751f6ae6a30c3",
+      "changes": [
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Nisha Mahor",
+      "phone": "8383903389",
+      "id": "691e9d24164751f6ae6a30ca",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 15000
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Nishi Afterservice",
+      "phone": "9355906593",
+      "id": "691e9d24164751f6ae6a30bb",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Nitesh",
+      "phone": "9990018137",
+      "id": "691ea829164751f6ae6a31b5",
+      "changes": [
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Nitika",
+      "phone": "7827900974",
+      "id": "691e9d24164751f6ae6a30bc",
+      "changes": [
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 16000
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Other",
+      "phone": "9953647902",
+      "id": "691e9d24164751f6ae6a313d",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "PANKAJ",
+      "phone": "8958449464",
+      "id": "691e9d24164751f6ae6a3107",
+      "changes": [
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 90000
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "PAYAL",
+      "phone": "9958741104",
+      "id": "691e9d24164751f6ae6a30fb",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "POOJA",
+      "phone": "9205091244",
+      "id": "691e9d24164751f6ae6a30f9",
+      "changes": [
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 15000
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "PRACHI JADHAV",
+      "phone": "9082671652",
+      "id": "6944f4d26351226e5001ad4e",
+      "changes": [
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "PRAKASH KUMAR",
+      "phone": "9958741076",
+      "id": "691e9d24164751f6ae6a3116",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "PRITAM",
+      "phone": "8824185718",
+      "id": "691e9d24164751f6ae6a30ed",
+      "changes": [
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 25000
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Pardis",
+      "phone": "8586043260",
+      "id": "69a67e8b60410e95d3d7eef8",
+      "changes": [
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 17000
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Parul",
+      "phone": "8595557099",
+      "id": "691e9d24164751f6ae6a3111",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Parveen Meemrot",
+      "phone": "9116772736",
+      "id": "691e9d24164751f6ae6a3135",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Pawan Kumar",
+      "phone": "7065257882",
+      "id": "691e9d24164751f6ae6a3115",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Payal Prajapati",
+      "phone": "9205502942",
+      "id": "691e9d24164751f6ae6a30d0",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Pinki",
+      "phone": "8506871705",
+      "id": "691e9d24164751f6ae6a3134",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Piyush",
+      "phone": "8178433668",
+      "id": "691e9d24164751f6ae6a30e3",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 13000
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Pooja Kakkar",
+      "phone": "9643086647",
+      "id": "691e9d24164751f6ae6a30ba",
+      "changes": [
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Pooja Sharma",
+      "phone": "8826439924",
+      "id": "691e9d24164751f6ae6a30f4",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Poonam",
+      "phone": "9311975648",
+      "id": "6944f03a71989d90c05707fb",
+      "changes": [
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 12500
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Prabhat",
+      "phone": "6393583339",
+      "id": "69d4a2cbb386c04aaa5ec0bf",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Preeti",
+      "phone": "9667097218",
+      "id": "6a0c245b8e488a02dee6cb27",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Priyam Bhuteja",
+      "phone": "8076676431",
+      "id": "6944f9f29bf2fb764f00e50c",
+      "changes": [
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 22000
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "RAVI KUMAR",
+      "phone": "7579782314",
+      "id": "691e9d24164751f6ae6a30f1",
+      "changes": [
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 25000
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "RAVINDRA KHUSHWAHA",
+      "phone": "9675101570",
+      "id": "691e9d24164751f6ae6a30ef",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "RINKU",
+      "phone": "9821137715",
+      "id": "691e9d24164751f6ae6a30fc",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "RITIKA",
+      "phone": "8744080827",
+      "id": "691e9d24164751f6ae6a3123",
+      "changes": [
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "ROHAN SINGH",
+      "phone": "7065869223",
+      "id": "691e9d24164751f6ae6a3131",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "ROHIT",
+      "phone": "8764763600",
+      "id": "691e9d24164751f6ae6a30fa",
+      "changes": [
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 30000
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Rahul Gupta",
+      "phone": "9311545060",
+      "id": "691e9d24164751f6ae6a30db",
+      "changes": [
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Rajat",
+      "phone": "9354100637",
+      "id": "696e25720112a894890ae02f",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 15000
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Rajesh Sahu",
+      "phone": "8743833878",
+      "id": "691e9d24164751f6ae6a30e8",
+      "changes": [
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 13000
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Rajiv singh",
+      "phone": "9643075865",
+      "id": "691e9d24164751f6ae6a30a8",
+      "changes": [
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 15000
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Ram Kishan Bairwa",
+      "phone": "9636998659",
+      "id": "6944f5006351226e5001ad56",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Ramsha Khan",
+      "phone": "8595907221",
+      "id": "691e9d24164751f6ae6a3120",
+      "changes": [
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 15000
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Rani gupta",
+      "phone": "9319469553",
+      "id": "696e243d087dc6cc2d104722",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Ranjana",
+      "phone": "8750742361",
+      "id": "691e9d24164751f6ae6a30bd",
+      "changes": [
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Ravi",
+      "phone": "9211247764",
+      "id": "69d4993c09c2c5ec77bca3fc",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 12000
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Ravi Kushwaha",
+      "phone": "7037595070",
+      "id": "691e9d24164751f6ae6a311b",
+      "changes": [
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 15000
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Ravina Adhikari",
+      "phone": "9319781023",
+      "id": "691e9d24164751f6ae6a310c",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 17000
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Reetu",
+      "phone": "9310157897",
+      "id": "691e9d24164751f6ae6a3137",
+      "changes": [
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 15000
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Rinku Bhagwat",
+      "phone": "9887293547",
+      "id": "691e9d24164751f6ae6a3139",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Rinky",
+      "phone": "9335355889",
+      "id": "691e9d24164751f6ae6a30aa",
+      "changes": [
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 16000
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Rishabh",
+      "phone": "8787878787",
+      "id": "6a589e385b712bcdd080d964",
+      "changes": [
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Ritik Kumar",
+      "phone": "9310530507",
+      "id": "696cd7238afb5e6fc6573f22",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Rohit Dabla",
+      "phone": "9217442418",
+      "id": "69c3c11f5fa2ae2e17bd732e",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Rohit gusai",
+      "phone": "8810442594",
+      "id": "696e24000112a894890addd6",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Rozy",
+      "phone": "8287819671",
+      "id": "691e9d24164751f6ae6a30ce",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 13000
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Rubi",
+      "phone": "9310083626",
+      "id": "696e25570112a894890ae02d",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Ruchi",
+      "phone": "9654916903",
+      "id": "696e24a5087dc6cc2d104a5f",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Rupesh mishra",
+      "phone": "7982541700",
+      "id": "696cd7028afb5e6fc6573f20",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Ryan",
+      "phone": "9643809035",
+      "id": "691e9d24164751f6ae6a313b",
+      "changes": [
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "SACHIN",
+      "phone": "9958741081",
+      "id": "691e9d24164751f6ae6a312c",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "SALMAN KHAN",
+      "phone": "7982724902",
+      "id": "691e9d24164751f6ae6a3119",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "SAMSHER CHAUHANc",
+      "phone": "9569287571",
+      "id": "6944f4326351226e5001ad36",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "SANDHYA",
+      "phone": "9198545935",
+      "id": "691e9d24164751f6ae6a3104",
+      "changes": [
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 13000
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "SANJAY SINGH",
+      "phone": "8448307056",
+      "id": "691e9d24164751f6ae6a3122",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "SHIVAM RAI",
+      "phone": "7838826632",
+      "id": "691e9d24164751f6ae6a3121",
+      "changes": [
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 15000
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "SHRADDHA RANDIVE",
+      "phone": "7304770801",
+      "id": "6944f4766351226e5001ad3e",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "SIMRAN",
+      "phone": "9718493850",
+      "id": "691e9d24164751f6ae6a3102",
+      "changes": [
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 12000
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "SONIA",
+      "phone": "7827848139",
+      "id": "691e9d24164751f6ae6a311c",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "SUNIL BHAIRWA",
+      "phone": "7240515815",
+      "id": "691e9d24164751f6ae6a3117",
+      "changes": [
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "SUNIL KUMAR BAIRWA",
+      "phone": "7240515815",
+      "id": "691e9d24164751f6ae6a3117",
+      "changes": [
+        {
+          "field": "name",
+          "from": "SUNIL BHAIRWA",
+          "to": "SUNIL KUMAR BAIRWA"
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "SUNIL NAGAR",
+      "phone": "9079115069",
+      "id": "691e9d24164751f6ae6a30f2",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Saanvi",
+      "phone": "8766266474",
+      "id": "69d49776b386c04aaa5ebd88",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Sachin sharma",
+      "phone": "7982314541",
+      "id": "69d497f0b386c04aaa5ebd9b",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Sagar Rathor",
+      "phone": "7042384731",
+      "id": "696e23d90112a894890addd4",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Saleem Khan",
+      "phone": "9310201901",
+      "id": "6930165931aa77c237794b60",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Satyam Rai",
+      "phone": "9220129430",
+      "id": "691e9d24164751f6ae6a3138",
+      "changes": [
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Shaheen",
+      "phone": "7247868055",
+      "id": "691e9d24164751f6ae6a30c4",
+      "changes": [
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 15000
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Shaifali",
+      "phone": "9205049061",
+      "id": "691e9d24164751f6ae6a30ac",
+      "changes": [
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 13000
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Shama",
+      "phone": "9266314594",
+      "id": "697de0470b881076231c2770",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Sheetal",
+      "phone": "7988415814",
+      "id": "691e9d24164751f6ae6a30e9",
+      "changes": [
+        {
+          "field": "name",
+          "from": "Sheetal Bhatiya",
+          "to": "Sheetal"
+        },
+        {
+          "field": "role",
+          "from": "Implanter",
+          "to": "Technician"
+        },
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 35000
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Sheetal Bhatiya",
+      "phone": "7988415814",
+      "id": "691e9d24164751f6ae6a30e9",
+      "changes": [
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 35000
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Sheetal Rathour",
+      "phone": "9354232491",
+      "id": "691e9d24164751f6ae6a30cf",
+      "changes": [
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 13000
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Shivam",
+      "phone": "9990143183",
+      "id": "691ea954164751f6ae6a31bf",
+      "changes": [
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Simran Sharma",
+      "phone": "8875780931",
+      "id": "691e9d24164751f6ae6a3136",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Sneha",
+      "phone": "9873024842",
+      "id": "691ea6bc164751f6ae6a318b",
+      "changes": [
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Sourabh Kumar",
+      "phone": "9956130556",
+      "id": "691e9d24164751f6ae6a310b",
+      "changes": [
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 15000
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Suhail",
+      "phone": "9897854791",
+      "id": "6944f12671989d90c057080b",
+      "changes": [
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Sunita",
+      "phone": "8920693496",
+      "id": "691e9d24164751f6ae6a30da",
+      "changes": [
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Sushma",
+      "phone": "9971381020",
+      "id": "696e2320087dc6cc2d103f17",
+      "changes": [
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 15000
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Sushma AfterService",
+      "phone": "9355006021",
+      "id": "691e9d24164751f6ae6a30d8",
+      "changes": [
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Sweta",
+      "phone": "9355906583",
+      "id": "691ea916164751f6ae6a31bd",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Tamanna",
+      "phone": "7838830446",
+      "id": "691e9d24164751f6ae6a30d9",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Tanisha",
+      "phone": "9717618581",
+      "id": "691e9d24164751f6ae6a30b1",
+      "changes": [
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Tanu",
+      "phone": "9355170574",
+      "id": "691e9d24164751f6ae6a30b3",
+      "changes": [
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 16500
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Tanya Dubey",
+      "phone": "6306683594",
+      "id": "691e9d24164751f6ae6a30df",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Uvesh",
+      "phone": "7055291995",
+      "id": "691e9d24164751f6ae6a3108",
+      "changes": [
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "VAASHU",
+      "phone": "9999216811",
+      "id": "691e9d24164751f6ae6a310e",
+      "changes": [
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 35000
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "VAIBHAV",
+      "phone": "8929654240",
+      "id": "696cd2b070262bc92e99034a",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "VIKAS Bairwa",
+      "phone": "8058193092",
+      "id": "691e9d24164751f6ae6a3133",
+      "changes": [
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 10000
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Vikas kashyap",
+      "phone": "8986199986",
+      "id": "691e9d24164751f6ae6a30d7",
+      "changes": [
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Vinita",
+      "phone": "9315337868",
+      "id": "691e9d24164751f6ae6a30cb",
+      "changes": [
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "YASHIKA",
+      "phone": "9667932450",
+      "id": "691e9d24164751f6ae6a3118",
+      "changes": [
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 15000
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Yash Thakur",
+      "phone": "9220264451",
+      "id": "691e9d24164751f6ae6a30e0",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Yash Yadav",
+      "phone": "9217729689",
+      "id": "697f37bb3ea15002e63498cb",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Yashveer",
+      "phone": "9971381255",
+      "id": "691e9d24164751f6ae6a312a",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Yashvinder Singh",
+      "phone": "8447001548",
+      "id": "691e9d24164751f6ae6a3125",
+      "changes": [
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 12000
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Yogesh Gupta",
+      "phone": "9667499969",
+      "id": "691e9d24164751f6ae6a3105",
+      "changes": [
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 12000
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Yogesh Kumar Insha",
+      "phone": "8306206226",
+      "id": "691e9d24164751f6ae6a312b",
+      "changes": [
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 35000
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "Yuvraj",
+      "phone": "8989898989",
+      "id": "6a589df55b712bcdd080d963",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "anas ali",
+      "phone": "9667093418",
+      "id": "696e29714ef818f65475b28c",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "ankit gaur",
+      "phone": "7827241534",
+      "id": "696e24cb0112a894890ae020",
+      "changes": [
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 15000
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "anuj sharma",
+      "phone": "9643845347",
+      "id": "696cd61d8afb5e6fc6573f15",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "bhavyansh",
+      "phone": "7827740351",
+      "id": "696cd69f8afb5e6fc6573f1b",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "khushi aggarwal",
+      "phone": "9625639773",
+      "id": "69d4982f5622b433cde70909",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 14000
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "lavanya",
+      "phone": "9718056005",
+      "id": "69d498e65622b433cde709e2",
+      "changes": [
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "lawanya arora",
+      "phone": "8368517272",
+      "id": "696cd5fb8afb5e6fc6573f12",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "manmeet",
+      "phone": "9818746316",
+      "id": "696e27ac0112a894890ae046",
+      "changes": [
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "mantasha",
+      "phone": "8700930858",
+      "id": "696e1dfaa3a71cd88b89821e",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "other",
+      "phone": "1232132212",
+      "id": "69bd3e186706eb9cf318ffc9",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "rohan chaudhary",
+      "phone": "8595420813",
+      "id": "696cd6c48afb5e6fc6573f1d",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "sandhya",
+      "phone": "9354051129",
+      "id": "696cd5c22da59c8cd98ba0d7",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "sanjay joshi",
+      "phone": "8383960420",
+      "id": "696e25170112a894890ae026",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "shaan ali",
+      "phone": "7428036812",
+      "id": "696e2490087dc6cc2d104a5d",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "shalu",
+      "phone": "9310465022",
+      "id": "696cd5d68afb5e6fc6573f10",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "simaranjeet kaur",
+      "phone": "7701955098",
+      "id": "696e26750112a894890ae03e",
+      "changes": [
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 16000
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "sujal",
+      "phone": "9319081380",
+      "id": "696cd3b970262bc92e990367",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "suraj",
+      "phone": "8700849068",
+      "id": "696cd41822962b7c4a6f43b0",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "utkarsh",
+      "phone": "9319432592",
+      "id": "691e9d24164751f6ae6a3112",
+      "changes": [
+        {
+          "field": "salaryStructure.baseSalary",
+          "from": 0,
+          "to": 10000
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "name": "yash kumar",
+      "phone": "9899185669",
+      "id": "696cd4538afb5e6fc6573d00",
+      "changes": [
+        {
+          "field": "isactive",
+          "from": true,
+          "to": false
+        },
+        {
+          "field": "salaryStructure.salaryType",
+          "from": null,
+          "to": "Monthly"
+        },
+        {
+          "field": "salaryStructure.effectiveFrom",
+          "from": null,
+          "to": "2026-04-01"
+        }
+      ]
+    }
+  ],
+  "riskyUpdatesApplied": [],
+  "placeholderUpdatesApplied": [],
+  "skippedBlankPhone": [
+    "Anjali Mathur"
+  ],
+  "skippedPlaceholderPhone": [
+    {
+      "name": "Rahul",
+      "phone": "1111111111"
+    },
+    {
+      "name": "Yakshi",
+      "phone": "1111111111"
+    }
+  ],
+  "skippedNotFound": [],
+  "skippedRiskyUpdates": [
+    {
+      "name": "Ritu Afterservice",
+      "phone": "9355906593",
+      "existingId": "691e9d24164751f6ae6a30bb",
+      "existingName": "Nishi Afterservice"
+    }
+  ],
+  "failed": []
+}

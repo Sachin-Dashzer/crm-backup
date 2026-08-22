@@ -930,7 +930,7 @@ export default function PatientEditDetails() {
 
                   <InputField
                     label="Reference Source (Agent)"
-                    type="select"
+                    type="searchable-select"
                     value={formData.personal.reference}
                     onChange={createChangeHandler("personal", "reference")}
                     options={employees.Agent.map((emp) => ({
