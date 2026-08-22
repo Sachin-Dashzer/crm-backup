@@ -112,7 +112,13 @@ const handler = async (req) => {
       counselling: counselling || {},
       surgery: surgery || {},
       afterSurgery: afterSurgery || {},
-      payments: payments || {},
+      // Omitted entirely (not `payments || {}`) when the client sends none — every add-patient
+      // form on this app only ever sends counselling.finlpackage, never a payments object of its
+      // own. Passing `payments: {}` explicitly makes Mongoose treat the schema-defaulted
+      // payments.totalAmount (0) as "modified", which trips the pre-save hook's guard
+      // (`!isModified("payments.totalAmount")`) meant to derive it from finlpackage — so the
+      // package amount silently stayed 0 on every new patient instead of being set.
+      ...(payments ? { payments } : {}),
       documents: documents || {},
       ops: ops || {},
       editors: [],

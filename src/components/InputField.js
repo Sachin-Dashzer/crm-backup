@@ -56,7 +56,7 @@ function SearchableSelect({ id, value, onChange, options, label, placeholder, re
       />
       {open && !disabled && (
         <ul className="absolute z-20 mt-1 w-full max-h-60 overflow-auto rounded-lg border border-gray-300 bg-white shadow-lg">
-          {!query && (
+          {!query && !options.some((o) => o.value === "") && (
             <li
               onMouseDown={(e) => {
                 e.preventDefault();

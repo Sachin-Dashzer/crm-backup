@@ -448,7 +448,7 @@ export default function BookAppointment() {
 
                     <InputField
                       label="Referred By (Agent)"
-                      type="select"
+                      type="searchable-select"
                       value={formData.personal.reference}
                       onChange={createChangeHandler("personal", "reference")}
                       options={[
