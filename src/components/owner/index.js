@@ -8,3 +8,4 @@ export { default as ScoreRing } from "./ScoreRing";
 export { default as ProgressBar } from "./ProgressBar";
 export { default as Modal } from "./Modal";
 export { default as OwnerTopbar } from "./OwnerTopbar";
+export { ThemeProvider, useTheme } from "./ThemeContext";

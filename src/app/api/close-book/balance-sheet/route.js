@@ -13,7 +13,7 @@ import {
   TRANSACTION_TO_MOVEMENT,
 } from "@/lib/accountBalances";
 
-const ALLOWED_ROLES = ["admin", "super-admin"];
+const ALLOWED_ROLES = ["admin", "super-admin", "owner"];
 
 // Balance sheet: every account side by side for one period — opening, in, out, closing
 // per account, plus a grand total row.

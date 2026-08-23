@@ -2,15 +2,33 @@
 
 import { useEffect, useState, useCallback, useMemo } from "react";
 import OwnerSidebar from "@/components/Sidebars/OwnerSidebar";
-import { OwnerTopbar, Card, DataTable, Badge, Modal } from "@/components/owner";
+import { OwnerTopbar, Card, DataTable, Badge, Modal, KpiRow } from "@/components/owner";
 
-// Field names are best-guess (see src/app/api/owner/live-workforce/route.js's note — the
-// callby service token is currently expired so the real workforce-summary payload shape
-// couldn't be verified). Every accessor below falls back gracefully rather than crashing.
-function numField(row, ...keys) {
-  for (const k of keys) if (row[k] != null) return Number(row[k]);
-  return null;
+// Field accessors match the real callby response shape (confirmed against
+// backend/routes/workforceSummary.js and backend/routes/agentDetail.js — CALLBY_SERVICE_TOKEN
+// is expired so this couldn't be confirmed against a live payload, but the route source is
+// unambiguous). See src/app/api/owner/workforce-summary/route.js for the full shape comment.
+function fmtSeconds(s) {
+  if (!s) return "0m";
+  const m = Math.round(s / 60);
+  return m < 60 ? `${m}m` : `${Math.floor(m / 60)}h ${m % 60}m`;
 }
+
+function fmtDateTime(v) {
+  if (!v) return "—";
+  const d = new Date(v);
+  return isNaN(d.getTime()) ? "—" : d.toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
+}
+
+const SORT_ACCESSORS = {
+  name: (a) => a.name || "",
+  tlName: (a) => a.tlName || "",
+  calls: (a) => a.calls?.total || 0,
+  connected: (a) => a.calls?.connected || 0,
+  connectRate: (a) => a.calls?.connectRate || 0,
+  leadsAssigned: (a) => a.leads?.assigned || 0,
+  converted: (a) => a.leads?.byStatus?.converted || 0,
+};
 
 export default function Agent360Page() {
   const [agents, setAgents]   = useState([]);
@@ -31,12 +49,8 @@ export default function Agent360Page() {
     try {
       const res = await fetch("/api/owner/workforce-summary");
       const json = await res.json();
-      if (json.success) {
-        const list = Array.isArray(json.agents) ? json.agents : Array.isArray(json.data) ? json.data : [];
-        setAgents(list);
-      } else {
-        setError(json.message || "Failed to load");
-      }
+      if (json.success) setAgents(json.agents || []);
+      else setError(json.message || "Failed to load");
     } catch {
       setError("Network error — please try again");
     } finally {
@@ -47,24 +61,17 @@ export default function Agent360Page() {
   useEffect(() => { fetchAgents(); }, [fetchAgents]);
 
   const handleSort = (key) => {
-    if (sortKey === key) {
-      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
-    } else {
-      setSortKey(key);
-      setSortDir("asc");
-    }
+    if (sortKey === key) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    else { setSortKey(key); setSortDir("asc"); }
   };
 
   const sortedRows = useMemo(() => {
-    const withId = agents.map((a, i) => ({ ...a, id: a.employeeId || a.id || i }));
+    const withId = agents.map((a, i) => ({ ...a, id: a.employeeId || i }));
     const dir = sortDir === "asc" ? 1 : -1;
+    const accessor = SORT_ACCESSORS[sortKey] || SORT_ACCESSORS.name;
     return [...withId].sort((a, b) => {
-      if (sortKey === "name") {
-        return dir * String(a.name || a.agentName || "").localeCompare(String(b.name || b.agentName || ""));
-      }
-      const av = numField(a, sortKey) ?? -Infinity;
-      const bv = numField(b, sortKey) ?? -Infinity;
-      return dir * (av - bv);
+      const av = accessor(a), bv = accessor(b);
+      return typeof av === "string" ? dir * av.localeCompare(bv) : dir * (av - bv);
     });
   }, [agents, sortKey, sortDir]);
 
@@ -74,7 +81,7 @@ export default function Agent360Page() {
     setDetailError(null);
     setDetailLoading(true);
     try {
-      const res = await fetch(`/api/owner/agent-detail/${row.employeeId || row.id}`);
+      const res = await fetch(`/api/owner/agent-detail/${row.employeeId}`);
       const json = await res.json();
       if (json.success) setDetail(json);
       else setDetailError(json.message || "Failed to load agent detail");
@@ -107,28 +114,48 @@ export default function Agent360Page() {
               <button className="link-btn" onClick={fetchAgents}>Try again</button>
             </div>
           ) : (
-            <Card title="Agents" subtitle={loading ? "Loading…" : `${agents.length} agents`}>
+            <>
+              <KpiRow
+                items={[
+                  { label: "Total Agents", value: loading ? "—" : agents.length, sub: "In roster", kind: "info" },
+                  { label: "Active", value: loading ? "—" : agents.filter((a) => a.isActive).length, sub: "Currently active", kind: "good" },
+                  { label: "Total Calls", value: loading ? "—" : agents.reduce((s, a) => s + (a.calls?.total || 0), 0), sub: "This range", kind: "info" },
+                  {
+                    label: "Blended Connect Rate",
+                    value: loading ? "—" : (() => {
+                      const total = agents.reduce((s, a) => s + (a.calls?.total || 0), 0);
+                      const connected = agents.reduce((s, a) => s + (a.calls?.connected || 0), 0);
+                      return total > 0 ? `${Math.round((connected / total) * 100)}%` : "—";
+                    })(),
+                    sub: "Calls connected",
+                    kind: "good",
+                  },
+                  { label: "Leads Assigned", value: loading ? "—" : agents.reduce((s, a) => s + (a.leads?.assigned || 0), 0), sub: "Present snapshot", kind: "info" },
+                  { label: "Converted", value: loading ? "—" : agents.reduce((s, a) => s + (a.leads?.byStatus?.converted || 0), 0), sub: "Total", kind: "good" },
+                ]}
+              />
+              <Card title="Agents" subtitle={loading ? "Loading…" : `${agents.length} agents`}>
               <DataTable
+                tall
                 emptyMessage={loading ? "Loading…" : "No agent data available"}
                 sortKey={sortKey}
                 sortDir={sortDir}
                 onSort={handleSort}
                 onRowClick={openAgent}
                 columns={[
-                  { key: "name", label: "Agent", sortable: true, render: (a) => a.name || a.agentName || "—" },
-                  { key: "team", label: "Team", render: (a) => a.team || a.tlName || "—" },
-                  {
-                    key: "status",
-                    label: "Status",
-                    render: (a) => (a.status ? <Badge kind={a.status === "online" || a.status === "active" ? "good" : "neutral"}>{a.status}</Badge> : "—"),
-                  },
-                  { key: "calls", label: "Calls", sortable: true, render: (a) => a.callsToday ?? a.calls ?? a.totalCalls ?? "—" },
-                  { key: "connectedCallCount", label: "Connected", sortable: true, render: (a) => a.connectedCallCount ?? a.connectedCalls ?? "—" },
-                  { key: "conversionRate", label: "Conv. Rate", sortable: true, render: (a) => a.conversionRate != null ? `${a.conversionRate}%` : "—" },
+                  { key: "name", label: "Agent", sortable: true },
+                  { key: "tlName", label: "Team", sortable: true, render: (a) => a.tlName || "Unassigned" },
+                  { key: "isActive", label: "Status", render: (a) => <Badge kind={a.isActive ? "good" : "neutral"}>{a.isActive ? "Active" : "Inactive"}</Badge> },
+                  { key: "calls", label: "Calls", sortable: true, render: (a) => a.calls?.total ?? "—" },
+                  { key: "connected", label: "Connected", sortable: true, render: (a) => a.calls?.connected ?? "—" },
+                  { key: "connectRate", label: "Connect Rate", sortable: true, render: (a) => a.calls ? `${Math.round((a.calls.connectRate || 0) * 100)}%` : "—" },
+                  { key: "leadsAssigned", label: "Leads Assigned", sortable: true, render: (a) => a.leads?.assigned ?? "—" },
+                  { key: "converted", label: "Converted", sortable: true, render: (a) => a.leads?.byStatus?.converted ?? "—" },
                 ]}
                 rows={loading ? [] : sortedRows}
               />
-            </Card>
+              </Card>
+            </>
           )}
         </div>
       </div>
@@ -136,8 +163,8 @@ export default function Agent360Page() {
       <Modal
         open={!!selected}
         onClose={() => setSelected(null)}
-        title={selected?.name || selected?.agentName || "Agent Detail"}
-        subtitle={selected?.team || selected?.tlName}
+        title={selected?.name || "Agent Detail"}
+        subtitle={selected?.tlName ? `Team: ${selected.tlName}` : "Unassigned team"}
       >
         {detailLoading ? (
           <p className="muted">Loading…</p>
@@ -149,9 +176,75 @@ export default function Agent360Page() {
             </div>
           </div>
         ) : detail ? (
-          <pre style={{ whiteSpace: "pre-wrap", fontSize: 11, background: "var(--soft)", padding: 12, borderRadius: 12 }}>
-            {JSON.stringify(detail, null, 2)}
-          </pre>
+          <>
+            <div className="metric-row">
+              <span>Daily Target</span>
+              <div />
+              <strong>{detail.employee?.dailyTarget ?? "—"}</strong>
+            </div>
+            <div className="metric-row">
+              <span>Total Calls</span>
+              <div />
+              <strong>{detail.calls?.total ?? "—"}</strong>
+            </div>
+            <div className="metric-row">
+              <span>Connected / Connect Rate</span>
+              <div />
+              <strong>{detail.calls?.connected ?? 0} · {Math.round((detail.calls?.connectRate || 0) * 100)}%</strong>
+            </div>
+            <div className="metric-row">
+              <span>Outgoing / Incoming / Missed / Rejected</span>
+              <div />
+              <strong>{detail.calls?.outgoing ?? 0} / {detail.calls?.incoming ?? 0} / {detail.calls?.missed ?? 0} / {detail.calls?.rejected ?? 0}</strong>
+            </div>
+            <div className="metric-row">
+              <span>Total Talk Time</span>
+              <div />
+              <strong>{fmtSeconds(detail.calls?.totalDurationSeconds)}</strong>
+            </div>
+            <div className="metric-row">
+              <span>Leads Assigned</span>
+              <div />
+              <strong>{detail.leads?.assigned ?? "—"}</strong>
+            </div>
+
+            <div style={{ marginTop: 14 }}>
+              <p className="muted" style={{ marginBottom: 6 }}>Leads by Status</p>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                {Object.entries(detail.leads?.byStatus || {}).map(([status, count]) => (
+                  <Badge key={status} kind="neutral">{status}: {count}</Badge>
+                ))}
+              </div>
+            </div>
+
+            <div style={{ marginTop: 14 }}>
+              <p className="muted" style={{ marginBottom: 6 }}>Recent Calls</p>
+              <DataTable
+                emptyMessage="No recent calls"
+                columns={[
+                  { key: "contactName", label: "Contact" },
+                  { key: "contactNumber", label: "Number" },
+                  { key: "callType", label: "Type" },
+                  { key: "duration", label: "Duration", render: (r) => fmtSeconds(r.duration) },
+                  { key: "timestamp", label: "When", render: (r) => fmtDateTime(r.timestamp) },
+                ]}
+                rows={(detail.recentCalls || []).map((c, i) => ({ ...c, id: i }))}
+              />
+            </div>
+
+            <div style={{ marginTop: 14 }}>
+              <p className="muted" style={{ marginBottom: 6 }}>Recent Lead Activity</p>
+              <DataTable
+                emptyMessage="No recent lead activity"
+                columns={[
+                  { key: "leadName", label: "Lead" },
+                  { key: "action", label: "Action" },
+                  { key: "changedAt", label: "When", render: (r) => fmtDateTime(r.changedAt) },
+                ]}
+                rows={(detail.recentLeadChangelog || []).map((c, i) => ({ ...c, id: i }))}
+              />
+            </div>
+          </>
         ) : null}
       </Modal>
     </div>

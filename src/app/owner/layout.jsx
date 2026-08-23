@@ -1,5 +1,6 @@
 import "./owner-theme.css";
+import { ThemeProvider } from "@/components/owner/ThemeContext";
 
 export default function OwnerLayout({ children }) {
-  return <div className="owner-app">{children}</div>;
+  return <ThemeProvider>{children}</ThemeProvider>;
 }

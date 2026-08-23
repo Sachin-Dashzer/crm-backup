@@ -2,13 +2,13 @@
 
 import { useEffect, useState, useCallback, useMemo } from "react";
 import OwnerSidebar from "@/components/Sidebars/OwnerSidebar";
-import { OwnerTopbar, Card, DataTable, Heatmap } from "@/components/owner";
+import { OwnerTopbar, Card, DataTable, Heatmap, KpiRow } from "@/components/owner";
 
 const METRICS = [
-  { key: "leads", label: "Leads" },
-  { key: "connectedCallCount", label: "Connected" },
+  { key: "leadsAssigned", label: "Leads" },
+  { key: "totalCalls", label: "Calls" },
+  { key: "connectRate", label: "Connect Rate" },
   { key: "converted", label: "Converted" },
-  { key: "conversionRate", label: "Conv. Rate" },
 ];
 
 // Min-max normalizes each metric column independently to 0–100 so columns on very different
@@ -73,15 +73,26 @@ export default function LeadershipPage() {
             </div>
           ) : (
             <>
+              <KpiRow
+                items={[
+                  { label: "Team Leads", value: loading ? "—" : tlRows.length, sub: "Active teams", kind: "info" },
+                  { label: "Total Agents", value: loading ? "—" : tlRows.reduce((s, r) => s + (r.agentCount || 0), 0), sub: "Across all TLs", kind: "info" },
+                  { label: "Total Leads", value: loading ? "—" : tlRows.reduce((s, r) => s + (r.leadsAssigned || 0), 0), sub: "Assigned", kind: "info" },
+                  { label: "Total Calls", value: loading ? "—" : tlRows.reduce((s, r) => s + (r.totalCalls || 0), 0), sub: "This range", kind: "info" },
+                  { label: "Total Converted", value: loading ? "—" : tlRows.reduce((s, r) => s + (r.converted || 0), 0), sub: "All teams", kind: "good" },
+                  { label: "Top Team", value: loading || tlRows.length === 0 ? "—" : tlRows[0].tlName, sub: "By connect rate", kind: "good" },
+                ]}
+              />
               <Card title="TL Ranking" subtitle={loading ? "Loading…" : `${tlRows.length} team leads`}>
                 <DataTable
                   emptyMessage={loading ? "Loading…" : "No team data available"}
                   columns={[
                     { key: "tlName", label: "Team Lead" },
-                    { key: "leads", label: "Leads", render: (r) => r.leads ?? "—" },
-                    { key: "connectedCallCount", label: "Connected", render: (r) => r.connectedCallCount ?? "—" },
+                    { key: "agentCount", label: "Agents", render: (r) => r.agentCount ?? "—" },
+                    { key: "leadsAssigned", label: "Leads", render: (r) => r.leadsAssigned ?? "—" },
+                    { key: "totalCalls", label: "Calls", render: (r) => r.totalCalls ?? "—" },
+                    { key: "connectRate", label: "Connect Rate", render: (r) => (r.connectRate != null ? `${r.connectRate}%` : "—") },
                     { key: "converted", label: "Converted", render: (r) => r.converted ?? "—" },
-                    { key: "conversionRate", label: "Conv. Rate", render: (r) => (r.conversionRate != null ? `${r.conversionRate}%` : "—") },
                   ]}
                   rows={loading ? [] : tlRows.map((r, i) => ({ ...r, id: r.tlName || i }))}
                 />

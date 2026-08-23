@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import OwnerSidebar from "@/components/Sidebars/OwnerSidebar";
-import { OwnerTopbar, Card, DataTable } from "@/components/owner";
+import { OwnerTopbar, Card, DataTable, KpiRow } from "@/components/owner";
 import { ALL_BRANCHES } from "@/lib/branches";
 
 const BRANCHES = ["All", ...ALL_BRANCHES];
@@ -75,6 +75,26 @@ export default function LeakControlRoomPage() {
             </div>
           ) : (
             <>
+              <KpiRow
+                items={[
+                  {
+                    label: "Total Flagged",
+                    value: loading ? "—" : staleLeads.length + readyNoSurgery.length + pendingNoActivity.length,
+                    sub: "Across all 3 rules",
+                    kind: "bad",
+                  },
+                  { label: "Stale New Leads", value: loading ? "—" : staleLeads.length, sub: "24h+ untouched", kind: staleLeadsError ? "neutral" : "warn" },
+                  { label: "Ready, No Surgery Date", value: loading ? "—" : readyNoSurgery.length, sub: "Patients", kind: "warn" },
+                  { label: "Pending, No Activity", value: loading ? "—" : pendingNoActivity.length, sub: "30d+ no transaction", kind: "warn" },
+                  {
+                    label: "Pending Amount at Risk",
+                    value: loading ? "—" : rupee(pendingNoActivity.reduce((s, r) => s + (r.pendingAmount || 0), 0)),
+                    sub: "Stale collections",
+                    kind: "bad",
+                  },
+                  { label: "Branch", value: branch, sub: "Current scope", kind: "info" },
+                ]}
+              />
               <Card
                 title="Stale New Leads"
                 subtitle={loading ? "Loading…" : `${staleLeads.length} leads · status "new" for 24h+`}

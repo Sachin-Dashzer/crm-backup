@@ -1,21 +1,18 @@
 // src/app/api/owner/leadership/route.js
 //
 // TL ranking for the "TL & Manager" screen — sourced entirely from callby's workforce-summary
-// teamTotals, grouped by tlName (merging duplicate tlName entries if callby ever returns more
-// than one row per TL, e.g. split by date). There's no real "Sales Manager" concept anywhere in
-// this data model, so this route (and the page consuming it) only ever produces the TL table —
-// no second, invented table.
+// teamTotals. There's no real "Sales Manager" concept anywhere in this data model, so this
+// route (and the page consuming it) only ever produces the TL table — no second, invented table.
 //
-// Field names for each teamTotals row are best-guess (see the note in live-workforce/route.js —
-// the callby token is currently expired, so a real payload couldn't be inspected). Every numeric
-// field is read defensively and just omitted from a TL's row if callby doesn't send it.
+// teamTotals is already grouped by tlName server-side (backend/routes/workforceSummary.js),
+// each entry shaped { tlName, agentCount, calls: {total,connected,connectRate,...},
+// leads: {assigned, byStatus:{...,converted,...}} } — one row per TL already, nothing left to
+// merge on this side. Ranked by connectRate (call-quality), falling back to total calls handled.
 
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { fetchCallby, CallbyError } from "@/lib/callby";
-
-const METRIC_KEYS = ["leads", "connectedCallCount", "converted", "conversionRate"];
 
 export async function GET() {
   try {
@@ -24,28 +21,20 @@ export async function GET() {
       return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 403 });
     }
 
-    const data = await fetchCallby("/api/leads/workforce-summary");
-    const teamTotals = Array.isArray(data?.teamTotals) ? data.teamTotals : [];
+    const result = await fetchCallby("/api/leads/workforce-summary");
+    const teamTotals = result.data?.teamTotals || [];
 
-    const byTl = new Map();
-    for (const row of teamTotals) {
-      const tlName = row.tlName || row.tl || "Unassigned";
-      if (!byTl.has(tlName)) byTl.set(tlName, { tlName });
-      const acc = byTl.get(tlName);
-      for (const key of METRIC_KEYS) {
-        if (row[key] == null) continue;
-        acc[key] = (acc[key] || 0) + Number(row[key]);
-      }
-    }
-
-    // conversionRate doesn't sum meaningfully across merged rows — recompute it from the
-    // merged converted/leads if both are present, rather than adding two percentages together.
-    const tlRows = [...byTl.values()].map((r) => ({
-      ...r,
-      conversionRate: r.leads > 0 && r.converted != null ? Math.round((r.converted / r.leads) * 100) : r.conversionRate ?? null,
-    }));
-
-    tlRows.sort((a, b) => (b.conversionRate ?? -1) - (a.conversionRate ?? -1) || (b.leads ?? 0) - (a.leads ?? 0));
+    const tlRows = teamTotals
+      .map((t) => ({
+        tlName: t.tlName,
+        agentCount: t.agentCount,
+        totalCalls: t.calls?.total || 0,
+        connected: t.calls?.connected || 0,
+        connectRate: Math.round((t.calls?.connectRate || 0) * 100),
+        leadsAssigned: t.leads?.assigned || 0,
+        converted: t.leads?.byStatus?.converted || 0,
+      }))
+      .sort((a, b) => b.connectRate - a.connectRate || b.totalCalls - a.totalCalls);
 
     return NextResponse.json({ success: true, tlRows });
   } catch (err) {

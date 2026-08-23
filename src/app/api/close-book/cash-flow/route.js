@@ -6,7 +6,7 @@ import Transactions from "@/models/Transactions";
 import { ACCOUNTS } from "@/constants/bankRouting";
 import { buildBalanceMatch } from "@/lib/accountBalances";
 
-const ALLOWED_ROLES = ["admin", "super-admin"];
+const ALLOWED_ROLES = ["admin", "super-admin", "owner"];
 
 // Cash-basis Receipts / Payments for the dashboard's Row 3 strip, for the selected period.
 //

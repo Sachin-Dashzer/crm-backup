@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import OwnerSidebar from "@/components/Sidebars/OwnerSidebar";
-import { OwnerTopbar, Card, Funnel, DataTable } from "@/components/owner";
+import { OwnerTopbar, Card, Funnel, DataTable, KpiRow } from "@/components/owner";
 import { ALL_BRANCHES } from "@/lib/branches";
 
 const BRANCHES = ["All", ...ALL_BRANCHES];
@@ -125,6 +125,36 @@ export default function ConversionIntelligencePage() {
                   </div>
                 </div>
               )}
+
+              <KpiRow
+                items={[
+                  { label: "Total Patients", value: loading ? "—" : funnel.reduce((s, f) => s + f.count, 0), sub: dateRange, kind: "info" },
+                  { label: "Total Leads", value: loading ? "—" : totalSources, sub: "Meta + Google + Form + Collab", kind: "info" },
+                  {
+                    label: "Converted",
+                    value: loading ? "—" : funnel.filter((f) => ["BOOKING_DONE", "SURGERY_BOOKED", "CLOSED"].includes(f.status)).reduce((s, f) => s + f.count, 0),
+                    sub: "Booked or closed",
+                    kind: "good",
+                  },
+                  {
+                    label: "Conversion Rate",
+                    value: loading ? "—" : (() => {
+                      const total = funnel.reduce((s, f) => s + f.count, 0);
+                      const converted = funnel.filter((f) => ["BOOKING_DONE", "SURGERY_BOOKED", "CLOSED"].includes(f.status)).reduce((s, f) => s + f.count, 0);
+                      return total > 0 ? `${Math.round((converted / total) * 100)}%` : "—";
+                    })(),
+                    sub: "Of total patients",
+                    kind: "good",
+                  },
+                  {
+                    label: "Not Converted",
+                    value: loading ? "—" : (funnel.find((f) => f.status === "NOT_CONVERTED")?.count ?? 0),
+                    sub: "Visited, didn't book",
+                    kind: "warn",
+                  },
+                  { label: "Top Source", value: loading || sources.length === 0 ? "—" : sources[0].tag, sub: loading || sources.length === 0 ? "" : `${sources[0].count} leads`, kind: "info" },
+                ]}
+              />
 
               <div className="grid cols-2">
                 <Card title="Patient Status Funnel" subtitle={`${dateRange} · ${branch === "All" ? "All branches" : branch}`}>

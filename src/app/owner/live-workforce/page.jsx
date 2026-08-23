@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import OwnerSidebar from "@/components/Sidebars/OwnerSidebar";
-import { OwnerTopbar, Card, DataTable, Badge } from "@/components/owner";
+import { OwnerTopbar, Card, DataTable, Badge, KpiRow } from "@/components/owner";
 
 const LANES = [
   { key: "P0", label: "P0 · Interested, overdue follow-up" },
@@ -73,33 +73,27 @@ export default function LiveWorkforcePage() {
             </div>
           ) : (
             <>
-              <Card title="Agent Status" subtitle={loading ? "Loading…" : `${agents.length} agents`}>
-                {agentsError && (
-                  <div className="notice">
-                    <div>
-                      <strong>Couldn't load agent status</strong>
-                      <p style={{ margin: "3px 0 0" }}>{agentsError}</p>
-                    </div>
-                  </div>
-                )}
-                <DataTable
-                  emptyMessage={loading ? "Loading…" : "No agent data available"}
-                  columns={[
-                    { key: "name", label: "Agent", render: (a) => a.name || a.agentName || "—" },
-                    { key: "team", label: "Team", render: (a) => a.team || a.tlName || "—" },
-                    {
-                      key: "status",
-                      label: "Status",
-                      render: (a) => (a.status ? <Badge kind={a.status === "online" || a.status === "active" ? "good" : "neutral"}>{a.status}</Badge> : "—"),
-                    },
-                    { key: "calls", label: "Calls", render: (a) => a.callsToday ?? a.calls ?? a.totalCalls ?? "—" },
-                    { key: "connected", label: "Connected", render: (a) => a.connectedCallCount ?? a.connectedCalls ?? "—" },
-                  ]}
-                  rows={loading ? [] : agents.map((a, i) => ({ ...a, id: a.employeeId || a.id || i }))}
-                />
-              </Card>
+              <KpiRow
+                items={[
+                  { label: "Total Agents", value: loading ? "—" : agents.length, sub: "In roster", kind: "info" },
+                  { label: "Active", value: loading ? "—" : agents.filter((a) => a.isActive).length, sub: "Currently active", kind: "good" },
+                  { label: "Total Calls", value: loading ? "—" : agents.reduce((s, a) => s + (a.calls?.total || 0), 0), sub: "This range", kind: "info" },
+                  {
+                    label: "Blended Connect Rate",
+                    value: loading ? "—" : (() => {
+                      const total = agents.reduce((s, a) => s + (a.calls?.total || 0), 0);
+                      const connected = agents.reduce((s, a) => s + (a.calls?.connected || 0), 0);
+                      return total > 0 ? `${Math.round((connected / total) * 100)}%` : "—";
+                    })(),
+                    sub: "Calls connected",
+                    kind: "good",
+                  },
+                  { label: "P0 Queue", value: loading ? "—" : (queue.P0 || []).length, sub: "Overdue follow-up", kind: "bad" },
+                  { label: "Total Queued", value: loading ? "—" : Object.values(queue).reduce((s, l) => s + l.length, 0), sub: "P0–P4", kind: "warn" },
+                ]}
+              />
 
-              <Card title="Retry Queue" subtitle="Bucketed P0 (most urgent) through P4">
+              <Card title="Live Priority Lanes" subtitle="P0 (most urgent) through P4">
                 {queueError && (
                   <div className="notice">
                     <div>
@@ -123,12 +117,12 @@ export default function LiveWorkforcePage() {
                           <p className="muted">Empty</p>
                         ) : (
                           items.slice(0, 25).map((item, i) => (
-                            <div className="queue-card" key={item.id || item._id || i}>
+                            <div className="queue-card" key={item.id || i}>
                               <strong>{item.name || "Unknown"}</strong>
-                              <p>{item.phone || ""}</p>
+                              <p>{item.phone || ""} · {Math.round(item.ageHours || 0)}h old</p>
                               <div className="row">
                                 <Badge kind={STATUS_KIND[item.status] || "neutral"}>{item.status || "—"}</Badge>
-                                <span>{item.agent?.name || item.agentName || ""}</span>
+                                <span>{item.assignedTo?.name || "Unassigned"}</span>
                               </div>
                             </div>
                           ))
@@ -137,6 +131,35 @@ export default function LiveWorkforcePage() {
                     );
                   })}
                 </div>
+              </Card>
+
+              <Card title="Agent Status" subtitle={loading ? "Loading…" : `${agents.length} agents`}>
+                {agentsError && (
+                  <div className="notice">
+                    <div>
+                      <strong>Couldn't load agent status</strong>
+                      <p style={{ margin: "3px 0 0" }}>{agentsError}</p>
+                    </div>
+                  </div>
+                )}
+                <DataTable
+                  tall
+                  emptyMessage={loading ? "Loading…" : "No agent data available"}
+                  columns={[
+                    { key: "name", label: "Agent" },
+                    { key: "tlName", label: "Team", render: (a) => a.tlName || "Unassigned" },
+                    {
+                      key: "isActive",
+                      label: "Status",
+                      render: (a) => <Badge kind={a.isActive ? "good" : "neutral"}>{a.isActive ? "Active" : "Inactive"}</Badge>,
+                    },
+                    { key: "calls", label: "Calls", render: (a) => a.calls?.total ?? "—" },
+                    { key: "connected", label: "Connected", render: (a) => a.calls?.connected ?? "—" },
+                    { key: "connectRate", label: "Connect Rate", render: (a) => a.calls ? `${Math.round((a.calls.connectRate || 0) * 100)}%` : "—" },
+                    { key: "leadsAssigned", label: "Leads Assigned", render: (a) => a.leads?.assigned ?? "—" },
+                  ]}
+                  rows={loading ? [] : agents.map((a, i) => ({ ...a, id: a.employeeId || i }))}
+                />
               </Card>
             </>
           )}

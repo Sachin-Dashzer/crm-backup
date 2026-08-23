@@ -30,28 +30,28 @@ const SECTIONS = [
   {
     title: "Operations",
     items: [
-      { label: "Phone & SIM Health", href: "/owner/phone-sim-health", icon: "📶" },
-      { label: "Productivity Attendance", href: "/owner/productivity-attendance", icon: "🕒" },
-      { label: "Forecast & Staffing", href: "/owner/forecast-staffing", icon: "📈" },
-      { label: "AI Health & Audit", href: "/owner/ai-health-audit", icon: "🛡️" },
+      { label: "Phone & SIM Health", href: "/owner/sim-health", icon: "📶" },
+      { label: "Productivity Attendance", href: "/owner/attendance", icon: "🕒" },
+      { label: "Forecast & Staffing", href: "/owner/forecast", icon: "📈" },
+      { label: "AI Health & Audit", href: "/owner/ai-health", icon: "🛡️" },
     ],
   },
   {
     title: "Clinic Operations",
     items: [
-      { label: "Patient Journey 360°", href: "/owner/patient-journey-360", icon: "🩺" },
+      { label: "Patient Journey 360°", href: "/owner/patient-journey", icon: "🩺" },
       { label: "Counsellor Conversion", href: "/owner/counsellor-conversion", icon: "💬" },
-      { label: "Surgery & OT Planner", href: "/owner/surgery-ot-planner", icon: "✂️" },
+      { label: "Surgery & OT Planner", href: "/owner/surgery-planner", icon: "✂️" },
       { label: "Clinical AI Quality", href: "/owner/clinical-ai-quality", icon: "🧬" },
     ],
   },
   {
     title: "People & Finance",
     items: [
-      { label: "All Staff 360°", href: "/owner/all-staff-360", icon: "👥" },
-      { label: "Incentives & Payroll", href: "/owner/incentives-payroll", icon: "💰" },
-      { label: "HR Action Center", href: "/owner/hr-action-center", icon: "🗂️" },
-      { label: "Accounts/P&L & Expenses", href: "/owner/accounts-pnl-expenses", icon: "📊" },
+      { label: "All Staff 360°", href: "/owner/staff-360", icon: "👥" },
+      { label: "Incentives & Payroll", href: "/owner/payroll", icon: "💰" },
+      { label: "HR Action Center", href: "/owner/hr-actions", icon: "🗂️" },
+      { label: "Accounts/P&L & Expenses", href: "/owner/finance", icon: "📊" },
     ],
   },
 ];

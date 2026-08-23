@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import OwnerSidebar from "@/components/Sidebars/OwnerSidebar";
-import { OwnerTopbar, Card, DataTable, Badge } from "@/components/owner";
+import { OwnerTopbar, Card, DataTable, Badge, KpiRow } from "@/components/owner";
 
 const STATUS_KIND = {
   interested: "good",
@@ -29,8 +29,7 @@ export default function RetryRecoveryPage() {
       const res = await fetch("/api/owner/retry-queue");
       const json = await res.json();
       if (json.success) {
-        const list = Array.isArray(json.leads) ? json.leads : Array.isArray(json.data) ? json.data : Array.isArray(json.queue) ? json.queue : [];
-        setItems(list);
+        setItems(json.leads || []);
       } else {
         setError(json.message || "Failed to load");
       }
@@ -65,23 +64,41 @@ export default function RetryRecoveryPage() {
               <button className="link-btn" onClick={fetchData}>Try again</button>
             </div>
           ) : (
-            <Card title="Retry Queue" subtitle={loading ? "Loading…" : `${items.length} leads due`}>
+            <>
+              <KpiRow
+                items={[
+                  { label: "Total in Queue", value: loading ? "—" : items.length, sub: "P0–P4", kind: "info" },
+                  { label: "P0", value: loading ? "—" : items.filter((r) => r.priority === "P0").length, sub: "Overdue follow-up", kind: "bad" },
+                  { label: "P1", value: loading ? "—" : items.filter((r) => r.priority === "P1").length, sub: "Recently connected", kind: "warn" },
+                  { label: "Unassigned", value: loading ? "—" : items.filter((r) => !r.assignedTo).length, sub: "No agent owner", kind: "warn" },
+                  {
+                    label: "Avg Age",
+                    value: loading || items.length === 0 ? "—" : `${Math.round(items.reduce((s, r) => s + (r.ageHours || 0), 0) / items.length)}h`,
+                    sub: "Hours since last touch",
+                    kind: "info",
+                  },
+                  { label: "Max Attempts", value: loading || items.length === 0 ? "—" : Math.max(...items.map((r) => r.attempts || 0)), sub: "Single lead", kind: "info" },
+                ]}
+              />
+              <Card title="Retry Queue" subtitle={loading ? "Loading…" : `${items.length} leads due`}>
               <DataTable
                 tall
                 emptyMessage={loading ? "Loading…" : "Nothing in the retry queue"}
                 columns={[
+                  { key: "priority", label: "Priority", render: (r) => <Badge kind={r.priority === "P0" ? "bad" : r.priority === "P1" ? "warn" : "neutral"}>{r.priority}</Badge> },
                   { key: "name", label: "Lead", render: (r) => r.name || "Unknown" },
                   { key: "phone", label: "Phone", render: (r) => r.phone || "—" },
                   { key: "status", label: "Status", render: (r) => (r.status ? <Badge kind={STATUS_KIND[r.status] || "neutral"}>{r.status}</Badge> : "—") },
                   { key: "attempts", label: "Attempts", render: (r) => r.attempts ?? "—" },
-                  { key: "connectedCallCount", label: "Connected", render: (r) => r.connectedCallCount ?? "—" },
+                  { key: "ageHours", label: "Age", render: (r) => `${Math.round(r.ageHours || 0)}h` },
                   { key: "lastCallAt", label: "Last Call", render: (r) => fmtDateTime(r.lastCallAt) },
                   { key: "followUpDate", label: "Follow-up Due", render: (r) => fmtDateTime(r.followUpDate) },
-                  { key: "agent", label: "Agent", render: (r) => r.agent?.name || r.agentName || "—" },
+                  { key: "agent", label: "Agent", render: (r) => r.assignedTo?.name || "Unassigned" },
                 ]}
-                rows={loading ? [] : items.map((r, i) => ({ ...r, id: r.id || r._id || i }))}
+                rows={loading ? [] : items.map((r, i) => ({ ...r, id: r.id || i }))}
               />
-            </Card>
+              </Card>
+            </>
           )}
         </div>
       </div>

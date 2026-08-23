@@ -7,7 +7,7 @@ import Payable from "@/models/Payable";
 import Receivable from "@/models/Receivable";
 import { UNSETTLED_METHODS, ACCOUNTS } from "@/constants/bankRouting";
 
-const ALLOWED_ROLES = ["admin", "super-admin"];
+const ALLOWED_ROLES = ["admin", "super-admin", "owner"];
 
 // Accrual Income/Expense for the dashboard's Row 2 strip.
 //
