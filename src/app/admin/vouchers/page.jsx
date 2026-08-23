@@ -64,12 +64,8 @@ function VouchersPageInner() {
   const [remarks, setRemarks] = useState("");
   const [fields, setFields] = useState({
     amount: "",
-    method: "",
-    paymentId: "",
     date: new Date().toISOString().slice(0, 10),
     branch: "",
-    receiptMode: "",
-    furtherMode: "",
     remarks: "",
     receipts: [],
   });
@@ -501,7 +497,9 @@ function VouchersPageInner() {
               </div>
             )}
 
-            {/* Shared money-movement field set */}
+            {/* Amount/date/branch/GST-TDS field set — no payment method, transaction ID, or
+                "paid from" account, since a voucher only records an obligation; no money moves
+                until it is settled. */}
             <TransactionFieldSet
               context="voucher"
               value={fields}

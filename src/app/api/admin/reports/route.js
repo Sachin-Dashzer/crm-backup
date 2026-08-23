@@ -1496,8 +1496,9 @@ async function generateBranchPatientsReport(filters) {
 //   - "Patient Count" was a Patient aggregation keyed on counselling.counsellor ONLY, so every
 //     non-Counsellor role (Doctor/Technician/Implanter/Agent/HR) always showed 0 regardless of
 //     how many patients they actually handled.
-// There is in fact no `branch` field on the Employee model at all (see src/models/Employee.js)
-// — staff aren't branch-scoped here — so this report no longer pretends to filter by one.
+// Employee.branch now exists (see src/models/Employee.js, added + backfilled in Step 6) — but
+// this report still deliberately doesn't filter or select it: "All Employees Report" means
+// every employee across every branch, so a branch scope has no reason to apply here.
 async function generateEmployeesAllReport() {
   const employees = await Employee.find({})
     .select("name role email phone isactive salaryStructure incentiveRate patient createdAt updatedAt")

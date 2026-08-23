@@ -7,7 +7,7 @@ import Payable from "@/models/Payable";
 import Transactions from "@/models/Transactions";
 import { buildPayableAggregationStages } from "@/lib/payableAggregation";
 
-const ALLOWED_ROLES = ["admin", "super-admin"];
+const ALLOWED_ROLES = ["admin", "super-admin", "owner"];
 
 // Grouped pending totals — feeds the inline "Paid / Pending" chips on the
 // Agent, Rent+Electricity, Collab, and Taxes sections of the expense form.

@@ -340,10 +340,14 @@ export async function createCollabCaseAtomic({
 // EXISTING document already has a real payment/receipt against it — resolving which of two
 // different obligations that payment actually belongs to is a human decision, not something to
 // silently guess at.
-export async function recordClinicCollectionAtomic({ caseId, amount, date, mode, reference, note, actor }) {
+export async function recordClinicCollectionAtomic({ caseId, amount, discount, date, mode, reference, receiptMode, furtherMode, note, actor }) {
   const parsedAmount = Number(amount);
   if (!parsedAmount || parsedAmount <= 0) {
     throw new Error("Collection amount must be greater than 0");
+  }
+  const parsedDiscount = Number(discount) || 0;
+  if (parsedDiscount < 0) {
+    throw new Error("Discount cannot be negative");
   }
 
   const performedBy = { name: actor?.name, email: actor?.email };
@@ -353,23 +357,35 @@ export async function recordClinicCollectionAtomic({ caseId, amount, date, mode,
   if (!collabCase) throw new Error("Collab case not found");
   if (collabCase.status === "CANCELLED") throw new Error("This case has been cancelled");
 
-  const oldCollectedByClinic = collabCase.clinicCollections.reduce((sum, c) => sum + c.amount, 0);
+  const originTx = await Transactions.findOne({ "collabRef.caseId": collabCase._id, costType: "Revenue" });
+
+  // ADDITIVE, not clinicCollections alone — same fix already applied to the read-side
+  // aggregation in cases/route.js (see its comment). originTx.collabSplit.clinicReceived is a
+  // snapshot of what the clinic had collected AT CASE-CREATION time; clinicCollections[] is
+  // every collection recorded AFTER that via this same function. Using clinicCollections alone
+  // silently ignored the case-creation split entirely — deriveClinicSettlement computed the
+  // wrong kind/amount from a baseline of 0, looked for the (wrong, nonexistent) Payable/
+  // Receivable, found nothing, and did nothing, while the REAL linked document sat untouched.
+  const clinicReceivedAtCreation = originTx?.collabSplit?.clinicReceived || 0;
+  const oldCollectedByClinic =
+    clinicReceivedAtCreation + collabCase.clinicCollections.reduce((sum, c) => sum + c.amount, 0);
   const newCollectedByClinic = oldCollectedByClinic + parsedAmount;
   const clinicShare = collabCase.clinicShare;
 
   const oldSettlement = deriveClinicSettlement({ clinicReceived: oldCollectedByClinic, clinicShare });
   const newSettlement = deriveClinicSettlement({ clinicReceived: newCollectedByClinic, clinicShare });
 
-  const originTx = await Transactions.findOne({ "collabRef.caseId": collabCase._id, costType: "Revenue" });
-
   const session = await mongoose.startSession();
   try {
     await session.withTransaction(async () => {
       collabCase.clinicCollections.push({
         amount: parsedAmount,
+        discount: parsedDiscount,
         date: when,
         mode,
         reference: reference || "",
+        receiptMode: receiptMode || "",
+        furtherMode: furtherMode || "",
         note: note || "",
         recordedBy: performedBy,
         recordedAt: new Date(),

@@ -129,13 +129,19 @@ export async function GET(request) {
               { $sum: "$clinicCollections.amount" },
             ],
           },
+          // Waivers granted via "Record Clinic Collection" — reduce what the patient owes
+          // without being money anyone collected, so kept separate from collectedByClinic.
+          totalDiscount: { $sum: "$clinicCollections.discount" },
           patientInfo: { $arrayElemAt: ["$patientDoc", 0] },
         },
       },
       {
         $addFields: {
           patientOutstanding: {
-            $subtract: ["$packageAmount", { $add: ["$collectedByUs", "$collectedByClinic"] }],
+            $subtract: [
+              "$packageAmount",
+              { $add: ["$collectedByUs", "$collectedByClinic", "$totalDiscount"] },
+            ],
           },
           caseNet: { $subtract: ["$collectedByClinic", "$clinicShare"] },
           patientName: "$patientInfo.personal.name",

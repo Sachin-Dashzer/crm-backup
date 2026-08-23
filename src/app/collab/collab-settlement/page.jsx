@@ -3,6 +3,8 @@
 import { Fragment, useEffect, useState } from "react";
 import CollabSidebar from "@/components/Sidebars/CollabSidebar";
 import MetricCard from "@/components/MetricCard";
+import BankRoutingFields from "@/components/BankRoutingFields";
+import { REVENUE_METHODS } from "@/constants/paymentMethods";
 import { useToast } from "@/components/Toast";
 import { formatCurrency, formatDate, StatusBadge } from "@/lib/financeUI";
 import {
@@ -620,10 +622,18 @@ function CaseHistory({ collabCase }) {
                 className="flex items-center justify-between text-sm border-b border-gray-50 pb-2 last:border-0"
               >
                 <div>
-                  <p className="font-medium text-gray-900">{formatCurrency(c.amount)}</p>
+                  <p className="font-medium text-gray-900">
+                    {formatCurrency(c.amount)}
+                    {c.discount > 0 && (
+                      <span className="ml-1.5 text-xs font-normal text-amber-600">
+                        + {formatCurrency(c.discount)} discount
+                      </span>
+                    )}
+                  </p>
                   <p className="text-xs text-gray-500">
                     {formatDate(c.date)} · {(c.mode || "—").replace(/_/g, " ").toUpperCase()}
                     {c.reference ? ` · ${c.reference}` : ""}
+                    {c.furtherMode ? ` · ${c.furtherMode}` : ""}
                   </p>
                   {c.note && <p className="text-xs text-gray-400 italic mt-0.5">{c.note}</p>}
                 </div>
@@ -668,22 +678,41 @@ function CaseHistory({ collabCase }) {
 
 function RecordCollectionModal({ collabCase, onClose, onSuccess, toast }) {
   const [amount, setAmount] = useState("");
+  // A waiver granted at the time of this collection — reduces the patient's outstanding the
+  // same as a payment would, but is never money collected (see the model comment on
+  // clinicCollections.discount).
+  const [discount, setDiscount] = useState("");
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [mode, setMode] = useState("cash");
   const [reference, setReference] = useState("");
+  // Descriptive routing detail — which instrument the money moved through and which account it
+  // landed in on the CLINIC's side. Never touches our own accounts/books (see the route comment
+  // on why this never creates a Transaction); purely for a fuller paper trail on the record.
+  const [receiptMode, setReceiptMode] = useState("");
+  const [furtherMode, setFurtherMode] = useState("");
   const [note, setNote] = useState("");
   const [allowOverpayment, setAllowOverpayment] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  const overBalance = parseFloat(amount || 0) > collabCase.patientOutstanding;
+  const overBalance = parseFloat(amount || 0) + parseFloat(discount || 0) > collabCase.patientOutstanding;
 
   const handleSubmit = async () => {
     if (!amount || parseFloat(amount) <= 0) {
       toast.error("Enter a valid collection amount");
       return;
     }
+    if (parseFloat(discount || 0) < 0) {
+      toast.error("Discount cannot be negative");
+      return;
+    }
     if (overBalance && !allowOverpayment) {
-      toast.error("Amount exceeds patient's remaining outstanding — check the box to proceed anyway");
+      toast.error("Amount + discount exceeds patient's remaining outstanding — check the box to proceed anyway");
+      return;
+    }
+    // Same requirement as every other payment-entry form in the app — cash is the only method
+    // with no independently-verifiable trail, everything else needs one.
+    if (mode !== "cash" && !reference.trim()) {
+      toast.error("Enter the transaction ID / reference for this collection");
       return;
     }
     setSubmitting(true);
@@ -691,7 +720,7 @@ function RecordCollectionModal({ collabCase, onClose, onSuccess, toast }) {
       const res = await fetch(`/api/collab-settlement/cases/${collabCase._id}/collection`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount, date, mode, reference, note, allowOverpayment }),
+        body: JSON.stringify({ amount, discount, date, mode, reference, receiptMode, furtherMode, note, allowOverpayment }),
       });
       const data = await res.json();
       if (res.ok) {
@@ -758,6 +787,21 @@ function RecordCollectionModal({ collabCase, onClose, onSuccess, toast }) {
             )}
           </div>
 
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">Discount / Waiver (₹)</label>
+            <input
+              type="number"
+              value={discount}
+              onChange={(e) => setDiscount(e.target.value)}
+              min="0"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+              placeholder="0"
+            />
+            <p className="text-xs text-gray-400 mt-1">
+              Reduces the patient&apos;s outstanding without being money collected — not part of the amount above.
+            </p>
+          </div>
+
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Date</label>
@@ -769,29 +813,46 @@ function RecordCollectionModal({ collabCase, onClose, onSuccess, toast }) {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Mode</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Payment Method</label>
               <select
                 value={mode}
                 onChange={(e) => setMode(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg"
               >
-                {["cash", "upi", "card", "banking", "other"].map((m) => (
-                  <option key={m} value={m}>
-                    {m.toUpperCase()}
+                {[...REVENUE_METHODS, { value: "other", label: "Other" }].map((m) => (
+                  <option key={m.value} value={m.value}>
+                    {m.label}
                   </option>
                 ))}
               </select>
             </div>
           </div>
 
+          <div className="grid grid-cols-2 gap-3">
+            <BankRoutingFields
+              costType="Revenue"
+              branch={collabCase.clinic}
+              transactionCategory="TRANSPLANT"
+              method={mode}
+              receiptMode={receiptMode}
+              furtherMode={furtherMode}
+              onChange={(patch) => {
+                if (patch.receiptMode !== undefined) setReceiptMode(patch.receiptMode);
+                if (patch.furtherMode !== undefined) setFurtherMode(patch.furtherMode);
+              }}
+            />
+          </div>
+
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Reference</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              Transaction ID / Reference {mode !== "cash" && <span className="text-red-500">*</span>}
+            </label>
             <input
               type="text"
               value={reference}
               onChange={(e) => setReference(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-              placeholder="Optional"
+              placeholder={mode === "cash" ? "Optional" : "Required for non-cash payments"}
             />
           </div>
 

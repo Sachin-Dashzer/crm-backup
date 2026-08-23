@@ -9,7 +9,7 @@ export async function GET(req) {
     const session = await getServerSession(authOptions);
 
     // Only super-admin can access leads
-    if (!session || session?.user?.role !== "super-admin") {
+    if (!session || !["super-admin", "owner"].includes(session?.user?.role)) {
       return NextResponse.json(
         { success: false, message: "Unauthorized. Super-admin access required." },
         { status: 403 }

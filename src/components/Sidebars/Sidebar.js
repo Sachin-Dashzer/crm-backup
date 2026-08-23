@@ -212,14 +212,13 @@ export default function AdminSidebar() {
               active={isActive("/admin/payments")}
               onClick={close}
             />
-
-            <NavItem
+            {/* <NavItem
               label="Vouchers"
               href="/admin/vouchers"
               icon={FileText}
               active={isActive("/admin/vouchers")}
               onClick={close}
-            />
+            /> */}
             <NavItem
               label="Vendors"
               href="/admin/vendors"

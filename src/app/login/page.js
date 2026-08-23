@@ -45,6 +45,7 @@ export default function LoginPage() {
         const session = await response.json();
 
         const roleRoutes = {
+          owner: '/owner/dashboard',
           'super-admin': '/super-admin/dashboard',
           admin: '/admin/dashboard',
           sales: '/sales/dashboard',

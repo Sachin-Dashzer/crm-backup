@@ -62,16 +62,13 @@ const PAYABLE_CATEGORY_KIND = {
   "Rent": "RENT_UNIT",
   "Electricity Bill": "UTILITY_UNIT",
 };
-// Categories whose payables are owed to a specific VENDOR document, not a shared category-level
-// "OTHER" bucket the way Rent/Electricity's units are. See getPayableContext's "rent" branch —
-// picking a vendor for one of these switches payeeKind/payeeRefId from the OTHER/sub-type-label
-// bucket to that vendor's own payee, so each vendor's bills (created by
+// Vendor selection is available for every payable category — see getPayableContext's "rent"
+// branch. Picking a vendor switches payeeKind/payeeRefId from the shared OTHER/RENT_UNIT/
+// UTILITY_UNIT bucket to that vendor's own payee, so each vendor's bills (created by
 // scripts/vendor-payables-bulk-import.mjs, or by this form) are found and paid individually
-// instead of being invisible to this tab (they never matched OTHER + the sub-type label). Not
-// merged into PAYABLE_CATEGORY_KIND as a hardcoded "VENDOR" — the kind still depends on whether a
-// vendor is actually picked, so any payable already created under the shared-bucket convention
-// stays fully visible and payable when no vendor is selected.
-const VENDOR_LINKED_PAYABLE_CATEGORIES = ["Medicine Procurement", "Medical Consumables", "Professional Expenses"];
+// instead of being invisible to this tab (they never matched the bucket + sub-type label).
+// Leaving it blank keeps the existing shared-bucket convention fully working — vendor picking is
+// additive, never a replacement.
 // Patient tab → Expense sub-tab: the 2 patient-linked sub-types under
 // "Patient Related Expenses" (Refund claims the 3rd, "Patient Refunds").
 const PATIENT_EXPENSE_SUBTYPES = ["Patient Meals", "PATIENT EMI"];
@@ -269,9 +266,8 @@ function AdminCreateTransactionPageInner() {
     // Expenses, Lab Expenses, Interest Expenses, Taxes, Software/Hardware Rental Expenses).
     payableCategory: "Rent",
     rentSubType: "",
-    // Only meaningful when payableCategory is in VENDOR_LINKED_PAYABLE_CATEGORIES — a distinct
-    // field from `vendorId` above (the "other"/Direct Payment tab's own vendor picker) so picking
-    // a vendor in one tab never bleeds into the other when switching between them.
+    // A distinct field from `vendorId` above (the "other"/Direct Payment tab's own vendor picker)
+    // so picking a vendor in one tab never bleeds into the other when switching between them.
     payableVendorId: "",
     includeGST: false,
     gstRate: "",
@@ -521,13 +517,10 @@ function AdminCreateTransactionPageInner() {
       const purpose = PAYABLE_CATEGORY_PURPOSE[d.payableCategory];
       if (!purpose) return null;
 
-      // A vendor-linked category still works in shared-bucket (OTHER + sub-type-label) mode when
-      // no vendor is chosen — this keeps any payable genuinely created that way (before a vendor
-      // was picked, or intentionally as a category-level bucket) fully visible and payable exactly
-      // as before. Vendor mode is additive, never a replacement for the existing behavior.
-      const isVendorLinked = VENDOR_LINKED_PAYABLE_CATEGORIES.includes(d.payableCategory);
-      const vendor =
-        isVendorLinked && d.payableVendorId ? vendors.find((v) => v._id === d.payableVendorId) : null;
+      // Leaving the vendor blank keeps any payable genuinely created under the shared-bucket
+      // convention (OTHER + sub-type-label, or RENT_UNIT/UTILITY_UNIT) fully visible and payable
+      // exactly as before. Vendor mode is additive, never a replacement for the existing behavior.
+      const vendor = d.payableVendorId ? vendors.find((v) => v._id === d.payableVendorId) : null;
 
       return {
         purpose,
@@ -2153,27 +2146,25 @@ function AdminCreateTransactionPageInner() {
                           ))}
                         </select>
 
-                        {VENDOR_LINKED_PAYABLE_CATEGORIES.includes(expenseData.payableCategory) && (
-                          <div className="mt-4">
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                              Vendor <span className="text-gray-400 font-normal">(optional — leave blank for the shared bucket)</span>
-                            </label>
-                            <SearchableSelect
-                              options={vendors}
-                              value={expenseData.payableVendorId}
-                              onChange={(v) => setExpenseData({ ...expenseData, payableVendorId: v })}
-                              placeholder="Search a vendor to see their individual bills…"
-                              valueKey="_id"
-                              formatOption={(v) => `${v.name} - ${v.contact}`}
-                            />
-                            {expenseData.payableVendorId && (
-                              <p className="text-xs text-gray-400 mt-1">
-                                Showing only this vendor's own bills under "{expenseData.payableCategory}" — clear the
-                                vendor to go back to the shared bucket.
-                              </p>
-                            )}
-                          </div>
-                        )}
+                        <div className="mt-4">
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Vendor <span className="text-gray-400 font-normal">(optional — leave blank for the shared bucket)</span>
+                          </label>
+                          <SearchableSelect
+                            options={vendors}
+                            value={expenseData.payableVendorId}
+                            onChange={(v) => setExpenseData({ ...expenseData, payableVendorId: v })}
+                            placeholder="Search a vendor to see their individual bills…"
+                            valueKey="_id"
+                            formatOption={(v) => `${v.name} - ${v.contact}`}
+                          />
+                          {expenseData.payableVendorId && (
+                            <p className="text-xs text-gray-400 mt-1">
+                              Showing only this vendor's own bills under "{expenseData.payableCategory}" — clear the
+                              vendor to go back to the shared bucket.
+                            </p>
+                          )}
+                        </div>
 
                         {expenseData.rentSubType && (
                           <div className="mt-4 bg-gray-50 rounded-lg p-3">

@@ -1,50 +1,3 @@
-// scripts/vendor-bill-payments-import.mjs
-//
-// Bulk-imports EXPENSE transactions AGAINST the vendor payables scripts/vendor-payables-bulk-
-// import.mjs created — one row here is one payment against a specific bill.
-//
-// HOW EACH PAYMENT FINDS ITS BILL — this sheet has no bill-number column, only a per-vendor
-// running "Bill Balance After" and a "Status" (Part Paid / Settled). The linkage was reverse-
-// engineered and then VERIFIED, not assumed: for every vendor, walking that vendor's bills in
-// the same order they were created (oldest first — the order patient-vouncher.xlsx listed them
-// in) and consuming real payments against the CURRENT bill until it hits Settled, then moving
-// to the next bill, reproduces every single "Bill Balance After" figure in this sheet exactly —
-// 145 real payment rows, zero mismatches. That is what licenses the FIFO approach below; it is
-// not a guess this script is making on its own.
-//
-// Concretely: at run time, for each vendor this script fetches that vendor's Payables (created
-// by vendor-payables-bulk-import.mjs, tagged "[BULK-VENDOR-BILL-<n>]" in remarks) and sorts them
-// by the <n> embedded in that tag — which is exactly the bill order patient-vouncher.xlsx used.
-// It then walks this sheet's payment rows for that vendor in file order, applying each to the
-// CURRENT bill and advancing to the next bill exactly when the sheet's own Status says "Settled"
-// — the same rule that was verified offline.
-//
-// THREE KINDS OF ROW in this sheet, and only one of them creates a transaction:
-//   - PAYMENT (145 rows): a real payment with a date, mode and amount > 0. Imported.
-//   - UNPAID_INFO (48 rows): Status = "Unpaid", Amount Allocated = 0, no date, no mode — this
-//     is just the sheet restating a bill's full outstanding balance, not an event. Skipped;
-//     nothing to import because nothing happened.
-//   - ADVANCE_UNADJUSTED (3 rows, all Medono India, Bill Type "ON ACCOUNT"): a real payment
-//     that settles NO specific bill — money paid to the vendor before any invoice exists for
-//     it. This is a genuine schema gap: this CRM has no "advance to vendor" / prepaid-expense
-//     concept (already flagged in NOTES.md from the accounting-layer review). Recording it as a
-//     normal EXPENSE transaction would be wrong — it would book an expense today for money that
-//     hasn't been matched to any actual cost yet. These 3 rows (Rs 34,700 total) are reported
-//     but deliberately NOT imported. Tell me how you want these tracked and I'll build that
-//     separately once there's a real place for it.
-//
-// Mirrors src/app/api/transactions/expense/create/route.js field-for-field, same as
-// rent-expense-transactions-import.mjs: live overpayment check via aggregation, isSettlement
-// from payableDoc.costAlreadyRecognised (false for every one of these — none of them were
-// pre-recognised elsewhere, so the payment itself is the real expense).
-//
-// Usage:
-//   node scripts/vendor-bill-payments-import.mjs                              # dry run
-//   node scripts/vendor-bill-payments-import.mjs --dump-json                   # write entries out, no DB
-//   node scripts/vendor-bill-payments-import.mjs --apply                     # write
-//   node scripts/vendor-bill-payments-import.mjs --apply --allow-overpayment
-//   node scripts/vendor-bill-payments-import.mjs --vendor="Helpsure Healthcare Private Limited"  # one vendor only
-
 import mongoose from "mongoose";
 import fs from "fs";
 
@@ -59,11 +12,6 @@ for (const f of [".env.local", ".env"]) {
   }
 }
 const MONGODB_URI = process.env.MONGODB_URI;
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// THE DATA — every row from aaaaaaaaaaaaa.xlsx, classified by rowKind. Only rowKind "PAYMENT"
-// creates a transaction; see the header note for why the other two kinds don't.
-// ═══════════════════════════════════════════════════════════════════════════════
 const PAYMENT_ENTRIES = [
   {
     "rowNum": 2,

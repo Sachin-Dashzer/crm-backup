@@ -10,7 +10,10 @@ import { COLLAB_BRANCHES } from "@/lib/branches";
 // caseNet) are NEVER stored here — always computed at query time in the API
 // layer from clinicCollections[] and a read-only lookup into Transactions.
 
-const COLLECTION_MODES = ["upi", "cash", "card", "banking", "other"];
+// Mirrors the app-wide revenue method set (src/constants/paymentMethods.js REVENUE_METHODS)
+// plus "other", so a clinic collection can record the same payment types every real revenue
+// transaction can — including the two loan financiers, which the original 5-value list omitted.
+const COLLECTION_MODES = ["upi", "cash", "card", "banking", "bajaj_loan", "fibe_loan", "other"];
 
 const collabCaseSchema = new mongoose.Schema(
   {
@@ -58,9 +61,20 @@ const collabCaseSchema = new mongoose.Schema(
     clinicCollections: [
       {
         amount: { type: Number, required: true, min: 0 },
+        // A waiver granted at the time of this collection — reduces the patient's outstanding
+        // the same as a payment would, but is never money collected, so it stays out of `amount`
+        // (which feeds collectedByClinic / the clinic's own settlement obligation) and is instead
+        // subtracted from patientOutstanding directly. See cases/route.js's aggregation.
+        discount: { type: Number, default: 0, min: 0 },
         date: { type: Date, default: Date.now },
         mode: { type: String, enum: COLLECTION_MODES },
+        // Transaction ID / reference for the payment itself.
         reference: String,
+        // Same "how was this paid, and through which account" pair every real revenue
+        // transaction records (see BankRoutingFields) — descriptive only here, since this
+        // collection never touches our own accounts or creates a Transaction.
+        receiptMode: String,
+        furtherMode: String,
         note: String,
         recordedBy: { name: String, email: String },
         recordedAt: { type: Date, default: Date.now },

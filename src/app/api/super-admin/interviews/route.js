@@ -7,7 +7,7 @@ import Interviewer from "@/models/Interviewer";
 export async function GET(req) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session || session?.user?.role !== "super-admin") {
+    if (!session || !["super-admin", "owner"].includes(session?.user?.role)) {
       return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 403 });
     }
 

@@ -29,7 +29,8 @@ export async function POST(req, { params }) {
     await connectDB();
 
     const { id } = await params;
-    const { amount, date, mode, reference, note, allowOverpayment } = await req.json();
+    const { amount, discount, date, mode, reference, receiptMode, furtherMode, note, allowOverpayment } =
+      await req.json();
 
     const parsedAmount = parseFloat(amount);
     if (!parsedAmount || parsedAmount <= 0) {
@@ -37,6 +38,10 @@ export async function POST(req, { params }) {
         { error: "Collection amount must be greater than 0" },
         { status: 400 },
       );
+    }
+    const parsedDiscount = parseFloat(discount) || 0;
+    if (parsedDiscount < 0) {
+      return NextResponse.json({ error: "Discount cannot be negative" }, { status: 400 });
     }
 
     const collabCase = await CollabCase.findById(id).lean();
@@ -61,12 +66,15 @@ export async function POST(req, { params }) {
     ]);
     const collectedByUs = revenueAgg?.total || 0;
     const collectedByClinic = (collabCase.clinicCollections || []).reduce((sum, c) => sum + c.amount, 0);
-    const remaining = collabCase.packageAmount - collectedByUs - collectedByClinic;
+    const priorDiscount = (collabCase.clinicCollections || []).reduce((sum, c) => sum + (c.discount || 0), 0);
+    const remaining = collabCase.packageAmount - collectedByUs - collectedByClinic - priorDiscount;
 
-    if (parsedAmount > remaining && !allowOverpayment) {
+    // A discount is a waiver, not a payment — it reduces the outstanding just the same, so it
+    // has to be checked against the same remaining balance rather than let through unchecked.
+    if (parsedAmount + parsedDiscount > remaining && !allowOverpayment) {
       return NextResponse.json(
         {
-          error: `Collection (₹${parsedAmount}) exceeds the patient's remaining outstanding (₹${remaining}). Pass allowOverpayment to record it anyway.`,
+          error: `Collection + discount (₹${parsedAmount + parsedDiscount}) exceeds the patient's remaining outstanding (₹${remaining}). Pass allowOverpayment to record it anyway.`,
         },
         { status: 400 },
       );
@@ -75,9 +83,12 @@ export async function POST(req, { params }) {
     const { collabCase: updated } = await recordClinicCollectionAtomic({
       caseId: id,
       amount: parsedAmount,
+      discount: parsedDiscount,
       date,
       mode,
       reference,
+      receiptMode,
+      furtherMode,
       note,
       actor: { name: session.user.name, email: session.user.email },
     });

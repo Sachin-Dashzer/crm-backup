@@ -7,7 +7,7 @@ import Receivable from "@/models/Receivable";
 import Transactions from "@/models/Transactions";
 import { buildReceivableAggregationStages } from "@/lib/receivableAggregation";
 
-const ALLOWED_ROLES = ["admin", "super-admin"];
+const ALLOWED_ROLES = ["admin", "super-admin", "owner"];
 
 // Grouped pending totals, mirroring /api/payables/summary.
 //   ?purpose=PATIENT_DUE                               -> org-wide totals for that purpose

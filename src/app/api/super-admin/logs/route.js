@@ -23,7 +23,7 @@ function inRange(date, dateFrom, dateTo) {
 export async function GET(request) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session || session?.user?.role !== "super-admin") {
+    if (!session || !["super-admin", "owner"].includes(session?.user?.role)) {
       return NextResponse.json(
         { success: false, message: "Unauthorized" },
         { status: 403 }

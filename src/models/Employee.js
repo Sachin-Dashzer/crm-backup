@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { ALL_BRANCHES } from '@/lib/branches';
 
 const employeeSchema = new mongoose.Schema({
   name: {
@@ -24,6 +25,14 @@ const employeeSchema = new mongoose.Schema({
   isactive : {
     type: Boolean,
     default: true
+  },
+  // Only applies to newly-saved documents — every Employee that existed before this field was
+  // added has no `branch` in the database and needs a one-off backfill (see
+  // scripts/backfill-employee-branch.mjs) rather than relying on this default at read time.
+  branch: {
+    type: String,
+    enum: ALL_BRANCHES,
+    default: "Delhi"
   },
   patient: [{
     type: mongoose.Schema.Types.ObjectId,

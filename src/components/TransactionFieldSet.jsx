@@ -32,11 +32,12 @@ const SETTLEMENT_CONTEXTS = new Set([
   "receivable-receipt",
   "payable-payment",
   "collab-settlement",
-  // A voucher moves cash the same as any other settlement context — furtherMode is required
-  // under the identical NON_CASH_METHODS exception, so it shares the same rendering/validation
-  // rather than re-deriving it. See src/components/finance/TransactionFieldSet.jsx.
-  "voucher",
 ]);
+
+// A voucher only records that an obligation now exists — no cash moves yet, so payment method,
+// transaction ID, and the "paid from" account routing (all of which the eventual settlement
+// transaction captures) don't apply here and are hidden.
+const HIDE_PAYMENT_FIELDS_CONTEXTS = new Set(["voucher"]);
 
 // Which transactionCategory a context routes as. Settlements inherit the category of whatever
 // they settle, so the caller passes it in; these are only the direct-entry defaults.
@@ -78,6 +79,7 @@ export default function TransactionFieldSet({
   const category = transactionCategory || CONTEXT_CATEGORY[context] || "TRANSPLANT";
   const expenseSide = isExpenseSide(context, transactionCategory);
   const isSettlement = SETTLEMENT_CONTEXTS.has(context);
+  const hidePaymentFields = HIDE_PAYMENT_FIELDS_CONTEXTS.has(context);
 
   const set = (patch) => onChange({ ...patch });
 
@@ -90,7 +92,7 @@ export default function TransactionFieldSet({
   );
 
   const externalDirection = expenseSide ? "PAID_BY" : "RECEIVED_BY";
-  const showExternal = UNSETTLED_METHODS.includes(value.method);
+  const showExternal = !hidePaymentFields && UNSETTLED_METHODS.includes(value.method);
 
   return (
     <div className="space-y-4">
@@ -142,33 +144,38 @@ export default function TransactionFieldSet({
         )}
       </div>
 
-      {/* Method + the payment-id field it implies (card last-4, UTR, loan ref…). MethodField
-          owns that mapping already — don't re-derive it here. */}
-      <MethodField
-        category={category}
-        branch={value.branch}
-        value={{ method: value.method, paymentId: value.paymentId }}
-        onChange={(patch) => set(patch)}
-        disabled={disabled}
-      />
+      {/* Method + the payment-id field it implies (card last-4, UTR, loan ref…), plus the "paid
+          from" account routing — both describe how cash actually moved, which doesn't apply to a
+          voucher: it only records that an obligation now exists, before any money moves. */}
+      {!hidePaymentFields && (
+        <>
+          <MethodField
+            category={category}
+            branch={value.branch}
+            value={{ method: value.method, paymentId: value.paymentId }}
+            onChange={(patch) => set(patch)}
+            disabled={disabled}
+          />
 
-      {/* Pre-filled from getBankRoutingDefaults for this branch/category/method — the same rule
-          the transplant form applies — and always editable, per §1.2. */}
-      <BankRoutingFields
-        costType={expenseSide ? "Expenses" : "Revenue"}
-        branch={value.branch}
-        transactionCategory={category}
-        method={value.method}
-        receiptMode={value.receiptMode}
-        furtherMode={value.furtherMode}
-        onChange={(patch) => set(patch)}
-      />
+          {/* Pre-filled from getBankRoutingDefaults for this branch/category/method — the same rule
+              the transplant form applies — and always editable, per §1.2. */}
+          <BankRoutingFields
+            costType={expenseSide ? "Expenses" : "Revenue"}
+            branch={value.branch}
+            transactionCategory={category}
+            method={value.method}
+            receiptMode={value.receiptMode}
+            furtherMode={value.furtherMode}
+            onChange={(patch) => set(patch)}
+          />
 
-      {furtherModeRequired && !value.furtherMode && (
-        <p className="text-xs text-red-600 -mt-2">
-          Select the account this money {expenseSide ? "left from" : "landed in"} — without it this
-          settlement can&apos;t be reconciled in Close Book.
-        </p>
+          {furtherModeRequired && !value.furtherMode && (
+            <p className="text-xs text-red-600 -mt-2">
+              Select the account this money {expenseSide ? "left from" : "landed in"} — without it this
+              settlement can&apos;t be reconciled in Close Book.
+            </p>
+          )}
+        </>
       )}
 
       {showExternal && (
@@ -214,12 +221,15 @@ export default function TransactionFieldSet({
  */
 export function validateTransactionFields(value, context, { requireAmount = true } = {}) {
   const isSettlement = SETTLEMENT_CONTEXTS.has(context);
+  const hidePaymentFields = HIDE_PAYMENT_FIELDS_CONTEXTS.has(context);
 
   if (requireAmount && !(parseFloat(value.amount) > 0)) {
     return "Enter an amount greater than zero";
   }
-  if (!value.method) return "Select a payment method";
+  if (!hidePaymentFields && !value.method) return "Select a payment method";
   if (!value.branch) return "Select a branch";
+
+  if (hidePaymentFields) return null;
 
   // Mirrors furtherModeRequired above.
   if (isSettlement && !NON_CASH_METHODS.includes(value.method) && !value.furtherMode) {
