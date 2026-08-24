@@ -51,5 +51,11 @@ const employeeSchema = new mongoose.Schema({
   timestamps: true
 });
 
+// No indexes existed on this collection at all until now — role/branch/isactive is the exact
+// filter shape src/app/api/sales/dashboard/route.js's getAgentPerformance() and the Owner
+// staff-360 route use (e.g. Employee.find({ role: "Agent", isactive: true, branch })), and every
+// such query was a full collection scan.
+employeeSchema.index({ role: 1, isactive: 1, branch: 1 });
+employeeSchema.index({ branch: 1 });
 
 export default mongoose.models.Employee || mongoose.model('Employee', employeeSchema);

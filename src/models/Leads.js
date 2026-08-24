@@ -45,4 +45,13 @@ const leadsSchema = new mongoose.Schema(
   },
 );
 
+// No indexes existed on this collection at all until now — every tag/date-scoped query (the
+// dashboard's totalLeads count, the marketing-summary and conversion-intelligence routes) was a
+// full collection scan. This is the exact {tag, createdAt} shape those routes filter on, plus
+// createdAt alone for date-range-only queries and phone for the marketing-summary lead→patient
+// join.
+leadsSchema.index({ tag: 1, createdAt: -1 });
+leadsSchema.index({ createdAt: -1 });
+leadsSchema.index({ phone: 1 });
+
 export default mongoose.models.Leads || mongoose.model("Leads", leadsSchema);

@@ -1309,76 +1309,67 @@ async function generateReceivablesAllReport(filters) {
   }));
 }
 
+// Was 4 sequential DB round trips PER branch (2 countDocuments + 2 aggregates), run one branch
+// at a time — up to 72 sequential round trips for 18 branches. Now: 1 Patient facet + 1
+// Transactions facet per branch (covering revenue AND expenses in one pipeline), and all
+// branches run concurrently via Promise.all instead of a for-loop. Same output shape.
 async function generateBranchComparisonReport(filters) {
   const patientQuery = { ...filters.patientDateFilter };
   const txQuery = { ...filters.transactionDateFilter };
 
-  const branchData = [];
+  const targetBranches = ALL_BRANCHES.filter((b) => branchAllowed(filters.branch, b));
 
-  for (const branch of ALL_BRANCHES) {
-    if (!branchAllowed(filters.branch, branch)) continue;
+  const branchData = await Promise.all(
+    targetBranches.map(async (branch) => {
+      const branchQuery = { ...patientQuery, "personal.branch": branch };
 
-    const branchQuery = { ...patientQuery, "personal.branch": branch };
+      const [patientFacet, txFacet] = await Promise.all([
+        Patient.aggregate([
+          { $match: branchQuery },
+          {
+            $facet: {
+              total: [{ $count: "count" }],
+              surgeries: [{ $match: { "surgery.surgeryDate": { $exists: true } } }, { $count: "count" }],
+            },
+          },
+        ]),
+        Transactions.aggregate([
+          {
+            $match: {
+              ...txQuery,
+              branch,
+              method: { $nin: UNSETTLED_METHODS },
+              ...SETTLEMENT_EXCLUSION,
+            },
+          },
+          {
+            $group: { _id: "$costType", total: { $sum: "$amount" } },
+          },
+        ]),
+      ]);
 
-    const totalPatients = await Patient.countDocuments(branchQuery);
-    const surgeries = await Patient.countDocuments({
-      ...branchQuery,
-      "surgery.surgeryDate": { $exists: true },
-    });
+      const totalPatients = patientFacet[0]?.total?.[0]?.count || 0;
+      const surgeries = patientFacet[0]?.surgeries?.[0]?.count || 0;
+      const totalRevenue = txFacet.find((r) => r._id === "Revenue")?.total || 0;
+      const totalExpenses = txFacet.find((r) => r._id === "Expenses")?.total || 0;
 
-    const revenue = await Transactions.aggregate([
-      {
-        $match: {
-          ...txQuery,
-          branch: branch,
-          costType: "Revenue",
-          method: { $nin: UNSETTLED_METHODS }, ...SETTLEMENT_EXCLUSION,
-        },
-      },
-      {
-        $group: {
-          _id: null,
-          total: { $sum: "$amount" },
-        },
-      },
-    ]);
-
-    const expenses = await Transactions.aggregate([
-      {
-        $match: {
-          ...txQuery,
-          branch: branch,
-          costType: "Expenses",
-          method: { $nin: UNSETTLED_METHODS }, ...SETTLEMENT_EXCLUSION,
-        },
-      },
-      {
-        $group: {
-          _id: null,
-          total: { $sum: "$amount" },
-        },
-      },
-    ]);
-
-    const totalRevenue = revenue[0]?.total || 0;
-    const totalExpenses = expenses[0]?.total || 0;
-
-    branchData.push({
-      Branch: branch,
-      "Total Patients": totalPatients,
-      "Total Surgeries": surgeries,
-      "Conversion Rate": totalPatients
-        ? ((surgeries / totalPatients) * 100).toFixed(1) + "%"
-        : "0%",
-      "Total Revenue": totalRevenue,
-      "Total Expenses": totalExpenses,
-      "Net Profit": totalRevenue - totalExpenses,
-      "Profit Margin": totalRevenue
-        ? (((totalRevenue - totalExpenses) / totalRevenue) * 100).toFixed(1) +
-          "%"
-        : "0%",
-    });
-  }
+      return {
+        Branch: branch,
+        "Total Patients": totalPatients,
+        "Total Surgeries": surgeries,
+        "Conversion Rate": totalPatients
+          ? ((surgeries / totalPatients) * 100).toFixed(1) + "%"
+          : "0%",
+        "Total Revenue": totalRevenue,
+        "Total Expenses": totalExpenses,
+        "Net Profit": totalRevenue - totalExpenses,
+        "Profit Margin": totalRevenue
+          ? (((totalRevenue - totalExpenses) / totalRevenue) * 100).toFixed(1) +
+            "%"
+          : "0%",
+      };
+    })
+  );
 
   return branchData;
 }
@@ -1433,52 +1424,45 @@ async function generateBranchRevenueReport(filters) {
   return Object.values(branchData);
 }
 
+// Was 6 sequential countDocuments PER branch (one for each ops.status value, run one branch at
+// a time — up to 108 sequential round trips for 18 branches. Now: one $group aggregation per
+// branch (all statuses counted together), branches run concurrently via Promise.all.
 async function generateBranchPatientsReport(filters) {
   const query = { ...filters.dateFilter };
 
-  const branchData = [];
+  const targetBranches = ALL_BRANCHES.filter((b) => branchAllowed(filters.branch, b));
 
-  for (const branch of ALL_BRANCHES) {
-    if (!branchAllowed(filters.branch, branch)) continue;
+  const branchData = await Promise.all(
+    targetBranches.map(async (branch) => {
+      const branchQuery = { ...query, "personal.branch": branch };
 
-    const branchQuery = { ...query, "personal.branch": branch };
+      const statusCounts = await Patient.aggregate([
+        { $match: branchQuery },
+        { $group: { _id: "$ops.status", count: { $sum: 1 } } },
+      ]);
+      const byStatus = Object.fromEntries(statusCounts.map((r) => [r._id, r.count]));
+      const totalPatients = statusCounts.reduce((sum, r) => sum + r.count, 0);
+      const newPatients = byStatus.NEW || 0;
+      const consulted = byStatus.CONSULTED || 0;
+      const scheduled = byStatus.SURGERY_BOOKED || 0;
+      const bookingDone = byStatus.BOOKING_DONE || 0;
+      const closed = byStatus.CLOSED || 0;
 
-    const totalPatients = await Patient.countDocuments(branchQuery);
-    const newPatients = await Patient.countDocuments({
-      ...branchQuery,
-      "ops.status": "NEW",
-    });
-    const consulted = await Patient.countDocuments({
-      ...branchQuery,
-      "ops.status": "CONSULTED",
-    });
-    const scheduled = await Patient.countDocuments({
-      ...branchQuery,
-      "ops.status": "SURGERY_BOOKED",
-    });
-    const bookingDone = await Patient.countDocuments({
-      ...branchQuery,
-      "ops.status": "BOOKING_DONE",
-    });
-    const closed = await Patient.countDocuments({
-      ...branchQuery,
-      "ops.status": "CLOSED",
-    });
-
-    branchData.push({
-      Branch: branch,
-      "Total Patients": totalPatients,
-      "New Patients": newPatients,
-      Consulted: consulted,
-      "Surgery Booked": scheduled,
-      "Booking Done": bookingDone,
-      Closed: closed,
-      "Conversion Rate":
-        totalPatients > 0
-          ? (((bookingDone + closed) / totalPatients) * 100).toFixed(1) + "%"
-          : "0%",
-    });
-  }
+      return {
+        Branch: branch,
+        "Total Patients": totalPatients,
+        "New Patients": newPatients,
+        Consulted: consulted,
+        "Surgery Booked": scheduled,
+        "Booking Done": bookingDone,
+        Closed: closed,
+        "Conversion Rate":
+          totalPatients > 0
+            ? (((bookingDone + closed) / totalPatients) * 100).toFixed(1) + "%"
+            : "0%",
+      };
+    })
+  );
 
   return branchData;
 }
