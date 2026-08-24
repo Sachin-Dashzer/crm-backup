@@ -1,28 +1,3 @@
-// Deletes EVERYTHING under the "Rent" category — every expense Transaction (costType:
-// "Expenses", expense: "Rent") AND every Rent Payable (expenseCategory: "Rent"), plus each
-// Rent payable's linked TDS payable (tdsLink.role: "TDS" pointing back at one of them) so
-// nothing is left dangling on either side.
-//
-// Also catches transactions linked via payableId to a Rent payable even if the transaction's
-// OWN category was since changed to something else (the exact "stale payableId after a
-// re-categorize" bug fixed earlier this session in expense/update/route.js) — those are real
-// payments against a Rent payable regardless of what the transaction is labelled today, so they
-// belong in this deletion too, not left behind pointing at a payable about to disappear.
-//
-// This erases real reconciliation history — opening balances, createdAt backfills, revised
-// amounts, everything this session built up for Rent. There is no undo once --apply runs; the
-// JSON report is an audit record, not a restore point.
-//
-// SAFETY:
-//   - Dry run by default. Nothing is deleted until you pass --apply.
-//   - Any matched transaction that CREATED a Payable/Receivable of its own (externalParty.
-//     linkedPayableId/linkedReceivableId, collabRef.payableId/receivableId) is reported and
-//     SKIPPED unless you also pass --force-linked — deleting it would orphan that OTHER
-//     document, which is unrelated to Rent.
-//
-//   node scripts/delete-all-rent-data.js                  (dry run)
-//   node scripts/delete-all-rent-data.js --apply          (delete, skip cross-linked)
-//   node scripts/delete-all-rent-data.js --apply --force-linked
 
 import mongoose from "mongoose";
 import fs from "fs";

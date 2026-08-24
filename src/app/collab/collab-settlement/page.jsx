@@ -686,8 +686,9 @@ function RecordCollectionModal({ collabCase, onClose, onSuccess, toast }) {
   const [mode, setMode] = useState("cash");
   const [reference, setReference] = useState("");
   // Descriptive routing detail — which instrument the money moved through and which account it
-  // landed in on the CLINIC's side. Never touches our own accounts/books (see the route comment
-  // on why this never creates a Transaction); purely for a fuller paper trail on the record.
+  // landed in on the CLINIC's side. Never touches our own accounts/books — but it DOES now book
+  // real revenue (a paid_to_external Transaction, see collabDerivation.js); this is purely for a
+  // fuller paper trail of how the clinic itself received it.
   const [receiptMode, setReceiptMode] = useState("");
   const [furtherMode, setFurtherMode] = useState("");
   const [note, setNote] = useState("");
@@ -752,7 +753,8 @@ function RecordCollectionModal({ collabCase, onClose, onSuccess, toast }) {
             <strong>
               {collabCase.patientName || "the patient"} paid directly to {collabCase.clinic}
             </strong>{" "}
-            — not money paid to us. It does not create a transaction or touch our revenue.
+            — not money paid to us. It still books revenue right now, the same as any other collab
+            collection — it just never lands in one of our own cash/bank accounts.
           </div>
           <div className="bg-gray-50 rounded-lg p-3 text-sm">
             <p className="text-gray-500">

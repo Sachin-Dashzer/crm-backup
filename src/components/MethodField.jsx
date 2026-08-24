@@ -95,6 +95,7 @@ export default function MethodField({
         receiptMode={value.receiptMode}
         furtherMode={value.furtherMode}
         onChange={(patch) => onChange(patch)}
+        forEdit={forEdit}
       />
 
       <div>

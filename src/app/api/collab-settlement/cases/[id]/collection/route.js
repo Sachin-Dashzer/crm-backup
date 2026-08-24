@@ -4,16 +4,15 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import connectDB from "@/lib/db";
 import CollabCase from "@/models/CollabCase";
 import Transactions from "@/models/Transactions";
-import { UNSETTLED_METHODS } from "@/constants/bankRouting";
-import { recordClinicCollectionAtomic } from "@/lib/collabDerivation";
+import { recordCollabCollectionAtomic } from "@/lib/collabDerivation";
 
-// The collab team enters the case in the first place, so they also record what the patient
-// later paid the clinic directly — this appends to clinicCollections AND keeps the case's own
-// Payable/Receivable (the OBLIGATION between the clinic and us — see clinicSharePayable/
-// clinicShareReceivable on CollabCase) resized to match, so "how much does this case still owe"
-// is never stale. See recordClinicCollectionAtomic (src/lib/collabDerivation.js) for the actual
-// resize/flip logic and why it deliberately never creates a SETTLING payment here — that's a
-// separate real event (see settlements/create/route.js's "Settle" flow).
+// Records a later instalment against a collab case — either the patient paying US more
+// (collectedBy: "US") or the clinic collecting more directly (collectedBy: "CLINIC", the
+// original and still most common case). Both now create a real revenue Transaction, exactly
+// like the amounts recorded at case-creation time — see recordCollabCollectionAtomic
+// (src/lib/collabDerivation.js) for why that's the fix: this route used to only append to
+// clinicCollections[] and explicitly never created a Transaction, so every instalment after the
+// first was invisible to revenue, to Patient.payments, and to the clinic's Receivable.
 const ALLOWED_ROLES = ["collab", "admin", "super-admin"];
 
 export async function POST(req, { params }) {
@@ -29,8 +28,19 @@ export async function POST(req, { params }) {
     await connectDB();
 
     const { id } = await params;
-    const { amount, discount, date, mode, reference, receiptMode, furtherMode, note, allowOverpayment } =
-      await req.json();
+    const {
+      amount,
+      discount,
+      date,
+      collectedBy = "CLINIC", // matches clinicCollections[].collectedBy's own default
+      method, // "US" only
+      mode, // "CLINIC" only
+      reference,
+      receiptMode,
+      furtherMode,
+      note,
+      allowOverpayment,
+    } = await req.json();
 
     const parsedAmount = parseFloat(amount);
     if (!parsedAmount || parsedAmount <= 0) {
@@ -43,6 +53,9 @@ export async function POST(req, { params }) {
     if (parsedDiscount < 0) {
       return NextResponse.json({ error: "Discount cannot be negative" }, { status: 400 });
     }
+    if (!["US", "CLINIC"].includes(collectedBy)) {
+      return NextResponse.json({ error: 'collectedBy must be "US" or "CLINIC"' }, { status: 400 });
+    }
 
     const collabCase = await CollabCase.findById(id).lean();
     if (!collabCase) {
@@ -52,25 +65,36 @@ export async function POST(req, { params }) {
       return NextResponse.json({ error: "This case has been cancelled" }, { status: 400 });
     }
 
-    // Read-only lookup — money paid to us, never written back to.
-    const [revenueAgg] = await Transactions.aggregate([
+    // How much of THIS case's package is already accounted for — every collabRef-linked revenue
+    // transaction, both collected-by-us and collected-by-clinic (a paid_to_external transaction
+    // still represents money genuinely off the patient's outstanding balance, even though it
+    // hasn't reached one of our own accounts).
+    //
+    // FIXED: this used to match on `patient: collabCase.patient` with no collabRef filter at
+    // all, so an unrelated direct payment by the same patient (e.g. a normal transplant payment
+    // that has nothing to do with this collab case) silently reduced this case's remaining
+    // balance. Scoped to this case's own transactions only.
+    //
+    // receivableId: null excludes two kinds of rows that are NOT a new collection off the
+    // package: topUpClinicShare's own offset_settlement contra (see collabDerivation.js — it
+    // pays down the collab Receivable for revenue already counted by the paid_to_external row
+    // that raised it) and a real THEY_PAID settlement collecting against that same Receivable
+    // later. Counting either here would double an amount already collected once.
+    const [agg] = await Transactions.aggregate([
       {
         $match: {
-          patient: collabCase.patient,
+          "collabRef.caseId": collabCase._id,
           costType: "Revenue",
           approvalStatus: { $nin: ["PENDING", "REJECTED"] },
-          method: { $nin: UNSETTLED_METHODS },
+          receivableId: null,
         },
       },
-      { $group: { _id: null, total: { $sum: "$amount" } } },
+      { $group: { _id: null, totalCollected: { $sum: "$amount" }, totalDiscount: { $sum: "$discount" } } },
     ]);
-    const collectedByUs = revenueAgg?.total || 0;
-    const collectedByClinic = (collabCase.clinicCollections || []).reduce((sum, c) => sum + c.amount, 0);
-    const priorDiscount = (collabCase.clinicCollections || []).reduce((sum, c) => sum + (c.discount || 0), 0);
-    const remaining = collabCase.packageAmount - collectedByUs - collectedByClinic - priorDiscount;
+    const totalCollected = agg?.totalCollected || 0;
+    const totalDiscount = agg?.totalDiscount || 0;
+    const remaining = round2(collabCase.packageAmount - totalCollected - totalDiscount);
 
-    // A discount is a waiver, not a payment — it reduces the outstanding just the same, so it
-    // has to be checked against the same remaining balance rather than let through unchecked.
     if (parsedAmount + parsedDiscount > remaining && !allowOverpayment) {
       return NextResponse.json(
         {
@@ -80,11 +104,13 @@ export async function POST(req, { params }) {
       );
     }
 
-    const { collabCase: updated } = await recordClinicCollectionAtomic({
+    const { collabCase: updated, transaction } = await recordCollabCollectionAtomic({
       caseId: id,
       amount: parsedAmount,
       discount: parsedDiscount,
       date,
+      collectedBy,
+      method,
       mode,
       reference,
       receiptMode,
@@ -93,9 +119,17 @@ export async function POST(req, { params }) {
       actor: { name: session.user.name, email: session.user.email },
     });
 
-    return NextResponse.json({ message: "Collection recorded", collabCase: updated });
+    return NextResponse.json({
+      message: "Collection recorded",
+      collabCase: updated,
+      transactionId: transaction?._id || null,
+    });
   } catch (error) {
     console.error("Error recording collab collection:", error);
     return NextResponse.json({ error: error.message || "Failed to record collection" }, { status: 500 });
   }
+}
+
+function round2(n) {
+  return Math.round((Number(n) || 0) * 100) / 100;
 }

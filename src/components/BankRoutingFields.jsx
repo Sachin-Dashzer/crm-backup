@@ -21,6 +21,21 @@ import {
 //
 // In both cases, on first mount, if the caller already has values (e.g. an edit page hydrating a
 // saved transaction), those are left alone instead of being overwritten by the current map.
+//
+// `forEdit` (edit forms only): the first effect run is NEVER treated as a prefill opportunity,
+// full stop — not even when receiptMode/furtherMode come in blank. An edit form's first render
+// is always "just hydrated an existing transaction"; injecting a guessed default over a
+// genuinely-stored value (including a legitimately blank one on an old record) isn't this
+// component's call to make. The bug this fixes: `mounted` is a ref, which survives for the
+// lifetime of this component INSTANCE — but the parent edit pages don't remount that instance
+// when navigating from editing one transaction to another (same route, different [id], no key),
+// so `mounted.current` was already `true` from the PREVIOUS transaction's session, making
+// `firstRun` false and skipping the "leave it alone" guard entirely. That silently overwrote the
+// freshly-loaded value with the generic per-method default (e.g. every "cash" transaction's
+// furtherMode was rewritten to "Cash Book", clobbering values like "Cash ( backend )"). The
+// callers now also pass `key={transactionId}` to force a real remount per transaction — this
+// prop-based guard is the second, independent layer, since a ref reset alone still depended on
+// receiptMode/furtherMode already being non-empty.
 export default function BankRoutingFields({
   costType,
   branch,
@@ -29,6 +44,7 @@ export default function BankRoutingFields({
   receiptMode,
   furtherMode,
   onChange,
+  forEdit = false,
 }) {
   const isExpense = costType === "Expenses";
   const mounted = useRef(false);
@@ -40,7 +56,7 @@ export default function BankRoutingFields({
     const firstRun = !mounted.current;
     mounted.current = true;
 
-    if (firstRun && (receiptMode || furtherMode)) return;
+    if (firstRun && (forEdit || receiptMode || furtherMode)) return;
 
     onChange(
       isExpense

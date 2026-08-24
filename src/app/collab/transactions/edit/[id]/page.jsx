@@ -784,6 +784,7 @@ export default function EditTransactionPage() {
             {/* TRANSPLANT TAB */}
             {activeTab === "transplant" && (
               <RevenueSection
+                key={transactionId}
                 category="TRANSPLANT"
                 data={transplantData}
                 onChange={setTransplantData}
@@ -800,6 +801,7 @@ export default function EditTransactionPage() {
             {/* SERVICE TAB */}
             {activeTab === "service" && (
               <RevenueSection
+                key={transactionId}
                 category="SERVICE"
                 data={serviceData}
                 onChange={setServiceData}
@@ -822,6 +824,7 @@ export default function EditTransactionPage() {
             {/* MEDICINE TAB */}
             {activeTab === "medicine" && (
               <RevenueSection
+                key={transactionId}
                 category="MEDICINE"
                 data={medicineData}
                 onChange={setMedicineData}
@@ -844,6 +847,7 @@ export default function EditTransactionPage() {
             {/* EXPENSE TAB */}
             {activeTab === "expense" && (
               <DirectExpenseSection
+                key={transactionId}
                 data={expenseData}
                 onChange={setExpenseData}
                 vendors={vendors}

@@ -57,22 +57,31 @@ const collabCaseSchema = new mongoose.Schema(
       ],
     },
 
-    // Append-only. Money the PATIENT paid DIRECTLY TO THE PARTNER CLINIC.
+    // Append-only log of every collection recorded after case creation — a useful per-case
+    // audit trail, but NOT the source of truth for money movement any more (see
+    // src/lib/collabDerivation.js): each entry here now has a real Transaction behind it,
+    // found live via that transaction's collabRef.caseId, so financial totals are always
+    // aggregated from Transactions and never from this array.
     clinicCollections: [
       {
         amount: { type: Number, required: true, min: 0 },
         // A waiver granted at the time of this collection — reduces the patient's outstanding
-        // the same as a payment would, but is never money collected, so it stays out of `amount`
-        // (which feeds collectedByClinic / the clinic's own settlement obligation) and is instead
-        // subtracted from patientOutstanding directly. See cases/route.js's aggregation.
+        // the same as a payment would, but is never money collected, so it stays out of `amount`.
+        // Also recorded on the generated Transaction's own `discount` field, which is what
+        // financial aggregations actually read — this copy is descriptive/audit only.
         discount: { type: Number, default: 0, min: 0 },
+        // Who physically took this money — the same distinction createCollabCaseAtomic makes
+        // for the amounts collected at case-creation time. Defaults to "CLINIC" because every
+        // entry recorded before this field existed was, by definition, a clinic collection —
+        // this route had no other kind until now.
+        collectedBy: { type: String, enum: ["US", "CLINIC"], default: "CLINIC" },
         date: { type: Date, default: Date.now },
         mode: { type: String, enum: COLLECTION_MODES },
         // Transaction ID / reference for the payment itself.
         reference: String,
         // Same "how was this paid, and through which account" pair every real revenue
-        // transaction records (see BankRoutingFields) — descriptive only here, since this
-        // collection never touches our own accounts or creates a Transaction.
+        // transaction records (see BankRoutingFields) — descriptive here; the real values live
+        // on the Transaction this collection generates (see collabDerivation.js).
         receiptMode: String,
         furtherMode: String,
         note: String,
