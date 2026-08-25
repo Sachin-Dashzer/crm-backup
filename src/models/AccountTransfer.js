@@ -2,20 +2,6 @@ import mongoose from "mongoose";
 import { ACCOUNTS } from "@/constants/bankRouting";
 import { ALL_BRANCHES } from "@/lib/branches";
 
-// Contra entries — money moved between our OWN accounts (Tally's term; see the section
-// subtitle "Transfer between your own accounts").
-//
-// WHY A SEPARATE COLLECTION, not a new costType/transactionCategory on Transactions:
-// existing report and revenue queries filter costType/transactionCategory inconsistently —
-// some match positively ("Revenue"), some don't filter at all. A new enum value on the shared
-// collection would leak into whichever of those don't filter, inflating a revenue or expense
-// figure somewhere subtle. A separate collection cannot contaminate a query that never names
-// it. The cost is one $unionWith in the balance aggregation, which is explicit and cheap.
-//
-// A contra entry has NO profit-and-loss impact. It is not revenue, not an expense; it only
-// moves the cash book. The balance aggregation adds it to `toAccount` and subtracts it from
-// `fromAccount`, so the sum across all accounts is unchanged by definition.
-
 const receiptSchema = new mongoose.Schema(
   {
     url: String,
@@ -32,18 +18,7 @@ const accountTransferSchema = new mongoose.Schema(
     toAccount: { type: String, enum: ACCOUNTS, required: true, index: true },
     amount: { type: Number, required: true, min: 0 },
     date: { type: Date, default: Date.now, index: true },
-
-    // Which branch the transfer belongs to. OPTIONAL, and null means "company-level" — a move
-    // between head-office accounts that no single branch owns.
-    //
-    // This is a branch from ALL_BRANCHES, not an account. "Cash ( backend )" is an ACCOUNT and
-    // would be rejected here; the branch for a transfer into it is "Delhi".
-    //
-    // A branch-filtered close-book view shows transfers tagged with that branch and hides the
-    // untagged ones, because company-level money cannot honestly be attributed to one branch.
-    // So a branch view reconciles for the transfers it can see; the untagged ones only ever
-    // appear in the unfiltered view. Tag a transfer to make it visible branch-side.
-    branch: {
+branch: {
       type: String,
       enum: ALL_BRANCHES,
       default: null,
