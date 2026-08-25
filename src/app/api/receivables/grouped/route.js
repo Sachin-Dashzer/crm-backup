@@ -7,7 +7,7 @@ import Receivable from "@/models/Receivable";
 import Transactions from "@/models/Transactions";
 import { buildReceivableGroupedStages, buildReceivableAggregationStages } from "@/lib/receivableAggregation";
 import { UNSETTLED_METHODS } from "@/constants/bankRouting";
-import { checkPeriodLock } from "@/lib/periodLock";
+import { loadClosedPeriodSnapshot, blockReasonFromSnapshot } from "@/lib/periodLock";
 import { resolveBranchFilter } from "@/lib/branches";
 
 const ALLOWED_ROLES = ["admin", "super-admin"];
@@ -146,12 +146,12 @@ export async function GET(request) {
         Transactions.countDocuments(txMatch),
       ]);
 
-      const rowsWithLock = await Promise.all(
-        rows.map(async (r) => ({
-          ...r,
-          lockReason: await checkPeriodLock({ furtherMode: r.account, date: r.date }),
-        })),
-      );
+      // One snapshot for the page rather than a query per row — display path only.
+      const closedPeriods = await loadClosedPeriodSnapshot();
+      const rowsWithLock = rows.map((r) => ({
+        ...r,
+        lockReason: blockReasonFromSnapshot(closedPeriods, r.account, r.date),
+      }));
 
       return NextResponse.json({ success: true, rows: rowsWithLock, total, page, limit });
     }
@@ -178,18 +178,27 @@ export async function GET(request) {
     if (ageing) stages.push({ $match: { ageingBucket: ageing, pending: { $gt: 0 } } });
     stages.push({ $sort: { dueDate: 1, createdAt: -1 } });
 
-    const allRows = await Receivable.aggregate(stages);
-    const total = allRows.length;
-    const pageRows = allRows.slice((page - 1) * limit, (page - 1) * limit + limit);
-    // A document has no account of its own — checkPeriodLock's "every account closed" fallback
-    // (furtherMode: null) is the right semantics for an accrual with no cash side yet. Bounded
-    // by `limit` (<=200), same cost as every other per-row lock check in this codebase.
-    const rows = await Promise.all(
-      pageRows.map(async (r) => ({
-        ...r,
-        lockReason: await checkPeriodLock({ furtherMode: null, date: r.dueDate || r.createdAt || new Date() }),
-      })),
-    );
+    // Paginate INSIDE the pipeline — see the identical change in payables/grouped/route.js.
+    // Previously every matching receivable was aggregated (each with its own $lookup into
+    // Transactions) and serialised before one page was .slice()d out in JavaScript.
+    const [facet] = await Receivable.aggregate([
+      ...stages,
+      {
+        $facet: {
+          rows: [{ $skip: (page - 1) * limit }, { $limit: limit }],
+          total: [{ $count: "count" }],
+        },
+      },
+    ]);
+    const pageRows = facet?.rows || [];
+    const total = facet?.total?.[0]?.count || 0;
+    // One snapshot for the whole page instead of a per-row checkPeriodLock — see the identical
+    // change and reasoning in payables/grouped/route.js.
+    const closedPeriods = await loadClosedPeriodSnapshot();
+    const rows = pageRows.map((r) => ({
+      ...r,
+      lockReason: blockReasonFromSnapshot(closedPeriods, null, r.dueDate || r.createdAt || new Date()),
+    }));
 
     return NextResponse.json({ success: true, rows, total, page, limit });
   } catch (error) {

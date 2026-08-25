@@ -84,7 +84,52 @@ export async function GET(request) {
     if (purpose) baseMatch.purpose = purpose;
     if (branch) baseMatch.branch = branch;
 
-    const overall = await sumMatch(baseMatch);
+    const TOTALS_GROUP = {
+      count: { $sum: 1 },
+      totalOwed: { $sum: "$totalAmount" },
+      totalPaid: { $sum: "$paid" },
+      totalPending: { $sum: "$pending" },
+    };
+    const emptyTotals = { count: 0, totalOwed: 0, totalPaid: 0, totalPending: 0 };
+    const pickTotals = (agg) =>
+      agg
+        ? { count: agg.count, totalOwed: agg.totalOwed, totalPaid: agg.totalPaid, totalPending: agg.totalPending }
+        : emptyTotals;
+
+    // NOTE ON DATE FILTERING: this route deliberately accepts no from/to. `pending` is an
+    // OUTSTANDING BALANCE — what is still owed as of now — not a period flow. Scoping it to a
+    // month would silently exclude everything raised earlier and still unpaid, i.e. understate
+    // the debt. The current-month default that the list routes use must not be applied here.
+
+    let overall;
+    let byPurpose = null;
+
+    if (purpose) {
+      overall = pickTotals((await Payable.aggregate([
+        { $match: baseMatch },
+        ...buildPayableAggregationStages(txCollection),
+        { $group: { _id: null, ...TOTALS_GROUP } },
+      ]))[0]);
+    } else {
+      // Without a purpose filter, `overall` and `byPurpose` share an identical $match, so they
+      // used to run the same whole-collection pipeline — including its $lookup into Transactions
+      // — twice per request. $facet computes both from a single pass.
+      const [facet] = await Payable.aggregate([
+        { $match: baseMatch },
+        ...buildPayableAggregationStages(txCollection),
+        {
+          $facet: {
+            overall: [{ $group: { _id: null, ...TOTALS_GROUP } }],
+            byPurpose: [
+              { $group: { _id: "$purpose", ...TOTALS_GROUP } },
+              { $sort: { totalPending: -1 } },
+            ],
+          },
+        },
+      ]);
+      overall = pickTotals(facet?.overall?.[0]);
+      byPurpose = facet?.byPurpose || [];
+    }
 
     let byPayee = null;
     if (payeeKind && (payeeRefId || payeeLabel)) {
@@ -93,24 +138,6 @@ export async function GET(request) {
       if (payeeLabel) payeeMatch["payee.label"] = payeeLabel;
       if (expenseSubType) payeeMatch.expenseSubType = expenseSubType;
       byPayee = await sumMatch(payeeMatch);
-    }
-
-    let byPurpose = null;
-    if (!purpose) {
-      byPurpose = await Payable.aggregate([
-        { $match: { isCancelled: false, ...(branch ? { branch } : {}) } },
-        ...buildPayableAggregationStages(txCollection),
-        {
-          $group: {
-            _id: "$purpose",
-            count: { $sum: 1 },
-            totalOwed: { $sum: "$totalAmount" },
-            totalPaid: { $sum: "$paid" },
-            totalPending: { $sum: "$pending" },
-          },
-        },
-        { $sort: { totalPending: -1 } },
-      ]);
     }
 
     return NextResponse.json({ success: true, overall, byPayee, byPurpose });

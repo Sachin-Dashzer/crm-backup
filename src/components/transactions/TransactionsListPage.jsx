@@ -83,13 +83,22 @@ const REVENUE_CATEGORIES = ["TRANSPLANT", "SERVICE", "MEDICINE"];
 // Mirrors UNTRACKED_FURTHER_MODE in src/app/api/transactions/get-all/route.js.
 const UNTRACKED_FURTHER_MODE = "__UNTRACKED__";
 const FILTER_KEYS = ["branch", "dateFrom", "dateTo", "paymentMethod", "procedure", "furtherMode", "expenseCategory", "expenseType", "entryType"];
+// Default window: the current calendar month, matching every other admin list. This was
+// today-only, which kept the query small but meant the page opened showing almost nothing and
+// staff had to widen the range by hand on every visit. Month-to-date is still a bounded query —
+// what it must never become is unbounded.
+const getMonthStartDate = () => {
+  const d = new Date();
+  return new Date(d.getFullYear(), d.getMonth(), 1).toLocaleDateString("en-CA");
+};
+
 const defaultFilters = () => ({
-  branch: "", dateFrom: getTodayDate(), dateTo: getTodayDate(), paymentMethod: "", procedure: "",
+  branch: "", dateFrom: getMonthStartDate(), dateTo: getTodayDate(), paymentMethod: "", procedure: "",
   furtherMode: "", expenseCategory: "", expenseType: "", entryType: "",
 });
 const filtersFromParams = (params) => ({
   branch:        params.get("branch") || "",
-  dateFrom:      params.get("dateFrom") || getTodayDate(),
+  dateFrom:      params.get("dateFrom") || getMonthStartDate(),
   dateTo:        params.get("dateTo") || getTodayDate(),
   paymentMethod: params.get("paymentMethod") || "",
   procedure:     params.get("procedure") || "",
@@ -98,6 +107,18 @@ const filtersFromParams = (params) => ({
   expenseType:      params.get("expenseType") || "",
   entryType:        params.get("entryType") || "",
 });
+
+// Module scope, not inside the component body. Declared inline, it was a NEW component type on
+// every render, so React unmounted and remounted every sort icon each time the table re-rendered
+// instead of updating it in place.
+const SortIcon = ({ columnKey, sortConfig }) => {
+  if (sortConfig.key !== columnKey) {
+    return <ArrowUpDown className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />;
+  }
+  return sortConfig.direction === "asc"
+    ? <ChevronLeft className="w-3 h-3 sm:w-4 sm:h-4 rotate-90 text-indigo-600" />
+    : <ChevronRight className="w-3 h-3 sm:w-4 sm:h-4 rotate-90 text-indigo-600" />;
+};
 
 const TRANSACTION_CATEGORIES = [
   { value: "TRANSPLANT", label: "Transplant", icon: User, color: "indigo" },
@@ -593,13 +614,6 @@ function DataTable({ category, rows, onDelete, onReverse, onSort, sortConfig, pa
     return colors[method?.toLowerCase()] || "bg-gray-100 text-gray-700 border-gray-200";
   };
 
-  const SortIcon = ({ columnKey }) => {
-    if (sortConfig.key !== columnKey) return <ArrowUpDown className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />;
-    return sortConfig.direction === "asc"
-      ? <ChevronLeft className="w-3 h-3 sm:w-4 sm:h-4 rotate-90 text-indigo-600" />
-      : <ChevronRight className="w-3 h-3 sm:w-4 sm:h-4 rotate-90 text-indigo-600" />;
-  };
-
   const getPatientName  = (row) => row.patient?.personal?.name || row.patientName || "Walk-in Customer";
   const getPatientPhone = (row) => row.patient?.personal?.phone || row.patientPhone || "";
   const getMedicineName = (row) => (typeof row.medicineId === "object" ? row.medicineId?.name : null) || "N/A";
@@ -616,7 +630,7 @@ function DataTable({ category, rows, onDelete, onReverse, onSort, sortConfig, pa
           >
             <div className="flex items-center gap-1.5">
               <span className="truncate">{col.label}</span>
-              {col.sortable && <SortIcon columnKey={col.key} />}
+              {col.sortable && <SortIcon columnKey={col.key} sortConfig={sortConfig} />}
             </div>
           </div>
         ))}
@@ -955,12 +969,22 @@ function AllTransactionsPageInner({ Sidebar }) {
   // still valid for the restored tab is left alone, and one that isn't (e.g. an expenseCategory
   // left in a stale/legacy URL that predates `category` being persisted) gets cleared instead of
   // silently zeroing every result.
+  //
+  // The updaters below MUST return the previous object unchanged when nothing actually needs
+  // clearing. Spreading unconditionally produced a new `appliedFilters` identity on every mount,
+  // which invalidated `fetchData` (it's in the dep array above) and re-fired the effect at :943 —
+  // so every mount ran the whole transaction query twice, and pushed two router.replace calls.
   useEffect(() => {
     const patch = {};
     if (!(activeCategory === "TRANSPLANT" || activeCategory === "SERVICE")) patch.procedure = "";
     if (activeCategory !== "EXPENSE") { patch.expenseCategory = ""; patch.expenseType = ""; }
-    setDraftFilters((f) => ({ ...f, ...patch }));
-    setAppliedFilters((f) => ({ ...f, ...patch }));
+
+    const applyPatch = (f) => {
+      const changed = Object.keys(patch).filter((k) => f[k] !== patch[k]);
+      return changed.length ? { ...f, ...patch } : f;
+    };
+    setDraftFilters(applyPatch);
+    setAppliedFilters(applyPatch);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeCategory]);
 
@@ -1040,7 +1064,9 @@ function AllTransactionsPageInner({ Sidebar }) {
   const hasActiveFilters = appliedFilters.branch || appliedFilters.paymentMethod || appliedFilters.procedure ||
     appliedFilters.furtherMode || appliedFilters.expenseCategory || appliedFilters.expenseType ||
     appliedFilters.entryType || tableSearch ||
-    appliedFilters.dateFrom !== getTodayDate() || appliedFilters.dateTo !== getTodayDate();
+    // Compared against the DEFAULT window (month-to-date), not against today — otherwise the page
+    // would claim a filter is active the moment it loaded with its own defaults.
+    appliedFilters.dateFrom !== getMonthStartDate() || appliedFilters.dateTo !== getTodayDate();
 
   const exportToExcel = async () => {
     try {
@@ -1276,7 +1302,9 @@ function AllTransactionsPageInner({ Sidebar }) {
 
   return (
     <div className="flex min-h-screen bg-linear-to-br from-blue-50 via-indigo-50 to-purple-50">
-      <Sidebar />
+      {/* Optional: /admin passes nothing because src/app/admin/layout.jsx already renders the
+          sidebar once for the whole section. Other roles still pass their own. */}
+      {Sidebar && <Sidebar />}
 
       <main className="flex-1 p-4 sm:p-6 lg:p-8 w-full lg:w-auto min-w-0">
         {/* Header */}

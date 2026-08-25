@@ -6,6 +6,19 @@ import User from "@/models/User";
 
 
 
+// How long a validated JWT is trusted before `sessionVersion` is re-checked against the DB.
+//
+// The jwt callback below runs on EVERY request that touches the session — 111 of the 145 API
+// routes call getServerSession, and 46 components call useSession. Re-reading the user from Mongo
+// each time meant a single admin dashboard load (17 fetches) paid ~18 extra User.findById round
+// trips before any real work happened.
+//
+// sessionVersion only ever changes on a password change/reset (see the pre-save hook in
+// src/models/User.js), so it is a near-static value. The tradeoff: a forced logout now takes
+// effect within this window rather than on the very next request. Set to 0 to restore the
+// previous check-every-time behaviour.
+const SESSION_REVALIDATE_MS = 5 * 60 * 1000;
+
 export const authOptions = {
   providers: [
     CredentialsProvider({
@@ -65,15 +78,24 @@ export const authOptions = {
         token.role = user.role;
         token.branch = user.branch;
         token.sessionVersion = user.sessionVersion || 0;
+        // Just authenticated against the DB — that counts as a validation.
+        token.lastValidated = Date.now();
       }
 
-      // VALIDATE SESSION VERSION ON EVERY REQUEST
-      if (token.id) {
+      // VALIDATE SESSION VERSION, but at most once per SESSION_REVALIDATE_MS.
+      // `trigger === "update"` forces a check regardless: the caller is explicitly telling us the
+      // user record changed, so serving a stale version there would defeat the update.
+      const dueForRevalidation =
+        trigger === "update" ||
+        !token.lastValidated ||
+        Date.now() - token.lastValidated >= SESSION_REVALIDATE_MS;
+
+      if (token.id && dueForRevalidation) {
         try {
           await connectDB();
-          
+
           const currentUser = await User.findById(token.id).select('+sessionVersion');
-          
+
           if (!currentUser) {
             return null;
           }
@@ -85,6 +107,8 @@ export const authOptions = {
             console.log(`Session invalidated for user ${token.id}: version mismatch`);
             return null;
           }
+
+          token.lastValidated = Date.now();
         } catch (error) {
           console.error("Session validation error:", error);
           return null;

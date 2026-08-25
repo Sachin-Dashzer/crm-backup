@@ -7,7 +7,7 @@ import Payable from "@/models/Payable";
 import Transactions from "@/models/Transactions";
 import { buildPayableGroupedStages, buildPayableAggregationStages } from "@/lib/payableAggregation";
 import { UNSETTLED_METHODS } from "@/constants/bankRouting";
-import { checkPeriodLock } from "@/lib/periodLock";
+import { loadClosedPeriodSnapshot, blockReasonFromSnapshot } from "@/lib/periodLock";
 import { resolveBranchFilter } from "@/lib/branches";
 
 const ALLOWED_ROLES = ["admin", "super-admin"];
@@ -116,12 +116,12 @@ export async function GET(request) {
         Transactions.countDocuments(txMatch),
       ]);
 
-      const rowsWithLock = await Promise.all(
-        rows.map(async (r) => ({
-          ...r,
-          lockReason: await checkPeriodLock({ furtherMode: r.account, date: r.date }),
-        })),
-      );
+      // One snapshot for the page rather than a query per row — display path only.
+      const closedPeriods = await loadClosedPeriodSnapshot();
+      const rowsWithLock = rows.map((r) => ({
+        ...r,
+        lockReason: blockReasonFromSnapshot(closedPeriods, r.account, r.date),
+      }));
 
       return NextResponse.json({ success: true, rows: rowsWithLock, total, page, limit });
     }
@@ -160,18 +160,31 @@ export async function GET(request) {
     if (ageing) stages.push({ $match: { ageingBucket: ageing, pending: { $gt: 0 } } });
     stages.push({ $sort: { dueDate: 1, createdAt: -1 } });
 
-    const allRows = await Payable.aggregate(stages);
-    const total = allRows.length;
-    const pageRows = allRows.slice((page - 1) * limit, (page - 1) * limit + limit);
-    // A document has no account of its own — checkPeriodLock's "every account closed" fallback
-    // (furtherMode: null) is the right semantics for an accrual with no cash side yet. Bounded
-    // by `limit` (<=200), same cost as every other per-row lock check in this codebase.
-    const rows = await Promise.all(
-      pageRows.map(async (r) => ({
-        ...r,
-        lockReason: await checkPeriodLock({ furtherMode: null, date: r.dueDate || r.createdAt || new Date() }),
-      })),
-    );
+    // Paginate INSIDE the pipeline. This used to aggregate every matching document — each with
+    // its own $lookup into Transactions — serialise the lot into Node, and only then .slice() one
+    // page out of it, so `limit` bounded what was returned but not what was computed.
+    const [facet] = await Payable.aggregate([
+      ...stages,
+      {
+        $facet: {
+          rows: [{ $skip: (page - 1) * limit }, { $limit: limit }],
+          total: [{ $count: "count" }],
+        },
+      },
+    ]);
+    const pageRows = facet?.rows || [];
+    const total = facet?.total?.[0]?.count || 0;
+    // A document has no account of its own — the "every account closed" fallback (account: null)
+    // is the right semantics for an accrual with no cash side yet.
+    //
+    // One snapshot for the whole page instead of a per-row checkPeriodLock: that fanned out to 11
+    // AccountPeriod queries PER ROW, so a full 200-row page cost ~2,200 queries just to render
+    // lock badges. This is the display path; write guards still call checkPeriodLock directly.
+    const closedPeriods = await loadClosedPeriodSnapshot();
+    const rows = pageRows.map((r) => ({
+      ...r,
+      lockReason: blockReasonFromSnapshot(closedPeriods, null, r.dueDate || r.createdAt || new Date()),
+    }));
 
     return NextResponse.json({ success: true, rows, total, page, limit });
   } catch (error) {

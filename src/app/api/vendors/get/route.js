@@ -7,12 +7,12 @@ import vendor from "@/models/Vendor";
 export async function GET(req) {
   try {
     const session = await getServerSession(authOptions);
-    // if (!session) {
-    //   return NextResponse.json(
-    //     { success: false, message: "Unauthorized" },
-    //     { status: 401 }
-    //   );
-    // }
+    if (!session?.user) {
+      return NextResponse.json(
+        { success: false, message: "Unauthorized" },
+        { status: 401 }
+      );
+    }
 
     await dbConnect();
 

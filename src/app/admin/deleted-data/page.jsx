@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useEffect, useState, useMemo, useCallback } from "react";
-import Sidebar from "@/components/Sidebars/Sidebar";
 import { 
   Search, 
   ChevronDown, 
@@ -11,7 +10,6 @@ import {
   Building,
   Download
 } from "lucide-react";
-import * as XLSX from 'xlsx';
 
 // Utility functions
 const formatCurrency = (amount) => {
@@ -111,39 +109,52 @@ const DeletedData = () => {
   });
   const [expandedRow, setExpandedRow] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
+  // The server scopes to the current month unless asked otherwise; these track what it actually
+  // returned so the UI can say so instead of implying it's showing the whole log.
+  const [allTime, setAllTime] = useState(false);
+  const [dateWindow, setDateWindow] = useState(null);
+  const [truncated, setTruncated] = useState(false);
   const itemsPerPage = 10;
 
-  // Fetch data
+  // Fetch data. The server defaults to the current month — filtering and paging still happen in
+  // the browser over whatever window came back, so `allTime` is what widens the underlying set.
   useEffect(() => {
+    let cancelled = false;
     const fetchData = async () => {
       try {
         setLoading(true);
-        const res = await fetch("/api/audit/get-data");
-        
+        const res = await fetch(`/api/audit/get-data${allTime ? "?all=1" : ""}`);
+
         if (!res.ok) {
           throw new Error(`HTTP error! status: ${res.status}`);
         }
-        
+
         const result = await res.json();
-        
+
         if (!result.success) {
           throw new Error(result.message || "Failed to fetch data");
         }
-        
+        if (cancelled) return;
+
         // Transform nested API response to flat array
         const flatData = transformApiData(result);
         setData(flatData);
-        
+        setDateWindow(result.dateWindow || null);
+        setTruncated(!!result.truncated);
+
       } catch (e) {
-        setError(e.message || "Error fetching data");
-        console.error("Fetch error:", e);
+        if (!cancelled) {
+          setError(e.message || "Error fetching data");
+          console.error("Fetch error:", e);
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
-    
+
     fetchData();
-  }, []);
+    return () => { cancelled = true; };
+  }, [allTime]);
 
   // Memoized filtered data
   const filteredData = useMemo(() => {
@@ -191,11 +202,14 @@ const DeletedData = () => {
   }, []);
 
   // Excel Export Function
-  const handleExportExcel = useCallback(() => {
+  const handleExportExcel = useCallback(async () => {
     if (filteredData.length === 0) {
       alert("No data to export");
       return;
     }
+
+    // Loaded on demand — xlsx is ~1MB and is only needed once the user actually exports.
+    const XLSX = await import('xlsx');
 
     // Prepare data for Excel
     const excelData = filteredData.map((item, index) => ({
@@ -257,7 +271,6 @@ const DeletedData = () => {
   if (loading) {
     return (
       <div className="flex min-h-screen bg-gray-50">
-        <Sidebar />
         <main className="flex-1 p-4 lg:p-8">
           <div className="flex items-center justify-center h-screen">
             <div className="text-center">
@@ -274,7 +287,6 @@ const DeletedData = () => {
   if (error) {
     return (
       <div className="flex min-h-screen bg-gray-50">
-        <Sidebar />
         <main className="flex-1 p-4 lg:p-8">
           <div className="flex items-center justify-center h-screen">
             <div className="text-center max-w-md">
@@ -297,7 +309,6 @@ const DeletedData = () => {
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-      <Sidebar />
       
       <main className="flex-1 p-4 lg:p-8">
         {/* Header */}
@@ -318,6 +329,28 @@ const DeletedData = () => {
             </button>
           </div>
         </div>
+
+        {/* What window the server actually returned. Without this the list looks like the whole
+            audit log when it is in fact scoped to the current month. */}
+        {(dateWindow?.isDefault || truncated) && (
+          <div className="mb-6 flex flex-wrap items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+            <Calendar className="h-4 w-4 shrink-0" />
+            <span>
+              {dateWindow?.isDefault && <>Showing <strong>this month</strong> only.</>}
+              {truncated && (
+                <> Results were capped at 2,000 records — narrow the date range to see the rest.</>
+              )}
+            </span>
+            {dateWindow?.isDefault && (
+              <button
+                onClick={() => setAllTime(true)}
+                className="font-semibold underline underline-offset-2 hover:text-amber-950 transition-colors"
+              >
+                Load all time
+              </button>
+            )}
+          </div>
+        )}
 
         {/* Filters Section */}
         <div className="bg-white rounded-lg border mb-6 p-4">

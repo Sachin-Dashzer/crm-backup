@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import AdminSidebar from "@/components/Sidebars/Sidebar";
 import { useToast } from "@/components/Toast";
 import { ArrowLeft, Loader2, Store } from "lucide-react";
 
@@ -95,7 +94,6 @@ export default function AdminCreateVendorPage() {
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-      <AdminSidebar />
       <main className="flex-1 overflow-auto">
         <div className="max-w-3xl mx-auto p-4 sm:p-6 lg:p-8">
           <Link

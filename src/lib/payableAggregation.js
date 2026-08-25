@@ -120,6 +120,10 @@ export function buildPayableGroupedStages(txCollectionName, { level, category, s
         from: txCollectionName,
         let: { payableId: "$_id" },
         pipeline: [
+          // Mirrors receivableAggregation.js: anything dated after `to` contributes to neither
+          // paidBeforeRange (date < from) nor paidInRange (from <= date <= to), so excluding it
+          // here is exactly equivalent. No lower bound — paidBeforeRange needs prior history.
+          ...(toDate ? [{ $match: { date: { $lte: toDate } } }] : []),
           {
             $match: {
               $expr: {

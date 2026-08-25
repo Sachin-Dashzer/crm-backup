@@ -3,9 +3,9 @@
 import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { HandCoins, AlertTriangle, CheckCircle2, Download, Loader2 } from "lucide-react";
-import AdminSidebar from "@/components/Sidebars/Sidebar";
 import DrillDownTable from "@/components/finance/DrillDownTable";
 import { formatCurrency } from "@/lib/financeUI";
+import DebouncedDateInput from "@/components/finance/DebouncedDateInput";
 
 // Receipts & Payments is the missing cash-basis statement, and it is the mirror of the P&L.
 // Its inclusion rule is the EXACT INVERSE of the P&L's:
@@ -91,7 +91,6 @@ function ReceiptsPageInner() {
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-      <AdminSidebar />
       <main className="flex-1 p-4 sm:p-6 lg:p-8">
         <div className="max-w-7xl mx-auto space-y-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -116,17 +115,17 @@ function ReceiptsPageInner() {
           <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 space-y-3">
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Period</span>
-              <input
-                type="date"
+              {/* Debounced: each change re-runs the three header fetches (one of which is the
+                  reconciliation endpoint) plus the DrillDownTable below. */}
+              <DebouncedDateInput
                 value={from}
-                onChange={(e) => setFrom(e.target.value)}
+                onCommit={setFrom}
                 className="px-2.5 py-1.5 border border-gray-300 rounded-lg text-xs"
               />
               <span className="text-gray-400 text-xs">to</span>
-              <input
-                type="date"
+              <DebouncedDateInput
                 value={to}
-                onChange={(e) => setTo(e.target.value)}
+                onCommit={setTo}
                 className="px-2.5 py-1.5 border border-gray-300 rounded-lg text-xs"
               />
             </div>

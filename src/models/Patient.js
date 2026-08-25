@@ -256,5 +256,8 @@ patientSchema.index({
   "personal.email": "text",
 });
 
-delete mongoose.models["Patient"];
-export default mongoose.model("Patient", patientSchema);
+// Reuse the compiled model rather than recompiling it, matching every other model in this
+// directory. This previously did `delete mongoose.models["Patient"]` first, which threw away the
+// model cache on each module evaluation and made Mongoose re-issue createIndexes for all seven
+// indexes below (including the text index) against the hottest collection in the app.
+export default mongoose.models.Patient || mongoose.model("Patient", patientSchema);

@@ -424,13 +424,37 @@ async function resolveAnchor(account, asOf, branch) {
 export async function computeNetMovement(account, from, to, branch = null, session = null) {
   const { default: Transactions } = await import("@/models/Transactions");
 
-  const [txAgg] = await Transactions.aggregate([
-    { $match: buildBalanceMatch({ account, from, to, branch }) },
-    { $group: { _id: null, net: { $sum: SIGNED_AMOUNT } } },
-  ]).session(session);
+  const runTxAgg = () =>
+    Transactions.aggregate([
+      { $match: buildBalanceMatch({ account, from, to, branch }) },
+      { $group: { _id: null, net: { $sum: SIGNED_AMOUNT } } },
+    ]).session(session);
 
-  const contra = await computeContraMovements(account, from, to, session, branch);
-  const suspense = await computeSuspenseMovements(account, from, to, session, branch);
+  // The three sources are independent, so on the READ path they run concurrently. This function
+  // is called once per account by getOpeningBalances, so on a 9-11 account page the serial hops
+  // multiplied out into most of the reconciliation endpoint's latency.
+  //
+  // MUST stay sequential inside a transaction: a ClientSession supports only one operation in
+  // flight at a time, so issuing these concurrently on a shared session is an error. Write paths
+  // pass a session; read paths (dashboards, ledgers, reconciliation) pass null and get the fast
+  // path. Do not remove this branch.
+  let txAggResult;
+  let contra;
+  let suspense;
+
+  if (session) {
+    txAggResult = await runTxAgg();
+    contra = await computeContraMovements(account, from, to, session, branch);
+    suspense = await computeSuspenseMovements(account, from, to, session, branch);
+  } else {
+    [txAggResult, contra, suspense] = await Promise.all([
+      runTxAgg(),
+      computeContraMovements(account, from, to, session, branch),
+      computeSuspenseMovements(account, from, to, session, branch),
+    ]);
+  }
+
+  const txAgg = txAggResult[0];
 
   return round2(
     (txAgg?.net || 0) +

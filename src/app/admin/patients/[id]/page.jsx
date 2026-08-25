@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import Sidebar from "@/components/Sidebars/Sidebar";
 import {
   ArrowLeft,
   Download,
@@ -19,7 +18,6 @@ const PatientProfile = () => {
   const id = params.id;
   const [patientData, setPatientData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
   const router = useRouter();
 
@@ -585,10 +583,6 @@ const PatientProfile = () => {
   if (isLoading) {
     return (
       <section className="flex min-h-screen">
-        <Sidebar
-          sidebarOpen={sidebarOpen}
-          setSidebarOpen={setSidebarOpen}
-        />
         <main className="flex-1 flex items-center justify-center bg-gray-50">
           <div className="text-center">
             <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-600 mx-auto mb-4"></div>
@@ -605,10 +599,6 @@ const PatientProfile = () => {
 
   return (
     <section className="flex min-h-screen">
-      <Sidebar
-        sidebarOpen={sidebarOpen}
-        setSidebarOpen={setSidebarOpen}
-      />
 
       <main className="flex-1 px-12 py-4 bg-gray-50">
         <div className="max-w-7xl mx-auto">

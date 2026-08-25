@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import AdminSidebar from "@/components/Sidebars/Sidebar";
 import { useToast } from "@/components/Toast";
 import {
   Loader2,
@@ -139,7 +138,6 @@ export default function AdminVendorsPage() {
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-      <AdminSidebar />
       <main className="flex-1 overflow-auto">
         <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
           <div className="flex flex-wrap items-start justify-between gap-3">

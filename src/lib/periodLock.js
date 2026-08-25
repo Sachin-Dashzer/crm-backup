@@ -59,6 +59,54 @@ async function blockReasonFor(account, date) {
   return null;
 }
 
+// ── Batch path: one query for a whole page of rows ───────────────────────────────────────────
+//
+// List routes (payables/receivables grouped level 3/4, close-book/ledger, receipts/grouped) show
+// a lock reason PER ROW. Calling checkPeriodLock per row costs up to 11 AccountPeriod.find calls
+// each — for a 200-row page that is ~2,200 queries to render one page.
+//
+// The closed-period set is tiny (accounts × closed months), so these load it once and resolve
+// every row against that snapshot in memory.
+//
+// DISPLAY ONLY. Write guards must keep using checkPeriodLock, which reads fresh: a snapshot taken
+// at the top of a request could miss a close that landed microseconds later, and letting a write
+// into a just-closed period is exactly what this module exists to prevent. Reading a slightly
+// stale lock BADGE is harmless; enforcing against a stale one is not.
+export async function loadClosedPeriodSnapshot() {
+  const rows = await AccountPeriod.find({ branch: null, isClosed: true }).lean();
+  return rows.filter((p) => !isOpeningSeed(p));
+}
+
+function coveringFromSnapshot(snapshot, account, date) {
+  const t = new Date(date).getTime();
+  return snapshot.find(
+    (p) =>
+      p.account === account &&
+      new Date(p.periodStart).getTime() <= t &&
+      new Date(p.periodEnd).getTime() >= t,
+  );
+}
+
+// Synchronous mirror of blockReasonFor. Keep the two in step — they must produce identical
+// strings, or the badge on a list row would disagree with the error the write guard returns.
+export function blockReasonFromSnapshot(snapshot, account, date) {
+  if (!date) return null;
+
+  if (account && ACCOUNTS.includes(account)) {
+    const closed = coveringFromSnapshot(snapshot, account, date);
+    return closed
+      ? `${account} is closed for ${fmt(closed.periodStart)} – ${fmt(closed.periodEnd)}. Reopen that period to change this transaction.`
+      : null;
+  }
+
+  const perAccount = ACCOUNTS.map((a) => coveringFromSnapshot(snapshot, a, date));
+  if (perAccount.every(Boolean)) {
+    const p = perAccount[0];
+    return `The books are closed for ${fmt(p.periodStart)} – ${fmt(p.periodEnd)} across all ${ACCOUNTS.length} accounts. Reopen the period to change this transaction.`;
+  }
+  return null;
+}
+
 // Guards a single transaction change.
 //
 // Checks BOTH the current (account, date) and, when the caller is moving them, the proposed

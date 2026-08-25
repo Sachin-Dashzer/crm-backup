@@ -71,9 +71,32 @@ export default function SearchableSelect({
       ? String(value)
       : null;
 
+  // `onSearch` is a network call in most consumers (patient/employee/vendor lookups), so it is
+  // debounced here rather than in each of the ~12 call sites. Before this, typing a 10-character
+  // name fired ten requests, and the responses could land out of order — the last keystroke's
+  // results were not guaranteed to be the ones displayed.
+  //
+  // `searchTerm` still updates immediately, so the input itself never feels laggy. 350ms matches
+  // the hand-rolled debounces already in admin/transactions/create/page.jsx.
+  const onSearchRef = useRef(onSearch);
+  useEffect(() => { onSearchRef.current = onSearch; }, [onSearch]);
+
+  const searchDebounceRef = useRef(null);
+  useEffect(() => () => clearTimeout(searchDebounceRef.current), []);
+
+  const emitSearch = (val, { immediate = false } = {}) => {
+    clearTimeout(searchDebounceRef.current);
+    if (!onSearchRef.current) return;
+    if (immediate) {
+      onSearchRef.current(val);
+      return;
+    }
+    searchDebounceRef.current = setTimeout(() => onSearchRef.current?.(val), 350);
+  };
+
   const handleSearchChange = (val) => {
     setSearchTerm(val);
-    if (onSearch) onSearch(val);
+    emitSearch(val);
   };
 
   const handleSelect = (option) => {
@@ -86,14 +109,18 @@ export default function SearchableSelect({
     e.stopPropagation();
     onChange("", null);
     setSearchTerm("");
-    if (onSearch) onSearch("");
+    // Immediate: clearing is a decisive action, and it must also cancel any keystroke debounce
+    // still in flight — otherwise that would fire after the clear and repopulate the list.
+    emitSearch("", { immediate: true });
   };
 
   const handleToggle = () => {
     if (disabled) return;
     const opening = !isOpen;
     setIsOpen(opening);
-    if (opening && onSearch) onSearch(searchTerm);
+    // Immediate — one deliberate call on open, not a keystroke. Going through emitSearch also
+    // cancels any debounce still pending from before the dropdown was closed.
+    if (opening) emitSearch(searchTerm, { immediate: true });
   };
 
   return (

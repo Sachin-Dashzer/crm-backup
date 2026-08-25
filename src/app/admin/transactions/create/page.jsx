@@ -1,7 +1,6 @@
 "use client";
 import { Suspense, useState, useEffect, useRef, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import AdminSidebar from "@/components/Sidebars/Sidebar";
 import SearchableSelect from "@/components/SearchableSelect";
 import BankRoutingFields from "@/components/BankRoutingFields";
 import ExternalPartyFields from "@/components/ExternalPartyFields";
@@ -415,21 +414,31 @@ function AdminCreateTransactionPageInner() {
       setFetchLoading(true);
       try {
         fetchPatients("");
-        try {
-          const res = await fetch("/api/stocks/get");
-          if (res.ok) {
-            const d = await res.json();
-            setMedicines(d.data || d.stocks || []);
-          }
-        } catch {}
-        try {
-          const res = await fetch("/api/vendors/get");
-          if (res.ok) {
-            const d = await res.json();
-            setVendors(d.data || d.vendors || []);
-          }
-        } catch {}
         fetchEmployees("");
+
+        // Stocks and vendors are independent of each other, but were awaited one after the other,
+        // so the form waited for the sum of both round trips instead of the slower one. Each still
+        // swallows its own failure, so one failing does not block the other.
+        await Promise.all([
+          (async () => {
+            try {
+              const res = await fetch("/api/stocks/get");
+              if (res.ok) {
+                const d = await res.json();
+                setMedicines(d.data || d.stocks || []);
+              }
+            } catch {}
+          })(),
+          (async () => {
+            try {
+              const res = await fetch("/api/vendors/get");
+              if (res.ok) {
+                const d = await res.json();
+                setVendors(d.data || d.vendors || []);
+              }
+            } catch {}
+          })(),
+        ]);
       } finally {
         setFetchLoading(false);
       }
@@ -979,14 +988,20 @@ function AdminCreateTransactionPageInner() {
   };
 
   // When session loads, sync branch across all form states (admin arrives with branch="All")
+  //
+  // Keyed on the branch STRING, not the `session` object. SessionProvider refetches every 5
+  // minutes (refetchInterval at src/components/SessionProvider.js:8) and hands back a new object
+  // identity each time — so with `[session]` this re-ran on a timer and silently reset the branch
+  // field back to the default while someone was part-way through filling the form.
+  const sessionBranch = session?.user?.branch;
   useEffect(() => {
-    if (!session?.user) return;
-    const b = resolveDefaultBranch(session.user.branch);
+    if (!sessionBranch) return;
+    const b = resolveDefaultBranch(sessionBranch);
     setTransplantData((d) => ({ ...d, branch: b }));
     setServiceData((d) => ({ ...d, branch: b }));
     setMedicineData((d) => ({ ...d, branch: b }));
     setExpenseData((d) => ({ ...d, branch: b }));
-  }, [session]);
+  }, [sessionBranch]);
 
   const formatCurrency = (amount) =>
     new Intl.NumberFormat("en-IN", {
@@ -1477,7 +1492,6 @@ function AdminCreateTransactionPageInner() {
   if (fetchLoading) {
     return (
       <div className="flex min-h-screen bg-gray-50">
-        <AdminSidebar />
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
@@ -1490,7 +1504,6 @@ function AdminCreateTransactionPageInner() {
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-      <AdminSidebar />
       <main className="flex-1 flex flex-col">
         <div className="flex-1 overflow-auto">
           <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">

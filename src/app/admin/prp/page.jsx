@@ -1,9 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useSession } from "next-auth/react";
 import { useToast } from "@/components/Toast";
-import Sidebar from "@/components/Sidebars/Sidebar";
 import { maskPhone } from "@/utils/phoneUtils";
 import {
   Droplets,
@@ -26,7 +25,6 @@ import {
   Pill,
   Leaf,
 } from "lucide-react";
-import * as XLSX from "xlsx";
 
 // ─── constants ───────────────────────────────────────────────────────────────
 const METHODS = ["cash", "upi", "card", "banking", "bajaj_loan", "fibe_loan", "other"];
@@ -218,18 +216,29 @@ export default function AdminPRPPage() {
   }, [addForm.patientSearch]);
 
   // ── derived rows ─────────────────────────────────────────────────────────────
-  const allRows = [
-    ...paidList.map((r)   => ({ ...r, status: "paid" })),
-    ...unpaidList.map((r) => ({ ...r, status: "unpaid" })),
-  ].sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+  // Both are memoized because the Add-PRP and Mark-Paid modal forms live in this same component:
+  // unmemoized, every keystroke in either modal re-merged and re-sorted the whole day's record
+  // set and re-filtered it, then re-rendered the full unpaginated table underneath.
+  const allRows = useMemo(
+    () =>
+      [
+        ...paidList.map((r)   => ({ ...r, status: "paid" })),
+        ...unpaidList.map((r) => ({ ...r, status: "unpaid" })),
+      ].sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0)),
+    [paidList, unpaidList],
+  );
 
-  const filtered = allRows.filter((row) => {
-    if (activeStatus !== "all" && row.status !== activeStatus) return false;
-    if (activeType   !== "all" && (row.procedure || "PRP") !== activeType) return false;
-    const q = searchQuery.toLowerCase();
-    if (q && !row.patientName?.toLowerCase().includes(q) && !row.patientPhone?.includes(q)) return false;
-    return true;
-  });
+  const filtered = useMemo(
+    () =>
+      allRows.filter((row) => {
+        if (activeStatus !== "all" && row.status !== activeStatus) return false;
+        if (activeType   !== "all" && (row.procedure || "PRP") !== activeType) return false;
+        const q = searchQuery.toLowerCase();
+        if (q && !row.patientName?.toLowerCase().includes(q) && !row.patientPhone?.includes(q)) return false;
+        return true;
+      }),
+    [allRows, activeStatus, activeType, searchQuery],
+  );
 
   // ── add handlers ──────────────────────────────────────────────────────────────
   const selectPatient = (p) => {
@@ -347,6 +356,10 @@ export default function AdminPRPPage() {
   const handleExport = async () => {
     setExporting(true);
     try {
+      // Loaded on demand — xlsx is ~1MB and most visits never open the export modal. Same
+      // pattern as close-book, reports, receipts, payments and the transactions list.
+      const XLSX = await import("xlsx");
+
       const res  = await fetch(`/api/reception/prp?from=${exportFrom}&to=${exportTo}`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Fetch failed");
@@ -420,7 +433,6 @@ export default function AdminPRPPage() {
   if (loading) {
     return (
       <div className="flex min-h-screen">
-        <Sidebar />
         <div className="flex-1 flex items-center justify-center">
           <Loader2 className="w-10 h-10 text-indigo-500 animate-spin" />
         </div>
@@ -431,7 +443,6 @@ export default function AdminPRPPage() {
   // ── main render ───────────────────────────────────────────────────────────────
   return (
     <div className="flex min-h-screen bg-gray-50">
-      <Sidebar />
 
       <main className="flex-1 p-4 lg:p-8 space-y-6 min-w-0">
 

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Sidebar from "@/components/Sidebars/Sidebar";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/Toast";
 import { useParams } from "next/navigation";
@@ -518,7 +517,6 @@ const DocumentUpload = ({
 export default function PatientEditDetails() {
   const [step, setStep] = useState(1);
   const [isUpdating, setIsUpdating] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [updateStatus, setUpdateStatus] = useState(null);
   const [uploadingFiles, setUploadingFiles] = useState({});
   const [employees, setEmployees] = useState({
@@ -1190,7 +1188,6 @@ export default function PatientEditDetails() {
 
   return (
     <section className="flex min-h-screen">
-      <Sidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
 
       <main className="flex-1 px-12 py-4">
         <div className="bg-white rounded-lg shadow-sm overflow-hidden">

@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
-import Sidebar from "@/components/Sidebars/Sidebar";
 import { useToast } from "@/components/Toast";
 import InputField from "@/components/InputField";
 
@@ -122,7 +121,6 @@ const RoleDescriptionCard = ({ role }) => {
 export default function EmployeeUpdate() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [notFound, setNotFound] = useState(false);
   const router = useRouter();
   const params = useParams();
@@ -298,7 +296,6 @@ export default function EmployeeUpdate() {
   if (isLoading) {
     return (
       <section className="flex min-h-screen">
-        <Sidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <Loader2 className="animate-spin h-12 w-12 text-blue-600 mx-auto mb-4" />
@@ -313,7 +310,6 @@ export default function EmployeeUpdate() {
   if (notFound) {
     return (
       <section className="flex min-h-screen">
-        <Sidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
         <main className="flex-1 flex items-center justify-center px-4">
           <div className="text-center max-w-md">
             <AlertCircle className="h-16 w-16 text-red-500 mx-auto mb-4" />
@@ -336,7 +332,6 @@ export default function EmployeeUpdate() {
 
   return (
     <section className="flex min-h-screen">
-      <Sidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
 
       <main className="flex-1 px-4 md:px-12 py-4">
         <div className="max-w-4xl mx-auto">

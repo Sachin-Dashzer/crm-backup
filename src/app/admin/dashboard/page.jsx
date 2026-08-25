@@ -1,19 +1,33 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
-import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
-} from "recharts";
 import {
   Landmark, ScrollText, Scale, AlertTriangle, ArrowRight, ArrowUpRight, Filter, HandCoins,
   Wallet, HelpCircle, TrendingUp, TrendingDown, RefreshCw, X,
 } from "lucide-react";
-import AdminSidebar from "@/components/Sidebars/Sidebar";
 import AccountMultiSelect from "@/components/finance/AccountMultiSelect";
 import { formatCurrency } from "@/lib/financeUI";
 import { ACCOUNTS } from "@/constants/bankRouting";
 import { ALL_BRANCHES } from "@/lib/branches";
+
+// Code-split so `recharts` is fetched only once the page itself has rendered — it used to be a
+// static import and delayed first paint of the KPI cards, which don't use it. ssr:false because
+// recharts measures the DOM to size its ResponsiveContainer.
+const DashboardCharts = dynamic(() => import("@/components/finance/DashboardCharts"), {
+  ssr: false,
+  loading: () => (
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+      {Array.from({ length: 3 }, (_, i) => (
+        <div key={i} className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
+          <div className="h-4 w-48 bg-gray-100 rounded animate-pulse mb-4" />
+          <div className="h-65 bg-gray-50 rounded animate-pulse" />
+        </div>
+      ))}
+    </div>
+  ),
+});
 
 function periodRange(preset, custom) {
   let to = new Date();
@@ -43,8 +57,8 @@ function periodRange(preset, custom) {
 }
 
 const iso = (d) => d.toISOString().slice(0, 10);
-const fmtK = (n) =>
-  Math.abs(n) >= 100000 ? `₹${(n / 100000).toFixed(1)}L` : Math.abs(n) >= 1000 ? `₹${(n / 1000).toFixed(0)}K` : `₹${n || 0}`;
+// fmtK moved to components/finance/DashboardCharts.jsx along with the charts — it was only ever
+// used as a recharts tickFormatter.
 
 const AGEING_BUCKET_ORDER = ["current", "1-30", "31-60", "61-90", "90+"];
 
@@ -378,7 +392,6 @@ export default function AdminDashboard() {
 
   return (
     <div className="flex min-h-screen bg-[#f8f9fc]">
-      <AdminSidebar />
       <main className="flex-1 p-4 sm:p-6 lg:p-8 space-y-6">
         {/* C3 — sticky filter bar */}
         <div className="sticky top-0 z-30 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-3 bg-[#f8f9fc]/95 backdrop-blur-sm border-b border-gray-100 space-y-2">
@@ -650,84 +663,17 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* Row 4 — three charts */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
-            <h3 className="text-sm font-semibold text-gray-800 mb-3">Expense by Head — Top 10</h3>
-            {expenseByHead.length === 0 && batchStatus === "ready" ? (
-              <p className="text-sm text-gray-400 py-16 text-center">No data for this period</p>
-            ) : (
-              <ResponsiveContainer width="100%" height={260}>
-                <BarChart data={expenseByHead} layout="vertical" margin={{ left: 8, right: 30 }}>
-                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f3f4f6" />
-                  <XAxis type="number" tickFormatter={fmtK} tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
-                  <YAxis type="category" dataKey="label" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} width={100} />
-                  <Tooltip formatter={(v) => formatCurrency(v)} />
-                  <Bar
-                    dataKey="movement"
-                    name="Raised"
-                    radius={[0, 6, 6, 0]}
-                    fill="#f43f5e"
-                    cursor="pointer"
-                    onClick={(data) => {
-                      window.location.href = `/admin/payments?head=${encodeURIComponent(data.label)}&${buildFilterQS()}`;
-                    }}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
-            )}
-          </div>
-
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
-            <div className="flex items-center gap-2 mb-3">
-              <h3 className="text-sm font-semibold text-gray-800">Income vs Expense — Last 6 Months</h3>
-              <BasisTag>Accrual</BasisTag>
-            </div>
-            <ResponsiveContainer width="100%" height={260}>
-              <BarChart data={monthlyTrend}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
-                <XAxis dataKey="month" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
-                <YAxis tickFormatter={fmtK} tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
-                <Tooltip formatter={(v) => formatCurrency(v)} />
-                <Legend wrapperStyle={{ fontSize: 11 }} />
-                <Bar dataKey="Income" fill="#10b981" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="Expense" fill="#f43f5e" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
-            <h3 className="text-sm font-semibold text-gray-800 mb-3">Ageing — Payables vs Receivables</h3>
-            <ResponsiveContainer width="100%" height={260}>
-              <BarChart data={ageingChartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
-                <XAxis dataKey="bucket" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
-                <YAxis tickFormatter={fmtK} tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
-                <Tooltip formatter={(v) => formatCurrency(v)} />
-                <Legend wrapperStyle={{ fontSize: 11 }} />
-                <Bar
-                  dataKey="Payables"
-                  stackId="a"
-                  fill="#f97316"
-                  cursor="pointer"
-                  onClick={(data) => {
-                    window.location.href = `/admin/liabilities?section=payables&ageing=${data.bucket}&${buildFilterQS()}`;
-                  }}
-                />
-                <Bar
-                  dataKey="Receivables"
-                  stackId="a"
-                  fill="#0ea5e9"
-                  radius={[4, 4, 0, 0]}
-                  cursor="pointer"
-                  onClick={(data) => {
-                    window.location.href = `/admin/assets?section=receivables&ageing=${data.bucket}&${buildFilterQS()}`;
-                  }}
-                />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
+        {/* Row 4 — three charts. Lazy: see the DashboardCharts header — recharts used to be a
+            static import here and blocked first paint of the nine cards above, none of which need
+            it. ssr:false because recharts measures the DOM to size itself. */}
+        <DashboardCharts
+          expenseByHead={expenseByHead}
+          monthlyTrend={monthlyTrend}
+          ageingChartData={ageingChartData}
+          batchStatus={batchStatus}
+          buildFilterQS={buildFilterQS}
+          basisTag={<BasisTag>Accrual</BasisTag>}
+        />
 
         {/* Row 5 — attention list */}
         <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">

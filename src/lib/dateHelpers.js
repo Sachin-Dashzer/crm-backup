@@ -97,6 +97,74 @@ export const getLastMonthRange = () => {
 };
 
 /**
+ * Get the current calendar month's range in IST (1st 00:00:00 → today 23:59:59.999).
+ *
+ * This is the default window for admin list pages: without it those queries scanned all history,
+ * which gets monotonically slower as the dataset grows. Note this is a CALENDAR month, not a
+ * rolling 30 days, so the boundaries line up with the accounting periods the finance pages use.
+ * @returns {{start: Date, end: Date}}
+ */
+export const getCurrentMonthRange = () => {
+  const istNow = getISTDate();
+  const firstOfMonth = new Date(Date.UTC(istNow.getFullYear(), istNow.getMonth(), 1));
+
+  return {
+    start: getISTStartOfDay(firstOfMonth),
+    end: getISTEndOfDay(),
+  };
+};
+
+/**
+ * Resolve the date window for a list API route from its query string.
+ *
+ * Precedence: an explicit `all=1` (or `all=true`) means no window at all — that is the "All time"
+ * escape hatch the UI exposes. Otherwise an explicit dateFrom/dateTo is honoured (either bound may
+ * be given alone). With neither, the current month is used.
+ *
+ * Callers get `{ start, end, isDefault }` — `isDefault` lets a route tell the client that it
+ * narrowed the window on its own, so the UI can show the "This Month" chip honestly rather than
+ * implying the user chose it.
+ *
+ * @param {URLSearchParams} searchParams
+ * @param {{fromKey?: string, toKey?: string}} [keys] param names, for routes using from/to
+ * @returns {{start: Date|null, end: Date|null, isDefault: boolean, isAll: boolean}}
+ */
+export const resolveDateRange = (searchParams, { fromKey = "dateFrom", toKey = "dateTo" } = {}) => {
+  const allParam = searchParams.get("all");
+  if (allParam === "1" || allParam === "true") {
+    return { start: null, end: null, isDefault: false, isAll: true };
+  }
+
+  const rawFrom = searchParams.get(fromKey);
+  const rawTo = searchParams.get(toKey);
+
+  if (rawFrom || rawTo) {
+    return {
+      start: rawFrom ? getISTStartOfDay(rawFrom) : null,
+      end: rawTo ? getISTEndOfDay(rawTo) : null,
+      isDefault: false,
+      isAll: false,
+    };
+  }
+
+  const { start, end } = getCurrentMonthRange();
+  return { start, end, isDefault: true, isAll: false };
+};
+
+/**
+ * Build a Mongo range predicate from resolveDateRange's output, or `null` when unbounded.
+ * @param {{start: Date|null, end: Date|null}} range
+ * @returns {{$gte?: Date, $lte?: Date}|null}
+ */
+export const toDateQuery = ({ start, end }) => {
+  if (!start && !end) return null;
+  const q = {};
+  if (start) q.$gte = start;
+  if (end) q.$lte = end;
+  return q;
+};
+
+/**
  * Format date for display in IST timezone
  * @param {Date|string} date - Date to format
  * @param {Object} options - Intl.DateTimeFormat options
@@ -162,7 +230,12 @@ export const getDateRangeFromFilter = (filterType = "Today", customDates = {}) =
     
     case "Last 30 Days":
       return getLastMonthRange();
-    
+
+    // Calendar month-to-date — the default window for admin lists. Distinct from "Last 30 Days",
+    // which is a rolling window and doesn't line up with accounting periods.
+    case "This Month":
+      return getCurrentMonthRange();
+
     case "Custom":
       return {
         start: customDates.from ? getISTStartOfDay(customDates.from) : getISTStartOfDay(),

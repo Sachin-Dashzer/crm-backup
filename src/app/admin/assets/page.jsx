@@ -4,7 +4,6 @@ import { Suspense, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { Landmark, Banknote, HandCoins, AlertTriangle, CheckCircle2, Clock, Download, Loader2 } from "lucide-react";
-import AdminSidebar from "@/components/Sidebars/Sidebar";
 import DrillDownTable from "@/components/finance/DrillDownTable";
 import LoanSettlementModal from "@/components/finance/LoanSettlementModal";
 import CancelLoanModal from "@/components/finance/CancelLoanModal";
@@ -14,8 +13,9 @@ import { formatCurrency, formatDate } from "@/lib/financeUI";
 import { AGEING_BUCKETS } from "@/lib/ageing";
 import { ALL_BRANCHES } from "@/lib/branches";
 import { ENTRY_TYPES } from "@/constants/entryTypes";
-import { exportWorkbook, filterProvenanceRows } from "@/lib/exportToExcel";
+import { exportWorkbook, fetchAllPages, filterProvenanceRows } from "@/lib/exportToExcel";
 import { useToast } from "@/components/Toast";
+import DebouncedDateInput from "@/components/finance/DebouncedDateInput";
 
 // Assets = Cash & Bank + Loan-financing accounts + Receivables. Page total is the sum of the same
 // three closing figures the sections below compute — never a separate calculation, so the header
@@ -230,12 +230,19 @@ function AssetsPageInner() {
         return p.toString();
       })();
 
-      const [cashJson, loansJson, receivablesJson, txJson] = await Promise.all([
+      // receivables/list clamps limit to 200, so the old `?limit=10000` here silently produced a
+      // truncated export once there were more than 200 receivables in range. fetchAllPages walks
+      // the pages instead. transactions/get-all genuinely honours a 10000 limit, so it stays.
+      const [cashJson, loansJson, receivablesPaged, txJson] = await Promise.all([
         fetch(`/api/close-book/accounts?filter=cash&${closingQS()}`).then((r) => r.json()),
         fetch(`/api/close-book/accounts?filter=loans&${closingQS()}`).then((r) => r.json()),
-        fetch(`/api/receivables/list?limit=10000&${flowQS}`).then((r) => r.json()),
+        fetchAllPages((page, limit) => `/api/receivables/list?page=${page}&limit=${limit}&${flowQS}`, "receivables"),
         fetch(`/api/transactions/get-all?limit=10000&${flowQS}`).then((r) => r.json()),
       ]);
+      const receivablesJson = { receivables: receivablesPaged.rows };
+      if (receivablesPaged.truncated) {
+        toast.error("Export is incomplete — too many receivables in range. Narrow the date filter.");
+      }
 
       const cashRows = (cashJson.rows || []).map((r) => ({
         Account: r.label,
@@ -305,7 +312,6 @@ function AssetsPageInner() {
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-      <AdminSidebar />
       <main className="flex-1 p-4 sm:p-6 lg:p-8">
         <div className="max-w-7xl mx-auto space-y-6">
           <div>
@@ -329,17 +335,18 @@ function AssetsPageInner() {
                 <option key={b} value={b}>{b}</option>
               ))}
             </select>
-            <input
-              type="date"
+            {/* Debounced: scope is lifted to this page, so each committed change re-runs the
+                header's fetches AND every DrillDownTable below. A native date input fires per
+                segment while typing, so this was up to 3 full rounds per date entered. */}
+            <DebouncedDateInput
               value={scope.dateFrom}
-              onChange={(e) => setScope((s) => ({ ...s, dateFrom: e.target.value }))}
+              onCommit={(v) => setScope((s) => ({ ...s, dateFrom: v }))}
               className="px-3 py-2 border border-gray-200 rounded-xl text-sm bg-white shadow-sm"
             />
             <span className="text-xs text-gray-400">to</span>
-            <input
-              type="date"
+            <DebouncedDateInput
               value={scope.dateTo}
-              onChange={(e) => setScope((s) => ({ ...s, dateTo: e.target.value }))}
+              onCommit={(v) => setScope((s) => ({ ...s, dateTo: v }))}
               className="px-3 py-2 border border-gray-200 rounded-xl text-sm bg-white shadow-sm"
             />
             {(scope.branch || scope.dateFrom || scope.dateTo) && (

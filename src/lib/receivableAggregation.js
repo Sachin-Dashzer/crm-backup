@@ -30,17 +30,15 @@ export function buildReceivableAggregationStages(txCollectionName) {
                   {
                     $or: [
                       { $eq: ["$receivableId", "$$receivableId"] },
+                      // Equivalent to the previous $size($filter(...)) > 0 — both ask "does any
+                      // allocation on this row reference this receivable" — but this reads the
+                      // ids straight off the array instead of materialising a filtered copy of
+                      // the sub-documents for every transaction considered. `$ifNull` keeps rows
+                      // with no allocations array behaving exactly as before (no match).
                       {
-                        $gt: [
-                          {
-                            $size: {
-                              $filter: {
-                                input: { $ifNull: ["$receivableAllocations", []] },
-                                cond: { $eq: ["$$this.receivableId", "$$receivableId"] },
-                              },
-                            },
-                          },
-                          0,
+                        $in: [
+                          "$$receivableId",
+                          { $ifNull: ["$receivableAllocations.receivableId", []] },
                         ],
                       },
                     ],
@@ -159,6 +157,11 @@ export function buildReceivableGroupedStages(txCollectionName, { level, category
         from: txCollectionName,
         let: { receivableId: "$_id" },
         pipeline: [
+          // Anything dated after `to` contributes to neither bucket below: receivedBeforeRange
+          // needs date < from and receivedInRange needs from <= date <= to. Excluding those rows
+          // here is exactly equivalent and keeps future-dated receipts out of the join entirely.
+          // There is deliberately no lower bound — receivedBeforeRange needs all prior history.
+          ...(toDate ? [{ $match: { date: { $lte: toDate } } }] : []),
           {
             $match: {
               $expr: {
@@ -169,17 +172,15 @@ export function buildReceivableGroupedStages(txCollectionName, { level, category
                   {
                     $or: [
                       { $eq: ["$receivableId", "$$receivableId"] },
+                      // Equivalent to the previous $size($filter(...)) > 0 — both ask "does any
+                      // allocation on this row reference this receivable" — but this reads the
+                      // ids straight off the array instead of materialising a filtered copy of
+                      // the sub-documents for every transaction considered. `$ifNull` keeps rows
+                      // with no allocations array behaving exactly as before (no match).
                       {
-                        $gt: [
-                          {
-                            $size: {
-                              $filter: {
-                                input: { $ifNull: ["$receivableAllocations", []] },
-                                cond: { $eq: ["$$this.receivableId", "$$receivableId"] },
-                              },
-                            },
-                          },
-                          0,
+                        $in: [
+                          "$$receivableId",
+                          { $ifNull: ["$receivableAllocations.receivableId", []] },
                         ],
                       },
                     ],

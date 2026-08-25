@@ -1,7 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
-import Sidebar from "@/components/Sidebars/Sidebar";
 import usePatientPicker from "@/lib/usePatientPicker";
 import RevenueSection from "@/components/RevenueSection";
 import DirectExpenseSection from "@/components/DirectExpenseSection";
@@ -138,50 +137,54 @@ export default function EditTransactionPage() {
   const fetchData = async () => {
     setFetchLoading(true);
     try {
-      // Fetch transaction details
-      const transRes = await fetch(
-        `/api/transactions/get-by-id?id=${transactionId}`,
-      );
-      if (transRes.ok) {
-        const data = await transRes.json();
+      // The transaction, the medicines list and the vendors list are independent of each other,
+      // but used to be awaited in sequence — so the form's time-to-interactive was the SUM of
+      // three round trips. Only fetchLinkedInfo below genuinely depends on the transaction.
+      // Each dropdown fetch still swallows its own error, so one failing doesn't block the others.
+      const [transRes] = await Promise.all([
+        fetch(`/api/transactions/get-by-id?id=${transactionId}`),
 
-        if (data.success && data.transaction) {
-          setTransaction(data.transaction);
-          prefillFormData(data.transaction);
-          fetchLinkedInfo(data.transaction);
-        } else {
-          showToast("Transaction not found", "error");
-          setTimeout(() => router.back(), 2000);
-          return;
-        }
-      } else {
+        (async () => {
+          try {
+            const medicinesRes = await fetch("/api/stocks/get");
+            if (medicinesRes.ok) {
+              const medicinesData = await medicinesRes.json();
+              setMedicines(medicinesData.data || medicinesData.stocks || []);
+            }
+          } catch (error) {
+            console.error("Error fetching medicines:", error);
+          }
+        })(),
+
+        (async () => {
+          try {
+            const vendorsRes = await fetch("/api/vendors/get");
+            if (vendorsRes.ok) {
+              const vendorsData = await vendorsRes.json();
+              setVendors(vendorsData.data || vendorsData.vendors || []);
+            }
+          } catch (error) {
+            console.error("Error fetching vendors:", error);
+          }
+        })(),
+      ]);
+
+      if (!transRes.ok) {
         showToast("Transaction not found", "error");
         setTimeout(() => router.back(), 2000);
         return;
       }
 
-      // Fetch medicines
-      try {
-        const medicinesRes = await fetch("/api/stocks/get");
-        if (medicinesRes.ok) {
-          const medicinesData = await medicinesRes.json();
-          const stocksArray = medicinesData.data || medicinesData.stocks || [];
-          setMedicines(stocksArray);
-        }
-      } catch (error) {
-        console.error("Error fetching medicines:", error);
+      const data = await transRes.json();
+      if (!data.success || !data.transaction) {
+        showToast("Transaction not found", "error");
+        setTimeout(() => router.back(), 2000);
+        return;
       }
 
-      // Fetch vendors
-      try {
-        const vendorsRes = await fetch("/api/vendors/get");
-        if (vendorsRes.ok) {
-          const vendorsData = await vendorsRes.json();
-          setVendors(vendorsData.data || vendorsData.vendors || []);
-        }
-      } catch (error) {
-        console.error("Error fetching vendors:", error);
-      }
+      setTransaction(data.transaction);
+      prefillFormData(data.transaction);
+      fetchLinkedInfo(data.transaction);
     } catch (error) {
       console.error("Error in fetchData:", error);
       showToast("Failed to load transaction data", "error");
@@ -701,7 +704,6 @@ export default function EditTransactionPage() {
   if (fetchLoading) {
     return (
       <div className="flex min-h-screen bg-gray-50">
-        <Sidebar />
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <Loader2 className="animate-spin h-12 w-12 text-indigo-600 mx-auto mb-4" />
@@ -715,7 +717,6 @@ export default function EditTransactionPage() {
   if (!transaction) {
     return (
       <div className="flex min-h-screen bg-gray-50">
-        <Sidebar />
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <p className="text-gray-600">Transaction not found</p>
@@ -733,7 +734,6 @@ export default function EditTransactionPage() {
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-      <Sidebar />
 
       {/* Toast Notification */}
       {toast.show && (

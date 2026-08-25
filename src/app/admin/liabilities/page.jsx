@@ -3,15 +3,15 @@
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { Wallet, HelpCircle, CheckCircle2, Clock, AlertTriangle, Download, Loader2 } from "lucide-react";
-import AdminSidebar from "@/components/Sidebars/Sidebar";
 import DrillDownTable from "@/components/finance/DrillDownTable";
 import MetricCard from "@/components/MetricCard";
 import { formatCurrency, formatDate } from "@/lib/financeUI";
 import { AGEING_BUCKETS } from "@/lib/ageing";
 import { ALL_BRANCHES } from "@/lib/branches";
 import { ENTRY_TYPES } from "@/constants/entryTypes";
-import { exportWorkbook, filterProvenanceRows } from "@/lib/exportToExcel";
+import { exportWorkbook, fetchAllPages, filterProvenanceRows } from "@/lib/exportToExcel";
 import { useToast } from "@/components/Toast";
+import DebouncedDateInput from "@/components/finance/DebouncedDateInput";
 
 // Liabilities = Payables + Suspense (unresolved unexplained bank movement — a liability until
 // it's identified, since it's money we can't yet say we own). Page total is the sum of the same
@@ -204,12 +204,19 @@ function LiabilitiesPageInner() {
         return p.toString();
       })();
 
-      const [payablesJson, suspenseGroupJson, suspenseListJson, txJson] = await Promise.all([
-        fetch(`/api/payables/list?limit=10000&${listFlowQS}`).then((r) => r.json()),
+      // payables/list and suspense both clamp limit to 200, so the old `?limit=10000` here
+      // silently produced a truncated export past that many rows. See fetchAllPages' header.
+      const [payablesPaged, suspenseGroupJson, suspensePaged, txJson] = await Promise.all([
+        fetchAllPages((page, limit) => `/api/payables/list?page=${page}&limit=${limit}&${listFlowQS}`, "payables"),
         fetch(`/api/suspense?groupBy=account&${closingQS()}`).then((r) => r.json()),
-        fetch(`/api/suspense?status=all&limit=10000&${suspenseFlowQS}`).then((r) => r.json()),
+        fetchAllPages((page, limit) => `/api/suspense?status=all&page=${page}&limit=${limit}&${suspenseFlowQS}`, "entries"),
         fetch(`/api/transactions/get-all?limit=10000&${listFlowQS}`).then((r) => r.json()),
       ]);
+      const payablesJson = { payables: payablesPaged.rows };
+      const suspenseListJson = { entries: suspensePaged.rows };
+      if (payablesPaged.truncated || suspensePaged.truncated) {
+        toast.error("Export is incomplete — too many rows in range. Narrow the date filter.");
+      }
 
       const payableRows = (payablesJson.payables || []).map((p) => ({
         Head: p.expenseCategory || "—",
@@ -267,7 +274,6 @@ function LiabilitiesPageInner() {
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-      <AdminSidebar />
       <main className="flex-1 p-4 sm:p-6 lg:p-8">
         <div className="max-w-7xl mx-auto space-y-6">
           <div>
@@ -289,17 +295,16 @@ function LiabilitiesPageInner() {
                 <option key={b} value={b}>{b}</option>
               ))}
             </select>
-            <input
-              type="date"
+            {/* Debounced — see the identical note in admin/assets/page.jsx. */}
+            <DebouncedDateInput
               value={scope.dateFrom}
-              onChange={(e) => setScope((s) => ({ ...s, dateFrom: e.target.value }))}
+              onCommit={(v) => setScope((s) => ({ ...s, dateFrom: v }))}
               className="px-3 py-2 border border-gray-200 rounded-xl text-sm bg-white shadow-sm"
             />
             <span className="text-xs text-gray-400">to</span>
-            <input
-              type="date"
+            <DebouncedDateInput
               value={scope.dateTo}
-              onChange={(e) => setScope((s) => ({ ...s, dateTo: e.target.value }))}
+              onCommit={(v) => setScope((s) => ({ ...s, dateTo: v }))}
               className="px-3 py-2 border border-gray-200 rounded-xl text-sm bg-white shadow-sm"
             />
             {(scope.branch || scope.dateFrom || scope.dateTo) && (

@@ -1,7 +1,6 @@
 "use client";
 
 import { Suspense } from "react";
-import Sidebar from "@/components/Sidebars/Sidebar";
 import PatientTable from "@/components/PatientTable";
 import { ALL_BRANCHES } from "@/lib/branches";
 
@@ -31,7 +30,6 @@ const CONFIG = {
 export default function AdminPatientsPage() {
   return (
     <div className="flex min-h-screen bg-gray-50">
-      <Sidebar />
       <Suspense fallback={<div className="flex-1 flex items-center justify-center"><div className="animate-spin h-10 w-10 border-4 border-indigo-100 border-t-indigo-500 rounded-full" /></div>}>
         <PatientTable config={CONFIG} />
       </Suspense>

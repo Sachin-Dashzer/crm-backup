@@ -1,9 +1,8 @@
 "use client";
 import StaffTable from "@/components/StaffTable";
-import Sidebar from "@/components/Sidebars/Sidebar";
 
+// No SidebarComponent: /admin routes get theirs from src/app/admin/layout.jsx.
 const CONFIG = {
-  SidebarComponent: Sidebar,
   addEmployeePath: "/admin/employees/add-employee",
   editBasePath:    "/admin/employees/update",
   canDelete:       false,

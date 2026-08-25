@@ -5,9 +5,34 @@ import { withDB } from "@/lib/withDB";
 import Patient from "@/models/Patient";
 import Employee from "@/models/Employee";
 import { COLLAB_BRANCHES } from "@/lib/branches";
-import { byName } from "@/lib/sortOptions";
+import { resolveDateRange, toDateQuery } from "@/lib/dateHelpers";
 
 const split = (v) => (v || "").split(",").filter(Boolean);
+
+// Only the fields the list UI actually reads — the table cells and the CSV export in
+// src/components/PatientTable.jsx. Patient documents carry large nested sub-documents
+// (medical history, consultation forms, editor audit trails) that were being pulled over the
+// wire for every row and then thrown away. Add a field here if a column starts rendering "—".
+const LIST_PROJECTION = [
+  "personal.name",
+  "personal.phone",
+  "personal.address",
+  "personal.branch",
+  "personal.visitDate",
+  "personal.reference",
+  "personal.packageQuoted",
+  "personal.techniqueQuoted",
+  "counselling.counsellor",
+  "counselling.techniqueSuggested",
+  "counselling.finlpackage",
+  "counselling.readyForSurgery",
+  "payments.amountReceived",
+  "payments.pendingAmount",
+  "surgery.surgeryDate",
+  "surgery.technique",
+  "surgery.location",
+  "ops.status",
+].join(" ");
 
 const handler = async (req) => {
   try {
@@ -37,8 +62,6 @@ const handler = async (req) => {
     const implanterNames  = split(searchParams.get("implanter"));
     const surgeryLocations = split(searchParams.get("surgeryLocations"));
     const surgeryDate      = searchParams.get("surgeryDate")      || "";
-    const dateFrom         = searchParams.get("dateFrom")         || "";
-    const dateTo           = searchParams.get("dateTo")           || "";
     const visited          = searchParams.get("visited")          === "true";
     const readyForSurgery  = searchParams.get("readyForSurgery")  === "true";
 
@@ -60,16 +83,13 @@ const handler = async (req) => {
     if (statuses.length)   query["ops.status"] = statuses.length === 1 ? statuses[0] : { $in: statuses };
     if (readyForSurgery)   query["counselling.readyForSurgery"] = true;
 
-    // Visit date range
-    if (dateFrom || dateTo) {
-      query["personal.visitDate"] = {};
-      if (dateFrom) query["personal.visitDate"].$gte = new Date(dateFrom);
-      if (dateTo) {
-        const to = new Date(dateTo);
-        to.setHours(23, 59, 59, 999);
-        query["personal.visitDate"].$lte = to;
-      }
-    }
+    // Visit date range. With no explicit dateFrom/dateTo this defaults to the current calendar
+    // month rather than scanning all history; `?all=1` opts out entirely (the UI's "All time").
+    // Boundaries are IST-correct — the previous inline `setHours` ran in server-local time, which
+    // is UTC on Vercel, so month/day edges were off by 5h30m.
+    const dateRange = resolveDateRange(searchParams);
+    const visitDateQuery = toDateQuery(dateRange);
+    if (visitDateQuery) query["personal.visitDate"] = visitDateQuery;
 
     if (surgeryLocations.length) query["surgery.location"] = { $in: surgeryLocations };
 
@@ -145,25 +165,32 @@ const handler = async (req) => {
     }
 
     /* ── Run DB operations in parallel ── */
-    const [patients, total, distinctLocations] = await Promise.all([
+    // Only `personal.reference` and `counselling.counsellor` are populated: those are the two
+    // names the list actually renders. The doctor/seniorTech/implanter populates were four extra
+    // round trips per request feeding columns this list doesn't have — they're filter inputs,
+    // already resolved to ObjectIds above.
+    const [patients, total] = await Promise.all([
       Patient.find(query)
+        .select(LIST_PROJECTION)
         .sort({ [sortKey]: sortDir })
         .skip(skip)
         .limit(limit)
         .populate("personal.reference",     "name")
         .populate("counselling.counsellor", "name")
-        .populate("surgery.doctor",         "name")
-        .populate("surgery.seniorTech",     "name")
-        .populate("surgery.implanterRight", "name")
-        .populate("surgery.implanterLeft",  "name")
         .lean(),
       Patient.countDocuments(query),
-      Patient.distinct("surgery.location").then((vals) => vals.filter(Boolean).sort(byName)),
     ]);
 
     return NextResponse.json({
       patients, total, page, limit, success: true,
-      filterOptions: { surgeryLocations: distinctLocations },
+      // Echoed back so the client can show an honest "This Month" chip when it didn't ask for a
+      // window itself. surgeryLocations now comes from /api/patients/filter-options.
+      dateWindow: {
+        from: dateRange.start ? dateRange.start.toISOString() : null,
+        to: dateRange.end ? dateRange.end.toISOString() : null,
+        isDefault: dateRange.isDefault,
+        isAll: dateRange.isAll,
+      },
     }, { status: 200 });
   } catch (error) {
     console.error("Error fetching patients:", error);

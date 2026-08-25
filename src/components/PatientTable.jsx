@@ -31,6 +31,8 @@ import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { maskPhone } from "@/utils/phoneUtils";
 import MultiSelect from "@/components/MultiSelect";
+import useCrmData from "@/lib/useCrmData";
+import { fetchAllPages } from "@/lib/exportToExcel";
 import {
   Filter, X, ChevronRight, ChevronLeft,
   Eye, SquarePen, Search, Calendar,
@@ -153,17 +155,15 @@ export default function PatientTable({ config = {} }) {
   const { data: session } = useSession();
   const userRole = session?.user?.role || "";
 
-  /* ── State ── */
-  const [patients, setPatients]     = useState([]);
-  const [total, setTotal]           = useState(0);
+  /* ── State ──
+     `patients`, `total`, `dateWindow`, `loading` and `error` are no longer useState: they come
+     from the SWR hook below, which caches them per query string. */
   const [filterOptions, setFOpts]   = useState({
     counsellors: [], agents: [], techniques: [],
     doctors: [], seniorTechs: [], implanters: [],
     surgeryLocations: [],
   });
-const [loading, setLoading]       = useState(true);
-  const [error, setError]           = useState(null);
-  const [drawerOpen, setDrawerOpen] = useState(false);
+const [drawerOpen, setDrawerOpen] = useState(false);
 
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch]           = useState("");
@@ -184,6 +184,9 @@ const [loading, setLoading]       = useState(true);
     doctor:           [],
     seniorTech:       [],
     implanter:        [],
+    // "All time" escape hatch for the server's default current-month window. Deliberately a
+    // filter (not separate state) so clearFilters/chips treat it like every other one.
+    allTime:          searchParams.get("all") === "1",
   });
 
   const [sort, setSort]       = useState({ key: "personal.visitDate", dir: "desc" });
@@ -211,62 +214,57 @@ const [loading, setLoading]       = useState(true);
             doctors:     data.doctors      || [],
             seniorTechs: data.seniorTechs  || [],
             implanters:  data.implanters   || [],
+            // Moved here from the list response, which recomputed it with a full collection scan
+            // on every page/sort/filter change.
+            surgeryLocations: data.surgeryLocations || [],
           }));
         }
       })
       .catch(() => {});
   }, []);
 
-  /* ── Fetch ── */
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const p = new URLSearchParams({
-          page, limit: perPage,
-          sortKey: enableSorting ? sort.key : "personal.visitDate",
-          sortDir: enableSorting ? sort.dir : "desc",
-        });
-        if (search)                          p.set("search",          search);
-        if (filters.status.length)           p.set("status",          filters.status.join(","));
-        if (filters.branch.length)           p.set("branch",          filters.branch.join(","));
-        if (filters.counsellor.length)       p.set("counsellor",      filters.counsellor.join(","));
-        if (filters.agent.length)            p.set("agent",           filters.agent.join(","));
-        if (filters.technique.length)        p.set("technique",       filters.technique.join(","));
-        if (filters.surgeryDate)             p.set("surgeryDate",     filters.surgeryDate);
-        if (filters.surgeryLocations.length) p.set("surgeryLocations",filters.surgeryLocations.join(","));
-        if (filters.dateFrom)                p.set("dateFrom",        filters.dateFrom);
-        if (filters.dateTo)                  p.set("dateTo",          filters.dateTo);
-        if (filters.visited)                 p.set("visited",         "true");
-        if (filters.readyForSurgery)         p.set("readyForSurgery", "true");
-        if (filters.doctor.length)           p.set("doctor",          filters.doctor.join(","));
-        if (filters.seniorTech.length)       p.set("seniorTech",      filters.seniorTech.join(","));
-        if (filters.implanter.length)        p.set("implanter",       filters.implanter.join(","));
+  /* ── Fetch ──
+     One place builds the query string, used by both the list request and the CSV export, so the
+     two can never cover different rows. */
+  const buildQuery = (overrides = {}) => {
+    const p = new URLSearchParams({
+      page, limit: perPage,
+      sortKey: enableSorting ? sort.key : "personal.visitDate",
+      sortDir: enableSorting ? sort.dir : "desc",
+      ...overrides,
+    });
+    if (search)                          p.set("search",          search);
+    if (filters.status.length)           p.set("status",          filters.status.join(","));
+    if (filters.branch.length)           p.set("branch",          filters.branch.join(","));
+    if (filters.counsellor.length)       p.set("counsellor",      filters.counsellor.join(","));
+    if (filters.agent.length)            p.set("agent",           filters.agent.join(","));
+    if (filters.technique.length)        p.set("technique",       filters.technique.join(","));
+    if (filters.surgeryDate)             p.set("surgeryDate",     filters.surgeryDate);
+    if (filters.surgeryLocations.length) p.set("surgeryLocations",filters.surgeryLocations.join(","));
+    if (filters.dateFrom)                p.set("dateFrom",        filters.dateFrom);
+    if (filters.dateTo)                  p.set("dateTo",          filters.dateTo);
+    if (filters.visited)                 p.set("visited",         "true");
+    if (filters.readyForSurgery)         p.set("readyForSurgery", "true");
+    if (filters.doctor.length)           p.set("doctor",          filters.doctor.join(","));
+    if (filters.seniorTech.length)       p.set("seniorTech",      filters.seniorTech.join(","));
+    if (filters.implanter.length)        p.set("implanter",       filters.implanter.join(","));
+    if (filters.allTime)                 p.set("all",             "1");
+    return p.toString();
+  };
 
-        const res  = await fetch(`/api/patients/get-patient?${p.toString()}`);
-        if (!res.ok) throw new Error("Failed to fetch patients");
-        const data = await res.json();
-        if (cancelled) return;
+  // SWR rather than a hand-rolled useEffect + `cancelled` flag: the URL IS the cache key, so
+  // paging back to a page you've already seen, or navigating away and returning, renders from
+  // cache instantly. keepPreviousData (see lib/useCrmData.js) means a filter change keeps the
+  // current rows on screen instead of flashing an empty table.
+  const listKey = `/api/patients/get-patient?${buildQuery()}`;
+  const { data, error, isLoading, isValidating } = useCrmData(listKey);
 
-        setPatients(data.patients || []);
-        setTotal(data.total || 0);
-
-        if (data.filterOptions?.surgeryLocations) {
-          setFOpts((prev) => ({
-            ...prev,
-            surgeryLocations: data.filterOptions.surgeryLocations,
-          }));
-        }
-      } catch (e) {
-        if (!cancelled) setError(e.message || "Error");
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [page, perPage, sort, search, filters, enableSorting]);
+  const patients   = data?.patients || [];
+  const total      = data?.total || 0;
+  const dateWindow = data?.dateWindow || null;
+  // Only blank the table on a genuine first load. A background revalidation dims it instead —
+  // showing the spinner there would undo keepPreviousData entirely.
+  const loading    = isLoading && !data;
 
   /* ── Pagination helpers ── */
   const totalPages = Math.max(1, Math.ceil(total / perPage));
@@ -281,6 +279,7 @@ const [loading, setLoading]       = useState(true);
       surgeryDate: "", surgeryLocations: [], dateFrom: "", dateTo: "",
       visited: false, readyForSurgery: false,
       doctor: [], seniorTech: [], implanter: [],
+      allTime: false,
     });
     setPage(1);
   };
@@ -296,31 +295,20 @@ const [loading, setLoading]       = useState(true);
   const exportCSV = async () => {
     setExporting(true);
     try {
-      const p = new URLSearchParams({
-        page: 1, limit: 10000,
-        sortKey: enableSorting ? sort.key : "personal.visitDate",
-        sortDir: enableSorting ? sort.dir : "desc",
-      });
-      if (search)                          p.set("search",          search);
-      if (filters.status.length)           p.set("status",          filters.status.join(","));
-      if (filters.branch.length)           p.set("branch",          filters.branch.join(","));
-      if (filters.counsellor.length)       p.set("counsellor",      filters.counsellor.join(","));
-      if (filters.agent.length)            p.set("agent",           filters.agent.join(","));
-      if (filters.technique.length)        p.set("technique",       filters.technique.join(","));
-      if (filters.surgeryDate)             p.set("surgeryDate",     filters.surgeryDate);
-      if (filters.surgeryLocations.length) p.set("surgeryLocations",filters.surgeryLocations.join(","));
-      if (filters.dateFrom)                p.set("dateFrom",        filters.dateFrom);
-      if (filters.dateTo)                  p.set("dateTo",          filters.dateTo);
-      if (filters.visited)                 p.set("visited",         "true");
-      if (filters.readyForSurgery)         p.set("readyForSurgery", "true");
-      if (filters.doctor.length)           p.set("doctor",          filters.doctor.join(","));
-      if (filters.seniorTech.length)       p.set("seniorTech",      filters.seniorTech.join(","));
-      if (filters.implanter.length)        p.set("implanter",       filters.implanter.join(","));
-
-      const res = await fetch(`/api/patients/get-patient?${p.toString()}`);
-      if (!res.ok) throw new Error("Failed to fetch patients for export");
-      const data = await res.json();
-      const all = data.patients || [];
+      // Same builder as the list request, overriding only the paging — so the export can never
+      // silently cover a different set of rows than the table the user is looking at.
+      //
+      // Paged rather than one big request: /api/patients/get-patient caps limit at 500, so the
+      // old `limit=10000` was silently clamped and any export past 500 patients was quietly
+      // incomplete with nothing in the file to say so.
+      const { rows: all, truncated } = await fetchAllPages(
+        (page, limit) => `/api/patients/get-patient?${buildQuery({ page, limit })}`,
+        "patients",
+        { limit: 500 },
+      );
+      if (truncated) {
+        alert("Export is incomplete — too many patients match. Narrow the filters and try again.");
+      }
 
       const headers = ["Name","Phone","Address","Branch","Visit Date","Status","Package","Received","Pending","Counsellor","Technique","Ready","Surgery Date","Reference"];
       const rows = all.map((pt) => [
@@ -364,13 +352,18 @@ const [loading, setLoading]       = useState(true);
     filters.doctor.length     > 0 && { k: "doctor",          label: `Doctor: ${filters.doctor.join(", ")}` },
     filters.seniorTech.length > 0 && { k: "seniorTech",      label: `Sr Tech: ${filters.seniorTech.join(", ")}` },
     filters.implanter.length  > 0 && { k: "implanter",       label: `Implanter: ${filters.implanter.join(", ")}` },
+    filters.allTime                && { k: "allTime",         label: "All Time" },
   ].filter(Boolean);
 
   const removeChip = (k) => {
-    if (k === "visited" || k === "readyForSurgery") applyFilter(k, false);
+    if (k === "visited" || k === "readyForSurgery" || k === "allTime") applyFilter(k, false);
     else if (k === "surgeryDate" || k === "dateFrom" || k === "dateTo") applyFilter(k, "");
     else applyFilter(k, []);
   };
+
+  // Shown only when the SERVER narrowed the range on its own (no explicit date filter, not
+  // "All time"). Without this the list would silently look like the whole database.
+  const showDefaultWindowNotice = dateWindow?.isDefault && !filters.allTime;
 
   /* ── Cell content renderer ── */
   const cellContent = (col, pt) => {
@@ -429,7 +422,9 @@ const [loading, setLoading]       = useState(true);
     <main className="flex-1 flex items-center justify-center bg-gray-50">
       <div className="text-center space-y-1">
         <p className="text-base font-semibold text-gray-800">Something went wrong</p>
-        <p className="text-sm text-red-500">{error}</p>
+        {/* `.message`, not the object — SWR hands back an Error, and rendering an object
+            directly in JSX throws. */}
+        <p className="text-sm text-red-500">{error.message || "Error"}</p>
       </div>
     </main>
   );
@@ -472,6 +467,21 @@ const [loading, setLoading]       = useState(true);
             </span>
           )}
         </button>
+
+        {/* Default-window notice — the server scoped this to the current month because no date
+            filter was set. One click widens it to everything. */}
+        {showDefaultWindowNotice && (
+          <span className="inline-flex items-center gap-2 px-2.5 py-1 rounded-lg bg-amber-50 text-amber-800 text-xs font-medium border border-amber-200">
+            <Calendar className="w-3.5 h-3.5" />
+            Showing: This Month
+            <button
+              onClick={() => applyFilter("allTime", true)}
+              className="font-semibold text-amber-900 underline underline-offset-2 hover:text-amber-950 transition-colors"
+            >
+              Show all time
+            </button>
+          </span>
+        )}
 
         {/* Active chips */}
         {chips.map((chip) => (
@@ -529,7 +539,14 @@ const [loading, setLoading]       = useState(true);
               <div className="animate-spin h-10 w-10 border-4 border-indigo-100 border-t-indigo-500 rounded-full" />
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            // Dimmed, not blanked, while a background revalidation is in flight — the previous
+            // rows stay readable and in place (keepPreviousData), so changing a filter or page no
+            // longer flashes an empty table.
+            <div
+              className={`overflow-x-auto transition-opacity duration-150 ${
+                isValidating ? "opacity-60" : "opacity-100"
+              }`}
+            >
               <table className="min-w-full text-sm">
                 <thead>
                   <tr className="bg-gray-50 border-b border-gray-200">

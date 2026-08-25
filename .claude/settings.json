@@ -15,7 +15,15 @@
       "Bash(grep -r BillGenerator /c/dashzer/ryan-crm/src --include=*.jsx --include=*.js)",
       "Bash(find c:dashzerryan-crmsrcappapi -name *patient* -type f)",
       "Bash(wc -l /c/dashzer/ryan-crm/src/app/stocks/transactions/edit/[id]/page.jsx)",
-      "Bash(wc -l /c/dashzer/ryan-crm/src/app/reception/transactions/edit/[id]/page.jsx)"
+      "Bash(wc -l /c/dashzer/ryan-crm/src/app/reception/transactions/edit/[id]/page.jsx)",
+      "Bash(node -e *)",
+      "Bash(node -e \"JSON.parse\\(require\\('fs'\\).readFileSync\\('.claude/settings.local.json','utf8'\\)\\)\")",
+      "Bash(node -e \"JSON.parse\\(require\\('fs'\\).readFileSync\\('package.json','utf8'\\)\\);console.log\\(' package.json OK'\\)\")",
+      "Bash(node -e \"JSON.parse\\(require\\('fs'\\).readFileSync\\('package-lock.json','utf8'\\)\\);console.log\\(' package-lock.json OK'\\)\")",
+      "Bash(node -e \"JSON.parse\\(require\\('fs'\\).readFileSync\\('.claude/settings.local.json','utf8'\\)\\);console.log\\(' settings.local.json OK'\\)\")",
+      "Bash(awk '{print $1}')",
+      "Bash(npm install *)",
+      "Bash(git add *)"
     ],
     "additionalDirectories": [
       "c:\\dashzer\\ryan-crm\\src\\app\\api\\hr\\candidates",

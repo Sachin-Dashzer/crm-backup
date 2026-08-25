@@ -1,7 +1,6 @@
 "use client";
 
 import { Fragment, useEffect, useRef, useState } from "react";
-import AdminSidebar from "@/components/Sidebars/Sidebar";
 import MetricCard from "@/components/MetricCard";
 import SearchableSelect from "@/components/SearchableSelect";
 import CollabCaseForm from "@/components/CollabCaseForm";
@@ -224,7 +223,6 @@ export default function AdminCollabSettlementPage() {
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-      <AdminSidebar />
       <main className="flex-1 p-4 sm:p-6 lg:p-8">
         <div className="max-w-6xl mx-auto">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">

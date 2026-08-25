@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import AdminSidebar from "@/components/Sidebars/Sidebar";
 import { ALL_BRANCHES } from "@/lib/branches";
 import {
   Download,
@@ -620,7 +619,6 @@ export default function AdminReportsPage() {
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-      <AdminSidebar />
 
       <div className="flex-1 overflow-auto">
         <div className="p-4 sm:p-6 lg:p-8">

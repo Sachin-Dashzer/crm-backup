@@ -5,7 +5,6 @@ import { useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import { ShieldAlert } from "lucide-react";
-import AdminSidebar from "@/components/Sidebars/Sidebar";
 import SearchableSelect from "@/components/SearchableSelect";
 import TransactionFieldSet, { validateTransactionFields } from "@/components/finance/TransactionFieldSet";
 import { PAYABLE_EXPENSE_DROPDOWN_CATEGORIES, getExpenseTypes } from "@/constants/expenseCategories";
@@ -273,7 +272,6 @@ function VouchersPageInner() {
   if (session && !authorized) {
     return (
       <div className="flex min-h-screen bg-gray-50">
-        <AdminSidebar />
         <main className="flex-1 flex items-center justify-center p-8">
           <div className="text-center space-y-2">
             <ShieldAlert className="w-10 h-10 text-red-400 mx-auto" />
@@ -286,7 +284,6 @@ function VouchersPageInner() {
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-      <AdminSidebar />
       <main className="flex-1 p-4 sm:p-6 lg:p-8">
         <div className="max-w-2xl mx-auto space-y-6">
           <div>

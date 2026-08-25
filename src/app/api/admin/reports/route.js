@@ -13,6 +13,7 @@ import { buildPayableAggregationStages } from "@/lib/payableAggregation";
 import { buildReceivableAggregationStages } from "@/lib/receivableAggregation";
 import { ALL_BRANCHES, COLLAB_BRANCHES } from "@/lib/branches";
 import { UNSETTLED_METHODS, SETTLEMENT_EXCLUSION } from "@/constants/bankRouting";
+import { getISTStartOfDay, getISTEndOfDay } from "@/lib/dateHelpers";
 
 // Whether `branchName` (a plain branch string) is covered by `branchFilter`, which may be
 // undefined/empty (no restriction), a plain string (exact match), or a Mongo `{ $in: [...] }`.
@@ -80,12 +81,19 @@ export async function GET(request) {
     // Payable/Receivable have no "transaction date" of their own — createdAt is when the
     // obligation was RAISED, the same field the Liabilities/Assets pages filter and roll up by.
     const obligationDateFilter = {};
-    if (from && to) {
-      const fromDate = new Date(from);
-      const toDate = new Date(to);
-      patientDateFilter["personal.visitDate"] = { $gte: fromDate, $lte: toDate };
-      transactionDateFilter["date"] = { $gte: fromDate, $lte: toDate };
-      obligationDateFilter["createdAt"] = { $gte: fromDate, $lte: toDate };
+    // Each bound is applied independently. This used to be `if (from && to)`, so passing only one
+    // of the two silently dropped BOTH and scanned all history — the opposite of what a user
+    // narrowing by a single bound expects. Bounds are IST-correct; `new Date(from)` alone parses a
+    // bare YYYY-MM-DD as UTC midnight, which is 05:30 IST and clips half a day off the range.
+    const fromDate = from ? getISTStartOfDay(from) : null;
+    const toDate = to ? getISTEndOfDay(to) : null;
+    if (fromDate || toDate) {
+      const range = {};
+      if (fromDate) range.$gte = fromDate;
+      if (toDate) range.$lte = toDate;
+      patientDateFilter["personal.visitDate"] = range;
+      transactionDateFilter["date"] = range;
+      obligationDateFilter["createdAt"] = range;
     }
 
     switch (type) {

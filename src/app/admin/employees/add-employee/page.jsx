@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Sidebar from "@/components/Sidebars/Sidebar";
 import { useToast } from "@/components/Toast";
 import InputField from "@/components/InputField";
 import {
@@ -129,7 +128,6 @@ const RoleDescriptionCard = ({ role }) => {
 
 export default function EmployeeRegistration() {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const toast = useToast(); 
 
   const [formData, setFormData] = useState({
@@ -261,7 +259,6 @@ export default function EmployeeRegistration() {
 
   return (
     <section className="flex min-h-screen">
-      <Sidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
 
       <main className="flex-1 px-4 md:px-12 py-4">
         <div className="max-w-4xl mx-auto">

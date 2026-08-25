@@ -17,6 +17,7 @@ import {
   Eye,
 } from "lucide-react";
 import AccountingTable from "./AccountingTable";
+import DebouncedDateInput from "./DebouncedDateInput";
 import { formatCurrency, formatDate, StatusBadge } from "@/lib/financeUI";
 import { ALL_BRANCHES } from "@/lib/branches";
 import { AGEING_BUCKETS, AGEING_TONE_CLASSES, formatAgeing } from "@/lib/ageing";
@@ -134,6 +135,14 @@ export default function DrillDownTable({
   const [viewTxId, setViewTxId] = useState(null);
   const [viewDoc, setViewDoc] = useState(null); // the Payable/Receivable row being viewed
 
+  // Callers pass `extraParams` as an inline object literal (e.g. the Receipts page's
+  // `extraParams={{ groupBy }}`), which is a NEW object every render. Depending on its identity
+  // made `qs` new every render → `load` new every render → the `useEffect([load])` below refired
+  // → its setRows/setMeta re-rendered → repeat, i.e. an unbounded fetch loop for as long as the
+  // page was open. Depending on the CONTENT instead makes a literal safe to pass, so this can't
+  // be reintroduced by a future caller. Do not switch this back to `extraParams`.
+  const extraParamsKey = JSON.stringify(extraParams || {});
+
   const qs = useCallback(
     (extra = {}) => {
       const p = new URLSearchParams();
@@ -142,7 +151,7 @@ export default function DrillDownTable({
       if (scope.dateTo) p.set("to", scope.dateTo);
       // Caller-supplied constants (e.g. Task 6's Receipts page groupBy=mode toggle) that ride
       // along on every fetch this table makes, same as the scope filters above.
-      Object.entries(extraParams || {}).forEach(([k, v]) => {
+      Object.entries(JSON.parse(extraParamsKey)).forEach(([k, v]) => {
         if (v !== undefined && v !== null && v !== "") p.set(k, v);
       });
       Object.entries(extra).forEach(([k, v]) => {
@@ -150,7 +159,7 @@ export default function DrillDownTable({
       });
       return p.toString();
     },
-    [scope, extraParams],
+    [scope, extraParamsKey],
   );
 
   const load = useCallback(async () => {
@@ -748,16 +757,14 @@ export default function DrillDownTable({
                   <option key={b} value={b}>{b}</option>
                 ))}
               </select>
-              <input
-                type="date"
+              <DebouncedDateInput
                 value={scope.dateFrom}
-                onChange={(e) => updateScope({ dateFrom: e.target.value })}
+                onCommit={(v) => updateScope({ dateFrom: v })}
                 className="px-2.5 py-1.5 border border-gray-300 rounded-lg text-xs"
               />
-              <input
-                type="date"
+              <DebouncedDateInput
                 value={scope.dateTo}
-                onChange={(e) => updateScope({ dateTo: e.target.value })}
+                onCommit={(v) => updateScope({ dateTo: v })}
                 className="px-2.5 py-1.5 border border-gray-300 rounded-lg text-xs"
               />
             </>

@@ -75,7 +75,55 @@ export async function GET(request) {
     if (purpose) baseMatch.purpose = purpose;
     if (branch) baseMatch.branch = branch;
 
-    const overall = await sumMatch(baseMatch);
+    const TOTALS_GROUP = {
+      count: { $sum: 1 },
+      totalReceivable: { $sum: "$totalAmount" },
+      totalReceived: { $sum: "$received" },
+      totalPending: { $sum: "$pending" },
+    };
+    const emptyTotals = { count: 0, totalReceivable: 0, totalReceived: 0, totalPending: 0 };
+    const pickTotals = (agg) =>
+      agg
+        ? {
+            count: agg.count,
+            totalReceivable: agg.totalReceivable,
+            totalReceived: agg.totalReceived,
+            totalPending: agg.totalPending,
+          }
+        : emptyTotals;
+
+    // NOTE ON DATE FILTERING: no from/to here on purpose. `pending` is an OUTSTANDING BALANCE,
+    // not a period flow — scoping it to a month would drop everything raised earlier and still
+    // uncollected. See the identical note in payables/summary/route.js.
+
+    let overall;
+    let byPurpose = null;
+
+    if (purpose) {
+      overall = pickTotals((await Receivable.aggregate([
+        { $match: baseMatch },
+        ...buildReceivableAggregationStages(txCollection),
+        { $group: { _id: null, ...TOTALS_GROUP } },
+      ]))[0]);
+    } else {
+      // `overall` and `byPurpose` share an identical $match here, so they previously ran the same
+      // whole-collection pipeline — including its $lookup into Transactions — twice per request.
+      const [facet] = await Receivable.aggregate([
+        { $match: baseMatch },
+        ...buildReceivableAggregationStages(txCollection),
+        {
+          $facet: {
+            overall: [{ $group: { _id: null, ...TOTALS_GROUP } }],
+            byPurpose: [
+              { $group: { _id: "$purpose", ...TOTALS_GROUP } },
+              { $sort: { totalPending: -1 } },
+            ],
+          },
+        },
+      ]);
+      overall = pickTotals(facet?.overall?.[0]);
+      byPurpose = facet?.byPurpose || [];
+    }
 
     let byPayer = null;
     if (payerKind && (payerRefId || payerLabel)) {
@@ -83,24 +131,6 @@ export async function GET(request) {
       if (payerRefId) payerMatch["payer.refId"] = new mongoose.Types.ObjectId(payerRefId);
       if (payerLabel) payerMatch["payer.label"] = payerLabel;
       byPayer = await sumMatch(payerMatch);
-    }
-
-    let byPurpose = null;
-    if (!purpose) {
-      byPurpose = await Receivable.aggregate([
-        { $match: { isCancelled: false, ...(branch ? { branch } : {}) } },
-        ...buildReceivableAggregationStages(txCollection),
-        {
-          $group: {
-            _id: "$purpose",
-            count: { $sum: 1 },
-            totalReceivable: { $sum: "$totalAmount" },
-            totalReceived: { $sum: "$received" },
-            totalPending: { $sum: "$pending" },
-          },
-        },
-        { $sort: { totalPending: -1 } },
-      ]);
     }
 
     return NextResponse.json({ success: true, overall, byPayer, byPurpose });

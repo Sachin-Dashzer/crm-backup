@@ -5,8 +5,16 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import connectDB from "@/lib/db";
 import Transactions from "@/models/Transactions";
 import "@/models/Patient";
+import { resolveDateRange, toDateQuery } from "@/lib/dateHelpers";
 
-export async function GET() {
+// NOTE: as of this change nothing in the app calls this route — see the comment at
+// src/app/api/close-book/ledger/route.js:27, which explicitly avoids modelling on it. It is left
+// in place rather than deleted, but it is bounded below: it is an authenticated endpoint that
+// previously returned the ENTIRE Transactions collection, sorted, with every referenced Patient
+// populated, and accepted no date parameter at all. If it is genuinely unused, delete it.
+const MAX_ROWS = 2000;
+
+export async function GET(request) {
   try {
     const session = await getServerSession(authOptions);
 
@@ -19,16 +27,27 @@ export async function GET() {
 
     await connectDB();
 
+    const { searchParams } = new URL(request.url);
     const userBranch = session.user.branch;
     const query = userBranch && userBranch !== "All" ? { branch: userBranch } : {};
 
+    // Defaults to the current calendar month; `?all=1` opts out.
+    const dateRange = resolveDateRange(searchParams);
+    const dateQuery = toDateQuery(dateRange);
+    if (dateQuery) query.date = dateQuery;
+
     const transactions = await Transactions.find(query)
+      // Only the fields the reducer below emits.
+      .select(
+        "costType patient branch procedure paymentType paymentId method amount discount date remarks transactionCategory createdBy editors",
+      )
       .populate({
         path: "patient",
         select:
           "personal.name personal.phone surgery.technique payments.totalAmount payments.amountReceived payments.pendingAmount payments.medicineAmount payments.discount createdAt",
       })
       .sort({ date: -1 })
+      .limit(MAX_ROWS)
       .lean();
 
     const finaldata = transactions.reduce((acc, transaction) => {
