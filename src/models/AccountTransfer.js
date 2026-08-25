@@ -27,28 +27,13 @@ branch: {
     reference: String,
     remarks: String,
     receipts: [receiptSchema],
-
-    // Set ONLY when this transfer was created by settling a specific loan-financing transaction
-    // (LoanSettlementModal — Bajaj Loan/Fibe Loan -> a real bank account). Lets a later loan
-    // cancellation find the exact settlement transfer to reverse, instead of guessing by amount
-    // and date. Optional and additive: every transfer created before this field existed, and
-    // every ordinary manual transfer, simply has it as null.
     sourceTransactionId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Transactions",
       default: null,
       index: true,
     },
-
-    // Discriminates WHY a transfer exists, so a lookup by sourceTransactionId is never
-    // ambiguous. Before this field, a settlement and the cancellation that later reversed it
-    // both carried the SAME sourceTransactionId — an unsorted findOne({sourceTransactionId, ...})
-    // could return either one, and a second cancellation attempt could reverse the reversal
-    // instead of refusing. Always query by (sourceTransactionId, transferKind) together now, not
-    // sourceTransactionId alone. Defaults to MANUAL so every pre-existing transfer (and every
-    // ordinary contra entry going forward) is unambiguous without a migration.
-    transferKind: {
-      type: String,
+   type: String,
       enum: ["MANUAL", "LOAN_SETTLEMENT", "LOAN_CANCELLATION"],
       default: "MANUAL",
       index: true,
