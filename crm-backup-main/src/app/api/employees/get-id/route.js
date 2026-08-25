@@ -1,0 +1,43 @@
+import Employee from "@/models/Employee";
+import { withDB } from "@/lib/withDB";
+import { NAME_COLLATION } from "@/lib/sortOptions";
+import { NextResponse } from "next/server";
+
+const handler = async (req) => {
+  try {
+    const data = await Employee.find({}).sort({ name: 1 }).collation(NAME_COLLATION);
+
+    // Use the data array, not the Employee model
+    const employeesByRole = data.reduce((acc, employee) => {
+      const role = employee.role || "Other";
+
+      if (!acc[role]) {
+        acc[role] = [];
+      }
+
+      acc[role].push({
+        name: employee.name,
+        _id: employee._id,
+      });
+
+      return acc;
+    }, {});
+
+    return NextResponse.json({
+      success: true,
+      data: employeesByRole,
+      roles: Object.keys(employeesByRole),
+    });
+  } catch (error) {
+    console.error("Error fetching employees:", error);
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Failed to fetch employees",
+      },
+      { status: 500 }
+    );
+  }
+};
+
+export const GET = withDB(handler);

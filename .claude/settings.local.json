@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -rn \"limit=[0-9]\\\\{3,\\\\}\\\\|limit: *[0-9]\\\\{3,\\\\}\\\\|limit=999\\\\|10000\" src/app src/components)",
+      "Bash(npm install *)",
+      "Bash(MONGODB_URI=\"mongodb://127.0.0.1:27017/buildcheck\" NEXTAUTH_SECRET=\"buildcheck\" npm run build)",
+      "Bash(node \"C:/Users/Dashzer/AppData/Local/Temp/claude/c--codes-crm-backup-main/2fa846bc-848f-49cf-8c3d-b8000f0503df/scratchpad/strip-sidebars.mjs\")",
+      "Bash(node -e ' *)",
+      "Bash(npx eslint *)",
+      "Bash(MONGODB_URI=\"mongodb://127.0.0.1:27017/buildcheck\" NEXTAUTH_SECRET=\"buildcheck\" NEXTAUTH_URL=\"http://localhost:3111\" npx next dev -p 3111)",
+      "Bash(node --check scripts/ensure-indexes.js)",
+      "Bash(node -e \"import\\('./scripts/ensure-indexes.js'\\).catch\\(e=>{if\\(/MONGODB_URI not found/.test\\(e.message\\)\\){console.log\\('OK: parses and runs; stops at the expected missing-URI guard'\\)}else{console.log\\('UNEXPECTED:',e.message\\)}}\\)\")",
+      "Bash(grep -n 'export function\\\\|const toDate\\\\|const fromDate\\\\|pipeline: \\\\[\\\\|$match: {' src/lib/payableAggregation.js)",
+      "Bash(ls \"C:/Users/Dashzer/.claude/projects/c--codes-crm-backup-main/memory/\" 2>/dev/null; echo \"--- MEMORY.md ---\"; cat \"C:/Users/Dashzer/.claude/projects/c--codes-crm-backup-main/memory/MEMORY.md\" 2>/dev/null || echo \"\\(none\\)\")",
+      "Read(//c/Users/Dashzer/.claude/projects/c--codes-crm-backup-main/memory/**)"
+    ]
+  }
+}
