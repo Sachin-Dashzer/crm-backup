@@ -1,0 +1,40 @@
+// pages/api/patients/create-appointment.js
+import Patient from "@/models/Patient";
+import { withDB } from "@/lib/withDB";
+import { NextResponse } from "next/server";
+
+const handler = async (req) => {
+  if (req.method !== 'POST') {
+    return NextResponse.json({ error: 'Method not allowed' }, { status: 405 });
+  }
+
+  try {
+    const data = await req.json();
+    
+    // Create new patient with appointment status
+    const patient = new Patient({
+      personal: data.personal,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    });
+
+    await patient.save();
+    
+    return NextResponse.json({
+      success: true,
+      message: "Appointment booked successfully",
+      data: patient
+    });
+  } catch (error) {
+    console.error("Error creating appointment:", error);
+    return NextResponse.json(
+      { 
+        success: false, 
+        error: "Failed to book appointment" 
+      },
+      { status: 500 }
+    );
+  }
+};
+
+export const POST = withDB(handler);

@@ -1,0 +1,162 @@
+import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import connectDB from "@/lib/db";
+import Patient from "@/models/Patient";
+import { createCollabCaseAtomic } from "@/lib/collabDerivation";
+import { COLLAB_BRANCHES } from "@/lib/branches";
+
+// Collab case entry is the collab panel's job; admin/super-admin keep access for
+// the emergency entry modal on /admin/collab-settlement. No other role can reach it.
+const ALLOWED_ROLES = ["collab", "admin", "super-admin"];
+
+export async function POST(req) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    if (!ALLOWED_ROLES.includes(session.user.role)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    await connectDB();
+
+    const {
+      patient,
+      clinic,
+      clinicShare,
+      discount,
+      ourReceived,
+      clinicReceived,
+      procedure,
+      method,
+      paymentId,
+      receiptMode,
+      furtherMode,
+      date,
+      remarks,
+    } = await req.json();
+
+    if (!patient || !clinic || !procedure) {
+      return NextResponse.json(
+        { error: "Patient, clinic and procedure are required" },
+        { status: 400 },
+      );
+    }
+
+    // Main branches must never reach a collab collection — checked explicitly
+    // here as well as by the schema enum and the model's save-time validator.
+    if (!COLLAB_BRANCHES.includes(clinic)) {
+      return NextResponse.json(
+        { error: "Invalid clinic — collab cases can only be created for partner clinics" },
+        { status: 400 },
+      );
+    }
+
+    const patientDoc = await Patient.findById(patient)
+      .select("personal.name payments.totalAmount")
+      .lean();
+    if (!patientDoc) {
+      return NextResponse.json({ error: "Patient not found" }, { status: 404 });
+    }
+
+    // The package is read from the patient, never sent by the client and never
+    // written back — it is derived from counselling.finlpackage by Patient's hook.
+    const grossPackage = patientDoc.payments?.totalAmount || 0;
+    if (grossPackage <= 0) {
+      return NextResponse.json(
+        {
+          error:
+            "This patient has no final package set. Set the patient's package (counselling → final package) before creating a collab case.",
+        },
+        { status: 400 },
+      );
+    }
+
+    // A discount is applied on top of the patient's package rather than editing it, so the
+    // patient record stays the single source of truth. Everything downstream splits the NET.
+    const discountNum = Number(discount) || 0;
+    if (!Number.isFinite(discountNum) || discountNum < 0 || discountNum > grossPackage) {
+      return NextResponse.json(
+        { error: `Discount must be between 0 and the package total (${grossPackage})` },
+        { status: 400 },
+      );
+    }
+    const totalPackage = Math.round((grossPackage - discountNum) * 100) / 100;
+    if (totalPackage <= 0) {
+      return NextResponse.json(
+        { error: "Net chargeable amount after discount must be greater than zero" },
+        { status: 400 },
+      );
+    }
+
+    const clinicShareNum = Number(clinicShare);
+    const ourReceivedNum = Number(ourReceived) || 0;
+    const clinicReceivedNum = Number(clinicReceived) || 0;
+    if (!Number.isFinite(clinicShareNum) || clinicShareNum < 0) {
+      return NextResponse.json({ error: "Clinic share must be a non-negative number" }, { status: 400 });
+    }
+    // ourShare is always the remainder — it is never entered independently, so the
+    // ourShare + clinicShare === totalPackage invariant cannot be violated by input.
+    const ourShareNum = Math.round((totalPackage - clinicShareNum) * 100) / 100;
+    if (ourShareNum < 0) {
+      return NextResponse.json(
+        { error: `Clinic share (${clinicShareNum}) cannot exceed the package total (${totalPackage})` },
+        { status: 400 },
+      );
+    }
+    if (ourReceivedNum < 0 || clinicReceivedNum < 0) {
+      return NextResponse.json({ error: "Collected amounts cannot be negative" }, { status: 400 });
+    }
+    if (ourReceivedNum + clinicReceivedNum - totalPackage > 0.01) {
+      return NextResponse.json(
+        {
+          error: `Collected amount exceeds the package: ${ourReceivedNum} + ${clinicReceivedNum} = ${ourReceivedNum + clinicReceivedNum}, package is ${totalPackage}`,
+        },
+        { status: 400 },
+      );
+    }
+
+    const result = await createCollabCaseAtomic({
+      patientId: patient,
+      patientName: patientDoc.personal?.name,
+      clinic,
+      procedure,
+      totalPackage,
+      discount: discountNum,
+      ourShare: ourShareNum,
+      clinicShare: clinicShareNum,
+      ourReceived: ourReceivedNum,
+      clinicReceived: clinicReceivedNum,
+      method,
+      paymentId,
+      receiptMode,
+      furtherMode,
+      date,
+      remarks,
+      actor: {
+        name: session.user.name,
+        email: session.user.email,
+        branch: session.user.branch,
+      },
+    });
+
+    return NextResponse.json(
+      {
+        message: "Collab case created",
+        ...result.summary,
+        collabCase: result.collabCase,
+      },
+      { status: 201 },
+    );
+  } catch (error) {
+    console.error("Error creating collab case:", error);
+    // Surface the model's invariant messages verbatim — they name the exact
+    // numbers that disagreed, which is the whole point of rejecting loudly.
+    return NextResponse.json(
+      { error: error?.message || "Failed to create collab case" },
+      { status: 400 },
+    );
+  }
+}

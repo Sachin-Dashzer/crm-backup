@@ -1,0 +1,391 @@
+"use client";
+
+import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import AdminSidebar from "@/components/Sidebars/Sidebar";
+import { useToast } from "@/components/Toast";
+import {
+  Loader2,
+  Plus,
+  Search,
+  Store,
+  Mail,
+  Phone,
+  Hash,
+  Pencil,
+  ChevronRight,
+  Users,
+  Wallet,
+  CheckCircle2,
+  AlertTriangle,
+  X,
+} from "lucide-react";
+import MetricCard from "@/components/MetricCard";
+import { formatCurrency } from "@/lib/financeUI";
+import { ALL_BRANCHES } from "@/lib/branches";
+import VendorLedgerModal from "@/components/finance/VendorLedgerModal";
+
+// Vendors inside the admin shell. The same records the stocks section manages — /api/vendors
+// is the single source for both, so a vendor added here is immediately selectable as a
+// payable payee or receivable payer.
+//
+// Billed/Settled/Balance Due mirror exactly what the Liabilities page shows per expense category
+// — same underlying aggregation (buildPayableGroupedStages, here grouped by payee.refId instead
+// of expenseCategory via groupBy=vendor — see payableAggregation.js), same point-in-time balance
+// carried in from before the branch/date scope's `from`. Clicking a vendor drills into
+// VendorLedgerModal (bills -> settling transactions), the vendor-scoped counterpart of
+// DrillDownTable's documents mode.
+
+const initials = (name) =>
+  (name || "")
+    .trim()
+    .split(/\s+/)
+    .map((w) => w[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase() || "?";
+
+const AVATAR_GRADIENTS = [
+  "from-indigo-500 to-purple-600",
+  "from-sky-500 to-cyan-600",
+  "from-emerald-500 to-teal-600",
+  "from-amber-500 to-orange-600",
+  "from-rose-500 to-pink-600",
+  "from-violet-500 to-fuchsia-600",
+];
+const avatarGradient = (name) => {
+  let hash = 0;
+  for (const ch of name || "?") hash = (hash * 31 + ch.charCodeAt(0)) % AVATAR_GRADIENTS.length;
+  return AVATAR_GRADIENTS[hash];
+};
+
+export default function AdminVendorsPage() {
+  const toast = useToast();
+  const [vendors, setVendors] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [scope, setScope] = useState({ branch: "", dateFrom: "", dateTo: "" });
+  // Rollup keyed by vendor _id -> { opening, movement, settled, closing, count } | undefined
+  // (undefined = no payables at all for that vendor, distinct from a real all-zero row).
+  const [ledger, setLedger] = useState({});
+  const [ledgerLoading, setLedgerLoading] = useState(true);
+  const [openVendor, setOpenVendor] = useState(null); // vendor row the ledger modal is open for
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/vendors/get");
+      const d = await res.json();
+      if (res.ok && d.success !== false) setVendors(d.data || d.vendors || []);
+      else toast.error(d.message || "Failed to load vendors");
+    } catch {
+      toast.error("Failed to load vendors");
+    } finally {
+      setLoading(false);
+    }
+  }, [toast]);
+
+  const loadLedger = useCallback(async () => {
+    setLedgerLoading(true);
+    try {
+      const p = new URLSearchParams({ level: "1", groupBy: "vendor" });
+      if (scope.branch) p.set("branch", scope.branch);
+      if (scope.dateFrom) p.set("from", scope.dateFrom);
+      if (scope.dateTo) p.set("to", scope.dateTo);
+      const json = await fetch(`/api/payables/grouped?${p.toString()}`).then((r) => r.json());
+      const byId = {};
+      (json.rows || []).forEach((r) => {
+        byId[r.key] = r;
+      });
+      setLedger(byId);
+    } catch {
+      toast.error("Failed to load vendor balances");
+    } finally {
+      setLedgerLoading(false);
+    }
+  }, [scope, toast]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  useEffect(() => {
+    loadLedger();
+  }, [loadLedger]);
+
+  // Filtered on the client: the whole vendor list is small and already in memory, so a
+  // round-trip per keystroke would be slower than the filter itself.
+  const term = search.trim().toLowerCase();
+  const shown = term
+    ? vendors.filter((v) =>
+        [v.name, v.DealsIn, v.email, v.gstNumber, v.contact]
+          .filter(Boolean)
+          .some((f) => String(f).toLowerCase().includes(term)),
+      )
+    : vendors;
+
+  const stats = useMemo(() => {
+    const rows = Object.values(ledger);
+    const totalOutstanding = rows.reduce((s, r) => s + Math.max(r.closing, 0), 0);
+    const totalSettled = rows.reduce((s, r) => s + (r.settled || 0), 0);
+    const withDues = rows.filter((r) => r.closing > 0.5).length;
+    return { totalOutstanding, totalSettled, withDues };
+  }, [ledger]);
+
+  const hasFilters = !!(scope.branch || scope.dateFrom || scope.dateTo);
+  const asOfLabel = scope.dateTo
+    ? new Date(scope.dateTo).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })
+    : "today";
+
+  return (
+    <div className="flex min-h-screen bg-gray-50">
+      <AdminSidebar />
+      <main className="flex-1 overflow-auto">
+        <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Vendors</h1>
+              <p className="text-gray-500 mt-1 text-sm">
+                Suppliers you buy from, and what's owed to each one — balance as of {asOfLabel}.
+              </p>
+            </div>
+            <Link
+              href="/admin/vendors/create"
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-semibold text-sm shadow-sm shadow-indigo-200 transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              New Vendor
+            </Link>
+          </div>
+
+          {/* ── Summary strip ── */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <MetricCard
+              title="Total Vendors"
+              value={loading ? "…" : vendors.length}
+              icon={Users}
+              color="from-indigo-500 to-indigo-600"
+            />
+            <MetricCard
+              title="Outstanding Balance"
+              value={ledgerLoading ? "…" : formatCurrency(stats.totalOutstanding)}
+              icon={Wallet}
+              color="from-rose-500 to-rose-600"
+            />
+            <MetricCard
+              title="Vendors With Dues"
+              value={ledgerLoading ? "…" : stats.withDues}
+              icon={AlertTriangle}
+              color="from-amber-500 to-amber-600"
+            />
+          </div>
+
+          {/* ── Filters ── */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4">
+            <div className="flex flex-wrap items-center gap-2.5">
+              <div className="relative flex-1 min-w-55">
+                <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search by name, category, email, GST or phone…"
+                  className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-300"
+                />
+              </div>
+              <div className="h-8 w-px bg-gray-100 hidden sm:block" />
+              <select
+                value={scope.branch}
+                onChange={(e) => setScope((s) => ({ ...s, branch: e.target.value }))}
+                className="px-3 py-2 border border-gray-200 rounded-xl text-sm bg-white text-gray-700"
+              >
+                <option value="">All branches</option>
+                {ALL_BRANCHES.map((b) => (
+                  <option key={b} value={b}>{b}</option>
+                ))}
+              </select>
+              <input
+                type="date"
+                value={scope.dateFrom}
+                onChange={(e) => setScope((s) => ({ ...s, dateFrom: e.target.value }))}
+                className="px-3 py-2 border border-gray-200 rounded-xl text-sm text-gray-700"
+              />
+              <span className="text-xs text-gray-400">to</span>
+              <input
+                type="date"
+                value={scope.dateTo}
+                onChange={(e) => setScope((s) => ({ ...s, dateTo: e.target.value }))}
+                className="px-3 py-2 border border-gray-200 rounded-xl text-sm text-gray-700"
+              />
+              {hasFilters && (
+                <button
+                  onClick={() => setScope({ branch: "", dateFrom: "", dateTo: "" })}
+                  className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-600 hover:text-indigo-700 px-2"
+                >
+                  <X className="w-3.5 h-3.5" />
+                  Clear
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* ── Vendor table ── */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-gray-50/80 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-500 border-b border-gray-200">
+                    <th className="px-5 py-3.5">Vendor</th>
+                    <th className="px-4 py-3.5">Deals In</th>
+                    <th className="px-4 py-3.5">Contact</th>
+                    <th className="px-4 py-3.5 text-right">Billed</th>
+                    <th className="px-4 py-3.5 text-right">Settled</th>
+                    <th className="px-4 py-3.5 text-right">Balance Due</th>
+                    <th className="px-4 py-3.5" />
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {loading ? (
+                    [...Array(5)].map((_, i) => (
+                      <tr key={i}>
+                        {[...Array(7)].map((__, j) => (
+                          <td key={j} className="px-4 py-4">
+                            <div className="h-4 bg-gray-100 rounded animate-pulse" style={{ width: j === 0 ? "70%" : "50%" }} />
+                          </td>
+                        ))}
+                      </tr>
+                    ))
+                  ) : !shown.length ? (
+                    <tr>
+                      <td colSpan={7} className="px-4 py-16 text-center">
+                        <Store className="w-8 h-8 text-gray-200 mx-auto mb-2" />
+                        <p className="text-gray-500 font-medium">
+                          {vendors.length ? "No vendor matches that search." : "No vendors yet"}
+                        </p>
+                        {!vendors.length && (
+                          <p className="text-gray-400 text-xs mt-1">Add your first supplier to get started.</p>
+                        )}
+                      </td>
+                    </tr>
+                  ) : (
+                    shown.map((v) => {
+                      const bal = ledger[v._id];
+                      const pending = bal?.closing ?? 0;
+                      const isSettled = bal && pending <= 0.5 && bal.movement > 0;
+                      return (
+                        <tr
+                          key={v._id}
+                          onClick={() => setOpenVendor(v)}
+                          className="group hover:bg-indigo-50/40 cursor-pointer transition-colors"
+                        >
+                          <td className="px-5 py-4">
+                            <div className="flex items-center gap-3">
+                              <div
+                                className={`w-10 h-10 rounded-2xl bg-linear-to-br ${avatarGradient(v.name)} text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-sm`}
+                              >
+                                {initials(v.name)}
+                              </div>
+                              <div className="min-w-0">
+                                <p className="font-semibold text-gray-900 truncate">{v.name || "Unnamed"}</p>
+                                {v.gstNumber ? (
+                                  <p className="text-[11px] text-gray-400 flex items-center gap-1 truncate">
+                                    <Hash className="w-2.5 h-2.5" />
+                                    {v.gstNumber}
+                                  </p>
+                                ) : v.address ? (
+                                  <p className="text-[11px] text-gray-400 truncate max-w-xs">{v.address}</p>
+                                ) : null}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-4 py-4">
+                            {v.DealsIn ? (
+                              <span className="inline-flex px-2 py-1 rounded-lg text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-100">
+                                {v.DealsIn}
+                              </span>
+                            ) : (
+                              <span className="text-gray-300">—</span>
+                            )}
+                          </td>
+                          <td className="px-4 py-4 text-gray-500">
+                            <div className="space-y-0.5">
+                              {v.contact ? (
+                                <div className="flex items-center gap-1.5 text-xs">
+                                  <Phone className="w-3 h-3 text-gray-300" />
+                                  <span className="font-mono">{v.contact}</span>
+                                </div>
+                              ) : null}
+                              {v.email ? (
+                                <div className="flex items-center gap-1.5 text-xs">
+                                  <Mail className="w-3 h-3 text-gray-300" />
+                                  <span className="truncate max-w-45">{v.email}</span>
+                                </div>
+                              ) : null}
+                              {!v.contact && !v.email && <span className="text-gray-300">—</span>}
+                            </div>
+                          </td>
+                          <td className="px-4 py-4 text-right tabular-nums text-gray-600">
+                            {ledgerLoading ? "…" : bal ? formatCurrency(bal.movement) : <span className="text-gray-300">—</span>}
+                          </td>
+                          <td className="px-4 py-4 text-right tabular-nums text-emerald-600 font-medium">
+                            {ledgerLoading ? "…" : bal ? formatCurrency(bal.settled) : <span className="text-gray-300">—</span>}
+                          </td>
+                          <td className="px-4 py-4 text-right">
+                            {ledgerLoading ? (
+                              <span className="text-gray-400">…</span>
+                            ) : !bal ? (
+                              <span className="text-gray-300">—</span>
+                            ) : isSettled ? (
+                              <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-600">
+                                <CheckCircle2 className="w-3.5 h-3.5" /> Settled
+                              </span>
+                            ) : (
+                              <div>
+                                <p className="tabular-nums font-bold text-rose-600">{formatCurrency(pending)}</p>
+                                {bal.opening > 0.5 && (
+                                  <p className="text-[10px] text-gray-400">incl. {formatCurrency(bal.opening)} opening</p>
+                                )}
+                              </div>
+                            )}
+                          </td>
+                          <td className="px-4 py-4 text-right" onClick={(e) => e.stopPropagation()}>
+                            <div className="flex items-center justify-end gap-1 opacity-70 group-hover:opacity-100">
+                              <Link
+                                href={`/stocks/vendors/edit/${v._id}`}
+                                title="Edit vendor"
+                                className="p-1.5 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 hover:text-gray-700"
+                              >
+                                <Pencil className="w-3.5 h-3.5" />
+                              </Link>
+                              <button
+                                onClick={() => setOpenVendor(v)}
+                                title="View ledger"
+                                className="p-1.5 rounded-lg border border-gray-200 text-indigo-600 hover:bg-indigo-50"
+                              >
+                                <ChevronRight className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {!loading && vendors.length > 0 && (
+            <p className="text-[11px] text-gray-400 flex items-center gap-1.5">
+              <Store className="w-3 h-3" />
+              {shown.length} of {vendors.length} vendor{vendors.length === 1 ? "" : "s"} · click a row to see its full bill history
+            </p>
+          )}
+        </div>
+      </main>
+
+      {openVendor && (
+        <VendorLedgerModal vendor={openVendor} scope={scope} onClose={() => setOpenVendor(null)} />
+      )}
+    </div>
+  );
+}

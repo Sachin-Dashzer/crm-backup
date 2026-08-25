@@ -1,0 +1,103 @@
+import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import connectDB from "@/lib/db";
+import Transactions from "@/models/Transactions";
+import { resolveBranchFilter } from "@/lib/branches";
+import { checkPeriodLock } from "@/lib/periodLock";
+import { buildCashFlowGroupedStages, buildCashFlowLeafMatch } from "@/lib/cashFlowAggregation";
+
+const ALLOWED_ROLES = ["admin", "super-admin"];
+
+// Cash-basis Receipts drill-down (mirrors /api/payables/grouped's shape so DrillDownTable can
+// reuse its existing "grouped" mode unmodified — see src/lib/cashFlowAggregation.js for the
+// inclusion rule and the head/sub bucketing this route is a thin wrapper over):
+//   level=1 -> one row per Receipt Head (Transplant/Services/Medicine/Receivable Settlement/Other)
+//   level=2 -> one row per Account (furtherMode) or Receipt Mode (receiptMode), via ?groupBy=
+//   level=3 -> the actual transactions for a selected head (+ sub), with a running balance
+export async function GET(request) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!ALLOWED_ROLES.includes(session.user.role)) {
+      return NextResponse.json({ error: "Forbidden — admin access required" }, { status: 403 });
+    }
+
+    await connectDB();
+
+    const { searchParams } = new URL(request.url);
+    const level = Math.min(3, Math.max(1, parseInt(searchParams.get("level") || "1")));
+    // Param names match the shared DrillDownTable "grouped" fetch pattern (category/subType),
+    // the same names /api/payables/grouped and /api/receivables/grouped already use.
+    const head = searchParams.get("category") || "";
+    const sub = searchParams.get("subType") || "";
+    const groupBy = searchParams.get("groupBy") === "mode" ? "mode" : "account";
+    const branch = searchParams.get("branch") || "";
+    const from = searchParams.get("from") || "";
+    const to = searchParams.get("to") || "";
+    const page = Math.max(1, parseInt(searchParams.get("page") || "1"));
+    const limit = Math.min(200, Math.max(1, parseInt(searchParams.get("limit") || "50")));
+
+    const branchFilter = resolveBranchFilter(session, branch);
+
+    if (level < 3) {
+      const rows = await Transactions.aggregate(
+        buildCashFlowGroupedStages({ level, costType: "Revenue", head, groupBy, branchFilter, from, to }),
+      );
+      return NextResponse.json({ success: true, rows });
+    }
+
+    if (!head) {
+      return NextResponse.json({ error: "head is required at level 3" }, { status: 400 });
+    }
+
+    const match = buildCashFlowLeafMatch({ costType: "Revenue", head, sub, groupBy, branchFilter, from, to });
+
+    const [rows, total] = await Promise.all([
+      Transactions.aggregate([
+        { $match: match },
+        { $sort: { date: 1, _id: 1 } },
+        {
+          $setWindowFields: {
+            sortBy: { date: 1, _id: 1 },
+            output: {
+              runningBalance: { $sum: "$amount", window: { documents: ["unbounded", "current"] } },
+            },
+          },
+        },
+        { $sort: { date: -1, _id: -1 } },
+        { $skip: (page - 1) * limit },
+        { $limit: limit },
+        {
+          $project: {
+            date: 1,
+            narration: { $ifNull: [{ $ifNull: ["$remarks", "$patientName"] }, "$procedure"] },
+            amount: 1,
+            method: 1,
+            account: "$furtherMode",
+            receiptMode: 1,
+            runningBalance: 1,
+            branch: 1,
+            transactionCategory: 1,
+            isSettlement: 1,
+          },
+        },
+      ]),
+      Transactions.countDocuments(match),
+    ]);
+
+    // Same lock-badge treatment the payables/receivables leaf already gets — bounded by
+    // `limit` (<=200), so one lock check per row per page is cheap.
+    const rowsWithLock = await Promise.all(
+      rows.map(async (r) => ({
+        ...r,
+        lockReason: await checkPeriodLock({ furtherMode: r.account, date: r.date }),
+      })),
+    );
+
+    return NextResponse.json({ success: true, rows: rowsWithLock, total, page, limit });
+  } catch (error) {
+    console.error("Error building grouped receipts:", error);
+    return NextResponse.json({ error: "Failed to load grouped receipts" }, { status: 500 });
+  }
+}
