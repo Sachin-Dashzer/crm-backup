@@ -26,6 +26,7 @@ const LIST_PROJECTION = [
   "counselling.techniqueSuggested",
   "counselling.finlpackage",
   "counselling.readyForSurgery",
+  "payments.totalAmount",
   "payments.amountReceived",
   "payments.pendingAmount",
   "surgery.surgeryDate",

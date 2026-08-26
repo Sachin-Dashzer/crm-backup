@@ -12,10 +12,10 @@ import { Building2, Loader2, TrendingDown, TrendingUp, CheckCircle2 } from "luci
 // admin emergency-entry modal on /admin/collab-settlement. Do not fork this per caller —
 // the whole point is that both entry points feed the same formula.
 //
-// The payment-source selector is a UI SHORTCUT that pre-fills ourReceived/clinicReceived.
-// It is NOT an input to the derivation: whatever the two numbers end up as, they go
-// through deriveClinicSettlement() exactly the same way in all three states. "Split"
-// simply stops auto-filling and lets the user type both.
+// The payment-source selector is a UI SHORTCUT that pre-fills ourReceived/clinicReceived —
+// it is NOT a lock. Both fields are always editable in every state, so a part payment
+// ("patient paid us 5,000 of a 50,000 package") can be entered directly; the pre-fill only
+// stops once the user types a value of their own (see amountsTouched below).
 
 const PROCEDURE_OPTIONS = [
   "Sapphire FUE",
@@ -37,7 +37,7 @@ const METHOD_OPTIONS = REVENUE_METHODS;
 const PAYMENT_SOURCES = [
   { id: "us", label: "Patient paid us" },
   { id: "clinic", label: "Patient paid the clinic" },
-  { id: "split", label: "Split" },
+  { id: "split", label: "Split between both" },
 ];
 
 const formatCurrency = (amount) => `₹${Number(amount || 0).toLocaleString("en-IN")}`;
@@ -65,6 +65,7 @@ export default function CollabCaseForm({
   const [paymentSource, setPaymentSource] = useState("us");
   const [ourReceived, setOurReceived] = useState(0);
   const [clinicReceived, setClinicReceived] = useState(0);
+  const [amountsTouched, setAmountsTouched] = useState(false);
   const [method, setMethod] = useState("cash");
   const [paymentId, setPaymentId] = useState("");
   const [receiptMode, setReceiptMode] = useState("");
@@ -120,8 +121,10 @@ export default function CollabCaseForm({
   const ourShare = Math.round((totalPackage - (Number(clinicShare) || 0)) * 100) / 100;
   const discountInvalid = discountNum < 0 || discountNum > grossPackage;
 
-  // The selector only PRE-FILLS the two collected amounts. Split leaves them alone.
+  // The selector only PRE-FILLS the two collected amounts, and only until the user types a
+  // value of their own — after that, the two fields are the source of truth, not the selector.
   useEffect(() => {
+    if (amountsTouched) return;
     if (!totalPackage) return;
     if (paymentSource === "us") {
       setOurReceived(totalPackage);
@@ -130,7 +133,12 @@ export default function CollabCaseForm({
       setOurReceived(0);
       setClinicReceived(totalPackage);
     }
-  }, [paymentSource, totalPackage]);
+  }, [paymentSource, totalPackage, amountsTouched]);
+
+  // A new patient means a new package — let the selector pre-fill again.
+  useEffect(() => {
+    setAmountsTouched(false);
+  }, [patientId]);
 
   // Live preview through the SAME function the server uses.
   const settlement = deriveClinicSettlement({
@@ -144,10 +152,6 @@ export default function CollabCaseForm({
 
   const formatPatientOption = (p) =>
     `${p.personal?.name || "N/A"} — Package: ${formatCurrency(p?.payments?.totalAmount)}`;
-
-  // What the clinic keeps out of what it collected — mirrors the min() in
-  // createCollabCaseAtomic, so the preview states exactly what will be booked.
-  const clinicShareExpensed = Math.min(Number(clinicReceived) || 0, Number(clinicShare) || 0);
 
   // Same rule every other money-movement form in this codebase applies (see SettleModal) —
   // cash is the only method with no independently-verifiable trail, everything else needs one.
@@ -356,8 +360,8 @@ export default function CollabCaseForm({
         </div>
       </div>
 
-      {/* Split reveals both as editable; the other two states show them read-only
-          so the user can still see exactly what will be recorded. */}
+      {/* The selector above only pre-fills these two — they are always editable, because
+          they are the actual revenue figures now, not a decorative split of the package. */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -367,11 +371,11 @@ export default function CollabCaseForm({
             type="number"
             min="0"
             value={ourReceived}
-            onChange={(e) => setOurReceived(e.target.value)}
-            readOnly={paymentSource !== "split"}
-            className={`w-full px-3 py-2 border border-gray-300 rounded-lg ${
-              paymentSource !== "split" ? "bg-gray-50 text-gray-500" : ""
-            }`}
+            onChange={(e) => {
+              setOurReceived(e.target.value);
+              setAmountsTouched(true);
+            }}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
           />
         </div>
         <div>
@@ -382,11 +386,11 @@ export default function CollabCaseForm({
             type="number"
             min="0"
             value={clinicReceived}
-            onChange={(e) => setClinicReceived(e.target.value)}
-            readOnly={paymentSource !== "split"}
-            className={`w-full px-3 py-2 border border-gray-300 rounded-lg ${
-              paymentSource !== "split" ? "bg-gray-50 text-gray-500" : ""
-            }`}
+            onChange={(e) => {
+              setClinicReceived(e.target.value);
+              setAmountsTouched(true);
+            }}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
           />
         </div>
       </div>
@@ -429,23 +433,35 @@ export default function CollabCaseForm({
             clinicOwesUs = collectedByClinic {formatCurrency(clinicReceived)} − clinicShare{" "}
             {formatCurrency(clinicShare)} = {formatCurrency(settlement.clinicOwesUs)}
           </p>
-          <p className="text-[11px] text-gray-600 mt-1">
-            Revenue is booked gross: {formatCurrency(totalPackage)} revenue
-            {clinicShareExpensed > 0 && (
-              <>
-                , plus a {formatCurrency(clinicShareExpensed)} clinic-share expense for what{" "}
-                {clinic || "the clinic"} kept out of its own collections
-              </>
-            )}
-            , net margin {formatCurrency(ourShare)}.
-          </p>
-          {clinicShareExpensed < (Number(clinicShare) || 0) && (
-            <p className="text-[11px] text-gray-500 mt-1">
-              The remaining{" "}
-              {formatCurrency((Number(clinicShare) || 0) - clinicShareExpensed)} of the clinic&apos;s
-              share is still owed to them and is expensed when it is actually paid.
+          <div className="text-[11px] text-gray-600 mt-2 space-y-0.5">
+            <p className="font-semibold text-gray-800">
+              Revenue booked now: {formatCurrency(totalCollected)}
             </p>
-          )}
+            {Number(ourReceived) > 0 && (
+              <p>
+                • {formatCurrency(ourReceived)} collected by us — cash in, added to the
+                patient&apos;s paid total
+              </p>
+            )}
+            {Number(clinicReceived) > 0 && (
+              <p>
+                • {formatCurrency(clinicReceived)} collected by {clinic || "the clinic"} —
+                booked as revenue, receivable from them
+              </p>
+            )}
+            {totalPackage - totalCollected > 0.01 && (
+              <p className="font-semibold text-amber-700">
+                Still owed by the patient: {formatCurrency(totalPackage - totalCollected)} (not
+                booked as revenue yet)
+              </p>
+            )}
+            {Number(clinicShare) > 0 && (
+              <p>
+                Clinic share: {formatCurrency(clinicShare)} — payable created in full, expensed
+                as it&apos;s settled
+              </p>
+            )}
+          </div>
         </div>
       )}
 

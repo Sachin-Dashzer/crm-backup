@@ -83,22 +83,16 @@ const REVENUE_CATEGORIES = ["TRANSPLANT", "SERVICE", "MEDICINE"];
 // Mirrors UNTRACKED_FURTHER_MODE in src/app/api/transactions/get-all/route.js.
 const UNTRACKED_FURTHER_MODE = "__UNTRACKED__";
 const FILTER_KEYS = ["branch", "dateFrom", "dateTo", "paymentMethod", "procedure", "furtherMode", "expenseCategory", "expenseType", "entryType"];
-// Default window: the current calendar month, matching every other admin list. This was
-// today-only, which kept the query small but meant the page opened showing almost nothing and
-// staff had to widen the range by hand on every visit. Month-to-date is still a bounded query —
-// what it must never become is unbounded.
-const getMonthStartDate = () => {
-  const d = new Date();
-  return new Date(d.getFullYear(), d.getMonth(), 1).toLocaleDateString("en-CA");
-};
-
+// Default window: today only, matching every dashboard page. The date filter (including the
+// "Month" quick-filter button) still widens this on demand — this only controls what the page
+// opens showing before the user touches a filter.
 const defaultFilters = () => ({
-  branch: "", dateFrom: getMonthStartDate(), dateTo: getTodayDate(), paymentMethod: "", procedure: "",
+  branch: "", dateFrom: getTodayDate(), dateTo: getTodayDate(), paymentMethod: "", procedure: "",
   furtherMode: "", expenseCategory: "", expenseType: "", entryType: "",
 });
 const filtersFromParams = (params) => ({
   branch:        params.get("branch") || "",
-  dateFrom:      params.get("dateFrom") || getMonthStartDate(),
+  dateFrom:      params.get("dateFrom") || getTodayDate(),
   dateTo:        params.get("dateTo") || getTodayDate(),
   paymentMethod: params.get("paymentMethod") || "",
   procedure:     params.get("procedure") || "",
@@ -1064,9 +1058,9 @@ function AllTransactionsPageInner({ Sidebar }) {
   const hasActiveFilters = appliedFilters.branch || appliedFilters.paymentMethod || appliedFilters.procedure ||
     appliedFilters.furtherMode || appliedFilters.expenseCategory || appliedFilters.expenseType ||
     appliedFilters.entryType || tableSearch ||
-    // Compared against the DEFAULT window (month-to-date), not against today — otherwise the page
-    // would claim a filter is active the moment it loaded with its own defaults.
-    appliedFilters.dateFrom !== getMonthStartDate() || appliedFilters.dateTo !== getTodayDate();
+    // Compared against the DEFAULT window (today), not hardcoded — otherwise the page would
+    // claim a filter is active the moment it loaded with its own defaults.
+    appliedFilters.dateFrom !== getTodayDate() || appliedFilters.dateTo !== getTodayDate();
 
   const exportToExcel = async () => {
     try {
