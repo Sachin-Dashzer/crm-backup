@@ -360,7 +360,7 @@ export default function CollabSettlementPage() {
                               onClick={() => setCollectionModalCase(c)}
                               className="px-2.5 py-1 bg-indigo-50 text-indigo-700 rounded-lg text-xs font-semibold hover:bg-indigo-100"
                             >
-                              Record Clinic Collection
+                              Record Collection
                             </button>
                           </div>
                         )}
@@ -460,7 +460,7 @@ export default function CollabSettlementPage() {
                                     onClick={() => setCollectionModalCase(c)}
                                     className="px-2.5 py-1 bg-indigo-50 text-indigo-700 rounded-lg text-xs font-semibold hover:bg-indigo-100"
                                   >
-                                    Record Clinic Collection
+                                    Record Collection
                                   </button>
                                 )}
                               </td>
@@ -677,18 +677,27 @@ function CaseHistory({ collabCase }) {
 }
 
 function RecordCollectionModal({ collabCase, onClose, onSuccess, toast }) {
+  // Which side actually took the money — the same split collabDerivation.js's
+  // createCollectionTransaction makes for the amounts entered at case creation. Defaults to
+  // CLINIC, the original and still most common case: the patient paying the clinic directly is
+  // why this modal existed in the first place.
+  const [collectedBy, setCollectedBy] = useState("CLINIC");
   const [amount, setAmount] = useState("");
   // A waiver granted at the time of this collection — reduces the patient's outstanding the
   // same as a payment would, but is never money collected (see the model comment on
   // clinicCollections.discount).
   const [discount, setDiscount] = useState("");
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
-  const [mode, setMode] = useState("cash");
+  // Sent as `mode` (collectedBy:"CLINIC" — descriptive only) or `method` (collectedBy:"US" — the
+  // real payment method) depending on which side is selected; one field covers both since they
+  // draw from the same REVENUE_METHODS list.
+  const [paymentMethod, setPaymentMethod] = useState("cash");
   const [reference, setReference] = useState("");
-  // Descriptive routing detail — which instrument the money moved through and which account it
-  // landed in on the CLINIC's side. Never touches our own accounts/books — but it DOES now book
-  // real revenue (a paid_to_external Transaction, see collabDerivation.js); this is purely for a
-  // fuller paper trail of how the clinic itself received it.
+  // collectedBy:"CLINIC" — descriptive routing detail only (which instrument, which account, on
+  // the CLINIC's side); never touches our own accounts/books, though it DOES book real revenue
+  // (a paid_to_external Transaction, see collabDerivation.js). collectedBy:"US" — this is a real
+  // cash-in, exactly like a direct payment, so these fields route it into one of OUR OWN
+  // accounts the normal way.
   const [receiptMode, setReceiptMode] = useState("");
   const [furtherMode, setFurtherMode] = useState("");
   const [note, setNote] = useState("");
@@ -712,7 +721,7 @@ function RecordCollectionModal({ collabCase, onClose, onSuccess, toast }) {
     }
     // Same requirement as every other payment-entry form in the app — cash is the only method
     // with no independently-verifiable trail, everything else needs one.
-    if (mode !== "cash" && !reference.trim()) {
+    if (paymentMethod !== "cash" && !reference.trim()) {
       toast.error("Enter the transaction ID / reference for this collection");
       return;
     }
@@ -721,7 +730,19 @@ function RecordCollectionModal({ collabCase, onClose, onSuccess, toast }) {
       const res = await fetch(`/api/collab-settlement/cases/${collabCase._id}/collection`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount, discount, date, mode, reference, receiptMode, furtherMode, note, allowOverpayment }),
+        body: JSON.stringify({
+          amount,
+          discount,
+          date,
+          collectedBy,
+          method: collectedBy === "US" ? paymentMethod : undefined,
+          mode: collectedBy === "CLINIC" ? paymentMethod : undefined,
+          reference,
+          receiptMode,
+          furtherMode,
+          note,
+          allowOverpayment,
+        }),
       });
       const data = await res.json();
       if (res.ok) {
@@ -742,20 +763,58 @@ function RecordCollectionModal({ collabCase, onClose, onSuccess, toast }) {
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full">
         <div className="flex items-center justify-between p-5 border-b border-gray-100">
-          <h3 className="text-lg font-bold text-gray-900">Record Clinic Collection</h3>
+          <h3 className="text-lg font-bold text-gray-900">Record Collection</h3>
           <button onClick={onClose} className="p-1.5 hover:bg-gray-100 rounded-lg">
             <X className="w-5 h-5 text-gray-500" />
           </button>
         </div>
         <div className="p-5 space-y-4">
-          <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-3 text-sm text-indigo-800">
-            This records money{" "}
-            <strong>
-              {collabCase.patientName || "the patient"} paid directly to {collabCase.clinic}
-            </strong>{" "}
-            — not money paid to us. It still books revenue right now, the same as any other collab
-            collection — it just never lands in one of our own cash/bank accounts.
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">Who collected this?</label>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setCollectedBy("CLINIC")}
+                className={`px-3 py-2 rounded-lg text-sm font-semibold border ${
+                  collectedBy === "CLINIC"
+                    ? "bg-indigo-600 text-white border-indigo-600"
+                    : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                }`}
+              >
+                {collabCase.clinic}
+              </button>
+              <button
+                type="button"
+                onClick={() => setCollectedBy("US")}
+                className={`px-3 py-2 rounded-lg text-sm font-semibold border ${
+                  collectedBy === "US"
+                    ? "bg-indigo-600 text-white border-indigo-600"
+                    : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                }`}
+              >
+                Us directly
+              </button>
+            </div>
           </div>
+
+          {collectedBy === "CLINIC" ? (
+            <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-3 text-sm text-indigo-800">
+              This records money{" "}
+              <strong>
+                {collabCase.patientName || "the patient"} paid directly to {collabCase.clinic}
+              </strong>{" "}
+              — not money paid to us. It still books revenue right now, the same as any other collab
+              collection — it just never lands in one of our own cash/bank accounts.
+            </div>
+          ) : (
+            <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 text-sm text-emerald-800">
+              This records money{" "}
+              <strong>{collabCase.patientName || "the patient"} paid US directly</strong> — an
+              ordinary payment, exactly like a direct transplant/service payment. It lands in one of
+              our own accounts below and updates the patient&apos;s own payment record.
+            </div>
+          )}
+
           <div className="bg-gray-50 rounded-lg p-3 text-sm">
             <p className="text-gray-500">
               Patient outstanding:{" "}
@@ -767,7 +826,8 @@ function RecordCollectionModal({ collabCase, onClose, onSuccess, toast }) {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              Amount {collabCase.patientName || "patient"} paid {collabCase.clinic} (₹) *
+              Amount {collabCase.patientName || "patient"} paid{" "}
+              {collectedBy === "US" ? "us directly" : collabCase.clinic} (₹) *
             </label>
             <input
               type="number"
@@ -817,8 +877,8 @@ function RecordCollectionModal({ collabCase, onClose, onSuccess, toast }) {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Payment Method</label>
               <select
-                value={mode}
-                onChange={(e) => setMode(e.target.value)}
+                value={paymentMethod}
+                onChange={(e) => setPaymentMethod(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg"
               >
                 {[...REVENUE_METHODS, { value: "other", label: "Other" }].map((m) => (
@@ -835,7 +895,7 @@ function RecordCollectionModal({ collabCase, onClose, onSuccess, toast }) {
               costType="Revenue"
               branch={collabCase.clinic}
               transactionCategory="TRANSPLANT"
-              method={mode}
+              method={paymentMethod}
               receiptMode={receiptMode}
               furtherMode={furtherMode}
               onChange={(patch) => {
@@ -844,17 +904,22 @@ function RecordCollectionModal({ collabCase, onClose, onSuccess, toast }) {
               }}
             />
           </div>
+          {collectedBy === "US" && (
+            <p className="text-xs text-gray-400 -mt-2">
+              This is where the money actually lands — the same account fields any direct payment uses.
+            </p>
+          )}
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              Transaction ID / Reference {mode !== "cash" && <span className="text-red-500">*</span>}
+              Transaction ID / Reference {paymentMethod !== "cash" && <span className="text-red-500">*</span>}
             </label>
             <input
               type="text"
               value={reference}
               onChange={(e) => setReference(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-              placeholder={mode === "cash" ? "Optional" : "Required for non-cash payments"}
+              placeholder={paymentMethod === "cash" ? "Optional" : "Required for non-cash payments"}
             />
           </div>
 
