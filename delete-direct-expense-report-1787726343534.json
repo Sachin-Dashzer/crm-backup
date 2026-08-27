@@ -1,0 +1,518 @@
+{
+  "range": {
+    "from": "2026-08-13",
+    "to": "2026-08-26"
+  },
+  "branch": null,
+  "categories": [
+    "Marketing",
+    "Welfare Expenses",
+    "Office Exp.",
+    "Travelling Expenses",
+    "Hotel Charges",
+    "Telephone Expenses",
+    "Bank Charges",
+    "Forex Conversion and Fluctuation Charges",
+    "Asset Based Payment",
+    "Drawings",
+    "Patient Related Expenses"
+  ],
+  "totalDeletedAmount": 276223.28,
+  "deleted": [
+    {
+      "id": "6a7dc78ac5bd72ff0a1fd172",
+      "date": "2026-08-13",
+      "expense": "Office Exp.",
+      "amount": 120
+    },
+    {
+      "id": "6a7d76864be0451fd77f3220",
+      "date": "2026-08-13",
+      "expense": "Office Exp.",
+      "amount": 690
+    },
+    {
+      "id": "6a7d6f24a2adb9f000ce9b9c",
+      "date": "2026-08-13",
+      "expense": "Office Exp.",
+      "amount": 7000
+    },
+    {
+      "id": "6a7d6b3a9c1eca94a896dc8b",
+      "date": "2026-08-13",
+      "expense": "Office Exp.",
+      "amount": 2500
+    },
+    {
+      "id": "6a7ee2203a94a7309f5a4987",
+      "date": "2026-08-14",
+      "expense": "Office Exp.",
+      "amount": 861
+    },
+    {
+      "id": "6a7ec110e6984f9ec7f54cc5",
+      "date": "2026-08-14",
+      "expense": "Office Exp.",
+      "amount": 100
+    },
+    {
+      "id": "6a7ec097e6984f9ec7f54c0d",
+      "date": "2026-08-14",
+      "expense": "Office Exp.",
+      "amount": 500
+    },
+    {
+      "id": "6a8026505ce25090ca5dffa0",
+      "date": "2026-08-15",
+      "expense": "Office Exp.",
+      "amount": 300
+    },
+    {
+      "id": "6a801effbcb16216eff487d2",
+      "date": "2026-08-15",
+      "expense": "Travelling Expenses",
+      "amount": 1024
+    },
+    {
+      "id": "6a7ff994287a7fb4b2c3ce9a",
+      "date": "2026-08-15",
+      "expense": "Office Exp.",
+      "amount": 400
+    },
+    {
+      "id": "6a81777566acab4c173f7b74",
+      "date": "2026-08-16",
+      "expense": "Office Exp.",
+      "amount": 300
+    },
+    {
+      "id": "6a81774e66acab4c173f7b2f",
+      "date": "2026-08-16",
+      "expense": "Office Exp.",
+      "amount": 30
+    },
+    {
+      "id": "6a81770ebf44326aecc3ae51",
+      "date": "2026-08-16",
+      "expense": "Office Exp.",
+      "amount": 1200
+    },
+    {
+      "id": "6a82f4e62169e200f635c198",
+      "date": "2026-08-17",
+      "expense": "Office Exp.",
+      "amount": 10000
+    },
+    {
+      "id": "6a82bc15ec3b53e87acfa674",
+      "date": "2026-08-17",
+      "expense": "Office Exp.",
+      "amount": 3016
+    },
+    {
+      "id": "6a84228b65e3d7d19a368d56",
+      "date": "2026-08-18",
+      "expense": "Office Exp.",
+      "amount": 100
+    },
+    {
+      "id": "6a840d9c0eaf3b1b97ade383",
+      "date": "2026-08-18",
+      "expense": "Travelling Expenses",
+      "amount": 694
+    },
+    {
+      "id": "6a86a872de115117d6eb82ed",
+      "date": "2026-08-19",
+      "expense": "Office Exp.",
+      "amount": 1500
+    },
+    {
+      "id": "6a86a807f9f6a2bf87f47e93",
+      "date": "2026-08-19",
+      "expense": "Drawings",
+      "amount": 6500
+    },
+    {
+      "id": "6a86a6cede115117d6eb82ec",
+      "date": "2026-08-19",
+      "expense": "Office Exp.",
+      "amount": 3700
+    },
+    {
+      "id": "6a86a5d0525b41719f5248d1",
+      "date": "2026-08-19",
+      "expense": "Office Exp.",
+      "amount": 500
+    },
+    {
+      "id": "6a86a5877b71750dbba99bf1",
+      "date": "2026-08-19",
+      "expense": "Welfare Expenses",
+      "amount": 460
+    },
+    {
+      "id": "6a86a326cc69ba7f13fa2074",
+      "date": "2026-08-19",
+      "expense": "Bank Charges",
+      "amount": 100.45
+    },
+    {
+      "id": "6a86a260cc69ba7f13fa2073",
+      "date": "2026-08-19",
+      "expense": "Marketing",
+      "amount": 3828.19
+    },
+    {
+      "id": "6a86a212c9e775967ae662c7",
+      "date": "2026-08-19",
+      "expense": "Marketing",
+      "amount": 30000
+    },
+    {
+      "id": "6a869f35c9e775967ae662c6",
+      "date": "2026-08-19",
+      "expense": "Telephone Expenses",
+      "amount": 942.82
+    },
+    {
+      "id": "6a869eefc9e775967ae662c5",
+      "date": "2026-08-19",
+      "expense": "Telephone Expenses",
+      "amount": 5083
+    },
+    {
+      "id": "6a869dd6cc69ba7f13fa2072",
+      "date": "2026-08-19",
+      "expense": "Marketing",
+      "amount": 141011.55
+    },
+    {
+      "id": "6a869d908bcddfc93d9f3875",
+      "date": "2026-08-19",
+      "expense": "Marketing",
+      "amount": 4517.27
+    },
+    {
+      "id": "6a869c90cc69ba7f13fa2071",
+      "date": "2026-08-19",
+      "expense": "Drawings",
+      "amount": 2018
+    },
+    {
+      "id": "6a8594c4ddc2b3a03246bc47",
+      "date": "2026-08-19",
+      "expense": "Office Exp.",
+      "amount": 20
+    },
+    {
+      "id": "6a85932e6bc698aa6e32eebe",
+      "date": "2026-08-19",
+      "expense": "Office Exp.",
+      "amount": 100
+    },
+    {
+      "id": "6a85931463d7f69f94bc1e42",
+      "date": "2026-08-19",
+      "expense": "Telephone Expenses",
+      "amount": 100
+    },
+    {
+      "id": "6a8592d063d7f69f94bc1e2f",
+      "date": "2026-08-19",
+      "expense": "Patient Related Expenses",
+      "amount": 120
+    },
+    {
+      "id": "6a858929a228c55a44e6adbf",
+      "date": "2026-08-19",
+      "expense": "Office Exp.",
+      "amount": 451
+    },
+    {
+      "id": "6a858901a228c55a44e6adbe",
+      "date": "2026-08-19",
+      "expense": "Office Exp.",
+      "amount": 50
+    },
+    {
+      "id": "6a8588e9f40c33dcc0dc0487",
+      "date": "2026-08-19",
+      "expense": "Office Exp.",
+      "amount": 250
+    },
+    {
+      "id": "6a8588c7f40c33dcc0dc0486",
+      "date": "2026-08-19",
+      "expense": "Office Exp.",
+      "amount": 380
+    },
+    {
+      "id": "6a858892a228c55a44e6adbd",
+      "date": "2026-08-19",
+      "expense": "Office Exp.",
+      "amount": 1830
+    },
+    {
+      "id": "6a86f928200df7b92ae373a1",
+      "date": "2026-08-20",
+      "expense": "Welfare Expenses",
+      "amount": 290
+    },
+    {
+      "id": "6a86dd4d65a1f42e18e41968",
+      "date": "2026-08-20",
+      "expense": "Welfare Expenses",
+      "amount": 130
+    },
+    {
+      "id": "6a86dcb265a1f42e18e41966",
+      "date": "2026-08-20",
+      "expense": "Patient Related Expenses",
+      "amount": 120
+    },
+    {
+      "id": "6a86ce51aaefc5fc16003ebe",
+      "date": "2026-08-20",
+      "expense": "Office Exp.",
+      "amount": 450
+    },
+    {
+      "id": "6a8850c4e6ffdc68892f1232",
+      "date": "2026-08-21",
+      "expense": "Welfare Expenses",
+      "amount": 500
+    },
+    {
+      "id": "6a884e63972ced4b98f9f289",
+      "date": "2026-08-21",
+      "expense": "Office Exp.",
+      "amount": 890
+    },
+    {
+      "id": "6a8843dde6ffdc68892f0e14",
+      "date": "2026-08-21",
+      "expense": "Forex Conversion and Fluctuation Charges",
+      "amount": 5546
+    },
+    {
+      "id": "6a8843710fcfc10605f2f498",
+      "date": "2026-08-21",
+      "expense": "Office Exp.",
+      "amount": 350
+    },
+    {
+      "id": "6a8829841896f4480d6150ae",
+      "date": "2026-08-21",
+      "expense": "Welfare Expenses",
+      "amount": 30
+    },
+    {
+      "id": "6a8827581896f4480d6150aa",
+      "date": "2026-08-21",
+      "expense": "Patient Related Expenses",
+      "amount": 240
+    },
+    {
+      "id": "6a89ab62e0fc91f12a9ec0a1",
+      "date": "2026-08-22",
+      "expense": "Office Exp.",
+      "amount": 120
+    },
+    {
+      "id": "6a897f01e0b0ea74d1b4db4c",
+      "date": "2026-08-22",
+      "expense": "Patient Related Expenses",
+      "amount": 120
+    },
+    {
+      "id": "6a897acc433d2e02da7ac33e",
+      "date": "2026-08-22",
+      "expense": "Welfare Expenses",
+      "amount": 560
+    },
+    {
+      "id": "6a897a79433d2e02da7ac33d",
+      "date": "2026-08-22",
+      "expense": "Telephone Expenses",
+      "amount": 350
+    },
+    {
+      "id": "6a897a4f433d2e02da7ac33c",
+      "date": "2026-08-22",
+      "expense": "Office Exp.",
+      "amount": 100
+    },
+    {
+      "id": "6a897a0d433d2e02da7ac320",
+      "date": "2026-08-22",
+      "expense": "Welfare Expenses",
+      "amount": 100
+    },
+    {
+      "id": "6a8979ee433d2e02da7ac31f",
+      "date": "2026-08-22",
+      "expense": "Hotel Charges",
+      "amount": 5000
+    },
+    {
+      "id": "6a89798bce0ecc0a4e0977ef",
+      "date": "2026-08-22",
+      "expense": "Hotel Charges",
+      "amount": 2500
+    },
+    {
+      "id": "6a897962ce0ecc0a4e0977ee",
+      "date": "2026-08-22",
+      "expense": "Office Exp.",
+      "amount": 5
+    },
+    {
+      "id": "6a897943465ac71351b99647",
+      "date": "2026-08-22",
+      "expense": "Office Exp.",
+      "amount": 80
+    },
+    {
+      "id": "6a89791e465ac71351b99642",
+      "date": "2026-08-22",
+      "expense": "Office Exp.",
+      "amount": 240
+    },
+    {
+      "id": "6a897904433d2e02da7ac31e",
+      "date": "2026-08-22",
+      "expense": "Office Exp.",
+      "amount": 120
+    },
+    {
+      "id": "6a8af20ba68114d7fc112f9f",
+      "date": "2026-08-23",
+      "expense": "Office Exp.",
+      "amount": 500
+    },
+    {
+      "id": "6a8ae0b4cb081307e08a44e8",
+      "date": "2026-08-23",
+      "expense": "Office Exp.",
+      "amount": 5
+    },
+    {
+      "id": "6a8ae07dcb081307e08a44e7",
+      "date": "2026-08-23",
+      "expense": "Welfare Expenses",
+      "amount": 345
+    },
+    {
+      "id": "6a8ae0596d772aa56fba01a7",
+      "date": "2026-08-23",
+      "expense": "Patient Related Expenses",
+      "amount": 120
+    },
+    {
+      "id": "6a8adffccb081307e08a44e6",
+      "date": "2026-08-23",
+      "expense": "Office Exp.",
+      "amount": 183
+    },
+    {
+      "id": "6a8adfda6d772aa56fba01a5",
+      "date": "2026-08-23",
+      "expense": "Welfare Expenses",
+      "amount": 100
+    },
+    {
+      "id": "6a8adf996d772aa56fba01a3",
+      "date": "2026-08-23",
+      "expense": "Welfare Expenses",
+      "amount": 100
+    },
+    {
+      "id": "6a8ac94cea2de946d64ef1d7",
+      "date": "2026-08-23",
+      "expense": "Office Exp.",
+      "amount": 120
+    },
+    {
+      "id": "6a8a92fc32de3cf6c29bbfb5",
+      "date": "2026-08-23",
+      "expense": "Office Exp.",
+      "amount": 300
+    },
+    {
+      "id": "6a8c436639f1dace5d7d56d0",
+      "date": "2026-08-24",
+      "expense": "Office Exp.",
+      "amount": 10000
+    },
+    {
+      "id": "6a8c432639f1dace5d7d5665",
+      "date": "2026-08-24",
+      "expense": "Office Exp.",
+      "amount": 1094
+    },
+    {
+      "id": "6a8c3d0a6018d2174bfc262b",
+      "date": "2026-08-24",
+      "expense": "Patient Related Expenses",
+      "amount": 360
+    },
+    {
+      "id": "6a8c3cef6018d2174bfc262a",
+      "date": "2026-08-24",
+      "expense": "Office Exp.",
+      "amount": 532
+    },
+    {
+      "id": "6a8c3cd66018d2174bfc2628",
+      "date": "2026-08-24",
+      "expense": "Office Exp.",
+      "amount": 117
+    },
+    {
+      "id": "6a8c3bbf368ae8624a41c5f8",
+      "date": "2026-08-24",
+      "expense": "Hotel Charges",
+      "amount": 10000
+    },
+    {
+      "id": "6a8c1c772fcc7004c91b59e4",
+      "date": "2026-08-24",
+      "expense": "Welfare Expenses",
+      "amount": 300
+    },
+    {
+      "id": "6a8bd5731471d824ecb7b25f",
+      "date": "2026-08-24",
+      "expense": "Travelling Expenses",
+      "amount": 612
+    },
+    {
+      "id": "6a8d7c9cac8372fe39180dda",
+      "date": "2026-08-25",
+      "expense": "Patient Related Expenses",
+      "amount": 100
+    },
+    {
+      "id": "6a8d7c77ac8372fe39180dd9",
+      "date": "2026-08-25",
+      "expense": "Office Exp.",
+      "amount": 785
+    },
+    {
+      "id": "6a8d7c57ac8372fe39180dd8",
+      "date": "2026-08-25",
+      "expense": "Patient Related Expenses",
+      "amount": 70
+    },
+    {
+      "id": "6a8d7c3cac8372fe39180dd6",
+      "date": "2026-08-25",
+      "expense": "Office Exp.",
+      "amount": 342
+    }
+  ],
+  "failed": [],
+  "skipped": [],
+  "backupFile": "delete-direct-expense-backup-1787726336708.json"
+}

@@ -8,9 +8,16 @@ import { UNSETTLED_METHODS } from "@/constants/bankRouting";
 // Used by both /api/payables/list and /api/payables/summary so the two
 // routes can never disagree on what "pending" means.
 //
+// A Borrowing repayment (direction "OUT") also pays a Payable down, but it lives in the
+// Borrowing collection, not Transactions — see src/models/Borrowing.js for why. A second
+// $lookup folds those rows in the same way, so "paid" means the same thing regardless of which
+// collection actually recorded the money movement. For every ordinary (non-borrowing) Payable
+// this $lookup simply matches nothing — no Borrowing row is ever created against a payableId
+// this route didn't itself hand out — so every existing report is unaffected.
+//
 // Ageing (daysOverdue / daysToDue / ageingBucket) is appended from the shared
 // buildAgeingStages() so the header summary and the table age rows identically.
-export function buildPayableAggregationStages(txCollectionName) {
+export function buildPayableAggregationStages(txCollectionName, borrowingsCollectionName = "borrowings") {
   return [
     {
       $lookup: {
@@ -37,9 +44,40 @@ export function buildPayableAggregationStages(txCollectionName) {
       },
     },
     {
+      $lookup: {
+        from: borrowingsCollectionName,
+        let: { payableId: "$_id" },
+        pipeline: [
+          {
+            $match: {
+              $expr: {
+                $and: [
+                  { $eq: ["$payableId", "$$payableId"] },
+                  { $eq: ["$direction", "OUT"] },
+                  { $ne: ["$isCancelled", true] },
+                ],
+              },
+            },
+          },
+          { $group: { _id: null, paid: { $sum: "$amount" }, paymentCount: { $sum: 1 } } },
+        ],
+        as: "borrowingAgg",
+      },
+    },
+    {
       $addFields: {
-        paid: { $ifNull: [{ $arrayElemAt: ["$paymentAgg.paid", 0] }, 0] },
-        paymentCount: { $ifNull: [{ $arrayElemAt: ["$paymentAgg.paymentCount", 0] }, 0] },
+        paid: {
+          $add: [
+            { $ifNull: [{ $arrayElemAt: ["$paymentAgg.paid", 0] }, 0] },
+            { $ifNull: [{ $arrayElemAt: ["$borrowingAgg.paid", 0] }, 0] },
+          ],
+        },
+        paymentCount: {
+          $add: [
+            { $ifNull: [{ $arrayElemAt: ["$paymentAgg.paymentCount", 0] }, 0] },
+            { $ifNull: [{ $arrayElemAt: ["$borrowingAgg.paymentCount", 0] }, 0] },
+          ],
+        },
       },
     },
     {
@@ -71,7 +109,7 @@ export function buildPayableAggregationStages(txCollectionName) {
       },
     },
     ...buildAgeingStages(),
-    { $project: { paymentAgg: 0 } },
+    { $project: { paymentAgg: 0, borrowingAgg: 0 } },
   ];
 }
 
@@ -87,7 +125,7 @@ export function buildPayableAggregationStages(txCollectionName) {
 // expenseSubType — same carry-forward math, restricted to payee.kind: "VENDOR" (the only kind
 // with a stable refId to group on), single level (vendors aren't organised in a category tree,
 // so there's no level-2 sub-bucket the way expenseCategory has expenseSubType).
-export function buildPayableGroupedStages(txCollectionName, { level, category, subType, branch, from, to, groupBy = "category" } = {}) {
+export function buildPayableGroupedStages(txCollectionName, { level, category, subType, branch, from, to, groupBy = "category", borrowingsCollectionName = "borrowings" } = {}) {
   const isVendor = groupBy === "vendor";
   const match = { isCancelled: { $ne: true } };
   if (isVendor) match["payee.kind"] = "VENDOR";
@@ -138,6 +176,37 @@ export function buildPayableGroupedStages(txCollectionName, { level, category, s
           { $project: { amount: 1, date: 1 } },
         ],
         as: "payments",
+      },
+    },
+    // A Borrowing repayment (direction "OUT") pays a Payable down the same way a Transaction
+    // does, but lives in the Borrowing collection — see the identical $lookup and its comment
+    // in buildPayableAggregationStages above. Concatenated into "payments" before the
+    // before/in-range split below, so every bucket that follows treats the two sources as one.
+    {
+      $lookup: {
+        from: borrowingsCollectionName,
+        let: { payableId: "$_id" },
+        pipeline: [
+          ...(toDate ? [{ $match: { date: { $lte: toDate } } }] : []),
+          {
+            $match: {
+              $expr: {
+                $and: [
+                  { $eq: ["$payableId", "$$payableId"] },
+                  { $eq: ["$direction", "OUT"] },
+                  { $ne: ["$isCancelled", true] },
+                ],
+              },
+            },
+          },
+          { $project: { amount: 1, date: 1 } },
+        ],
+        as: "borrowingPayments",
+      },
+    },
+    {
+      $addFields: {
+        payments: { $concatArrays: ["$payments", "$borrowingPayments"] },
       },
     },
     {

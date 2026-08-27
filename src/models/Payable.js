@@ -104,6 +104,17 @@ const payableSchema = new mongoose.Schema(
     // make this decision explicitly instead of silently inheriting whichever guess the code made.
     costAlreadyRecognised: { type: Boolean, default: false, index: true },
 
+    // FINANCING, NOT TRADE — this obligation is real and belongs on the balance sheet, but it is
+    // not an expense. Set true only for a borrowing's Payable (money we received and must repay —
+    // see src/models/Borrowing.js): receiving borrowed money is not income and repaying it is not
+    // a cost, so neither half may reach the P&L.
+    //
+    // Load-bearing: /api/close-book/pnl computes Expense as "direct expense transactions + EVERY
+    // non-cancelled Payable's totalAmount raised in the period", with no category filter of its
+    // own. Without this flag a borrowing Payable silently inflates expense by the full amount
+    // borrowed. The mirror field lives on Receivable for advances — fix the two together.
+    excludeFromPnl: { type: Boolean, default: false, index: true },
+
     // Append-only audit trail of the PAYABLE itself (creation, amount
     // revision, cancellation). NOT a payment log — payments live in
     // Transactions, linked via payableId.

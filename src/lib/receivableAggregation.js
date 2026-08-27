@@ -6,9 +6,17 @@ import { UNSETTLED_METHODS } from "@/constants/bankRouting";
 // (a receivable is only ever settled by money coming in). Used identically by both the
 // list and summary routes so they can never disagree.
 //
+// An Advance recovery (direction "IN") also pays a Receivable down, but it lives in the Advance
+// collection, not Transactions — see src/models/Advance.js for why. A second $lookup folds those
+// rows in the same way, so "received" means the same thing regardless of which collection
+// actually recorded the money movement. For every ordinary (non-advance) Receivable this $lookup
+// simply matches nothing — no Advance row is ever created against a receivableId this route
+// didn't itself hand out — so every existing report is unaffected. Exact mirror of the borrowing
+// $lookup in payableAggregation.js; fix the two together.
+//
 // Ageing comes from the same shared buildAgeingStages() the payable side uses, so "31–60 days"
 // means the same thing on both pages.
-export function buildReceivableAggregationStages(txCollectionName) {
+export function buildReceivableAggregationStages(txCollectionName, advancesCollectionName = "advances") {
   return [
     {
       $lookup: {
@@ -82,9 +90,40 @@ export function buildReceivableAggregationStages(txCollectionName) {
       },
     },
     {
+      $lookup: {
+        from: advancesCollectionName,
+        let: { receivableId: "$_id" },
+        pipeline: [
+          {
+            $match: {
+              $expr: {
+                $and: [
+                  { $eq: ["$receivableId", "$$receivableId"] },
+                  { $eq: ["$direction", "IN"] },
+                  { $ne: ["$isCancelled", true] },
+                ],
+              },
+            },
+          },
+          { $group: { _id: null, received: { $sum: "$amount" }, receiptCount: { $sum: 1 } } },
+        ],
+        as: "advanceAgg",
+      },
+    },
+    {
       $addFields: {
-        received: { $ifNull: [{ $arrayElemAt: ["$receiptAgg.received", 0] }, 0] },
-        receiptCount: { $ifNull: [{ $arrayElemAt: ["$receiptAgg.receiptCount", 0] }, 0] },
+        received: {
+          $add: [
+            { $ifNull: [{ $arrayElemAt: ["$receiptAgg.received", 0] }, 0] },
+            { $ifNull: [{ $arrayElemAt: ["$advanceAgg.received", 0] }, 0] },
+          ],
+        },
+        receiptCount: {
+          $add: [
+            { $ifNull: [{ $arrayElemAt: ["$receiptAgg.receiptCount", 0] }, 0] },
+            { $ifNull: [{ $arrayElemAt: ["$advanceAgg.receiptCount", 0] }, 0] },
+          ],
+        },
       },
     },
     {
@@ -118,7 +157,7 @@ export function buildReceivableAggregationStages(txCollectionName) {
       },
     },
     ...buildAgeingStages(),
-    { $project: { receiptAgg: 0 } },
+    { $project: { receiptAgg: 0, advanceAgg: 0 } },
   ];
 }
 
@@ -129,11 +168,27 @@ export function buildReceivableAggregationStages(txCollectionName) {
 // (SUB-TYPE, level 2) since Receivable has no expenseSubType-equivalent field; purpose (
 // PATIENT_DUE / COLLAB_SETTLEMENT / REFUND_DUE / ADVANCE_RECOVERY / OTHER) is the closest
 // second-level split that already exists on the model.
-export function buildReceivableGroupedStages(txCollectionName, { level, category, subType, branch, from, to } = {}) {
+export function buildReceivableGroupedStages(
+  txCollectionName,
+  {
+    level,
+    category,
+    subType,
+    branch,
+    from,
+    to,
+    // Which field is the level-2 SUB-TYPE bucket. Defaults to `purpose`, which is what every
+    // pre-existing caller groups by. The Advances section passes "revenueSubType" instead — its
+    // documents all share one purpose (ADVANCE_RECOVERY), so grouping them by it would collapse
+    // every advance into a single meaningless bucket.
+    subTypeField = "purpose",
+    advancesCollectionName = "advances",
+  } = {},
+) {
   const match = { isCancelled: { $ne: true } };
   if (branch) match.branch = branch;
   if (level !== 1 && category) match.revenueCategory = category;
-  if (level === 2 && subType) match.purpose = subType;
+  if (level === 2 && subType) match[subTypeField] = subType;
 
   const fromDate = from ? new Date(from) : null;
   const toDate = to ? new Date(to) : null;
@@ -148,7 +203,7 @@ export function buildReceivableGroupedStages(txCollectionName, { level, category
   const groupId =
     level === 1
       ? { bucket: { $ifNull: ["$revenueCategory", "Uncategorised"] } }
-      : { bucket: "$purpose" };
+      : { bucket: { $ifNull: [`$${subTypeField}`, "Uncategorised"] } };
 
   return [
     { $match: match },
@@ -216,6 +271,37 @@ export function buildReceivableGroupedStages(txCollectionName, { level, category
           },
         ],
         as: "receipts",
+      },
+    },
+    // An Advance recovery (direction "IN") pays a Receivable down the same way a revenue
+    // Transaction does, but lives in the Advance collection — see the identical $lookup and its
+    // comment in buildReceivableAggregationStages above. Concatenated into "receipts" before the
+    // before/in-range split below, so every bucket that follows treats the two sources as one.
+    {
+      $lookup: {
+        from: advancesCollectionName,
+        let: { receivableId: "$_id" },
+        pipeline: [
+          ...(toDate ? [{ $match: { date: { $lte: toDate } } }] : []),
+          {
+            $match: {
+              $expr: {
+                $and: [
+                  { $eq: ["$receivableId", "$$receivableId"] },
+                  { $eq: ["$direction", "IN"] },
+                  { $ne: ["$isCancelled", true] },
+                ],
+              },
+            },
+          },
+          { $project: { date: 1, amount: 1 } },
+        ],
+        as: "advanceRecoveries",
+      },
+    },
+    {
+      $addFields: {
+        receipts: { $concatArrays: ["$receipts", "$advanceRecoveries"] },
       },
     },
     {

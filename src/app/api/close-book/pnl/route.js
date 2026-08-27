@@ -56,7 +56,13 @@ export async function GET(request) {
     if (branch) txBase.branch = branch;
     if (selectedAccounts.length > 0) txBase.furtherMode = { $in: selectedAccounts };
 
-    const obligationBase = { isCancelled: { $ne: true } };
+    // excludeFromPnl filters out FINANCING obligations — a borrowing's Payable (money received
+    // that must be repaid) and an advance's Receivable (money lent that will be recovered). Both
+    // are genuine balance-sheet items, but neither is a cost or a sale: borrowing money is not
+    // income, lending it is not expense, and settling either way is just cash moving back.
+    // Without this the sums below counted the full borrowed/lent amount as expense/income the
+    // moment the document was raised. See the field's comment on both models.
+    const obligationBase = { isCancelled: { $ne: true }, excludeFromPnl: { $ne: true } };
     if (Object.keys(dateRange).length) obligationBase.createdAt = dateRange;
     if (branch) obligationBase.branch = branch;
 

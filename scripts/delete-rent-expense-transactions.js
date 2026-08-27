@@ -48,7 +48,7 @@ const FORCE_LINKED = args.includes("--force-linked");
 // ------------------------------------------------------------
 
 // Only transactions on or after 1 August 2026 will be considered.
-const START_DATE = new Date("2026-08-01T00:00:00.000Z");
+const START_DATE = new Date("2026-08-13T00:00:00.000Z");
 
 // ------------------------------------------------------------
 // MODELS
@@ -136,7 +136,7 @@ async function run() {
   );
 
   console.log(
-    'Filter: costType="Expenses", expense="Salary", date >= 2026-08-01 — no branch restriction\n'
+    'Filter: costType="Expenses", expense="Salary", date >= 2026-08-13 — no branch restriction\n'
   );
 
   // ----------------------------------------------------------
@@ -160,14 +160,14 @@ async function run() {
 
   const matches = await Transactions.find({
     costType: "Expenses",
-    expense: "Salary",
+    expense: "Electricity Bill",
     date: {
       $gte: START_DATE,
     },
   }).lean();
 
   console.log(
-    `Found ${matches.length} Salary expense transaction(s) dated on or after 2026-08-01.`
+    `Found ${matches.length} Salary expense transaction(s) dated on or after 2026-08-13.`
   );
 
   if (matches.length === 0) {

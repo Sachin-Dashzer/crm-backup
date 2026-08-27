@@ -22,6 +22,7 @@ import {
   Landmark,
   ScrollText,
   FileText,
+  Banknote,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -189,6 +190,16 @@ export default function AdminSidebar() {
               href="/admin/liabilities"
               icon={ScrollText}
               active={isActive("/admin/liabilities")}
+              onClick={close}
+            />
+            {/* Deposits/loans/advances that must be repaid — see src/models/Borrowing.js. A
+                summary already lives inside Liabilities' own Borrowings section; this is the
+                dedicated CRUD page for the underlying rows and their loan documents. */}
+            <NavItem
+              label="Borrowings"
+              href="/admin/borrowings"
+              icon={Banknote}
+              active={isActive("/admin/borrowings")}
               onClick={close}
             />
             <NavItem

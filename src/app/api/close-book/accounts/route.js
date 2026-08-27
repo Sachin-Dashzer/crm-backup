@@ -9,6 +9,8 @@ import {
   buildBalanceMatch,
   buildContraUnionStage,
   buildSuspenseUnionStage,
+  buildBorrowingUnionStage,
+  buildAdvanceUnionStage,
   getOpeningBalances,
   round2,
   SIGNED_AMOUNT,
@@ -116,6 +118,8 @@ export async function GET(request) {
     const openingFrom = from || "1970-01-01";
     const contraStage = buildContraUnionStage({ from: openingFrom, to, branch });
     const suspenseStage = buildSuspenseUnionStage({ from: openingFrom, to, branch });
+    const borrowingStage = buildBorrowingUnionStage({ from: openingFrom, to, branch });
+    const advanceStage = buildAdvanceUnionStage({ from: openingFrom, to, branch });
 
     const [openings, movementRows] = await Promise.all([
       getOpeningBalances(accounts, openingFrom, branch || null),
@@ -124,6 +128,8 @@ export async function GET(request) {
         TRANSACTION_TO_MOVEMENT,
         ...(contraStage ? [contraStage] : []),
         ...(suspenseStage ? [suspenseStage] : []),
+        ...(borrowingStage ? [borrowingStage] : []),
+        ...(advanceStage ? [advanceStage] : []),
         // Contra/suspense rows carry their own `account`, unrestricted by buildBalanceMatch
         // above — re-scope to the requested subset (loans-only / cash-only) here.
         { $match: { account: { $in: accounts } } },

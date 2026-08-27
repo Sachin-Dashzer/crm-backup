@@ -210,6 +210,24 @@ export async function DELETE(req, { params }) {
       );
     }
 
+    // A "Borrowings" payable's rows (the IN that raised it, every repayment OUT) live in the
+    // Borrowing collection, not Transactions — the check above never sees them. Without this,
+    // a loan with real activity could be hard-deleted here, leaving every Borrowing row pointing
+    // at a payableId that no longer exists. See src/models/Borrowing.js.
+    const { default: Borrowing } = await import("@/models/Borrowing");
+    const linkedBorrowings = await Borrowing.countDocuments({ payableId: payable._id });
+    if (linkedBorrowings > 0) {
+      return NextResponse.json(
+        {
+          error:
+            `${linkedBorrowings} borrowing row(s) are recorded against this loan. ` +
+            `Cancel those first (see /admin/borrowings), or cancel this payable instead of ` +
+            `deleting it — deleting it now would leave those rows pointing at nothing.`,
+        },
+        { status: 409 },
+      );
+    }
+
     await DeleteLog.create({
       entityType: "Payable",
       entityId: String(payable._id),

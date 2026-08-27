@@ -257,6 +257,227 @@ export function buildSuspenseLedgerUnionStage({
   };
 }
 
+// ── Borrowings ───────────────────────────────────────────────────────────────────────────
+//
+// Money received from a party that must be repaid (a deposit, a loan, an advance), living in
+// its own collection for the same isolation reason contra/suspense do — see
+// src/models/Borrowing.js. Folded into ACCOUNT BALANCES only: receiving it is not income and
+// repaying it is not an expense, so it never appears in a revenue or expense total.
+//
+// ONLY OPEN (non-cancelled) ROWS COUNT — same rule as contra/suspense.
+export function buildBorrowingMatch({ from, to, branch } = {}) {
+  const match = { isCancelled: { $ne: true } };
+  if (branch) match.branch = branch;
+  if (from || to) {
+    match.date = {};
+    if (from) match.date.$gte = new Date(from);
+    if (to) match.date.$lte = new Date(to);
+  }
+  return match;
+}
+
+// Emits { account, in, out, isContra } rows for the balance-sheet group, same shape as the
+// contra/suspense unions. IN adds to the account (money received); OUT subtracts (repaid).
+// isContra is false — a borrowing does not net to zero across accounts the way a transfer
+// does; the money genuinely entered (or left) the business, from (or to) an outside party.
+export function buildBorrowingUnionStage({ from, to, branch, collectionName = "borrowings" } = {}) {
+  return {
+    $unionWith: {
+      coll: collectionName,
+      pipeline: [
+        { $match: buildBorrowingMatch({ from, to, branch }) },
+        {
+          $project: {
+            account: "$account",
+            in: { $cond: [{ $eq: ["$direction", "OUT"] }, 0, "$amount"] },
+            out: { $cond: [{ $eq: ["$direction", "OUT"] }, "$amount", 0] },
+            isContra: { $literal: false },
+            isBorrowing: { $literal: true },
+          },
+        },
+      ],
+    },
+  };
+}
+
+// Full ledger rows for ONE account, so a borrowing/repayment appears inline in the ledger with
+// its own running balance instead of as an unexplained gap.
+//
+// Null under a category or method filter, same reasoning as suspense: a borrowing has neither.
+export function buildBorrowingLedgerUnionStage({
+  account,
+  from,
+  to,
+  branch,
+  transactionCategory,
+  method,
+  collectionName = "borrowings",
+} = {}) {
+  if (transactionCategory || method) return null;
+
+  return {
+    $unionWith: {
+      coll: collectionName,
+      pipeline: [
+        { $match: { ...buildBorrowingMatch({ from, to, branch }), account } },
+        {
+          $project: {
+            date: 1,
+            amount: 1,
+            reference: 1,
+            remarks: 1,
+            direction: 1,
+            branch: 1,
+            payableId: 1,
+            isSuspense: { $literal: false },
+            isContra: { $literal: false },
+            isBorrowing: { $literal: true },
+            sourceKind: { $literal: "BORROWING" },
+            signedAmount: {
+              $cond: [{ $eq: ["$direction", "OUT"] }, { $multiply: ["$amount", -1] }, "$amount"],
+            },
+          },
+        },
+      ],
+    },
+  };
+}
+
+// Borrowing movement totals for one account over one period, in the same { totalIn, totalOut }
+// shape computeSuspenseMovements returns, so it slots into computeNetMovement identically.
+export async function computeBorrowingMovements(account, from, to, session = null, branch = null) {
+  const { default: Borrowing } = await import("@/models/Borrowing");
+
+  const [agg] = await Borrowing.aggregate([
+    { $match: { ...buildBorrowingMatch({ from, to, branch }), account } },
+    {
+      $group: {
+        _id: null,
+        totalIn: { $sum: { $cond: [{ $eq: ["$direction", "OUT"] }, 0, "$amount"] } },
+        totalOut: { $sum: { $cond: [{ $eq: ["$direction", "OUT"] }, "$amount", 0] } },
+        borrowingCount: { $sum: 1 },
+      },
+    },
+  ]).session(session);
+
+  return {
+    totalIn: round2(agg?.totalIn || 0),
+    totalOut: round2(agg?.totalOut || 0),
+    borrowingCount: agg?.borrowingCount || 0,
+  };
+}
+
+// ── Advances ─────────────────────────────────────────────────────────────────────────────
+//
+// Money WE lent out that must come back (advance salary/rent, a personal advance) — the mirror
+// of borrowings, living in its own collection for the same isolation reason. See
+// src/models/Advance.js. Folded into ACCOUNT BALANCES only: lending is not an expense and
+// recovering is not income, so it never appears in a revenue or expense total.
+//
+// ONLY OPEN (non-cancelled) ROWS COUNT — same rule as contra/suspense/borrowings.
+export function buildAdvanceMatch({ from, to, branch } = {}) {
+  const match = { isCancelled: { $ne: true } };
+  if (branch) match.branch = branch;
+  if (from || to) {
+    match.date = {};
+    if (from) match.date.$gte = new Date(from);
+    if (to) match.date.$lte = new Date(to);
+  }
+  return match;
+}
+
+// Emits { account, in, out, isContra } rows for the balance-sheet group, same shape as the
+// contra/suspense/borrowing unions. OUT subtracts from the account (money lent out); IN adds
+// (money recovered). isContra is false — like a borrowing, this does not net to zero across
+// accounts: the money genuinely left (or returned to) the business.
+export function buildAdvanceUnionStage({ from, to, branch, collectionName = "advances" } = {}) {
+  return {
+    $unionWith: {
+      coll: collectionName,
+      pipeline: [
+        { $match: buildAdvanceMatch({ from, to, branch }) },
+        {
+          $project: {
+            account: "$account",
+            in: { $cond: [{ $eq: ["$direction", "OUT"] }, 0, "$amount"] },
+            out: { $cond: [{ $eq: ["$direction", "OUT"] }, "$amount", 0] },
+            isContra: { $literal: false },
+            isAdvance: { $literal: true },
+          },
+        },
+      ],
+    },
+  };
+}
+
+// Full ledger rows for ONE account, so an advance paid out or recovered appears inline in the
+// ledger with its own running balance instead of as an unexplained gap.
+//
+// Null under a category or method filter, same reasoning as suspense/borrowings: an advance has
+// neither.
+export function buildAdvanceLedgerUnionStage({
+  account,
+  from,
+  to,
+  branch,
+  transactionCategory,
+  method,
+  collectionName = "advances",
+} = {}) {
+  if (transactionCategory || method) return null;
+
+  return {
+    $unionWith: {
+      coll: collectionName,
+      pipeline: [
+        { $match: { ...buildAdvanceMatch({ from, to, branch }), account } },
+        {
+          $project: {
+            date: 1,
+            amount: 1,
+            reference: 1,
+            remarks: 1,
+            direction: 1,
+            branch: 1,
+            receivableId: 1,
+            isSuspense: { $literal: false },
+            isContra: { $literal: false },
+            isAdvance: { $literal: true },
+            sourceKind: { $literal: "ADVANCE" },
+            signedAmount: {
+              $cond: [{ $eq: ["$direction", "OUT"] }, { $multiply: ["$amount", -1] }, "$amount"],
+            },
+          },
+        },
+      ],
+    },
+  };
+}
+
+// Advance movement totals for one account over one period, in the same { totalIn, totalOut }
+// shape the others return, so it slots into computeNetMovement identically.
+export async function computeAdvanceMovements(account, from, to, session = null, branch = null) {
+  const { default: Advance } = await import("@/models/Advance");
+
+  const [agg] = await Advance.aggregate([
+    { $match: { ...buildAdvanceMatch({ from, to, branch }), account } },
+    {
+      $group: {
+        _id: null,
+        totalIn: { $sum: { $cond: [{ $eq: ["$direction", "OUT"] }, 0, "$amount"] } },
+        totalOut: { $sum: { $cond: [{ $eq: ["$direction", "OUT"] }, "$amount", 0] } },
+        advanceCount: { $sum: 1 },
+      },
+    },
+  ]).session(session);
+
+  return {
+    totalIn: round2(agg?.totalIn || 0),
+    totalOut: round2(agg?.totalOut || 0),
+    advanceCount: agg?.advanceCount || 0,
+  };
+}
+
 // Suspense movement totals for one account over one period, in the same { totalIn, totalOut }
 // shape computeMovements() returns — so a period snapshot includes unexplained bank movement
 // and its closing balance still matches the statement.
@@ -419,8 +640,8 @@ async function resolveAnchor(account, asOf, branch) {
 }
 
 // Net change to an account's balance over a window, from EVERY source that moves it —
-// transactions, contra transfers and open suspense entries. One place, so a caller cannot
-// accidentally count two of the three.
+// transactions, contra transfers, open suspense entries, open borrowings and open advances. One
+// place, so a caller cannot accidentally count two of the five.
 export async function computeNetMovement(account, from, to, branch = null, session = null) {
   const { default: Transactions } = await import("@/models/Transactions");
 
@@ -430,7 +651,7 @@ export async function computeNetMovement(account, from, to, branch = null, sessi
       { $group: { _id: null, net: { $sum: SIGNED_AMOUNT } } },
     ]).session(session);
 
-  // The three sources are independent, so on the READ path they run concurrently. This function
+  // The five sources are independent, so on the READ path they run concurrently. This function
   // is called once per account by getOpeningBalances, so on a 9-11 account page the serial hops
   // multiplied out into most of the reconciliation endpoint's latency.
   //
@@ -441,16 +662,22 @@ export async function computeNetMovement(account, from, to, branch = null, sessi
   let txAggResult;
   let contra;
   let suspense;
+  let borrowing;
+  let advance;
 
   if (session) {
     txAggResult = await runTxAgg();
     contra = await computeContraMovements(account, from, to, session, branch);
     suspense = await computeSuspenseMovements(account, from, to, session, branch);
+    borrowing = await computeBorrowingMovements(account, from, to, session, branch);
+    advance = await computeAdvanceMovements(account, from, to, session, branch);
   } else {
-    [txAggResult, contra, suspense] = await Promise.all([
+    [txAggResult, contra, suspense, borrowing, advance] = await Promise.all([
       runTxAgg(),
       computeContraMovements(account, from, to, session, branch),
       computeSuspenseMovements(account, from, to, session, branch),
+      computeBorrowingMovements(account, from, to, session, branch),
+      computeAdvanceMovements(account, from, to, session, branch),
     ]);
   }
 
@@ -459,7 +686,9 @@ export async function computeNetMovement(account, from, to, branch = null, sessi
   return round2(
     (txAgg?.net || 0) +
       (contra.totalIn - contra.totalOut) +
-      (suspense.totalIn - suspense.totalOut),
+      (suspense.totalIn - suspense.totalOut) +
+      (borrowing.totalIn - borrowing.totalOut) +
+      (advance.totalIn - advance.totalOut),
   );
 }
 

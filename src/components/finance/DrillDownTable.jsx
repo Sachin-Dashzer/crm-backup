@@ -25,6 +25,7 @@ import { useToast } from "@/components/Toast";
 import LockedBadge from "./LockedBadge";
 import ContraRowActions from "./ContraRowActions";
 import SuspenseRowActions from "./SuspenseRowActions";
+import BorrowingRowActions from "./BorrowingRowActions";
 import { ReversalBadge, ReversedBadge } from "./StatusBadges";
 import RecordPaymentModal from "./RecordPaymentModal";
 import RecordReceiptModal from "./RecordReceiptModal";
@@ -62,6 +63,7 @@ export default function DrillDownTable({
   sectionConfig,
   levels = 3,
   renderLeafRowActions,
+  renderDocumentActions,
   extraParams,
   initialDrill,
   onDrillChange,
@@ -72,7 +74,14 @@ export default function DrillDownTable({
   const toast = useToast();
   const { key, apiBase, columnLabels } = sectionConfig;
   const isDocuments = sectionConfig.mode === "documents" || key === "payables" || key === "receivables";
-  const isPayableSection = key === "payables";
+  // A documents-mode section is shaped like a Payable (payee/paid) unless it declares itself a
+  // receivable (payer/received) — inferred from `key` for the two built-in sections, or
+  // overridable via sectionConfig.documentShape for a caller-defined one (the Liabilities page's
+  // "Borrowings" section: real Payable documents, so still payee-shaped, but under its own `key`
+  // so it can supply its own document actions via renderDocumentActions below).
+  const isPayableSection = sectionConfig.documentShape
+    ? sectionConfig.documentShape === "payable"
+    : key !== "receivables";
   // `mode: "grouped"` (or documents mode, which shares the same level 1/2 fetch) is the explicit
   // opt-in for the shared HEAD -> SUB-TYPE fetch pattern (apiBase + "/grouped?level="). Legacy key
   // check kept for backward compatibility.
@@ -256,11 +265,13 @@ export default function DrillDownTable({
                 ? `Transfer: ${r.fromAccount} → ${r.toAccount}${r.reference ? ` · ${r.reference}` : ""}`
                 : r.isSuspense
                   ? `Suspense${r.direction ? ` (${r.direction})` : ""}${r.remarks ? ` · ${r.remarks}` : r.reference ? ` · ${r.reference}` : ""}`
-                  : r.remarks || r.procedure || r.expenseType || "—",
+                  : r.isBorrowing
+                    ? `Borrowing (${r.direction})${r.remarks ? ` · ${r.remarks}` : r.reference ? ` · ${r.reference}` : ""}`
+                    : r.remarks || r.procedure || r.expenseType || "—",
               amount: r.amount ?? Math.abs(r.signedAmount || 0),
-              method: r.isContra ? "Contra Transfer" : r.isSuspense ? "Suspense" : r.method,
+              method: r.isContra ? "Contra Transfer" : r.isSuspense ? "Suspense" : r.isBorrowing ? "Borrowing" : r.method,
               account: drill.headKey,
-              transactionCategory: r.isContra || r.isSuspense ? null : r.transactionCategory,
+              transactionCategory: r.isContra || r.isSuspense || r.isBorrowing ? null : r.transactionCategory,
             })),
           );
           setMeta({
@@ -343,8 +354,12 @@ export default function DrillDownTable({
   //   Cash & Bank/Loans/receipts/payments (mode: "grouped" but not payables/receivables) -> only
   //     New Transaction — none of these sections has an accrual concept
   //   Suspense -> neither — it has its own resolve flow, not a create form
-  const showVoucherButton = key === "payables" || key === "receivables";
-  const showTransactionButton = key !== "suspense";
+  // Suppressed entirely for a section whose documents may ONLY be created through its own
+  // dedicated flow (the Liabilities page's "Borrowings" section — RecordBorrowingModal, never a
+  // generic voucher or transaction, or a Payable with expenseCategory "Borrowings" could exist
+  // with no Borrowing row behind it, breaking every aggregation that assumes one does).
+  const showVoucherButton = !sectionConfig.hideCreateButtons && (key === "payables" || key === "receivables");
+  const showTransactionButton = !sectionConfig.hideCreateButtons && key !== "suspense";
 
   const voucherHref = (() => {
     if (key === "payables") {
@@ -432,7 +447,7 @@ export default function DrillDownTable({
   // Cash & Bank/Loans' level-2 ledger (unlike the documents-mode leaf) mixes real Transactions
   // with contra transfers and suspense entries in one list WITHOUT tagging them via sourceKind —
   // isContra/isSuspense (set in the load() mapping above) are what distinguish them there.
-  const isRealTransaction = (row) => !row.isContra && !row.isSuspense;
+  const isRealTransaction = (row) => !row.isContra && !row.isSuspense && !row.isBorrowing;
 
   const viewButton = (row) =>
     isRealTransaction(row) ? (
@@ -448,6 +463,7 @@ export default function DrillDownTable({
   const leafActions = (row) => {
     if (row.sourceKind === "CONTRA") return <ContraRowActions />;
     if (row.sourceKind === "SUSPENSE") return <SuspenseRowActions />;
+    if (row.sourceKind === "BORROWING") return <BorrowingRowActions />;
     if (row.lockReason) {
       return (
         <div className="flex items-center justify-end gap-2">
@@ -530,6 +546,10 @@ export default function DrillDownTable({
   };
 
   const documentActions = (row) => {
+    // A section with its own document lifecycle (Borrowings: Record Repayment/Add Tranche
+    // instead of the generic Record Payment/Revise/Cancel) supplies its own renderer entirely,
+    // rather than this component special-casing yet another `key`.
+    if (renderDocumentActions) return renderDocumentActions(row);
     const settled = isPayableSection ? row.paid : row.received;
     const pendingAmt = row.pending ?? Math.max(row.totalAmount - (settled || 0), 0);
     return (
@@ -656,6 +676,16 @@ export default function DrillDownTable({
       key: "type",
       label: "Type",
       render: (r) => {
+        // The whole point of tagging these rows sourceKind: "BORROWING" (close-book/ledger's
+        // union stage) is that they must read differently from an ordinary sale/receipt at a
+        // glance — a badge here, not just a distinct row action, is what makes that visible.
+        if (r.sourceKind === "BORROWING") {
+          return (
+            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold border bg-violet-50 text-violet-700 border-violet-200">
+              Borrowing
+            </span>
+          );
+        }
         const isSale = ["TRANSPLANT", "SERVICE", "MEDICINE"].includes(r.transactionCategory);
         const isExpense = r.transactionCategory === "EXPENSE";
         if (!isSale && !isExpense) return "—";

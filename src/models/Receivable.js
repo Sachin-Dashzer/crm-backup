@@ -29,7 +29,14 @@ const receivableSchema = new mongoose.Schema(
     purpose: { type: String, enum: RECEIVABLE_PURPOSES, required: true },
 
     // "Transplant" / "Services" / "Medicine" where applicable — mirrors the revenue taxonomy.
+    // Also "Advances" for money we lent out (see src/models/Advance.js), which is not revenue at
+    // all — excludeFromPnl below is what keeps it out of income.
     revenueCategory: String,
+    // Second-level split under revenueCategory, mirroring Payable.expenseSubType. Added for
+    // Advances ("Advance Salary" / "Advance Rent" / …, see src/constants/advanceTypes.js), which
+    // needed a sub-bucket of its own; optional and additive, so every pre-existing receivable
+    // simply has it unset and continues to group by `purpose` as before.
+    revenueSubType: String,
 
     period: {
       month: Number, // 1-12
@@ -68,6 +75,17 @@ const receivableSchema = new mongoose.Schema(
     // Stored rather than inferred: a future flow that creates receivables some third way has to
     // make this decision explicitly instead of silently inheriting whichever guess the code made.
     costAlreadyRecognised: { type: Boolean, default: false, index: true },
+
+    // FINANCING, NOT TRADE — this claim is real and belongs on the balance sheet, but it is not
+    // income. Set true only for an advance's Receivable (money we paid out and expect back — see
+    // src/models/Advance.js): lending money is not a sale and recovering it is not revenue, so
+    // neither half may reach the P&L.
+    //
+    // Load-bearing: /api/close-book/pnl computes Income as "direct revenue transactions + EVERY
+    // non-cancelled Receivable's totalAmount raised in the period", with no category filter of
+    // its own. Without this flag an advance Receivable silently inflates income by the full
+    // amount lent. The mirror field lives on Payable for borrowings — fix the two together.
+    excludeFromPnl: { type: Boolean, default: false, index: true },
 
     // Pure concurrency fence — NOT a cached balance, never read for its value. received/pending
     // stay fully computed-on-read (see the file header); this field's only job is to give two

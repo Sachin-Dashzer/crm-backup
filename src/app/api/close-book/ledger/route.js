@@ -8,6 +8,8 @@ import {
   buildBalanceMatch,
   buildContraLedgerUnionStage,
   buildSuspenseLedgerUnionStage,
+  buildBorrowingLedgerUnionStage,
+  buildAdvanceLedgerUnionStage,
   SIGNED_AMOUNT,
   getOpeningBalance,
   round2,
@@ -94,6 +96,27 @@ export async function GET(request) {
       method,
     });
 
+    // Money received from (or repaid to) an outside party that must be repaid — a borrowing —
+    // folded in the same way. Only OPEN (non-cancelled) rows count.
+    const borrowingStage = buildBorrowingLedgerUnionStage({
+      account,
+      from,
+      to,
+      branch,
+      transactionCategory,
+      method,
+    });
+
+    // The mirror: money WE lent out (and its later recovery) — an advance. Same treatment.
+    const advanceStage = buildAdvanceLedgerUnionStage({
+      account,
+      from,
+      to,
+      branch,
+      transactionCategory,
+      method,
+    });
+
     const [opening, [result]] = await Promise.all([
       // Branch-filtered views open from that branch's own seed, not the company figure — see
       // getOpeningBalance. Unseeded branches open at 0 and the UI says so.
@@ -114,6 +137,8 @@ export async function GET(request) {
         },
         ...(contraStage ? [contraStage] : []),
         ...(suspenseStage ? [suspenseStage] : []),
+        ...(borrowingStage ? [borrowingStage] : []),
+        ...(advanceStage ? [advanceStage] : []),
         // Cumulative running total across the WHOLE filtered period, computed before
         // pagination. _id breaks ties so same-day rows have a stable, repeatable order.
         {
@@ -218,13 +243,17 @@ export async function GET(request) {
                   reversalOf: 1,
                   reversalReason: 1,
                   isReversed: 1,
-                  // Contra / suspense-only fields; absent on transaction rows.
+                  // Contra / suspense / borrowing-only fields; absent on transaction rows.
                   isContra: 1,
                   isSuspense: 1,
+                  isBorrowing: 1,
+                  isAdvance: 1,
                   fromAccount: 1,
                   toAccount: 1,
                   direction: 1,
                   reference: 1,
+                  payableId: 1,
+                  receivableId: 1,
                   sourceKind: 1,
                 },
               },
@@ -246,10 +275,18 @@ export async function GET(request) {
                     },
                   },
                   transactionCount: {
-                    $sum: { $cond: [{ $or: ["$isContra", "$isSuspense"] }, 0, 1] },
+                    $sum: {
+                      $cond: [
+                        { $or: ["$isContra", "$isSuspense", "$isBorrowing", "$isAdvance"] },
+                        0,
+                        1,
+                      ],
+                    },
                   },
                   contraCount: { $sum: { $cond: ["$isContra", 1, 0] } },
                   suspenseCount: { $sum: { $cond: ["$isSuspense", 1, 0] } },
+                  borrowingCount: { $sum: { $cond: ["$isBorrowing", 1, 0] } },
+                  advanceCount: { $sum: { $cond: ["$isAdvance", 1, 0] } },
                 },
               },
             ],
@@ -266,6 +303,8 @@ export async function GET(request) {
       transactionCount: 0,
       contraCount: 0,
       suspenseCount: 0,
+      borrowingCount: 0,
+      advanceCount: 0,
     };
     const openingBalance = round2(opening.openingBalance);
     const totalIn = round2(summary.totalIn);
@@ -274,7 +313,11 @@ export async function GET(request) {
     // Pagination counts every ROW the ledger renders, contra included — counting only
     // transactions would drop the last page's worth of rows once transfers exist.
     const movementCount =
-      summary.transactionCount + summary.contraCount + (summary.suspenseCount || 0);
+      summary.transactionCount +
+      summary.contraCount +
+      (summary.suspenseCount || 0) +
+      (summary.borrowingCount || 0) +
+      (summary.advanceCount || 0);
 
     // runningDelta is cumulative movement; the displayed running balance starts from the
     // opening balance. closingBalance therefore always equals the last row's running
@@ -310,6 +353,8 @@ export async function GET(request) {
       transactionCount: summary.transactionCount,
       contraCount: summary.contraCount,
       suspenseCount: summary.suspenseCount || 0,
+      borrowingCount: summary.borrowingCount || 0,
+      advanceCount: summary.advanceCount || 0,
       movementCount,
       // True when a filter suppressed contra entries, so the UI can say the ledger won't
       // reconcile with the unfiltered view rather than leaving the gap unexplained.

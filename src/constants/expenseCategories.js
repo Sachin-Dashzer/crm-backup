@@ -119,6 +119,7 @@ export const EXPENSE_CATEGORY_TREE = {
     "Income Tax Ryan Medihub",
     "Income Tax Ryan Skin",
   ],
+  "Loans": ["LA DOLCE" , "Loan Repayment", "Loan Others"],
   "Software Rental Expenses": ["Software Rental Expenses"],
   "Hardware Rental Expenses": [
     "AC Rent",
@@ -142,16 +143,14 @@ export const EXPENSE_CATEGORY_TREE = {
     "Loan Repayment",
   ],
   "Collab Clinic Payment": ["Collab Clinic Payment"],
+  "Miscellaneous": ["Miscellaneous"],
+  "Borrowings": ["Deposit Received", "Loan from Party", "Advance Received"],
 };
 
 export const EXPENSE_CATEGORIES = Object.keys(EXPENSE_CATEGORY_TREE);
 
 export const getExpenseTypes = (category) => EXPENSE_CATEGORY_TREE[category] || [];
 
-// Categories that get the create-payable / record-payment flow (Payable Expenses section).
-// Salary and Incentive are owned by the Employees section, and Commision by the Patient
-// section — they're payable, but excluded from the Payable Expenses dropdown so the same
-// expense can't be entered from two places. See PAYABLE_EXPENSE_DROPDOWN_CATEGORIES below.
 export const PAYABLE_EXPENSE_CATEGORIES = [
   "Salary",
   "Rent",
@@ -164,20 +163,17 @@ export const PAYABLE_EXPENSE_CATEGORIES = [
   "Lab Expenses",
   "Interest Expenses",
   "Taxes",
+  "Loans",
   "Software Rental Expenses",
   "Hardware Rental Expenses",
 ];
 
-// Categories already owned by a dedicated section's own tab/flow — excluded from the
-// Payable Expenses tab's category dropdown to avoid double-entry.
 const PAYABLE_CATEGORIES_OWNED_ELSEWHERE = ["Salary", "Incentive", "Commision"];
 
 export const PAYABLE_EXPENSE_DROPDOWN_CATEGORIES = PAYABLE_EXPENSE_CATEGORIES.filter(
   (cat) => !PAYABLE_CATEGORIES_OWNED_ELSEWHERE.includes(cat),
 );
 
-// Everything else in EXPENSE_CATEGORY_TREE — paid in full when logged, no payable.
-// Collab Clinic Payment is deliberately excluded: it keeps its own Collab tab.
 export const DIRECT_PAYMENT_CATEGORIES = [
   "Marketing",
   "Welfare Expenses",
@@ -189,10 +185,10 @@ export const DIRECT_PAYMENT_CATEGORIES = [
   "Forex Conversion and Fluctuation Charges",
   "Asset Based Payment",
   "Drawings",
+  "Miscellaneous",
   "Patient Related Expenses",
 ];
 
-// The sixteen new Taxes entries from the sheet, for the "Include TDS" category picker (§4.4).
 export const TDS_TAX_TYPES = [
   "GST Ryan Skin",
   "ROC Ryan Medihub",

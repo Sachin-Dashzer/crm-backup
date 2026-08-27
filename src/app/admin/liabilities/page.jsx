@@ -2,8 +2,12 @@
 
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import { Wallet, HelpCircle, CheckCircle2, Clock, AlertTriangle, Download, Loader2 } from "lucide-react";
+import Link from "next/link";
+import { Wallet, HelpCircle, HandCoins, CheckCircle2, Clock, AlertTriangle, Download, Loader2, X, ArrowUpRight } from "lucide-react";
 import DrillDownTable from "@/components/finance/DrillDownTable";
+import RecordBorrowingModal from "@/components/finance/RecordBorrowingModal";
+import BorrowingDocumentActions from "@/components/finance/BorrowingDocumentActions";
+import DocumentHistory from "@/components/finance/DocumentHistory";
 import MetricCard from "@/components/MetricCard";
 import { formatCurrency, formatDate } from "@/lib/financeUI";
 import { AGEING_BUCKETS } from "@/lib/ageing";
@@ -70,6 +74,44 @@ function LiabilitiesPageInner() {
   // to restore.
   const [payablesInitialDrill, setPayablesInitialDrill] = useState(undefined);
   const [payablesDrill, setPayablesDrill] = useState(null);
+
+  // Borrowings — deposits/loans/advances that must be repaid; see src/models/Borrowing.js. A
+  // real Payable document under expenseCategory "Borrowings", so it already rides on the same
+  // /api/payables/grouped?level=1 total the header above sums (no separate header math needed),
+  // but gets its own dedicated section (own apiBase, own document actions) since its lifecycle
+  // (Record Repayment/Add Tranche) differs from a trade payable's.
+  const [borrowModal, setBorrowModal] = useState(null); // { mode: "IN"|"OUT", payable } | null
+  const [borrowingsRefreshKey, setBorrowingsRefreshKey] = useState(0);
+  const [borrowHistoryDoc, setBorrowHistoryDoc] = useState(null);
+  const [borrowHistoryRows, setBorrowHistoryRows] = useState([]);
+  const [borrowHistoryLoading, setBorrowHistoryLoading] = useState(false);
+
+  const openBorrowHistory = async (row) => {
+    setBorrowHistoryDoc(row);
+    setBorrowHistoryLoading(true);
+    try {
+      const res = await fetch(`/api/borrowings/grouped?level=4&documentId=${row._id}&limit=200`);
+      const data = await res.json();
+      setBorrowHistoryRows(
+        (data.rows || []).map((r) => ({
+          _id: r._id,
+          amount: r.amount,
+          date: r.date,
+          method: `${r.direction === "OUT" ? "Repayment" : "Received"} · ${r.account}`,
+          paymentId: r.reference,
+          createdBy: r.createdBy,
+        })),
+      );
+    } finally {
+      setBorrowHistoryLoading(false);
+    }
+  };
+
+  const handleBorrowSuccess = () => {
+    setBorrowModal(null);
+    setBorrowingsRefreshKey((k) => k + 1);
+    fetchHeaderTotals();
+  };
 
   // Balances (Payables/Suspense closing) are POINT-IN-TIME — send `to` only, never `from`. See
   // the identical, longer comment in admin/assets/page.jsx; both routes below already default
@@ -316,9 +358,16 @@ function LiabilitiesPageInner() {
               </button>
             )}
             <button
+              onClick={() => setBorrowModal({ mode: "IN", payable: null })}
+              className="ml-auto inline-flex items-center gap-1.5 px-3.5 py-2 bg-violet-600 text-white rounded-xl text-sm font-semibold shadow-sm hover:bg-violet-700"
+            >
+              <HandCoins className="w-3.5 h-3.5" />
+              Record Borrowing
+            </button>
+            <button
               onClick={handleExport}
               disabled={exporting}
-              className="ml-auto inline-flex items-center gap-1.5 px-3.5 py-2 bg-white border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50 disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50 disabled:opacity-50"
             >
               {exporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
               Download Excel
@@ -421,8 +470,85 @@ function LiabilitiesPageInner() {
               onScopeChange={setScope}
             />
           </section>
+
+          <section className="space-y-3">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <HandCoins className="w-4 h-4 text-violet-500" />
+                <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wide">Borrowings</h2>
+              </div>
+              <Link
+                href="/admin/borrowings"
+                className="inline-flex items-center gap-1 text-xs font-semibold text-violet-700 hover:text-violet-800"
+              >
+                Manage all loans <ArrowUpRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+            <DrillDownTable
+              key={borrowingsRefreshKey}
+              levels={3}
+              sectionConfig={{
+                key: "borrowings",
+                mode: "documents",
+                documentShape: "payable",
+                hideCreateButtons: true,
+                apiBase: "/api/borrowings",
+                title: "Borrowings",
+                columnLabels: {
+                  opening: "Opening owed",
+                  movement: "Raised",
+                  settled: "Repaid",
+                  closing: "Still owed",
+                },
+              }}
+              renderDocumentActions={(row) => (
+                <BorrowingDocumentActions
+                  row={row}
+                  onRepay={(r) => setBorrowModal({ mode: "OUT", payable: r })}
+                  onTranche={(r) => setBorrowModal({ mode: "IN", payable: r })}
+                  onHistory={openBorrowHistory}
+                />
+              )}
+              scope={scope}
+              onScopeChange={setScope}
+            />
+          </section>
         </div>
       </main>
+
+      {borrowModal && (
+        <RecordBorrowingModal
+          open
+          mode={borrowModal.mode}
+          payable={borrowModal.payable}
+          toast={toast}
+          onClose={() => setBorrowModal(null)}
+          onSuccess={handleBorrowSuccess}
+        />
+      )}
+
+      {borrowHistoryDoc && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[85vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-5 border-b border-gray-100 sticky top-0 bg-white">
+              <h3 className="text-lg font-bold text-gray-900">
+                History — {borrowHistoryDoc.payee?.label || "Borrowing"}
+              </h3>
+              <button onClick={() => setBorrowHistoryDoc(null)} className="p-1.5 hover:bg-gray-100 rounded-lg">
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+            <div className="p-5">
+              <DocumentHistory
+                doc={borrowHistoryDoc}
+                kind="payable"
+                transactions={borrowHistoryRows}
+                loading={borrowHistoryLoading}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
