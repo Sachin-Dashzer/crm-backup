@@ -3,11 +3,14 @@
 import { Suspense, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import { Landmark, Banknote, HandCoins, AlertTriangle, CheckCircle2, Clock, Download, Loader2 } from "lucide-react";
+import { Landmark, Banknote, HandCoins, AlertTriangle, CheckCircle2, Clock, Download, Loader2, X, ArrowUpRight } from "lucide-react";
 import DrillDownTable from "@/components/finance/DrillDownTable";
 import LoanSettlementModal from "@/components/finance/LoanSettlementModal";
 import CancelLoanModal from "@/components/finance/CancelLoanModal";
 import LoanRowActions from "@/components/finance/LoanRowActions";
+import RecordAdvanceModal from "@/components/finance/RecordAdvanceModal";
+import AdvanceDocumentActions from "@/components/finance/AdvanceDocumentActions";
+import DocumentHistory from "@/components/finance/DocumentHistory";
 import MetricCard from "@/components/MetricCard";
 import { formatCurrency, formatDate } from "@/lib/financeUI";
 import { AGEING_BUCKETS } from "@/lib/ageing";
@@ -82,6 +85,44 @@ function AssetsPageInner() {
   const [receivablesInitialDrill, setReceivablesInitialDrill] = useState(undefined);
   const [receivablesDrill, setReceivablesDrill] = useState(null);
   const [exporting, setExporting] = useState(false);
+
+  // Advances — money WE lent out (advance salary/rent, personal advances) that must come back;
+  // see src/models/Advance.js. A real Receivable document under revenueCategory "Advances", so it
+  // already rides on the same /api/receivables/grouped?level=1 total the header above sums (no
+  // separate header math needed), but gets its own dedicated section since its lifecycle (Record
+  // Recovery/Further Advance) differs from an ordinary receivable's.
+  const [advanceModal, setAdvanceModal] = useState(null); // { mode: "OUT"|"IN", receivable } | null
+  const [advancesRefreshKey, setAdvancesRefreshKey] = useState(0);
+  const [advanceHistoryDoc, setAdvanceHistoryDoc] = useState(null);
+  const [advanceHistoryRows, setAdvanceHistoryRows] = useState([]);
+  const [advanceHistoryLoading, setAdvanceHistoryLoading] = useState(false);
+
+  const openAdvanceHistory = async (row) => {
+    setAdvanceHistoryDoc(row);
+    setAdvanceHistoryLoading(true);
+    try {
+      const res = await fetch(`/api/advances/grouped?level=4&documentId=${row._id}&limit=200`);
+      const data = await res.json();
+      setAdvanceHistoryRows(
+        (data.rows || []).map((r) => ({
+          _id: r._id,
+          amount: r.amount,
+          date: r.date,
+          method: `${r.direction === "IN" ? "Recovered" : "Paid out"} · ${r.account}`,
+          paymentId: r.reference,
+          createdBy: r.createdBy,
+        })),
+      );
+    } finally {
+      setAdvanceHistoryLoading(false);
+    }
+  };
+
+  const handleAdvanceSuccess = () => {
+    setAdvanceModal(null);
+    setAdvancesRefreshKey((k) => k + 1);
+    fetchHeaderTotals();
+  };
 
   // Balances (Cash & Bank / Loans / Receivables closing) are POINT-IN-TIME, not a flow — a
   // closing figure reads "everything up to this date", not "movement within this date range".
@@ -358,9 +399,16 @@ function AssetsPageInner() {
               </button>
             )}
             <button
+              onClick={() => setAdvanceModal({ mode: "OUT", receivable: null })}
+              className="ml-auto inline-flex items-center gap-1.5 px-3.5 py-2 bg-teal-600 text-white rounded-xl text-sm font-semibold shadow-sm hover:bg-teal-700"
+            >
+              <HandCoins className="w-3.5 h-3.5" />
+              Record Advance
+            </button>
+            <button
               onClick={handleExport}
               disabled={exporting}
-              className="ml-auto inline-flex items-center gap-1.5 px-3.5 py-2 bg-white border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50 disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50 disabled:opacity-50"
             >
               {exporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
               Download Excel
@@ -546,8 +594,85 @@ function AssetsPageInner() {
               />
             )}
           </section>
+
+          <section className="space-y-3">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <HandCoins className="w-4 h-4 text-teal-500" />
+                <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wide">Advances</h2>
+              </div>
+              <Link
+                href="/admin/advances"
+                className="inline-flex items-center gap-1 text-xs font-semibold text-teal-700 hover:text-teal-800"
+              >
+                Manage all advances <ArrowUpRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+            <DrillDownTable
+              key={advancesRefreshKey}
+              levels={3}
+              sectionConfig={{
+                key: "advances",
+                mode: "documents",
+                documentShape: "receivable",
+                hideCreateButtons: true,
+                apiBase: "/api/advances",
+                title: "Advances",
+                columnLabels: {
+                  opening: "Opening owed to us",
+                  movement: "Advanced",
+                  settled: "Recovered",
+                  closing: "Still owed to us",
+                },
+              }}
+              renderDocumentActions={(row) => (
+                <AdvanceDocumentActions
+                  row={row}
+                  onRecover={(r) => setAdvanceModal({ mode: "IN", receivable: r })}
+                  onFurther={(r) => setAdvanceModal({ mode: "OUT", receivable: r })}
+                  onHistory={openAdvanceHistory}
+                />
+              )}
+              scope={scope}
+              onScopeChange={setScope}
+            />
+          </section>
         </div>
       </main>
+
+      {advanceModal && (
+        <RecordAdvanceModal
+          open
+          mode={advanceModal.mode}
+          receivable={advanceModal.receivable}
+          toast={toast}
+          onClose={() => setAdvanceModal(null)}
+          onSuccess={handleAdvanceSuccess}
+        />
+      )}
+
+      {advanceHistoryDoc && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[85vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-5 border-b border-gray-100 sticky top-0 bg-white">
+              <h3 className="text-lg font-bold text-gray-900">
+                History — {advanceHistoryDoc.payer?.label || "Advance"}
+              </h3>
+              <button onClick={() => setAdvanceHistoryDoc(null)} className="p-1.5 hover:bg-gray-100 rounded-lg">
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+            <div className="p-5">
+              <DocumentHistory
+                doc={advanceHistoryDoc}
+                kind="receivable"
+                transactions={advanceHistoryRows}
+                loading={advanceHistoryLoading}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

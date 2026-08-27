@@ -30,6 +30,8 @@ export async function GET(request) {
     const payerKind = searchParams.get("payerKind") || "";
     const payerRefId = searchParams.get("payerRefId") || "";
     const payerLabel = searchParams.get("payerLabel") || "";
+    const revenueCategory = searchParams.get("revenueCategory") || "";
+    const revenueSubType = searchParams.get("revenueSubType") || "";
     const status = searchParams.get("status") || "";
     const dateFrom = searchParams.get("dateFrom") || "";
     const dateTo = searchParams.get("dateTo") || "";
@@ -44,6 +46,10 @@ export async function GET(request) {
     if (payerKind) match["payer.kind"] = payerKind;
     if (payerRefId) match["payer.refId"] = new mongoose.Types.ObjectId(payerRefId);
     if (payerLabel) match["payer.label"] = payerLabel;
+    // Exact values from src/constants/advanceTypes.js for the Advances page — mirrors
+    // expenseCategory/expenseSubType on /api/payables/list.
+    if (revenueCategory) match.revenueCategory = revenueCategory;
+    if (revenueSubType) match.revenueSubType = revenueSubType;
     // Never trust a raw branch string from the client — this route consumes a plain Mongo match
     // object, so resolveBranchFilter's result (a collab session's {$in: COLLAB_BRANCHES} shape
     // included) spreads straight in, unlike the string-keyed accountBalances.js helpers.

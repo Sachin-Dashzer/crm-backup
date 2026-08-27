@@ -181,6 +181,24 @@ export async function DELETE(req, { params }) {
       );
     }
 
+    // An "Advances" receivable's rows (the OUT that raised it, every recovery IN) live in the
+    // Advance collection, not Transactions — the check above never sees them. Without this, an
+    // advance with real activity could be hard-deleted here, leaving every Advance row pointing
+    // at a receivableId that no longer exists. See src/models/Advance.js.
+    const { default: Advance } = await import("@/models/Advance");
+    const linkedAdvances = await Advance.countDocuments({ receivableId: receivable._id });
+    if (linkedAdvances > 0) {
+      return NextResponse.json(
+        {
+          error:
+            `${linkedAdvances} advance row(s) are recorded against this receivable. ` +
+            `Cancel those first (see /admin/advances), or cancel this receivable instead of ` +
+            `deleting it — deleting it now would leave those rows pointing at nothing.`,
+        },
+        { status: 409 },
+      );
+    }
+
     await DeleteLog.create({
       entityType: "Receivable",
       entityId: String(receivable._id),

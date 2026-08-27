@@ -26,6 +26,7 @@ import LockedBadge from "./LockedBadge";
 import ContraRowActions from "./ContraRowActions";
 import SuspenseRowActions from "./SuspenseRowActions";
 import BorrowingRowActions from "./BorrowingRowActions";
+import AdvanceRowActions from "./AdvanceRowActions";
 import { ReversalBadge, ReversedBadge } from "./StatusBadges";
 import RecordPaymentModal from "./RecordPaymentModal";
 import RecordReceiptModal from "./RecordReceiptModal";
@@ -267,11 +268,22 @@ export default function DrillDownTable({
                   ? `Suspense${r.direction ? ` (${r.direction})` : ""}${r.remarks ? ` · ${r.remarks}` : r.reference ? ` · ${r.reference}` : ""}`
                   : r.isBorrowing
                     ? `Borrowing (${r.direction})${r.remarks ? ` · ${r.remarks}` : r.reference ? ` · ${r.reference}` : ""}`
-                    : r.remarks || r.procedure || r.expenseType || "—",
+                    : r.isAdvance
+                      ? `Advance (${r.direction})${r.remarks ? ` · ${r.remarks}` : r.reference ? ` · ${r.reference}` : ""}`
+                      : r.remarks || r.procedure || r.expenseType || "—",
               amount: r.amount ?? Math.abs(r.signedAmount || 0),
-              method: r.isContra ? "Contra Transfer" : r.isSuspense ? "Suspense" : r.isBorrowing ? "Borrowing" : r.method,
+              method: r.isContra
+                ? "Contra Transfer"
+                : r.isSuspense
+                  ? "Suspense"
+                  : r.isBorrowing
+                    ? "Borrowing"
+                    : r.isAdvance
+                      ? "Advance"
+                      : r.method,
               account: drill.headKey,
-              transactionCategory: r.isContra || r.isSuspense || r.isBorrowing ? null : r.transactionCategory,
+              transactionCategory:
+                r.isContra || r.isSuspense || r.isBorrowing || r.isAdvance ? null : r.transactionCategory,
             })),
           );
           setMeta({
@@ -447,7 +459,8 @@ export default function DrillDownTable({
   // Cash & Bank/Loans' level-2 ledger (unlike the documents-mode leaf) mixes real Transactions
   // with contra transfers and suspense entries in one list WITHOUT tagging them via sourceKind —
   // isContra/isSuspense (set in the load() mapping above) are what distinguish them there.
-  const isRealTransaction = (row) => !row.isContra && !row.isSuspense && !row.isBorrowing;
+  const isRealTransaction = (row) =>
+    !row.isContra && !row.isSuspense && !row.isBorrowing && !row.isAdvance;
 
   const viewButton = (row) =>
     isRealTransaction(row) ? (
@@ -464,6 +477,7 @@ export default function DrillDownTable({
     if (row.sourceKind === "CONTRA") return <ContraRowActions />;
     if (row.sourceKind === "SUSPENSE") return <SuspenseRowActions />;
     if (row.sourceKind === "BORROWING") return <BorrowingRowActions />;
+    if (row.sourceKind === "ADVANCE") return <AdvanceRowActions />;
     if (row.lockReason) {
       return (
         <div className="flex items-center justify-end gap-2">
@@ -683,6 +697,13 @@ export default function DrillDownTable({
           return (
             <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold border bg-violet-50 text-violet-700 border-violet-200">
               Borrowing
+            </span>
+          );
+        }
+        if (r.sourceKind === "ADVANCE") {
+          return (
+            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold border bg-teal-50 text-teal-700 border-teal-200">
+              Advance
             </span>
           );
         }

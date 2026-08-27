@@ -23,6 +23,7 @@ import {
   ScrollText,
   FileText,
   Banknote,
+  ArrowLeftRight,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -200,6 +201,16 @@ export default function AdminSidebar() {
               href="/admin/borrowings"
               icon={Banknote}
               active={isActive("/admin/borrowings")}
+              onClick={close}
+            />
+            {/* The mirror: money WE lent out (advance salary/rent, personal advances) that must
+                come back — see src/models/Advance.js. Summary lives inside Assets' own Advances
+                section; this is the dedicated CRUD page. */}
+            <NavItem
+              label="Advances"
+              href="/admin/advances"
+              icon={ArrowLeftRight}
+              active={isActive("/admin/advances")}
               onClick={close}
             />
             <NavItem
