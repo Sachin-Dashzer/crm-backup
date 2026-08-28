@@ -1,33 +1,6 @@
 import { buildAgeingStages } from "@/lib/ageing";
 import { UNSETTLED_METHODS } from "@/constants/bankRouting";
 
-// Shared aggregation stages for computing a Payable's paid/pending/status
-// from the EXPENSE Transactions linked to it via payableId. Paid/pending is
-// NEVER stored on the Payable — always computed here, at query time, from
-// the Transactions collection (the single source of truth for money moved).
-// Used by both /api/payables/list and /api/payables/summary so the two
-// routes can never disagree on what "pending" means.
-//
-// A Borrowing repayment (direction "OUT") also pays a Payable down, but it lives in the
-// Borrowing collection, not Transactions — see src/models/Borrowing.js for why. A second
-// $lookup folds those rows in the same way, so "paid" means the same thing regardless of which
-// collection actually recorded the money movement. For every ordinary (non-borrowing) Payable
-// this $lookup simply matches nothing — no Borrowing row is ever created against a payableId
-// this route didn't itself hand out — so every existing report is unaffected.
-//
-// §4.2 — a third source: an Advance that SETTLES this payable (Advance.settlesPayableId — an
-// unrelated, pre-existing obligation an advance offsets, e.g. an advance paid to a rent vendor
-// settled against their own rent payable). Economically identical to a payment, so it folds into
-// the SAME "paid" — this is what makes the payable's pending (and every existing rollup that
-// sums it) drop automatically, with no other code needing to know settlement exists. `pending`
-// stays clamped at 0 exactly as before — never negative, so no existing consumer that sums it
-// across many documents can have one party's overpayment silently cancel another's balance. The
-// unclamped signed figure, for the single-document "advance in hand" display (see
-// DrillDownTable.jsx), is added separately below as netPending/advanceInHand — never by
-// touching this clamp.
-//
-// Ageing (daysOverdue / daysToDue / ageingBucket) is appended from the shared
-// buildAgeingStages() so the header summary and the table age rows identically.
 export function buildPayableAggregationStages(
   txCollectionName,
   borrowingsCollectionName = "borrowings",
@@ -45,9 +18,6 @@ export function buildPayableAggregationStages(
                 $and: [
                   { $eq: ["$payableId", "$$payableId"] },
                   { $eq: ["$approvalStatus", "APPROVED"] },
-                  // A paid_by_other row never actually settles a payable — the money wasn't
-                  // physically paid by us. Defensive consistency guard, same reasoning as
-                  // receivableAggregation.js.
                   { $not: [{ $in: ["$method", UNSETTLED_METHODS] }] },
                 ],
               },
@@ -121,9 +91,6 @@ export function buildPayableAggregationStages(
     {
       $addFields: {
         pending: { $max: [{ $subtract: ["$totalAmount", "$paid"] }, 0] },
-        // §4.2 — unclamped signed pending, and the amount by which an advance settling this
-        // payable exceeds it ("advance in hand"). Never summed into a roll-up; read only by a
-        // single document's own display (see DrillDownTable.jsx's documentColumns).
         netPending: { $subtract: ["$totalAmount", "$paid"] },
         advanceInHand: { $max: [{ $subtract: ["$paid", "$totalAmount"] }, 0] },
         status: {
@@ -133,10 +100,6 @@ export function buildPayableAggregationStages(
               {
                 case: {
                   $and: [
-                    // See the identical guard in receivableAggregation.js: a bare
-                    // { $ne: ["$dueDate", null] } is TRUE for an ABSENT field, and an absent
-                    // date also passes $lt against $$NOW, so undated payables were all being
-                    // reported Overdue. These two files are mirrors — fix them together.
                     { $ne: [{ $ifNull: ["$dueDate", null] }, null] },
                     { $lt: ["$dueDate", "$$NOW"] },
                     { $lt: ["$paid", "$totalAmount"] },
@@ -156,18 +119,6 @@ export function buildPayableAggregationStages(
   ];
 }
 
-// ── Grouped rollup for the accounting drill-down UI (Liabilities page) ────────────────────
-//
-// Same "paid via linked APPROVED, settled Transactions" rule as buildPayableAggregationStages
-// above, rolled up by expenseCategory (HEAD, level 1) then expenseSubType (SUB-TYPE, level 2)
-// instead of per-document. A bucket's "opening" is the pending amount (raised − paid) carried in
-// from BEFORE `from` — the same carry-forward idea accountBalances.js uses for account opening
-// balances — so movement/settled inside the window plus opening reproduces closing.
-//
-// groupBy: "vendor" (Vendors page) rolls up by payee.refId instead of expenseCategory/
-// expenseSubType — same carry-forward math, restricted to payee.kind: "VENDOR" (the only kind
-// with a stable refId to group on), single level (vendors aren't organised in a category tree,
-// so there's no level-2 sub-bucket the way expenseCategory has expenseSubType).
 export function buildPayableGroupedStages(txCollectionName, { level, category, subType, branch, from, to, groupBy = "category", borrowingsCollectionName = "borrowings" } = {}) {
   const isVendor = groupBy === "vendor";
   const match = { isCancelled: { $ne: true } };
@@ -201,9 +152,6 @@ export function buildPayableGroupedStages(txCollectionName, { level, category, s
         from: txCollectionName,
         let: { payableId: "$_id" },
         pipeline: [
-          // Mirrors receivableAggregation.js: anything dated after `to` contributes to neither
-          // paidBeforeRange (date < from) nor paidInRange (from <= date <= to), so excluding it
-          // here is exactly equivalent. No lower bound — paidBeforeRange needs prior history.
           ...(toDate ? [{ $match: { date: { $lte: toDate } } }] : []),
           {
             $match: {
@@ -221,10 +169,6 @@ export function buildPayableGroupedStages(txCollectionName, { level, category, s
         as: "payments",
       },
     },
-    // A Borrowing repayment (direction "OUT") pays a Payable down the same way a Transaction
-    // does, but lives in the Borrowing collection — see the identical $lookup and its comment
-    // in buildPayableAggregationStages above. Concatenated into "payments" before the
-    // before/in-range split below, so every bucket that follows treats the two sources as one.
     {
       $lookup: {
         from: borrowingsCollectionName,
@@ -294,8 +238,6 @@ export function buildPayableGroupedStages(txCollectionName, { level, category, s
     {
       $project: {
         _id: 0,
-        // ObjectId as a string — this key rides in a URL query param on the way back for the
-        // vendor's document drill, unlike the category/sub-type bucket string it replaces.
         key: isVendor ? { $toString: "$_id.bucket" } : "$_id.bucket",
         label: isVendor ? "$label" : "$_id.bucket",
         opening: 1,
@@ -305,8 +247,6 @@ export function buildPayableGroupedStages(txCollectionName, { level, category, s
         count: 1,
       },
     },
-    // Vendors sort by outstanding balance (worst first) — an alphabetical vendor-name sort would
-    // need the label, which post-dates the group stage; closing is already the field of interest.
     { $sort: isVendor ? { closing: -1 } : { key: 1 } },
   ];
 }

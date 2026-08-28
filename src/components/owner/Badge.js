@@ -1,4 +1,3 @@
-// .badge.good/warn/bad/info/purple/neutral, optionally with a leading .dot.
 const DOT_COLOR = {
   good: "green",
   warn: "orange",

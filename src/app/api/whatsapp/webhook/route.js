@@ -5,7 +5,6 @@ import Transactions from "@/models/Transactions";
 import Vendor from "@/models/Vendor";
 import { sendWhatsAppText, notifyOtherAdmins, getAdminNumbers } from "@/lib/whatsapp";
 
-// Meta's Cloud API webhook verification handshake.
 export async function GET(req) {
   const { searchParams } = new URL(req.url);
   const mode = searchParams.get("hub.mode");
@@ -32,14 +31,12 @@ function verifySignature(rawBody, signatureHeader) {
   return crypto.timingSafeEqual(receivedBuf, expectedBuf);
 }
 
-// Matches only the last 10 digits so numbers differ by a "+"/country-code
-// prefix still compare equal.
 const normalizePhone = (phone) => (phone || "").replace(/\D/g, "").slice(-10);
 
 async function handleApprovalButton(fromPhone, buttonId) {
   const admins = getAdminNumbers();
   const matchedAdmin = admins.find((n) => normalizePhone(n) === normalizePhone(fromPhone));
-  if (!matchedAdmin) return; // Not one of the configured admin numbers — ignore silently.
+  if (!matchedAdmin) return;
 
   const match = /^EXPAPPR:([a-fA-F0-9]{24}):(APPROVE|REJECT)$/.exec(buttonId || "");
   if (!match) return;
@@ -47,8 +44,6 @@ async function handleApprovalButton(fromPhone, buttonId) {
   const [, transactionId, actionRaw] = match;
   const newStatus = actionRaw === "APPROVE" ? "APPROVED" : "REJECTED";
 
-  // Atomic compare-and-swap: only succeeds for whichever admin's tap lands
-  // first while the transaction is still PENDING — guarantees no double-processing.
   const transaction = await Transactions.findOneAndUpdate(
     { _id: transactionId, transactionCategory: "EXPENSE", approvalStatus: "PENDING" },
     {
@@ -126,6 +121,5 @@ export async function POST(req) {
     console.error("WhatsApp webhook processing error:", error);
   }
 
-  // Always acknowledge quickly, per Meta's webhook retry behavior.
   return NextResponse.json({ received: true });
 }

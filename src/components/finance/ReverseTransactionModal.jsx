@@ -5,13 +5,6 @@ import { AlertTriangle, Loader2, RotateCcw, X } from "lucide-react";
 import { useToast } from "@/components/Toast";
 import { formatCurrency, formatDate } from "@/lib/financeUI";
 
-// §2 — the dialog behind the Reverse / Refund action. The backend (five guards, the negative
-// amount, the patient rollback) already lives in api/transactions/[id]/reverse; this only drives it.
-//
-// The design rule that matters here: SHOW THE CONSEQUENCE BEFORE CONFIRMING. A reversal moves
-// money out of an account AND moves the patient's status backward, and the second one surprises
-// people. It is spelled out in words below, with real figures, before the button is live.
-
 const todayISO = () => new Date().toLocaleDateString("en-CA");
 const asInputDate = (d) => (d ? new Date(d).toLocaleDateString("en-CA") : todayISO());
 
@@ -42,8 +35,6 @@ export default function ReverseTransactionModal({ transaction, onClose, onDone }
         } else {
           setState(d);
           setAmount(String(d.remaining ?? ""));
-          // A closed period forces today's date and the field is locked to it — the server
-          // applies the same rule, so offering a free date picker here would be a lie.
           setDate(d.originalPeriodLocked ? todayISO() : asInputDate(transaction?.date));
         }
       } catch {
@@ -61,8 +52,6 @@ export default function ReverseTransactionModal({ transaction, onClose, onDone }
   const remaining = state?.remaining ?? 0;
   const isPartial = requested > 0 && requested < remaining - 0.01;
 
-  // Figures for the consequence sentence. patient.payments is already populated by
-  // /api/transactions/get-all, so the resulting balance needs no extra fetch.
   const patientName = transaction?.patient?.personal?.name || transaction?.patientName || null;
   const receivedNow = Number(transaction?.patient?.payments?.amountReceived ?? NaN);
   const receivedAfter = Number.isFinite(receivedNow) ? Math.max(0, receivedNow - requested) : null;
@@ -88,8 +77,6 @@ export default function ReverseTransactionModal({ transaction, onClose, onDone }
       });
       const d = await res.json();
       if (!res.ok) {
-        // The route returns structured detail for the cascade (409) and period (423) cases —
-        // surfaced verbatim rather than flattened to "failed", because both are actionable.
         setError([d.error, ...(d.reasons || []), d.hint].filter(Boolean).join(" "));
         return;
       }
@@ -219,7 +206,6 @@ export default function ReverseTransactionModal({ transaction, onClose, onDone }
                   />
                 </div>
 
-                {/* The consequence, in words, with real figures — before the button is pressed. */}
                 <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800 space-y-1.5">
                   <div className="flex items-center gap-1.5 font-semibold">
                     <AlertTriangle className="w-4 h-4" /> What this will do

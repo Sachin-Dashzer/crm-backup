@@ -1,19 +1,5 @@
 import { computeTaxBreakdown, toTaxDetails } from "@/lib/taxMath";
 
-// §2.2 Phase 1 extraction — buildExpensePayload(), pulled verbatim (behavior unchanged) out of
-// src/app/admin/transactions/create/page.jsx. Named for the file the spec's target structure
-// asks for (src/lib/entryForm/buildTransactionPayload.js) since UnifiedEntryForm will eventually
-// need a payload builder per entry kind; today only the Expense kind has one worth extracting —
-// Revenue/Contra/Suspense/Borrowing/Advance still build their fetch bodies inline in the page and
-// get their own builder in a later phase, not invented here.
-//
-// Was a closure over component state (expenseData, payableAction, selectedPayableId,
-// allowOverpayment, employees/employeeCache, patients/patientCache, patientOptions/
-// employeeOptions, vendors) — now takes them explicitly. Which of {employees, employeeCache} vs.
-// {patientOptions, employeeOptions} a given branch reads is preserved exactly as it was in the
-// original (the "commission" branch's receiver-name lookup used the memoized *Options lists, the
-// "agent" and "patient>expense/refund" branches used the raw cache+list pair) — not unified here,
-// since Phase 1 is extraction only, never a behavior change.
 export function buildExpensePayload({
   expenseData,
   payableAction,
@@ -126,9 +112,6 @@ export function buildExpensePayload({
     };
   }
 
-  // "other" — Direct Payments. With GST ticked the Amount field is the BASE amount, so
-  // the transaction records the invoice total and keeps the breakdown in taxDetails.
-  // GST never becomes a payable and never gets its own transaction.
   const vendor = vendors.find((v) => v._id === expenseData.vendorId);
   const directTax = computeTaxBreakdown({
     baseAmount: expenseData.amount,

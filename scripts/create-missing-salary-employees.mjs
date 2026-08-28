@@ -1,42 +1,3 @@
-// scripts/create-missing-salary-employees.mjs
-//
-// Creates the 107 employees emp_2.txt referenced for July 2026 salary but who don't exist
-// anywhere in the Employee collection (not in emp.txt, not in emp_1.txt, not under any name
-// variant employee-salary-payables-import.mjs's phone/name resolution could find).
-//
-// emp_2.txt only ever gave name + phone + one month's amount — never role or a full salary
-// structure, so this script fills those in with explicit, visible defaults rather than
-// guessing something more specific:
-//   role            -> "Others" (the same catch-all role 52 of the original 91 emp.txt
-//                       employees already use — the safest default when the source gives no
-//                       role signal at all)
-//   salaryStructure.baseSalary   -> the July 2026 amount from emp_2.txt (the only real salary
-//                                   figure available for any of these 107)
-//   salaryStructure.salaryType   -> "Monthly"
-//   salaryStructure.effectiveFrom -> 2026-04-01 (matches every other employee's effectiveFrom
-//                                    in this dataset)
-//   isactive        -> false for the 26 rows tagged "(Inactive)" / "(Left)" in emp_2.txt, true
-//                      for the rest — the tag is stripped from the stored name (e.g. "Aisha
-//                      Parveen (Inactive)" becomes name "Aisha Parveen", isactive: false) rather
-//                      than left embedded in the name text.
-//
-// THREE ROWS HAVE NO PHONE AT ALL (Shejad, Tanish, Naveen — emp_2.txt literally gave "Not
-// found") — created with phone omitted rather than a fabricated placeholder value.
-//
-// If any of these defaults are wrong for a specific person (wrong role, wrong active status),
-// fix it after creation the normal way (the CRM's employee edit screen, or
-// scripts/employees-bulk-update.mjs with a corrected source row) — this script's job is only to
-// stop blocking the salary payables from being created, not to get every field perfectly right
-// on the first pass.
-//
-// AFTER this script runs, re-run scripts/employee-salary-payables-import.mjs — its employee
-// resolution is live, so it will pick up these newly created records automatically and create
-// their July 2026 SALARY payables.
-//
-// Usage:
-//   node scripts/create-missing-salary-employees.mjs                        # dry run
-//   node scripts/create-missing-salary-employees.mjs --dump-json             # write entries out, no DB
-//   node scripts/create-missing-salary-employees.mjs --apply                # write
 
 import mongoose from "mongoose";
 import fs from "fs";
@@ -50,10 +11,6 @@ for (const f of [".env.local", ".env"]) {
 }
 const MONGODB_URI = process.env.MONGODB_URI;
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// THE DATA — the exact 107 rows employee-salary-payables-import.mjs reported as
-// "Employee not found", parsed directly from that run's own output.
-// ═══════════════════════════════════════════════════════════════════════════════
 const MISSING_EMPLOYEES = [
   {
     "name": "pradeep kumar",
@@ -699,7 +656,6 @@ const MISSING_EMPLOYEES = [
   }
 ];
 
-// --- args ------------------------------------------------------------------
 const args = process.argv.slice(2);
 const APPLY = args.includes("--apply");
 const DUMP_JSON = args.includes("--dump-json");

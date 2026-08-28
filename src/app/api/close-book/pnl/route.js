@@ -9,22 +9,6 @@ import { UNSETTLED_METHODS, ACCOUNTS } from "@/constants/bankRouting";
 
 const ALLOWED_ROLES = ["admin", "super-admin", "owner"];
 
-// Accrual Income/Expense for the dashboard's Row 2 strip.
-//
-//   Income  = direct revenue Transactions (no receivableId, no receivableAllocations) raised
-//             within the period  +  every Receivable's totalAmount CREATED within the period.
-//   Expense = direct expense Transactions (no payableId) within the period  +  every Payable's
-//             totalAmount CREATED within the period.
-//
-// This is exactly "all revenue/expense transactions + all receivables/payables raised - the
-// transactions registered against those receivables/payables": every sale or cost counts exactly
-// once, either as a direct transaction (nothing was ever raised for it) or as the
-// receivable/payable's own raised amount (whether or not it has since been collected/paid),
-// never both. A transaction linked to a receivable/payable is excluded from the "direct" sum
-// specifically so it isn't counted a second time on top of the raised amount.
-//
-// The Further Mode account filter only narrows the TRANSACTION portions — a raised-but-unsettled
-// receivable/payable has no bank account yet, so it can't be scoped to one.
 export async function GET(request) {
   try {
     const session = await getServerSession(authOptions);
@@ -56,12 +40,6 @@ export async function GET(request) {
     if (branch) txBase.branch = branch;
     if (selectedAccounts.length > 0) txBase.furtherMode = { $in: selectedAccounts };
 
-    // excludeFromPnl filters out FINANCING obligations — a borrowing's Payable (money received
-    // that must be repaid) and an advance's Receivable (money lent that will be recovered). Both
-    // are genuine balance-sheet items, but neither is a cost or a sale: borrowing money is not
-    // income, lending it is not expense, and settling either way is just cash moving back.
-    // Without this the sums below counted the full borrowed/lent amount as expense/income the
-    // moment the document was raised. See the field's comment on both models.
     const obligationBase = { isCancelled: { $ne: true }, excludeFromPnl: { $ne: true } };
     if (Object.keys(dateRange).length) obligationBase.createdAt = dateRange;
     if (branch) obligationBase.branch = branch;

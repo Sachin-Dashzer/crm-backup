@@ -2,7 +2,6 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 
-// ─── DATA ───────────────────────────────────────────────────────────────────
 
 const features = [
   {
@@ -193,7 +192,6 @@ const faqs = [
   { q: "Is my patient data secure?", a: "RyanCRM uses bcrypt password hashing, JWT sessions with version control, and role-based access at the API layer. Sessions are immediately invalidated across all devices when a password changes." },
 ];
 
-// ─── HOOKS ──────────────────────────────────────────────────────────────────
 
 function useReveal() {
   const ref = useRef(null);
@@ -208,7 +206,6 @@ function useReveal() {
   return [ref, visible];
 }
 
-// ─── SUB-COMPONENTS ─────────────────────────────────────────────────────────
 
 function RevealDiv({ children, className = "", delay = 0 }) {
   const [ref, visible] = useReveal();
@@ -244,7 +241,6 @@ function SectionH2({ children }) {
   );
 }
 
-// ─── MAIN PAGE ──────────────────────────────────────────────────────────────
 
 export default function LandingPage() {
   const [openFaq, setOpenFaq] = useState(null);
@@ -260,7 +256,6 @@ export default function LandingPage() {
 
   return (
     <>
-      {/* ── GLOBAL STYLES ── */}
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400&family=Outfit:wght@300;400;500;600;700&display=swap');
         * { box-sizing: border-box; }
@@ -314,10 +309,8 @@ export default function LandingPage() {
         ::-webkit-scrollbar-thumb { background:#9a6f2a; border-radius:3px; }
       `}</style>
 
-      {/* ── NAV ── */}
       <nav className={`fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 py-4 transition-all duration-300 ${scrolled ? "bg-[#f8f6f2]/90 backdrop-blur-xl shadow-sm border-b border-black/5" : "bg-[#faf8f4]/80 backdrop-blur-md"}`}>
         <Link href="/" className="flex items-center gap-2.5 no-underline">
-          {/* <div className="w-9 h-9 rounded-lg bg-linear-to-br from-[#9a6f2a] to-[#0a8f63] flex items-center justify-center text-lg">💉</div> */}
           <span className="font-cormorant text-2xl font-bold text-[#1a1510]">Lear<span className="text-[#9a6f2a]">CRM</span></span>
         </Link>
         <ul className="hidden md:flex items-center gap-8 list-none">
@@ -332,14 +325,11 @@ export default function LandingPage() {
         </Link>
       </nav>
 
-      {/* ── HERO ── */}
       <section className="relative min-h-screen flex items-center pt-36 pb-24 px-6 overflow-hidden bg-linear-to-br from-[#faf8f4] via-[#f5f0e8] to-[#eef8f4]">
-        {/* Orbs */}
         <div className="anim-orb absolute w-150 h-150 rounded-full -top-48 -right-36 bg-[#9a6f2a]/8 blur-[120px] pointer-events-none" />
         <div className="anim-orb-d1 absolute w-125 h-125 rounded-full -bottom-24 -left-36 bg-[#0a8f63]/7 blur-[120px] pointer-events-none" />
 
         <div className="max-w-300 mx-auto w-full grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
-          {/* Left */}
           <div>
             <div className="anim-fadeup-1 inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#9a6f2a]/10 border border-[#9a6f2a]/22 text-xs font-semibold tracking-widest text-[#9a6f2a] uppercase mb-6">
               <span className="anim-blink w-1.5 h-1.5 rounded-full bg-[#0a8f63]" />
@@ -364,9 +354,7 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Right – Dashboard Mockup */}
           <div className="anim-fadeleft relative hidden lg:block">
-            {/* Float top-right */}
             <div className="anim-float-delay absolute -top-5 -right-8 z-10 flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-white border border-[#9a6f2a]/20 shadow-xl text-sm font-medium text-[#1a1510]">
               <span className="text-lg">✅</span>
               <div>
@@ -375,9 +363,7 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* Main card */}
             <div className="relative bg-white rounded-2xl p-6 shadow-[0_8px_40px_rgba(0,0,0,0.08)] border border-black/7">
-              {/* Gold top line */}
               <div className="absolute top-0 left-0 right-0 h-0.5 rounded-t-2xl bg-linear-to-r from-transparent via-[#9a6f2a] to-transparent" />
 
               <div className="flex items-center justify-between mb-5">
@@ -385,7 +371,6 @@ export default function LandingPage() {
                 <span className="px-2.5 py-0.5 rounded-full bg-[#0a8f63]/10 border border-[#0a8f63]/25 text-[10px] font-semibold text-[#0a8f63]">● Live</span>
               </div>
 
-              {/* Stats grid */}
               <div className="grid grid-cols-2 gap-3 mb-5">
                 {[
                   { val: "₹4.2L", label: "Today's Revenue", trend: "▲ 18%" },
@@ -401,7 +386,6 @@ export default function LandingPage() {
                 ))}
               </div>
 
-              {/* Chart */}
               <div className="text-[10px] font-bold uppercase tracking-widest text-[#6b5f4e] mb-2">7-Day Revenue</div>
               <div className="flex items-end gap-1.5 h-14 mb-5">
                 {[40, 60, 35, 80, 55, 90, 70].map((h, i) => (
@@ -414,7 +398,6 @@ export default function LandingPage() {
                 ))}
               </div>
 
-              {/* Patients */}
               <div className="text-[10px] font-bold uppercase tracking-widest text-[#6b5f4e] mb-2.5">Recent Patients</div>
               <div className="flex flex-col gap-2">
                 {[
@@ -431,7 +414,6 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* Float bottom-left */}
             <div className="anim-float absolute -bottom-5 -left-10 z-10 flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-white border border-[#9a6f2a]/20 shadow-xl text-sm font-medium text-[#1a1510]">
               <span className="text-lg">💰</span>
               <div>
@@ -443,7 +425,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── STATS BAR ── */}
       <div className="px-6 pb-20">
         <RevealDiv className="max-w-300 mx-auto grid grid-cols-2 md:grid-cols-4 rounded-2xl overflow-hidden border border-black/8 shadow-[0_4px_24px_rgba(0,0,0,0.06)] divide-x divide-black/6">
           {[
@@ -460,7 +441,6 @@ export default function LandingPage() {
         </RevealDiv>
       </div>
 
-      {/* ── FEATURES ── */}
       <section id="features" className="py-28 px-6">
         <div className="max-w-300 mx-auto">
           <RevealDiv>
@@ -476,7 +456,6 @@ export default function LandingPage() {
                 delay={((i % 3) + 1) * 80}
                 className={`group relative bg-white border border-black/7 rounded-2xl p-8 cursor-default shadow-[0_2px_12px_rgba(0,0,0,0.04)] hover:border-[#9a6f2a]/25 hover:-translate-y-1 hover:shadow-[0_20px_60px_rgba(0,0,0,0.1)] transition-all duration-400 overflow-hidden ${f.featured ? "lg:row-span-2 bg-linear-to-br from-[#fffdf7] to-[#faf7ef] border-[#9a6f2a]/20 shadow-[0_4px_20px_rgba(154,111,42,0.08)]" : ""}`}
               >
-                {/* hover tint */}
                 <div className="absolute inset-0 bg-linear-to-br from-[#9a6f2a]/4 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-400 pointer-events-none rounded-2xl" />
                 <div className={`w-13 h-13 rounded-[14px] flex items-center justify-center text-2xl mb-5 ${iconBg[f.color]}`} style={{ width: 52, height: 52 }}>{f.icon}</div>
                 <h3 className={`font-cormorant font-semibold text-[#1a1510] mb-3 ${f.featured ? "text-2xl" : "text-xl"}`}>{f.title}</h3>
@@ -487,7 +466,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── WORKFLOW ── */}
       <section id="workflow" className="py-28 px-6 bg-[#f0ece4]">
         <div className="max-w-300 mx-auto">
           <RevealDiv className="text-center">
@@ -497,7 +475,6 @@ export default function LandingPage() {
           </RevealDiv>
 
           <RevealDiv className="relative mt-14">
-            {/* connector line */}
             <div className="absolute top-7 left-[10%] right-[10%] h-px bg-linear-to-r from-transparent via-[#9a6f2a] to-transparent hidden md:block" />
             <div className="grid grid-cols-3 md:grid-cols-6 gap-y-8 gap-x-2">
               {workflowSteps.map((step) => (
@@ -514,7 +491,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── ROLES ── */}
       <section id="roles" className="py-28 px-6">
         <div className="max-w-300 mx-auto">
           <RevealDiv>
@@ -548,7 +524,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── AUDIT TRAIL ── */}
       <section className="py-28 px-6 bg-[#f0ece4]">
         <div className="max-w-300 mx-auto grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
           <RevealDiv>
@@ -585,7 +560,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── BRANCHES ── */}
       <section className="py-28 px-6">
         <div className="max-w-300 mx-auto">
           <RevealDiv className="text-center">
@@ -609,7 +583,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── PRICING ── */}
       <section id="pricing" className="py-28 px-6 bg-[#f0ece4]">
         <div className="max-w-300 mx-auto">
           <RevealDiv className="text-center">
@@ -673,7 +646,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── TESTIMONIALS ── */}
       <section className="py-28 px-6">
         <div className="max-w-300 mx-auto">
           <RevealDiv className="text-center">
@@ -702,7 +674,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── FAQ ── */}
       <section id="faq" className="py-28 px-6 bg-[#f8f6f2]">
         <div className="max-w-300 mx-auto">
           <RevealDiv className="text-center">
@@ -735,7 +706,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── CTA ── */}
       <section className="relative py-28 px-6 text-center bg-linear-to-br from-[#1a0f05] via-[#2a1a08] to-[#0a1a10] overflow-hidden">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-175 h-175 rounded-full bg-[#9a6f2a]/8 blur-[120px] pointer-events-none" />
         <div className="relative z-10">
@@ -765,13 +735,11 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── FOOTER ── */}
       <footer className="bg-[#f0ece4] border-t border-black/8 px-6 pt-16 pb-8">
         <div className="max-w-300 mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
             <div className="md:col-span-2">
               <div className="flex items-center gap-2.5 mb-4">
-                {/* <div className="w-10 h-10 rounded-lg bg-linear-to-br from-[#9a6f2a] to-[#0a8f63] flex items-center justify-center text-xl">💉</div> */}
                 <span className="font-cormorant text-2xl font-bold text-[#1a1510]">Lear<span className="text-[#9a6f2a]">CRM</span></span>
               </div>
               <p className="text-sm text-[#6b5f4e] leading-[1.75] max-w-75 mb-4">The complete operating system for hair transplant clinics. Built with Next.js, MongoDB, and Tailwind CSS.</p>

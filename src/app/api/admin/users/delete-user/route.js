@@ -1,4 +1,3 @@
-// app/api/admin/delete-user/route.js - CREATE THIS FILE
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
@@ -10,7 +9,6 @@ export async function POST(req) {
   try {
     const session = await getServerSession(authOptions);
 
-    // Only super-admin can manage users
     const callerRole = session?.user?.role;
     if (!session || callerRole !== 'super-admin') {
       return NextResponse.json(
@@ -30,7 +28,6 @@ export async function POST(req) {
       );
     }
 
-    // Find user
     const user = await User.findById(userId);
 
     if (!user) {
@@ -40,7 +37,6 @@ export async function POST(req) {
       );
     }
 
-    // Admin cannot delete admin/super-admin accounts; super-admin can delete admin but not other super-admins
     if (callerRole === 'admin' && ['admin', 'super-admin'].includes(user.role)) {
       return NextResponse.json(
         { success: false, message: "Admins cannot delete admin or super-admin accounts" },
@@ -54,7 +50,6 @@ export async function POST(req) {
       );
     }
 
-    // Prevent deleting themselves
     if (user._id.toString() === session.user.id) {
       return NextResponse.json(
         { success: false, message: "You cannot delete your own account" },
@@ -65,7 +60,6 @@ export async function POST(req) {
     const userName = user.name;
     const userEmail = user.email;
 
-    // Log the deletion
     await DeleteLog.create({
       entityType: "Patient",
       entityId: userId,
@@ -83,7 +77,6 @@ export async function POST(req) {
       branch: user.branch,
     });
 
-    // Delete user
     await User.findByIdAndDelete(userId);
 
     console.log(`Admin ${session.user.email} deleted user: ${userEmail} (${user.role})`);

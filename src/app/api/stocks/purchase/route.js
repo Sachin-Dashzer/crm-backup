@@ -3,11 +3,10 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import dbConnect from "@/lib/db";
 import Stock from "@/models/Stock";
-import Vendor from "@/models/Vendor"; // ✅ FIX: Capitalize to match convention
+import Vendor from "@/models/Vendor";
 
 export async function POST(req) {
   try {
-    // Authenticate
     const session = await getServerSession(authOptions);
     if (!session) {
       return NextResponse.json(
@@ -21,7 +20,6 @@ export async function POST(req) {
     const body = await req.json();
     const { vendorId, items, paymentMethod, purchaseDate, remarks } = body;
 
-    // Validation
     if (!vendorId) {
       return NextResponse.json(
         { success: false, message: "Vendor is required" },
@@ -36,7 +34,6 @@ export async function POST(req) {
       );
     }
 
-    // Validate each item
     for (const item of items) {
       if (
         !item.stockId ||
@@ -55,7 +52,6 @@ export async function POST(req) {
       }
     }
 
-    // ✅ FIX: Changed variable name from 'vendor' to 'vendorDoc' to avoid conflict
     const vendorDoc = await Vendor.findById(vendorId);
     if (!vendorDoc) {
       return NextResponse.json(
@@ -64,7 +60,6 @@ export async function POST(req) {
       );
     }
 
-    // Verify all stocks exist
     const stockIds = items.map((item) => item.stockId);
     const stocks = await Stock.find({ _id: { $in: stockIds } });
 
@@ -75,7 +70,6 @@ export async function POST(req) {
       );
     }
 
-    // Branch restriction: non-admin users can only purchase for their own branch
     const isAdmin = ["admin", "super-admin"].includes(session.user.role);
     const userBranch = session.user.branch;
     if (!isAdmin && userBranch) {
@@ -88,17 +82,14 @@ export async function POST(req) {
       }
     }
 
-    // Process each item - update stock only
     const updatedStocks = [];
 
     for (const item of items) {
       const stock = stocks.find((s) => s._id.toString() === item.stockId);
 
-      // Calculate new quantity
       const quantityToAdd = parseFloat(item.quantity);
       const newTotalQuantity = (stock.totalQuantity || 0) + quantityToAdd;
 
-      // Update stock
       const updatedStock = await Stock.findByIdAndUpdate(
         item.stockId,
         {
@@ -139,7 +130,6 @@ export async function POST(req) {
       updatedStocks.push(updatedStock);
     }
 
-    // Calculate totals for response
     const totalAmount = items.reduce((sum, item) => sum + item.totalAmount, 0);
     const totalQuantity = items.reduce(
       (sum, item) => sum + parseFloat(item.quantity),

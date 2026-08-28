@@ -17,9 +17,6 @@ import {
   ScrollText,
 } from "lucide-react";
 
-/* ─────────────────────────────────────────────
-   Constants
-───────────────────────────────────────────── */
 const TAG_OPTIONS = [
   "Google Leads",
   "Meta Leads",
@@ -91,9 +88,6 @@ const TAG_STYLES = {
 
 const PER_PAGE_OPTIONS = [10, 25, 50, 100];
 
-/* ─────────────────────────────────────────────
-   Helpers
-───────────────────────────────────────────── */
 function fmtDate(iso) {
   if (!iso) return "—";
   return new Date(iso).toLocaleDateString("en-IN", {
@@ -163,7 +157,6 @@ function buildParams(search, filters, extra = {}) {
   return p;
 }
 
-/* ── Sub-components ── */
 function FilterSection({ title, icon: Icon, children }) {
   return (
     <div>
@@ -194,11 +187,7 @@ function ToggleChip({ label, value, onChange }) {
   );
 }
 
-/* ─────────────────────────────────────────────
-   Main Page
-───────────────────────────────────────────── */
 export default function SuperAdminLeadsPage() {
-  /* State */
   const [leads, setLeads] = useState([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -221,12 +210,10 @@ export default function SuperAdminLeadsPage() {
   const searchTimer = useRef(null);
   const filterPanelRef = useRef(null);
 
-  /* Active filter count */
   const activeFilterCount = Object.entries(filters).filter(([k, v]) =>
     k === "hasEmail" || k === "hasRemarks" ? v !== null : !!v,
   ).length;
 
-  /* Fetch */
   const fetchLeads = async (overridePage) => {
     setLoading(true);
     try {
@@ -257,7 +244,6 @@ export default function SuperAdminLeadsPage() {
     fetchLeads();
   }, [page, perPage, filters]);
 
-  /* Download all */
   const handleDownload = async () => {
     setDownloading(true);
     try {
@@ -278,7 +264,6 @@ export default function SuperAdminLeadsPage() {
     }
   };
 
-  /* Apply filters */
   const applyFilters = () => {
     setFilters({ ...pendingFilters });
     setPage(1);
@@ -307,7 +292,6 @@ export default function SuperAdminLeadsPage() {
     <section className="flex min-h-screen bg-gray-50">
       <SuperAdminSidebar />
       <main className="flex-1 flex flex-col min-w-0">
-        {/* Top bar */}
         <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between gap-4 flex-wrap">
           <div>
             <div className="flex items-center gap-3">
@@ -324,7 +308,6 @@ export default function SuperAdminLeadsPage() {
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
-            {/* Search */}
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
@@ -335,7 +318,6 @@ export default function SuperAdminLeadsPage() {
               />
             </div>
 
-            {/* Filter toggle */}
             <button
               onClick={() => {
                 setPendingFilters({ ...filters });
@@ -356,7 +338,6 @@ export default function SuperAdminLeadsPage() {
               )}
             </button>
 
-            {/* Download */}
             <button
               onClick={handleDownload}
               disabled={downloading}
@@ -372,13 +353,11 @@ export default function SuperAdminLeadsPage() {
           </div>
         </div>
 
-        {/* Filter panel */}
         {showFilter && (
           <div
             ref={filterPanelRef}
             className="bg-white border-b border-gray-100 px-6 py-4"
           >
-            {/* Header row */}
             <div className="flex items-center justify-between mb-4">
               <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest">
                 Filters
@@ -391,9 +370,7 @@ export default function SuperAdminLeadsPage() {
               </button>
             </div>
 
-            {/* Filter grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-              {/* Tag / Source */}
               <div className="bg-gray-50 rounded-xl px-3.5 py-3 border border-gray-100">
                 <label className="flex items-center gap-1.5 text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-2">
                   <Tag className="w-3 h-3" /> Source
@@ -428,7 +405,6 @@ export default function SuperAdminLeadsPage() {
                 </select>
               </div>
 
-              {/* Created At Range */}
               <div className="bg-gray-50 rounded-xl px-3.5 py-3 border border-gray-100">
                 <label className="flex items-center gap-1.5 text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-2">
                   <Calendar className="w-3 h-3" /> Created Range
@@ -469,7 +445,6 @@ export default function SuperAdminLeadsPage() {
                 </div>
               </div>
 
-              {/* Visit Date Range */}
               <div className="bg-gray-50 rounded-xl px-3.5 py-3 border border-gray-100">
                 <label className="flex items-center gap-1.5 text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-2">
                   <Calendar className="w-3 h-3" /> Visit Range
@@ -510,7 +485,6 @@ export default function SuperAdminLeadsPage() {
                 </div>
               </div>
 
-              {/* Has Email */}
               <div className="bg-gray-50 rounded-xl px-3.5 py-3 border border-gray-100">
                 <label className="flex items-center gap-1.5 text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-2">
                   <Mail className="w-3 h-3" /> Email
@@ -541,7 +515,6 @@ export default function SuperAdminLeadsPage() {
               </div>
             </div>
 
-            {/* Action row */}
             <div className="flex items-center gap-2 mt-4 pt-3.5 border-t border-gray-100">
               <button
                 onClick={applyFilters}
@@ -559,7 +532,6 @@ export default function SuperAdminLeadsPage() {
           </div>
         )}
 
-        {/* Active filter pills */}
         {activeFilterCount > 0 && (
           <div className="bg-amber-50 border-b border-amber-100 px-6 py-2 flex items-center gap-2 flex-wrap">
             <span className="text-xs text-amber-600 font-medium">
@@ -608,7 +580,6 @@ export default function SuperAdminLeadsPage() {
           </div>
         )}
 
-        {/* Table */}
         <div className="flex-1 overflow-auto p-6">
           <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
             <div className="overflow-x-auto">
@@ -705,7 +676,6 @@ export default function SuperAdminLeadsPage() {
               </table>
             </div>
 
-            {/* Pagination */}
             <div className="px-5 py-4 border-t border-gray-100 flex items-center justify-between flex-wrap gap-3">
               <p className="text-xs text-gray-500">
                 {total === 0
@@ -746,7 +716,6 @@ export default function SuperAdminLeadsPage() {
                 </button>
               </div>
 
-              {/* Per page */}
               <select
                 value={perPage}
                 onChange={(e) => {

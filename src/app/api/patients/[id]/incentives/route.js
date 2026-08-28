@@ -11,11 +11,6 @@ import { findOrCreateIncentivePayable, recomputeIncentivePayable, IncentiveError
 
 const ALLOWED_ROLES = ["admin", "super-admin"];
 
-// Records a per-patient incentive — money owed to an employee FOR this patient. Backed by a real
-// Payable (one per employee per month, topped up rather than duplicated — see
-// findOrCreateIncentivePayable) from the moment it's added, never a free-floating array entry.
-// See src/lib/incentiveDerivation.js for why the two writes below (the row + the payable) always
-// run in the same transaction.
 export async function POST(req, { params }) {
   try {
     const session = await getServerSession(authOptions);

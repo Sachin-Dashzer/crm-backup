@@ -17,17 +17,6 @@ import { exportWorkbook, fetchAllPages, filterProvenanceRows } from "@/lib/expor
 import { useToast } from "@/components/Toast";
 import DebouncedDateInput from "@/components/finance/DebouncedDateInput";
 
-// Liabilities = Payables + Suspense (unresolved unexplained bank movement — a liability until
-// it's identified, since it's money we can't yet say we own). Page total is the sum of the same
-// two closing figures the sections below compute.
-//
-// NOTE: "Bajaj Loan"/"Fibe Loan" in ACCOUNTS are NOT a liability here — they're patient-financing
-// SETTLEMENT accounts (money the financier pays the clinic when a patient pays via that loan
-// product), functionally identical to Cash Book/Paytm/etc. That balance belongs on the Assets
-// page's Cash & Bank section, not here.
-//
-// See the identical Suspense-boundary note in admin/assets/page.jsx — DrillDownTable's
-// AccountingTable leaf uses useSearchParams internally.
 export default function LiabilitiesPage() {
   return (
     <Suspense fallback={null}>
@@ -42,17 +31,6 @@ function LiabilitiesPageInner() {
   const searchParams = useSearchParams();
   const toast = useToast();
 
-  // Task A (Round 2) — ONE scope for the whole page, shared by the header total AND every
-  // DrillDownTable section below. See the identical comment in admin/assets/page.jsx — same fix,
-  // same reasoning, mirrored here.
-  //
-  // dateFrom defaults to the system's go-live date for regular per-transaction tracking, not "".
-  // Payables' "Opening due" column (buildPayableGroupedStages' raisedBeforeRange) is defined as
-  // "pending carried in from before dateFrom" — with no dateFrom at all, nothing can be "before"
-  // an unbounded range, so opening is unconditionally 0 regardless of how much genuinely-opening
-  // balance exists (e.g. the March 2026 Rent opening payables). Defaulting to the cutover date
-  // shows those correctly without requiring the filter to be set by hand on every visit; it's
-  // still fully editable/clearable like every other scope value.
   const [scope, setScope] = useState(() => ({
     branch: searchParams.get("branch") || "",
     dateFrom: searchParams.get("from") || "2026-04-01",
@@ -64,23 +42,14 @@ function LiabilitiesPageInner() {
   const [refetching, setRefetching] = useState(false);
   const [exporting, setExporting] = useState(false);
 
-  // Task 5, Step 4 — summary strip + ageing chips, ported from the old standalone Payables page.
   const [summary, setSummary] = useState(null);
   const [ageingBuckets, setAgeingBuckets] = useState([]);
   const [ageingFilter, setAgeingFilter] = useState("");
 
-  // Task 5, Step 5 — deep-link restore. `undefined` = not resolved yet (don't render the table
-  // and risk a flash at level 1 before jumping to the right level); `null` = resolved, nothing
-  // to restore.
   const [payablesInitialDrill, setPayablesInitialDrill] = useState(undefined);
   const [payablesDrill, setPayablesDrill] = useState(null);
 
-  // Borrowings — deposits/loans/advances that must be repaid; see src/models/Borrowing.js. A
-  // real Payable document under expenseCategory "Borrowings", so it already rides on the same
-  // /api/payables/grouped?level=1 total the header above sums (no separate header math needed),
-  // but gets its own dedicated section (own apiBase, own document actions) since its lifecycle
-  // (Record Repayment/Add Tranche) differs from a trade payable's.
-  const [borrowModal, setBorrowModal] = useState(null); // { mode: "IN"|"OUT", payable } | null
+  const [borrowModal, setBorrowModal] = useState(null);
   const [borrowingsRefreshKey, setBorrowingsRefreshKey] = useState(0);
   const [borrowHistoryDoc, setBorrowHistoryDoc] = useState(null);
   const [borrowHistoryRows, setBorrowHistoryRows] = useState([]);
@@ -113,10 +82,6 @@ function LiabilitiesPageInner() {
     fetchHeaderTotals();
   };
 
-  // Balances (Payables/Suspense closing) are POINT-IN-TIME — send `to` only, never `from`. See
-  // the identical, longer comment in admin/assets/page.jsx; both routes below already default
-  // `from` internally to "1970-01-01" when it's omitted, which IS "as of `to`". Do not "fix"
-  // this back to sending both.
   const closingQS = useCallback(
     (extra = {}) => {
       const p = new URLSearchParams();
@@ -153,10 +118,6 @@ function LiabilitiesPageInner() {
     fetchHeaderTotals();
   }, [fetchHeaderTotals]);
 
-  // Restores /admin/liabilities?section=payables&head=Rent&sub=Office%20Rent&doc=<id> — the URL
-  // Task 1's Entry Type badge points at for a settlement's linked payable. `doc` alone (no
-  // head/sub) is resolved by reading the document itself, since its head/sub aren't derivable
-  // from the URL.
   useEffect(() => {
     const section = searchParams.get("section");
     if (section !== "payables") {
@@ -192,12 +153,8 @@ function LiabilitiesPageInner() {
     } else {
       setPayablesInitialDrill(null);
     }
-    // Deliberately once, on mount — the URL is the initial state, not a controlled binding.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Single sync point for the URL — `scope` (branch/from/to) AND the payables drill path
-  // (section/head/sub/doc) are written together, so neither overwrites the other's params.
   useEffect(() => {
     const params = new URLSearchParams();
     if (scope.branch) params.set("branch", scope.branch);
@@ -211,7 +168,6 @@ function LiabilitiesPageInner() {
     }
     const qs = params.toString();
     router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scope, payablesDrill]);
 
   const ageingChipData = (bucket) => {
@@ -223,14 +179,9 @@ function LiabilitiesPageInner() {
   const total = (payablesTotal ?? 0) + (suspenseTotal ?? 0);
   const asOfLabel = `As of ${formatDate(scope.dateTo || new Date())}${scope.branch ? ` · ${scope.branch}` : ""}`;
 
-  // Task B — export exactly what the current filters produce, refetched fresh at limit=10000.
   const handleExport = async () => {
     setExporting(true);
     try {
-      // /api/payables/list and /api/transactions/get-all key their date range on dateFrom/dateTo;
-      // /api/suspense's entries list uses from/to instead — each fetch below uses its own
-      // endpoint's actual param names rather than one shared (and wrong for at least one of them)
-      // querystring.
       const listFlowQS = (() => {
         const p = new URLSearchParams();
         if (scope.branch) p.set("branch", scope.branch);
@@ -246,8 +197,6 @@ function LiabilitiesPageInner() {
         return p.toString();
       })();
 
-      // payables/list and suspense both clamp limit to 200, so the old `?limit=10000` here
-      // silently produced a truncated export past that many rows. See fetchAllPages' header.
       const [payablesPaged, suspenseGroupJson, suspensePaged, txJson] = await Promise.all([
         fetchAllPages((page, limit) => `/api/payables/list?page=${page}&limit=${limit}&${listFlowQS}`, "payables"),
         fetch(`/api/suspense?groupBy=account&${closingQS()}`).then((r) => r.json()),
@@ -325,7 +274,6 @@ function LiabilitiesPageInner() {
             </p>
           </div>
 
-          {/* Task A — the ONE filter bar for this page. */}
           <div className="flex flex-wrap items-center gap-2">
             <select
               value={scope.branch}
@@ -337,7 +285,6 @@ function LiabilitiesPageInner() {
                 <option key={b} value={b}>{b}</option>
               ))}
             </select>
-            {/* Debounced — see the identical note in admin/assets/page.jsx. */}
             <DebouncedDateInput
               value={scope.dateFrom}
               onCommit={(v) => setScope((s) => ({ ...s, dateFrom: v }))}

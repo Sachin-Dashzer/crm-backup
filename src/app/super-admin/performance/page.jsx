@@ -17,7 +17,6 @@ import {
 import SuperAdminSidebar from "@/components/Sidebars/SuperAdminSidebar";
 import { ALL_BRANCHES } from "@/lib/branches";
 
-/* ─── Constants ──────────────────────────────────────────────────────────── */
 const BRANCHES    = ["All", ...ALL_BRANCHES];
 const DATE_RANGES = ["Today", "Yesterday", "Last 7 Days", "Last 30 Days", "Custom"];
 
@@ -55,7 +54,6 @@ const HR_STATUS_COLORS = {
   "On Hold":            "#9ca3af",
 };
 
-/* ─── Helpers ─────────────────────────────────────────────────────────────── */
 const rupee = (n) =>
   new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(n || 0);
 const fmt   = (n) => new Intl.NumberFormat("en-IN").format(n || 0);
@@ -87,7 +85,6 @@ function buildDateRange(range, custom) {
   return { from: from.toISOString(), to: to.toISOString() };
 }
 
-/* ─── Reusable UI ─────────────────────────────────────────────────────────── */
 const COLOR_MAP = {
   amber:  { accent: "bg-amber-500",   soft: "bg-amber-50",   text: "text-amber-600",  border: "border-amber-100"  },
   orange: { accent: "bg-orange-500",  soft: "bg-orange-50",  text: "text-orange-600", border: "border-orange-100" },
@@ -172,7 +169,6 @@ function PageSkeleton() {
   );
 }
 
-/* ─── Custom Tooltip ──────────────────────────────────────────────────────── */
 function CustomTooltip({ active, payload, label, formatter }) {
   if (!active || !payload?.length) return null;
   return (
@@ -191,7 +187,6 @@ function CustomTooltip({ active, payload, label, formatter }) {
   );
 }
 
-/* ─── Tab definitions ─────────────────────────────────────────────────────── */
 const TABS = [
   { id: "overview",  label: "Overview",  icon: BarChart2   },
   { id: "patients",  label: "Patients",  icon: HeartPulse  },
@@ -201,7 +196,6 @@ const TABS = [
   { id: "hr",        label: "HR",        icon: Briefcase   },
 ];
 
-/* ─── Main Page ───────────────────────────────────────────────────────────── */
 export default function SuperAdminPerformancePage() {
   const [branch,    setBranch]    = useState("All");
   const [dateRange, setDateRange] = useState("Last 30 Days");
@@ -236,7 +230,6 @@ export default function SuperAdminPerformancePage() {
 
   const d = data || {};
 
-  /* ── Tab content ── */
   const renderTab = () => {
     if (loading) return <PageSkeleton />;
     if (error) return (
@@ -269,7 +262,6 @@ export default function SuperAdminPerformancePage() {
 
       <main className="flex-1 flex flex-col min-w-0 overflow-auto">
 
-        {/* ── Sticky Header ── */}
         <div className="bg-white border-b border-gray-200 px-6 py-4 sticky top-0 z-10 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-3">
@@ -283,7 +275,6 @@ export default function SuperAdminPerformancePage() {
             </div>
 
             <div className="flex items-center gap-2 flex-wrap">
-              {/* Branch */}
               <div className="relative">
                 <MapPin className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
                 <select value={branch} onChange={(e) => setBranch(e.target.value)}
@@ -293,7 +284,6 @@ export default function SuperAdminPerformancePage() {
                 <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
               </div>
 
-              {/* Date Range */}
               <div className="relative">
                 <Calendar className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
                 <select value={dateRange} onChange={(e) => setDateRange(e.target.value)}
@@ -322,7 +312,6 @@ export default function SuperAdminPerformancePage() {
           </div>
         </div>
 
-        {/* ── Tab Bar ── */}
         <div className="bg-white border-b border-gray-200 px-6">
           <div className="flex gap-1 overflow-x-auto scrollbar-hide">
             {TABS.map((tab) => {
@@ -343,7 +332,6 @@ export default function SuperAdminPerformancePage() {
           </div>
         </div>
 
-        {/* ── Content ── */}
         <div className="flex-1 p-6 space-y-8">
           {renderTab()}
         </div>
@@ -352,9 +340,6 @@ export default function SuperAdminPerformancePage() {
   );
 }
 
-/* ══════════════════════════════════════════════════════════════════════════════
-   OVERVIEW TAB
-══════════════════════════════════════════════════════════════════════════════ */
 function OverviewTab({ data }) {
   const { summary = {}, patients = {}, revenue = {}, surgery = {}, hr = {} } = data;
 
@@ -365,7 +350,6 @@ function OverviewTab({ data }) {
 
   return (
     <div className="space-y-8">
-      {/* KPIs */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         <KpiCard title="Total Revenue"   value={fmtK(summary.totalRevenue)}   icon={IndianRupee} color="green"  subtitle="Period" />
         <KpiCard title="Total Expenses"  value={fmtK(summary.totalExpenses)}  icon={IndianRupee} color="red"    subtitle="Period" />
@@ -375,7 +359,6 @@ function OverviewTab({ data }) {
         <KpiCard title="HR Selected"     value={fmt(summary.hrSelected)}      icon={UserCheck}   color="teal"   subtitle="Hired" />
       </div>
 
-      {/* Patient Funnel + Revenue Daily */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         <ChartCard title="Patient Journey Funnel" subtitle="Appointments → Surgeries">
           <ResponsiveContainer width="100%" height={260}>
@@ -418,7 +401,6 @@ function OverviewTab({ data }) {
         </ChartCard>
       </div>
 
-      {/* Technique Distribution + HR Funnel + Branch Revenue */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         <ChartCard title="Surgery Techniques" subtitle="By count">
           <ResponsiveContainer width="100%" height={240}>
@@ -463,9 +445,6 @@ function OverviewTab({ data }) {
   );
 }
 
-/* ══════════════════════════════════════════════════════════════════════════════
-   PATIENTS TAB
-══════════════════════════════════════════════════════════════════════════════ */
 function PatientsTab({ data }) {
   const { patients = {} } = data;
   const funnel    = patients.funnel    || [];
@@ -482,7 +461,6 @@ function PatientsTab({ data }) {
     <div className="space-y-8">
       <SectionHeader icon={HeartPulse} title="Patient Performance" color="text-blue-600" accent="bg-blue-50" />
 
-      {/* KPIs */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <KpiCard title="Appointments"    value={fmt(totalPatients)} icon={Users}     color="blue"   subtitle="Period" />
         <KpiCard title="Visited"         value={fmt(visited)}       icon={UserCheck} color="green"  subtitle="Counselled" />
@@ -490,7 +468,6 @@ function PatientsTab({ data }) {
         <KpiCard title="Surgeries Done"  value={fmt(surgeries)}     icon={Scissors}  color="amber"  subtitle="Completed" />
       </div>
 
-      {/* Funnel + Status Distribution */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         <ChartCard title="Patient Journey Funnel" subtitle="Stage-wise drop-off analysis">
           <ResponsiveContainer width="100%" height={280}>
@@ -523,7 +500,6 @@ function PatientsTab({ data }) {
         </ChartCard>
       </div>
 
-      {/* Daily Trend */}
       <ChartCard title="Daily Patient Volume" subtitle="Appointments & conversions over time">
         <ResponsiveContainer width="100%" height={260}>
           <AreaChart data={daily}>
@@ -548,7 +524,6 @@ function PatientsTab({ data }) {
         </ResponsiveContainer>
       </ChartCard>
 
-      {/* Branch-wise */}
       <ChartCard title="Branch-wise Patient Performance" subtitle="Total vs converted vs surgeries">
         <ResponsiveContainer width="100%" height={260}>
           <BarChart data={byBranch}>
@@ -567,9 +542,6 @@ function PatientsTab({ data }) {
   );
 }
 
-/* ══════════════════════════════════════════════════════════════════════════════
-   REVENUE TAB
-══════════════════════════════════════════════════════════════════════════════ */
 function RevenueTab({ data }) {
   const { revenue = {}, summary = {} } = data;
   const daily      = revenue.dailyTrend  || [];
@@ -582,7 +554,6 @@ function RevenueTab({ data }) {
     <div className="space-y-8">
       <SectionHeader icon={IndianRupee} title="Revenue Performance" color="text-emerald-600" accent="bg-emerald-50" />
 
-      {/* KPIs */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <KpiCard title="Total Revenue"  value={fmtK(summary.totalRevenue)}  icon={IndianRupee} color="green"  subtitle="Period" />
         <KpiCard title="Total Expenses" value={fmtK(summary.totalExpenses)} icon={IndianRupee} color="red"    subtitle="Period" />
@@ -592,7 +563,6 @@ function RevenueTab({ data }) {
           icon={Target} color="purple" subtitle="Period" />
       </div>
 
-      {/* Daily Revenue Trend */}
       <ChartCard title="Daily Revenue & Expenses" subtitle="Full trend with net overlay">
         <ResponsiveContainer width="100%" height={280}>
           <AreaChart data={daily}>
@@ -617,7 +587,6 @@ function RevenueTab({ data }) {
         </ResponsiveContainer>
       </ChartCard>
 
-      {/* By Branch + By Procedure */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         <ChartCard title="Revenue by Branch" subtitle="Branch-wise comparison">
           <ResponsiveContainer width="100%" height={260}>
@@ -651,7 +620,6 @@ function RevenueTab({ data }) {
         </ChartCard>
       </div>
 
-      {/* Payment Method + Outstanding */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         <ChartCard title="Revenue by Payment Method" subtitle="Collection channel breakdown">
           <div className="grid grid-cols-2 gap-3 mb-4">
@@ -701,9 +669,6 @@ function RevenueTab({ data }) {
   );
 }
 
-/* ══════════════════════════════════════════════════════════════════════════════
-   STAFF TAB
-══════════════════════════════════════════════════════════════════════════════ */
 function StaffTab({ data }) {
   const { staff = {} } = data;
   const counsellors  = staff.counsellors     || [];
@@ -715,7 +680,6 @@ function StaffTab({ data }) {
     <div className="space-y-8">
       <SectionHeader icon={Users} title="Staff Performance" color="text-purple-600" accent="bg-purple-50" />
 
-      {/* Role Distribution */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         <ChartCard title="Staff Role Distribution" subtitle="Active employees by role">
           <ResponsiveContainer width="100%" height={240}>
@@ -730,7 +694,6 @@ function StaffTab({ data }) {
           </ResponsiveContainer>
         </ChartCard>
 
-        {/* Counsellor Conversion */}
         <ChartCard title="Counsellor Conversion Rate" subtitle="% of patients ready for surgery" className="lg:col-span-2">
           <ResponsiveContainer width="100%" height={240}>
             <BarChart data={counsellors} layout="vertical" margin={{ left: 8, right: 50 }}>
@@ -746,7 +709,6 @@ function StaffTab({ data }) {
         </ChartCard>
       </div>
 
-      {/* Counsellor Volume + Agent Performance */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         <ChartCard title="Counsellor Patient Volume" subtitle="Total patients counselled">
           <ResponsiveContainer width="100%" height={260}>
@@ -777,7 +739,6 @@ function StaffTab({ data }) {
         </ChartCard>
       </div>
 
-      {/* Doctor Performance */}
       <ChartCard title="Doctor Surgery Performance" subtitle="Surgeries, grafts, and revenue">
         <ResponsiveContainer width="100%" height={260}>
           <BarChart data={doctors}>
@@ -794,7 +755,6 @@ function StaffTab({ data }) {
         </ResponsiveContainer>
       </ChartCard>
 
-      {/* Agent Revenue */}
       <ChartCard title="Agent Revenue Generated" subtitle="Revenue from referred patients">
         <ResponsiveContainer width="100%" height={220}>
           <BarChart data={agents}>
@@ -812,9 +772,6 @@ function StaffTab({ data }) {
   );
 }
 
-/* ══════════════════════════════════════════════════════════════════════════════
-   SURGERY TAB
-══════════════════════════════════════════════════════════════════════════════ */
 function SurgeryTab({ data }) {
   const { surgery = {} } = data;
   const techniques = surgery.techniques || [];
@@ -836,7 +793,6 @@ function SurgeryTab({ data }) {
         <KpiCard title="Techniques Used"    value={fmt(techniques.length)}                icon={Zap}        color="teal"   subtitle="Distinct" />
       </div>
 
-      {/* Technique Distribution */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         <ChartCard title="Technique Distribution" subtitle="Surgery count per technique">
           <ResponsiveContainer width="100%" height={270}>
@@ -868,7 +824,6 @@ function SurgeryTab({ data }) {
         </ChartCard>
       </div>
 
-      {/* Daily Surgery Trend */}
       <ChartCard title="Daily Surgery Trend" subtitle="Surgery count & grafts over time">
         <ResponsiveContainer width="100%" height={260}>
           <AreaChart data={daily}>
@@ -894,7 +849,6 @@ function SurgeryTab({ data }) {
         </ResponsiveContainer>
       </ChartCard>
 
-      {/* Surgery by Branch */}
       <ChartCard title="Surgeries by Branch" subtitle="Volume per location">
         <ResponsiveContainer width="100%" height={220}>
           <BarChart data={byBranch}>
@@ -912,9 +866,6 @@ function SurgeryTab({ data }) {
   );
 }
 
-/* ══════════════════════════════════════════════════════════════════════════════
-   HR TAB
-══════════════════════════════════════════════════════════════════════════════ */
 function HRTab({ data }) {
   const { hr = {}, summary = {} } = data;
   const funnel        = hr.funnel        || [];
@@ -931,7 +882,6 @@ function HRTab({ data }) {
   const selected      = funnel.find((h) => h.status === "Selected")?.count || 0;
   const rejected      = funnel.find((h) => h.status === "Rejected")?.count || 0;
 
-  // Source comparison data for chart
   const sourceCompare = [
     {
       label:    "Applied Online",
@@ -955,7 +905,6 @@ function HRTab({ data }) {
     <div className="space-y-8">
       <SectionHeader icon={Briefcase} title="HR Performance" color="text-rose-600" accent="bg-rose-50" />
 
-      {/* Source KPI Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3">
         <KpiCard title="Applied Online"  value={fmt(totalApplied)}  icon={Users}     color="indigo" subtitle="source: direct" />
         <KpiCard title="Visited (QR)"    value={fmt(totalVisited)}  icon={UserCheck} color="amber"  subtitle="source: qr" />
@@ -967,7 +916,6 @@ function HRTab({ data }) {
           icon={Target} color="teal" subtitle="QR → Selected" />
       </div>
 
-      {/* Source comparison cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {sourceCompare.map((s) => (
           <div key={s.source} className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
@@ -1008,7 +956,6 @@ function HRTab({ data }) {
         ))}
       </div>
 
-      {/* Status Funnel with source breakdown + Donut */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         <ChartCard title="Status Funnel — Applied vs Visited" subtitle="Each status broken down by source">
           <ResponsiveContainer width="100%" height={280}>
@@ -1039,7 +986,6 @@ function HRTab({ data }) {
         </ChartCard>
       </div>
 
-      {/* Position-wise: Applied vs Visited vs Selected */}
       <ChartCard title="Position-wise: Applied Online vs Visited (QR) vs Selected" subtitle="Per-position breakdown by source">
         <ResponsiveContainer width="100%" height={Math.max(260, positions.length * 48)}>
           <BarChart data={positions} layout="vertical" margin={{ left: 8, right: 50 }}>
@@ -1055,7 +1001,6 @@ function HRTab({ data }) {
         </ResponsiveContainer>
       </ChartCard>
 
-      {/* Daily trend: applied vs visited vs selected */}
       <ChartCard title="Daily HR Activity" subtitle="Applied online vs visited (QR scan) vs selected">
         <ResponsiveContainer width="100%" height={260}>
           <AreaChart data={daily}>
@@ -1085,7 +1030,6 @@ function HRTab({ data }) {
         </ResponsiveContainer>
       </ChartCard>
 
-      {/* Selection Rate per Position */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         <ChartCard title="Selection Rate by Position" subtitle="% selected from all candidates">
           <ResponsiveContainer width="100%" height={230}>

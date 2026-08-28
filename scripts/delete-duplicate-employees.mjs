@@ -1,24 +1,3 @@
-// scripts/delete-duplicate-employees.mjs
-//
-// Deletes the 3 confirmed duplicate Employee records identified by
-// scripts/diagnose-duplicate-employees.mjs — each one has ZERO payables and ZERO transactions
-// linked, and an EMPTY salaryStructure, while its pair has real salary details and an already-
-// existing July 2026 SALARY payable. All three duplicates were created within days of each
-// other in mid-December 2025, consistent with an accidental double-entry at that time — nothing
-// to do with any script in this repo.
-//
-//   Sheetal / Sheetal Bhatiya   — deleting 6932822400c9ea07011edec6 (empty), keeping 691e9d24164751f6ae6a30e9
-//   MOHIT SHAH                 — deleting 6944ef3371989d90c05707d9 (empty), keeping 691e9d24164751f6ae6a312f
-//   Dr, Ashalata Roy            — deleting 6944f17e71989d90c057081f (empty), keeping 693fe75982eaa1deb8bda397
-//
-// SAFETY: re-verifies zero payables AND zero transactions for each id immediately before
-// deleting (not just trusting the earlier diagnostic run — the database could have changed
-// since). Refuses to delete any of the three if that check finds anything now linked to it.
-// A full backup of each deleted document is written before any delete.
-//
-// Usage:
-//   node scripts/delete-duplicate-employees.mjs                # dry run
-//   node scripts/delete-duplicate-employees.mjs --apply        # delete
 
 import mongoose from "mongoose";
 import fs from "fs";

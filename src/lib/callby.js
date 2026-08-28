@@ -1,8 +1,3 @@
-// Shared fetch helper for the callby (call-tracking CRM) service API. Every owner cross-system
-// screen that pulls live call/lead-tracking data goes through this, so the missing-config /
-// non-2xx / network-failure handling only lives in one place — src/app/api/super-admin/
-// lead-funnel/route.js predates this and inlines its own copy; new routes should use this one
-// instead of adding a third.
 
 const CALLBY_API_URL = process.env.CALLBY_API_URL;
 const CALLBY_SERVICE_TOKEN = process.env.CALLBY_SERVICE_TOKEN;
@@ -15,7 +10,6 @@ export class CallbyError extends Error {
   }
 }
 
-// path is one of the routes under callby's /api/leads/* namespace — e.g. "/api/leads/workforce-summary".
 export async function fetchCallby(path, { params } = {}) {
   if (!CALLBY_API_URL || !CALLBY_SERVICE_TOKEN) {
     throw new CallbyError("CALLBY_API_URL / CALLBY_SERVICE_TOKEN not configured", 500);
@@ -33,7 +27,6 @@ export async function fetchCallby(path, { params } = {}) {
       const body = await res.json();
       if (body?.error) message = body.error;
     } catch {
-      // non-JSON error body — keep the generic message
     }
     throw new CallbyError(message, res.status);
   }

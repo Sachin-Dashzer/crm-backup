@@ -35,7 +35,6 @@ const BenefitsManager = ({ benefits, onChange, onAdd, onRemove }) => {
         Additional Benefits *
       </label>
 
-      {/* Predefined Benefits as Radio-style Checkboxes */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
         {predefinedBenefits.map((benefit) => (
           <label
@@ -53,7 +52,6 @@ const BenefitsManager = ({ benefits, onChange, onAdd, onRemove }) => {
         ))}
       </div>
 
-      {/* Custom Benefits Input */}
       <div className="mb-4">
         <label className="block text-sm font-medium text-gray-700 mb-2">
           Add Custom Benefit
@@ -84,7 +82,6 @@ const BenefitsManager = ({ benefits, onChange, onAdd, onRemove }) => {
         </div>
       </div>
 
-      {/* Selected Benefits Display */}
       {benefits.length > 0 && (
         <div className="mt-4">
           <label className="block text-sm font-medium text-gray-700 mb-2">

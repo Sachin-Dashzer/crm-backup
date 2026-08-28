@@ -6,13 +6,9 @@ import Interviewer from "@/models/Interviewer";
 
 const ALLOWED_ROLES = ["hr", "super-admin", "admin"];
 
-// PUT — update candidate
 export async function PUT(req, { params }) {
   try {
     const session = await getServerSession(authOptions);
-    // if (!session || !ALLOWED_ROLES.includes(session?.user?.role)) {
-    //   return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 403 });
-    // }
 
     await connectDB();
 
@@ -40,13 +36,9 @@ export async function PUT(req, { params }) {
   }
 }
 
-// DELETE — remove candidate
 export async function DELETE(req, { params }) {
   try {
     const session = await getServerSession(authOptions);
-    // if (!session || !ALLOWED_ROLES.includes(session?.user?.role)) {
-    //   return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 403 });
-    // }
 
     await connectDB();
 

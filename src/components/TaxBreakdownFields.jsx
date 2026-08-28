@@ -3,18 +3,6 @@
 import { TDS_TAX_TYPES } from "@/constants/expenseCategories";
 import { computeTaxBreakdown } from "@/lib/taxMath";
 
-// Shared "Include GST" / "Include TDS" controls plus the live breakdown panel, used by both
-// the Payable Expenses and Direct Payments sections so the two can never disagree about the
-// arithmetic. The numbers shown here come from src/lib/taxMath.js — the exact same function
-// the server runs when it writes the payables, so what the user audits at entry time is what
-// gets stored.
-//
-// `allowTDS` is false for Direct Payments: that section pays in full when logged and creates
-// no payables, and TDS necessarily creates a "Taxes" payable for the withheld amount.
-//
-// `value` shape: { includeGST, gstRate, gstAmount, includeTDS, tdsRate, tdsAmount, tdsCategory }
-// `baseAmount` is the net-of-GST amount the user typed into the section's Amount field.
-
 const formatCurrency = (amount) =>
   `₹${Number(amount || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })}`;
 
@@ -23,8 +11,6 @@ export default function TaxBreakdownFields({
   baseAmount,
   onChange,
   allowTDS = true,
-  // Visual tint so the block sits naturally inside either the amber payable panel or a
-  // plain white card.
   tone = "amber",
 }) {
   const base = parseFloat(baseAmount) || 0;
@@ -49,7 +35,6 @@ export default function TaxBreakdownFields({
 
   return (
     <div className={`border-t ${divider} pt-3 space-y-3`}>
-      {/* ── Include GST ── */}
       <div>
         <label className={`flex items-center gap-2 text-xs font-medium ${labelColor}`}>
           <input
@@ -87,7 +72,6 @@ export default function TaxBreakdownFields({
         )}
       </div>
 
-      {/* ── Include TDS ── */}
       {allowTDS && (
         <div>
           <label className={`flex items-center gap-2 text-xs font-medium ${labelColor}`}>
@@ -152,7 +136,6 @@ export default function TaxBreakdownFields({
         </div>
       )}
 
-      {/* ── Live breakdown — auditable at entry time ── */}
       {showBreakdown && (
         <div className="bg-white/70 border border-gray-200 rounded-lg p-3 text-xs">
           <p className="font-semibold text-gray-700 mb-2">Breakdown</p>

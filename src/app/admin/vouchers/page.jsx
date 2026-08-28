@@ -10,15 +10,8 @@ import TransactionFieldSet, { validateTransactionFields } from "@/components/fin
 import { PAYABLE_EXPENSE_DROPDOWN_CATEGORIES, getExpenseTypes } from "@/constants/expenseCategories";
 import { useToast } from "@/components/Toast";
 
-// Mirrors Receivable.js's RECEIVABLE_PURPOSES — duplicated as a plain array rather than imported
-// from the model file, because that file pulls in `mongoose`, which cannot go into a client
-// bundle.
 const RECEIVABLE_PURPOSE_VALUES = ["PATIENT_DUE", "COLLAB_SETTLEMENT", "REFUND_DUE", "ADVANCE_RECOVERY", "OTHER"];
 
-// A head-only mapping onto Payable's own `purpose` enum — the voucher form drives creation off
-// EXPENSE_CATEGORY_TREE (the same taxonomy the payment/expense forms already use), but Payable
-// still requires its own `purpose` field. Categories not listed fall back to "OTHER", which is
-// exactly what that value exists for.
 const CATEGORY_TO_PURPOSE = {
   Rent: "RENT",
   "Medical Consumables": "MEDICAL_CONSUMABLES",
@@ -44,13 +37,10 @@ function VouchersPageInner() {
   const [subType, setSubType] = useState(searchParams.get("subType") || "");
   const [purpose, setPurpose] = useState("");
 
-  const [partyMode, setPartyMode] = useState("VENDOR"); // VENDOR | EMPLOYEE | PATIENT | MANUAL
+  const [partyMode, setPartyMode] = useState("VENDOR");
   const [partyId, setPartyId] = useState("");
   const [partyLabel, setPartyLabel] = useState("");
   const [manualLabel, setManualLabel] = useState("");
-  // Vendor mode's own manual fallback — a party that isn't in the vendor list yet, without
-  // forcing a switch to the separate top-level "Manual entry" mode. Kept as its own state
-  // (not reusing manualLabel) so toggling it never bleeds into the unrelated MANUAL mode's text.
   const [vendorManual, setVendorManual] = useState(false);
   const [vendorManualLabel, setVendorManualLabel] = useState("");
   const [vendorOptions, setVendorOptions] = useState([]);
@@ -71,19 +61,10 @@ function VouchersPageInner() {
   const [taxValue, setTaxValue] = useState({});
   const [submitting, setSubmitting] = useState(false);
 
-  // Whether the expense/revenue this voucher represents has ALREADY been recognised by another
-  // transaction — see Payable.costAlreadyRecognised / Receivable.costAlreadyRecognised. Defaults
-  // false: leave unticked for a normal voucher, and this is what decides whether the eventual
-  // settlement gets flagged isSettlement, so it is never a hidden default.
   const [costAlreadyRecognised, setCostAlreadyRecognised] = useState(false);
 
-  // Receivable-only: Transplant/Services/Medicine, mirrors the revenue taxonomy so
-  // receipt/route.js can map it back to a transactionCategory when this receivable is settled.
   const [revenueCategory, setRevenueCategory] = useState("");
 
-  // A patient this voucher is FOR, even when the party being paid/owed isn't the patient
-  // themselves (e.g. a Collab Clinic Payment payable, or a Refund Due/Collab Settlement
-  // receivable) — mirrors NewPayableModal's needsPatient gate on the old payables page.
   const [secondaryPatientId, setSecondaryPatientId] = useState("");
   const [secondaryPatientOptions, setSecondaryPatientOptions] = useState([]);
   const [secondaryPatientSearching, setSecondaryPatientSearching] = useState(false);
@@ -98,9 +79,6 @@ function VouchersPageInner() {
       .catch(() => setVendorOptions([]));
   }, []);
 
-  // Default branch to the session user's own branch, once, when the session loads — the field
-  // stays a plain editable dropdown afterward (via TransactionFieldSet), same as every other
-  // pre-filled field in this codebase.
   useEffect(() => {
     const sessionBranch = session?.user?.branch;
     if (sessionBranch && sessionBranch !== "All" && sessionBranch !== "Collab") {
@@ -154,12 +132,6 @@ function VouchersPageInner() {
 
   const subTypeOptions = useMemo(() => (category ? getExpenseTypes(category) : []), [category]);
 
-  // Patient-linked heads where the money doesn't flow through the patient directly, but the
-  // voucher is still FOR one — Collab Clinic Payment on the Payable side (Commission/Incentive
-  // aren't reachable from this form's category picker at all — see PAYABLE_EXPENSE_DROPDOWN_
-  // CATEGORIES, which deliberately excludes them), Refund Due/Collab Settlement on the
-  // Receivable side. Skipped when the party itself IS a patient — relatedPatient is already
-  // set from partyId in that case.
   const needsSecondaryPatient =
     partyMode !== "PATIENT" &&
     (type === "Payable" ? category === "Collab Clinic Payment" : ["REFUND_DUE", "COLLAB_SETTLEMENT"].includes(purpose));
@@ -190,9 +162,6 @@ function VouchersPageInner() {
       return;
     }
 
-    // A manually-typed vendor has no real Vendor document behind it, same as top-level MANUAL —
-    // recorded as OTHER, not VENDOR, so nothing downstream mistakes payeeLabel for a real vendor
-    // record (payee.refId is already correctly left undefined below, since partyId stays "").
     const kind = partyMode === "MANUAL" || vendorEnteredManually ? "OTHER" : partyMode;
 
     setSubmitting(true);
@@ -292,7 +261,6 @@ function VouchersPageInner() {
           </div>
 
           <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 space-y-5">
-            {/* Type toggle */}
             <div className="inline-flex rounded-lg border border-gray-200 p-1 bg-gray-50">
               {["Payable", "Receivable"].map((t) => (
                 <button
@@ -307,7 +275,6 @@ function VouchersPageInner() {
               ))}
             </div>
 
-            {/* Party */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Party</label>
               <div className="flex gap-1.5 mb-2">
@@ -355,8 +322,6 @@ function VouchersPageInner() {
                     onClick={() => {
                       const next = !vendorManual;
                       setVendorManual(next);
-                      // Switching either direction starts clean — a stale vendor pick left over
-                      // from before typing manually (or vice versa) must not silently submit.
                       setPartyId("");
                       setPartyLabel("");
                       setVendorManualLabel("");
@@ -410,7 +375,6 @@ function VouchersPageInner() {
               )}
             </div>
 
-            {/* Category */}
             {type === "Payable" ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
@@ -494,9 +458,6 @@ function VouchersPageInner() {
               </div>
             )}
 
-            {/* Amount/date/branch/GST-TDS field set — no payment method, transaction ID, or
-                "paid from" account, since a voucher only records an obligation; no money moves
-                until it is settled. */}
             <TransactionFieldSet
               context="voucher"
               value={fields}
@@ -513,10 +474,6 @@ function VouchersPageInner() {
               eventually settled.
             </p>
 
-            {/* The single most consequential field on this form — see the model comment on
-                Payable.costAlreadyRecognised / Receivable.costAlreadyRecognised. It decides
-                whether the eventual settlement is flagged isSettlement, so it is never a hidden
-                default. */}
             <label className="flex items-start gap-2.5 p-3 bg-amber-50 border border-amber-200 rounded-lg cursor-pointer">
               <input
                 type="checkbox"

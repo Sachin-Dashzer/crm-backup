@@ -26,18 +26,6 @@ import {
   IndianRupee,
 } from "lucide-react";
 
-// The collab panel's read-oriented view of the same running account with partner clinics that
-// /admin/collab-settlement shows. Deliberately NOT a copy of the admin page:
-//
-//   - No "Settle clinic" button. A settlement is an actual payment decision between the org and
-//     a partner clinic; settlements/create stays admin-only and the button would only 403 here.
-//   - No delete. Same reason, enforced server-side by settlements/[id].
-//   - Recording a clinic collection IS available — the collab team enters the case, so they are
-//     the ones who know what the patient later handed the clinic. That endpoint only appends to
-//     clinicCollections; it never creates a Transaction or moves Patient.payments.
-//
-// Everything here reads through the same APIs the admin page uses, so the two can't drift.
-
 const DEFAULT_CASE_FILTERS = { search: "", status: "", dateFrom: "", dateTo: "" };
 const CASE_LIMIT = 20;
 
@@ -129,13 +117,11 @@ export default function CollabSettlementPage() {
 
   useEffect(() => {
     if (expandedClinic) fetchCasesForClinic(expandedClinic, caseFilters, casePage);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [expandedClinic, caseFilters, casePage]);
 
   useEffect(() => {
     if (expandedClinic) fetchSettlements(expandedClinic);
     else setSettlements([]);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [expandedClinic]);
 
   const toggleClinic = (clinic) => {
@@ -520,7 +506,6 @@ export default function CollabSettlementPage() {
                 </div>
               )}
 
-              {/* Read-only here — deleting a settlement is admin-only, enforced server-side. */}
               <div className="mt-6 pt-5 border-t border-gray-200">
                 <h4 className="text-sm font-bold text-gray-900 mb-3">
                   Settlement History ({settlements.length})
@@ -693,38 +678,19 @@ function CaseHistory({ collabCase }) {
 }
 
 function RecordCollectionModal({ collabCase, onClose, onSuccess, toast }) {
-  // Which side actually took the money — the same split collabDerivation.js's
-  // createCollectionTransaction makes for the amounts entered at case creation. Defaults to
-  // CLINIC, the original and still most common case: the patient paying the clinic directly is
-  // why this modal existed in the first place.
   const [collectedBy, setCollectedBy] = useState("CLINIC");
   const [amount, setAmount] = useState("");
-  // Pre-fills `amount` to the patient's full remaining outstanding and locks it — the shortcut
-  // for "this collection completes the case", mirroring CollabCaseForm's own checkbox.
   const [fullPackage, setFullPackage] = useState(false);
-  // A waiver granted at the time of this collection — reduces the patient's outstanding the
-  // same as a payment would, but is never money collected (see the model comment on
-  // clinicCollections.discount).
   const [discount, setDiscount] = useState("");
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
-  // Sent as `mode` (collectedBy:"CLINIC" — descriptive only) or `method` (collectedBy:"US" — the
-  // real payment method) depending on which side is selected; one field covers both since they
-  // draw from the same REVENUE_METHODS list.
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [reference, setReference] = useState("");
-  // collectedBy:"CLINIC" — descriptive routing detail only (which instrument, which account, on
-  // the CLINIC's side); never touches our own accounts/books, though it DOES book real revenue
-  // (a paid_to_external Transaction, see collabDerivation.js). collectedBy:"US" — this is a real
-  // cash-in, exactly like a direct payment, so these fields route it into one of OUR OWN
-  // accounts the normal way.
   const [receiptMode, setReceiptMode] = useState("");
   const [furtherMode, setFurtherMode] = useState("");
   const [note, setNote] = useState("");
   const [allowOverpayment, setAllowOverpayment] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  // Deliberate override, not a continuous lock: checking pre-fills once; unchecking just leaves
-  // the current value editable rather than resetting it.
   useEffect(() => {
     if (fullPackage) setAmount(String(collabCase.patientOutstanding || 0));
   }, [fullPackage, collabCase.patientOutstanding]);
@@ -744,8 +710,6 @@ function RecordCollectionModal({ collabCase, onClose, onSuccess, toast }) {
       toast.error("Amount + discount exceeds patient's remaining outstanding — check the box to proceed anyway");
       return;
     }
-    // Same requirement as every other payment-entry form in the app — cash is the only method
-    // with no independently-verifiable trail, everything else needs one.
     if (paymentMethod !== "cash" && !reference.trim()) {
       toast.error("Enter the transaction ID / reference for this collection");
       return;
@@ -794,7 +758,6 @@ function RecordCollectionModal({ collabCase, onClose, onSuccess, toast }) {
   return (
     <div className="fixed inset-0 bg-gray-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[92vh] flex flex-col overflow-hidden">
-        {/* Header */}
         <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100 shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center shrink-0">
@@ -810,9 +773,7 @@ function RecordCollectionModal({ collabCase, onClose, onSuccess, toast }) {
           </button>
         </div>
 
-        {/* Body */}
         <div className="px-6 py-5 space-y-6 overflow-y-auto">
-          {/* Who collected */}
           <div>
             <SectionLabel>Who collected this?</SectionLabel>
             <div className="grid grid-cols-2 gap-2.5">
@@ -863,7 +824,6 @@ function RecordCollectionModal({ collabCase, onClose, onSuccess, toast }) {
             )}
           </div>
 
-          {/* Amount */}
           <div>
             <SectionLabel>Amount</SectionLabel>
             <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 space-y-3.5">
@@ -944,7 +904,6 @@ function RecordCollectionModal({ collabCase, onClose, onSuccess, toast }) {
             </div>
           </div>
 
-          {/* Payment details */}
           <div>
             <SectionLabel>Payment Details</SectionLabel>
             <div className="space-y-3.5">
@@ -1011,7 +970,6 @@ function RecordCollectionModal({ collabCase, onClose, onSuccess, toast }) {
             </div>
           </div>
 
-          {/* Note */}
           <div>
             <SectionLabel>
               <span className="inline-flex items-center gap-1.5"><StickyNote className="w-3 h-3" /> Note</span>
@@ -1026,7 +984,6 @@ function RecordCollectionModal({ collabCase, onClose, onSuccess, toast }) {
           </div>
         </div>
 
-        {/* Footer */}
         <div className="flex gap-3 px-6 py-4 border-t border-gray-100 bg-gray-50/50 shrink-0">
           <button
             onClick={onClose}

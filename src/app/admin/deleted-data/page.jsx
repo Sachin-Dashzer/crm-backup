@@ -1,9 +1,9 @@
 "use client";
 
 import React, { useEffect, useState, useMemo, useCallback } from "react";
-import { 
-  Search, 
-  ChevronDown, 
+import {
+  Search,
+  ChevronDown,
   ChevronUp,
   Calendar,
   User,
@@ -11,7 +11,6 @@ import {
   Download
 } from "lucide-react";
 
-// Utility functions
 const formatCurrency = (amount) => {
   if (amount === undefined || amount === null) return "₹0";
   return new Intl.NumberFormat('en-IN', {
@@ -37,13 +36,11 @@ const formatDate = (dateString) => {
   }
 };
 
-// Transform API response to flat array
 const transformApiData = (apiResponse) => {
   if (!apiResponse?.data) return [];
-  
+
   const flatData = [];
-  
-  // Iterate through all cost types (Revenue, Expenses, etc.)
+
   Object.entries(apiResponse.data).forEach(([costType, items]) => {
     if (Array.isArray(items)) {
       items.forEach(item => {
@@ -58,17 +55,15 @@ const transformApiData = (apiResponse) => {
       });
     }
   });
-  
+
   return flatData;
 };
 
-// Filter logic
 const applyFilters = (data, filters) => {
   return data.filter(item => {
-    // Search filter
     if (filters.search.trim()) {
       const searchLower = filters.search.toLowerCase().trim();
-      const matchesSearch = 
+      const matchesSearch =
         item.patient?.name?.toLowerCase().includes(searchLower) ||
         item.remarks?.toLowerCase().includes(searchLower) ||
         item.expense?.toLowerCase().includes(searchLower) ||
@@ -76,11 +71,10 @@ const applyFilters = (data, filters) => {
         item.paymentId?.toLowerCase().includes(searchLower) ||
         item.branch?.toLowerCase().includes(searchLower) ||
         item.procedure?.toLowerCase().includes(searchLower);
-      
+
       if (!matchesSearch) return false;
     }
 
-    // Date range filters
     if (filters.dateFrom) {
       const fromDate = new Date(filters.dateFrom);
       const itemDate = new Date(item.date);
@@ -109,15 +103,11 @@ const DeletedData = () => {
   });
   const [expandedRow, setExpandedRow] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
-  // The server scopes to the current month unless asked otherwise; these track what it actually
-  // returned so the UI can say so instead of implying it's showing the whole log.
   const [allTime, setAllTime] = useState(false);
   const [dateWindow, setDateWindow] = useState(null);
   const [truncated, setTruncated] = useState(false);
   const itemsPerPage = 10;
 
-  // Fetch data. The server defaults to the current month — filtering and paging still happen in
-  // the browser over whatever window came back, so `allTime` is what widens the underlying set.
   useEffect(() => {
     let cancelled = false;
     const fetchData = async () => {
@@ -136,7 +126,6 @@ const DeletedData = () => {
         }
         if (cancelled) return;
 
-        // Transform nested API response to flat array
         const flatData = transformApiData(result);
         setData(flatData);
         setDateWindow(result.dateWindow || null);
@@ -156,27 +145,23 @@ const DeletedData = () => {
     return () => { cancelled = true; };
   }, [allTime]);
 
-  // Memoized filtered data
   const filteredData = useMemo(() => {
     return applyFilters(data, filters);
   }, [data, filters]);
 
-  // Memoized pagination values
   const paginationData = useMemo(() => {
     const totalPages = Math.max(1, Math.ceil(filteredData.length / itemsPerPage));
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = Math.min(startIndex + itemsPerPage, filteredData.length);
     const currentData = filteredData.slice(startIndex, endIndex);
-    
+
     return { totalPages, startIndex, endIndex, currentData };
   }, [filteredData, currentPage, itemsPerPage]);
 
-  // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
   }, [filters]);
 
-  // Memoized event handlers
   const handleFilterChange = useCallback((e) => {
     const { name, value } = e.target;
     setFilters(prev => ({
@@ -201,17 +186,14 @@ const DeletedData = () => {
     setCurrentPage(newPage);
   }, []);
 
-  // Excel Export Function
   const handleExportExcel = useCallback(async () => {
     if (filteredData.length === 0) {
       alert("No data to export");
       return;
     }
 
-    // Loaded on demand — xlsx is ~1MB and is only needed once the user actually exports.
     const XLSX = await import('xlsx');
 
-    // Prepare data for Excel
     const excelData = filteredData.map((item, index) => ({
       'Sr. No.': index + 1,
       'Date': formatDate(item.date),
@@ -232,42 +214,36 @@ const DeletedData = () => {
       'Created Date': item.createdBy?.date ? formatDate(item.createdBy.date) : 'N/A',
     }));
 
-    // Create workbook and worksheet
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.json_to_sheet(excelData);
 
-    // Set column widths
     const columnWidths = [
-      { wch: 8 },  // Sr. No.
-      { wch: 12 }, // Date
-      { wch: 12 }, // Cost Type
-      { wch: 20 }, // Patient Name
-      { wch: 15 }, // Patient Phone
-      { wch: 15 }, // Procedure
-      { wch: 12 }, // Branch
-      { wch: 12 }, // Amount
-      { wch: 12 }, // Payment Method
-      { wch: 15 }, // Payment Type
-      { wch: 15 }, // Payment ID
-      { wch: 15 }, // Expense
-      { wch: 10 }, // Discount
-      { wch: 30 }, // Remarks
-      { wch: 20 }, // Created By
-      { wch: 15 }, // Created Date
+      { wch: 8 },
+      { wch: 12 },
+      { wch: 12 },
+      { wch: 20 },
+      { wch: 15 },
+      { wch: 15 },
+      { wch: 12 },
+      { wch: 12 },
+      { wch: 12 },
+      { wch: 15 },
+      { wch: 15 },
+      { wch: 15 },
+      { wch: 10 },
+      { wch: 30 },
+      { wch: 20 },
+      { wch: 15 },
     ];
     ws['!cols'] = columnWidths;
 
-    // Add worksheet to workbook
     XLSX.utils.book_append_sheet(wb, ws, 'Transaction Records');
 
-    // Generate filename with current date
     const fileName = `Transaction_Records_${new Date().toLocaleDateString('en-IN').replace(/\//g, '-')}.xlsx`;
 
-    // Save file
     XLSX.writeFile(wb, fileName);
   }, [filteredData]);
 
-  // Loading state
   if (loading) {
     return (
       <div className="flex min-h-screen bg-gray-50">
@@ -283,7 +259,6 @@ const DeletedData = () => {
     );
   }
 
-  // Error state
   if (error) {
     return (
       <div className="flex min-h-screen bg-gray-50">
@@ -292,7 +267,7 @@ const DeletedData = () => {
             <div className="text-center max-w-md">
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Error Loading Data</h3>
               <p className="text-gray-600 mb-4">{error}</p>
-              <button 
+              <button
                 onClick={() => window.location.reload()}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
               >
@@ -309,9 +284,8 @@ const DeletedData = () => {
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-      
+
       <main className="flex-1 p-4 lg:p-8">
-        {/* Header */}
         <div className="mb-6">
           <div className="flex items-center justify-between">
             <div>
@@ -330,8 +304,6 @@ const DeletedData = () => {
           </div>
         </div>
 
-        {/* What window the server actually returned. Without this the list looks like the whole
-            audit log when it is in fact scoped to the current month. */}
         {(dateWindow?.isDefault || truncated) && (
           <div className="mb-6 flex flex-wrap items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
             <Calendar className="h-4 w-4 shrink-0" />
@@ -352,7 +324,6 @@ const DeletedData = () => {
           </div>
         )}
 
-        {/* Filters Section */}
         <div className="bg-white rounded-lg border mb-6 p-4">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-medium text-gray-900">Search & Filter</h2>
@@ -367,7 +338,6 @@ const DeletedData = () => {
           </div>
 
           <div className="space-y-4">
-            {/* Search */}
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
               <input
@@ -380,7 +350,6 @@ const DeletedData = () => {
               />
             </div>
 
-            {/* Date Range */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -417,7 +386,6 @@ const DeletedData = () => {
           </div>
         </div>
 
-        {/* Data Table */}
         <div className="bg-white rounded-lg border overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
@@ -437,8 +405,8 @@ const DeletedData = () => {
                 {currentData.length === 0 ? (
                   <tr>
                     <td colSpan="8" className="py-8 text-center text-gray-500">
-                      {data.length === 0 
-                        ? "No records found" 
+                      {data.length === 0
+                        ? "No records found"
                         : "No records match your filters"}
                     </td>
                   </tr>
@@ -453,8 +421,8 @@ const DeletedData = () => {
                         </td>
                         <td className="py-3 px-4">
                           <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            item.costType === "Revenue" 
-                              ? "bg-green-100 text-green-800" 
+                            item.costType === "Revenue"
+                              ? "bg-green-100 text-green-800"
                               : "bg-red-100 text-red-800"
                           }`}>
                             {item.costType}
@@ -511,8 +479,7 @@ const DeletedData = () => {
                           </button>
                         </td>
                       </tr>
-                      
-                      {/* Expanded Row Details */}
+
                       {expandedRow === item._id && (
                         <tr>
                           <td colSpan="8" className="bg-gray-50 p-4">
@@ -548,7 +515,7 @@ const DeletedData = () => {
                                   )}
                                 </div>
                               </div>
-                              
+
                               <div>
                                 <h4 className="text-sm font-medium text-gray-700 mb-3">Additional Info</h4>
                                 <div className="space-y-2 text-sm">
@@ -579,7 +546,6 @@ const DeletedData = () => {
             </table>
           </div>
 
-          {/* Pagination */}
           {totalPages > 1 && (
             <div className="px-4 py-3 border-t bg-gray-50">
               <div className="flex items-center justify-between">
@@ -607,7 +573,7 @@ const DeletedData = () => {
                       } else {
                         pageNum = currentPage - 2 + i;
                       }
-                      
+
                       return (
                         <button
                           key={pageNum}

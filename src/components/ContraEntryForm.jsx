@@ -9,32 +9,17 @@ import { ALL_BRANCHES } from "@/lib/branches";
 import { formatCurrency } from "@/lib/financeUI";
 import { ArrowRight, Loader2, Save, Wallet } from "lucide-react";
 
-// Contra Entry — "Transfer between your own accounts" (§5.1). The subtitle is not decoration:
-// "contra entry" is the standard Indian accounting term and matches Tally, but it means
-// nothing to someone who hasn't used accounting software, so the plain-English gloss stays
-// visible rather than hiding in a tooltip.
-//
-// Deliberately minimal. A contra entry has no payee, no category, no GST — adding any of those
-// would imply a P&L dimension it does not have. Branch is the one exception, and it is an
-// ATTRIBUTION field, not a P&L one: it says which branch's books the move belongs in, without
-// making the transfer revenue or expense. Left blank it stays company-level.
-
 const emptyForm = () => ({
   fromAccount: "",
   toAccount: "",
   amount: "",
   date: new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" }),
-  // A BRANCH from ALL_BRANCHES, not an account. Empty means company-level: the transfer shows
-  // only in the unfiltered close book, because money moving between head-office accounts can't
-  // honestly be attributed to one branch.
   branch: "",
   reference: "",
   remarks: "",
   receipts: [],
 });
 
-// Pulls its own toast rather than taking one as a prop, the same way ReceiptUpload does, so it
-// drops into a host page regardless of whether that page uses alert() or Toast itself.
 export default function ContraEntryForm({ onSaved }) {
   const toast = useToast();
   const [data, setData] = useState(emptyForm);
@@ -44,8 +29,6 @@ export default function ContraEntryForm({ onSaved }) {
 
   const set = (patch) => setData((prev) => ({ ...prev, ...patch }));
 
-  // Balances are shown as of the entry's own date, not today — back-dating a transfer should
-  // show what the account held then, which is the figure that decides whether it could cover it.
   const loadBalances = async (asOf) => {
     setBalancesLoading(true);
     try {
@@ -67,7 +50,6 @@ export default function ContraEntryForm({ onSaved }) {
   const sameAccount = data.fromAccount && data.fromAccount === data.toAccount;
   const fromBalance = balances?.[data.fromAccount];
   const toBalance = balances?.[data.toAccount];
-  // Warn, don't block — the user may be entering things out of order (§5.3).
   const wouldGoNegative =
     data.fromAccount && fromBalance !== undefined && amount > 0 && fromBalance - amount < 0;
 
@@ -277,7 +259,6 @@ export default function ContraEntryForm({ onSaved }) {
                   </div>
                 </div>
 
-                {/* The reassurance that this is not a sale or a cost. */}
                 <div className="rounded-lg bg-gray-50 border border-gray-200 p-3 text-xs text-gray-600">
                   No effect on revenue or expenses — this only moves cash between your own
                   accounts. Your total across all {ACCOUNTS.length} accounts is unchanged.

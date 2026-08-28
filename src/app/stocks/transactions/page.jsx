@@ -33,7 +33,6 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
-// ========== UTILITY FUNCTIONS ==========
 const calculateNetAmount = (transaction) => {
   if (!transaction) return 0;
   const amount = parseFloat(transaction.amount) || 0;
@@ -86,7 +85,6 @@ const getCategoryGradientClass = (categoryValue, isActive) => {
   return gradients[categoryValue] || "bg-gray-50 text-gray-600";
 };
 
-// ========== STAT CARD COMPONENT ==========
 function StatCard({ title, value, icon: Icon, gradient, count, iconBg, iconColor }) {
   return (
     <div className={`bg-linear-to-br ${gradient} p-4 sm:p-6 rounded-2xl shadow-lg text-white relative overflow-hidden transform hover:scale-105 transition-transform duration-300`}>
@@ -107,7 +105,6 @@ function StatCard({ title, value, icon: Icon, gradient, count, iconBg, iconColor
   );
 }
 
-// ========== DELETE CONFIRM MODAL ==========
 function DeleteConfirmModal({ transaction, onClose, onConfirm }) {
   const [deleting, setDeleting] = useState(false);
 
@@ -165,7 +162,6 @@ function DeleteConfirmModal({ transaction, onClose, onConfirm }) {
   );
 }
 
-// ========== HELPER COMPONENTS ==========
 function Input({ label, type = "text", value, onChange, icon: Icon, required, placeholder, min, max }) {
   return (
     <label className="block">
@@ -197,7 +193,6 @@ function Select({ label, value, onChange, options, required, icon: Icon }) {
   );
 }
 
-// ========== APPROVAL BADGE COMPONENT ==========
 function ApprovalBadge({ status }) {
   if (status === "PENDING") {
     return (
@@ -216,7 +211,6 @@ function ApprovalBadge({ status }) {
   return null;
 }
 
-// ========== DATA TABLE COMPONENT ==========
 function DataTable({ category, rows, onDelete, onSort, sortConfig, pagination, onGenerateBill }) {
   const router = useRouter();
   const { data: session } = useSession();
@@ -444,7 +438,6 @@ function DataTable({ category, rows, onDelete, onSort, sortConfig, pagination, o
                       </div>
                     </div>
 
-                    {/* Mobile View */}
                     <div className="md:hidden p-4">
                       <div className="space-y-4">
                         <div className="flex items-start justify-between">
@@ -499,7 +492,6 @@ function DataTable({ category, rows, onDelete, onSort, sortConfig, pagination, o
         )}
       </div>
 
-      {/* Pagination */}
       <div className="border-t border-slate-200 bg-white">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 sm:px-6 py-4">
           <div className="text-sm text-slate-600">
@@ -541,7 +533,6 @@ function DataTable({ category, rows, onDelete, onSort, sortConfig, pagination, o
   );
 }
 
-// ========== MAIN COMPONENT ==========
 export default function StocksTransactionsPage() {
   const tenantBranches = ["Delhi", "Mumbai", "Hyderabad", "Noida"];
 

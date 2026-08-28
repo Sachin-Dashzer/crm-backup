@@ -76,7 +76,6 @@ const interviewerSchema = new mongoose.Schema({
   interviewDate: {
     type: Date,
   },
-  // Interview Evaluation
   communication: {
     type: Number,
     min: 1,

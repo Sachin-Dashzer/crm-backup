@@ -11,7 +11,6 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 export async function DELETE(req) {
   let session;
   try {
-    // Check authentication
     session = await getServerSession(authOptions);
     if (!session) {
       return NextResponse.json(
@@ -22,7 +21,6 @@ export async function DELETE(req) {
 
     await connectDB();
 
-    // Get transaction ID from request body
     const { transactionId } = await req.json();
 
     if (!transactionId) {
@@ -32,7 +30,6 @@ export async function DELETE(req) {
       );
     }
 
-    // Find the transaction to delete
     const transaction = await Transactions.findById(transactionId);
 
     if (!transaction) {
@@ -42,15 +39,11 @@ export async function DELETE(req) {
       );
     }
 
-    // Closed-period guard — a delete inside a frozen period would invalidate its snapshot.
     const locked = await periodLockResponse(transaction);
     if (locked) {
       return NextResponse.json(locked.body, { status: locked.status });
     }
 
-    // §3.2 Direction A — refuse to orphan a Receivable/Payable this transaction created.
-    // Direction B (this row merely PAYS a linked document) needs no cascade: paid/pending is
-    // aggregated from transactions, so deleting it self-corrects.
     const cascade = await checkCascadeOnDelete(transaction);
     if (cascade.blocked) {
       return NextResponse.json(
@@ -59,7 +52,6 @@ export async function DELETE(req) {
       );
     }
 
-    // Verify it's an EXPENSE transaction
     const category = transaction.transactionCategory || transaction.category;
     if (category !== "EXPENSE") {
       return NextResponse.json(
@@ -68,7 +60,6 @@ export async function DELETE(req) {
       );
     }
 
-    // Store transaction details for response
     const deletedData = {
       transactionId: transaction._id,
       expense: transaction.expense || transaction.expenseCategory,
@@ -79,7 +70,6 @@ export async function DELETE(req) {
       branch: transaction.branch,
     };
 
-    // If this transaction is linked to a vendor, remove the reference
     if (
       transaction.expenseGiver?.type === "VENDOR" &&
       transaction.expenseGiver?.vendorId
@@ -89,14 +79,12 @@ export async function DELETE(req) {
       );
 
       if (vendorDoc) {
-        // Check if this transaction is the one referenced in the vendor
         if (
           vendorDoc.Transactions &&
           vendorDoc.Transactions.toString() === transactionId
         ) {
           vendorDoc.Transactions = null;
 
-          // Add editor information
           vendorDoc.editors.push({
             name: session.user.name,
             email: session.user.email,
@@ -116,19 +104,16 @@ export async function DELETE(req) {
       }
     }
 
-    // Also check the legacy vendor field for backward compatibility
     if (transaction.vendor) {
       const vendorDoc = await Vendor.findById(transaction.vendor);
 
       if (vendorDoc) {
-        // Check if this transaction is the one referenced in the vendor
         if (
           vendorDoc.Transactions &&
           vendorDoc.Transactions.toString() === transactionId
         ) {
           vendorDoc.Transactions = null;
 
-          // Add editor information
           vendorDoc.editors.push({
             name: session.user.name,
             email: session.user.email,
@@ -148,7 +133,6 @@ export async function DELETE(req) {
       }
     }
 
-    // Log the deletion
     await DeleteLog.create({
       entityType: "Transaction",
       entityId: transactionId,
@@ -169,7 +153,6 @@ export async function DELETE(req) {
       branch: transaction.branch,
     });
 
-    // Delete the transaction
     await Transactions.findByIdAndDelete(transactionId);
 
     return NextResponse.json({

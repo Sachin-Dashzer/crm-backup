@@ -6,7 +6,6 @@ export async function POST(request) {
   try {
     const { name, email, password, role } = await request.json();
 
-    // Validation
     if (!name || !email || !password) {
       return NextResponse.json(
         { error: 'Name, email, and password are required' },
@@ -14,12 +13,10 @@ export async function POST(request) {
       );
     }
 
-    // Connect to database if not already connected
     if (mongoose.connection.readyState !== 1) {
       await mongoose.connect(process.env.MONGODB_URI);
     }
 
-    // Check if user already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return NextResponse.json(
@@ -28,7 +25,6 @@ export async function POST(request) {
       );
     }
 
-    // Create new user
     const user = await User.create({
       name,
       email,
@@ -36,7 +32,6 @@ export async function POST(request) {
       role: role || 'reception'
     });
 
-    // Return user without password
     const userWithoutPassword = {
       id: user._id,
       name: user.name,

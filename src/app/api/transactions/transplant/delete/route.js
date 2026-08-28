@@ -1,4 +1,3 @@
-// app/api/transactions/transplant/delete/route.js
 
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/db";
@@ -16,7 +15,6 @@ export async function DELETE(req) {
   try {
     await connectDB();
 
-    // Authentication check
     const session = await getServerSession(authOptions);
     if (!session?.user?.name || !session?.user?.email || !session?.user?.branch) {
       return NextResponse.json(
@@ -27,7 +25,6 @@ export async function DELETE(req) {
 
     const { transactionId } = await req.json();
 
-    // Validation
     if (!transactionId) {
       return NextResponse.json(
         { success: false, message: "Transaction ID is required" },
@@ -42,7 +39,6 @@ export async function DELETE(req) {
       );
     }
 
-    // Find transaction
     const transactionToDelete = await Transactions.findById(transactionId);
 
     if (!transactionToDelete) {
@@ -52,7 +48,6 @@ export async function DELETE(req) {
       );
     }
 
-    // Verify it's a TRANSPLANT transaction
     if (transactionToDelete.transactionCategory !== "TRANSPLANT") {
       return NextResponse.json(
         { success: false, message: "Not a transplant transaction" },
@@ -60,15 +55,11 @@ export async function DELETE(req) {
       );
     }
 
-    // Closed-period guard — a delete inside a frozen period would invalidate its snapshot.
     const locked = await periodLockResponse(transactionToDelete);
     if (locked) {
       return NextResponse.json({ ...locked.body, message: locked.body.error }, { status: locked.status });
     }
 
-    // §3.2 Direction A — refuse to orphan a Receivable/Payable this transaction created.
-    // Direction B (this row merely PAYS a linked document) needs no cascade: paid/pending is
-    // aggregated from transactions, so deleting it self-corrects.
     const cascade = await checkCascadeOnDelete(transactionToDelete);
     if (cascade.blocked) {
       return NextResponse.json(
@@ -79,7 +70,6 @@ export async function DELETE(req) {
 
     const patientId = transactionToDelete.patient;
 
-    // Create audit entry before deletion
     const auditData = new Audit({
       transactionCategory: transactionToDelete.transactionCategory,
       costType: transactionToDelete.costType,
@@ -103,7 +93,6 @@ export async function DELETE(req) {
 
     await auditData.save();
 
-    // Log the deletion
     await DeleteLog.create({
       entityType: "Transaction",
       entityId: transactionId,
@@ -124,16 +113,13 @@ export async function DELETE(req) {
       branch: transactionToDelete.branch,
     });
 
-    // Delete the transaction
     const deletedTransaction = await Transactions.findByIdAndDelete(transactionId);
 
-    // Update patient payments
     if (patientId) {
       try {
         const patient = await Patient.findById(patientId);
 
         if (patient) {
-          // Initialize payments if needed
           if (!patient.payments) {
             patient.payments = {
               amountReceived: 0,
@@ -145,14 +131,12 @@ export async function DELETE(req) {
             };
           }
 
-          // Remove transaction reference from patient
           if (patient.payments.transactions) {
             patient.payments.transactions = patient.payments.transactions.filter(
               (transId) => transId.toString() !== transactionId.toString()
             );
           }
 
-          // Recalculate from ALL remaining transactions
           const remainingTransactions = await Transactions.find({
             _id: { $in: patient.payments.transactions },
             costType: "Revenue",
@@ -165,16 +149,13 @@ export async function DELETE(req) {
             const amount = transaction.amount || 0;
             const discount = transaction.discount || 0;
 
-            // For TRANSPLANT: all amounts go to amountReceived
             totalAmountReceived += amount;
             totalDiscount += discount;
           });
 
-          // Update patient payments
           patient.payments.amountReceived = totalAmountReceived;
           patient.payments.discount = totalDiscount;
 
-          // Calculate pending amount
           const totalAmount = patient.payments.totalAmount || 0;
           const adjustedTotal = Math.max(0, totalAmount - totalDiscount);
           patient.payments.pendingAmount = Math.max(
@@ -182,7 +163,6 @@ export async function DELETE(req) {
             adjustedTotal - totalAmountReceived
           );
 
-          // Add editor entry
           patient.editors = patient.editors || [];
           patient.editors.push({
             name: session.user.name,
@@ -204,8 +184,6 @@ export async function DELETE(req) {
           "Error updating patient payments after transaction deletion:",
           patientUpdateError
         );
-        // Don't fail the deletion if patient update fails
-        // Transaction is already deleted at this point
       }
     }
 
@@ -223,7 +201,6 @@ export async function DELETE(req) {
   } catch (error) {
     console.error("Error deleting transplant transaction:", error);
 
-    // Handle specific MongoDB errors
     if (error.name === "CastError") {
       return NextResponse.json(
         { success: false, message: "Invalid transaction ID format" },

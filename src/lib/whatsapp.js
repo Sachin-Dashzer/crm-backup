@@ -1,6 +1,3 @@
-// WhatsApp Cloud API helper for the expense approval workflow.
-// Every exported function swallows its own errors and logs them — a WhatsApp
-// outage must never block or crash a transaction create/webhook request.
 
 const WA_API_VERSION = "v21.0";
 
@@ -41,7 +38,6 @@ async function callWhatsAppAPI(payload) {
   }
 }
 
-// Plain text message.
 export async function sendWhatsAppText(to, text) {
   return callWhatsAppAPI({
     to,
@@ -72,9 +68,6 @@ function buildApprovalBody(transaction) {
   );
 }
 
-// Sends an interactive Approve/Reject button message to all configured admin
-// numbers in parallel. Returns the {phone, messageId} pairs that succeeded so
-// the caller can persist them for audit — failures are logged, never thrown.
 export async function sendExpenseApprovalRequest(transaction) {
   const admins = getAdminNumbers();
   if (admins.length === 0) {
@@ -115,8 +108,6 @@ export async function sendExpenseApprovalRequest(transaction) {
   return sent;
 }
 
-// Notifies the admins who did NOT action the transaction that it's already
-// been resolved by someone else.
 export async function notifyOtherAdmins(transaction, actingPhone, action) {
   const admins = getAdminNumbers();
   const others = admins.filter((phone) => phone !== actingPhone);

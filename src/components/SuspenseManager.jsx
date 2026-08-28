@@ -9,13 +9,6 @@ import {
   Loader2, Edit2, Trash2, Link2, CheckCircle2, RotateCcw, Ban, X, HelpCircle, FileDown,
 } from "lucide-react";
 
-// Manage every suspense entry — the unexplained bank movement recorded from the Suspense tab on
-// the create page. See src/models/SuspenseEntry.js for what these are and why they never touch
-// a revenue or expense total.
-//
-// The headline figure is the point of the screen: how much money is sitting in the accounts that
-// nobody can explain. It should trend to zero, and an entry nobody can see is one nobody chases.
-
 const STATUS_TABS = [
   { value: "open", label: "Open" },
   { value: "resolved", label: "Resolved" },
@@ -101,8 +94,6 @@ export default function SuspenseManager() {
   const reopen = (entry) =>
     act(entry, { action: "reopen" }, "Reopened — counting toward the balance again");
 
-  // Cancel is offered first everywhere else; this is the escape hatch for entries created in
-  // genuine error. Spelled out because an OPEN entry is moving a balance right now.
   const remove = async (entry) => {
     const counting = !entry.isResolved && !entry.isCancelled;
     const ok = window.confirm(
@@ -172,7 +163,6 @@ export default function SuspenseManager() {
       Account: e.account,
       Branch: e.branch || "",
       Direction: e.direction === "OUT" ? "Money out" : "Money in",
-      // Separate columns so a spreadsheet can SUM them without a formula first.
       "Money In": e.direction === "OUT" ? null : e.amount,
       "Money Out": e.direction === "OUT" ? e.amount : null,
       Reference: e.reference || "",
@@ -191,7 +181,6 @@ export default function SuspenseManager() {
 
   return (
     <div className="space-y-4">
-      {/* Headline — the number that should reach zero. */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
@@ -338,7 +327,6 @@ export default function SuspenseManager() {
           </table>
         </div>
 
-        {/* Mobile — stacked cards, matching the other financial pages. */}
         <div className="md:hidden divide-y divide-gray-100">
           {loading ? (
             <div className="py-12 text-center text-gray-400"><Loader2 className="w-5 h-5 animate-spin inline" /></div>

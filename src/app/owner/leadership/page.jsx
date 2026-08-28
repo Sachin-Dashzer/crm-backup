@@ -11,8 +11,6 @@ const METRICS = [
   { key: "converted", label: "Converted" },
 ];
 
-// Min-max normalizes each metric column independently to 0–100 so columns on very different
-// scales (leads in the hundreds vs. a conversion % 0–100) are visually comparable in one heatmap.
 function normalizeColumn(rows, key) {
   const values = rows.map((r) => r[key]).filter((v) => v != null);
   if (values.length === 0) return rows.map(() => null);
@@ -46,7 +44,6 @@ export default function LeadershipPage() {
 
   const heatmapData = useMemo(() => {
     const columns = METRICS.map((m) => normalizeColumn(tlRows, m.key));
-    // transpose columns-of-rows into rows-of-columns (one row per TL, one value per metric)
     return tlRows.map((_, ri) => columns.map((col) => col[ri]));
   }, [tlRows]);
 

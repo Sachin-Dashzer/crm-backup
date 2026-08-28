@@ -9,7 +9,6 @@ import { UNSETTLED_METHODS } from "@/constants/bankRouting";
 
 const PROCEDURES = ["PRP", "GFC", "Canacot", "Biotin"];
 
-// ── GET /api/collab/prp?date=YYYY-MM-DD  (or ?from=&to= for range export) ──
 export async function GET(req) {
   try {
     const session = await getServerSession(authOptions);
@@ -40,7 +39,6 @@ export async function GET(req) {
     const branchFilter = resolveBranchFilter(session, null, "branch");
     const patientBranchFilter = resolveBranchFilter(session, null, "personal.branch");
 
-    // 1. Paid — PRP & GFC transactions for the day
     const paidTransactions = await Transactions.find({
       procedure: { $in: PROCEDURES },
       date: { $gte: dayStart, $lte: dayEnd },
@@ -50,7 +48,6 @@ export async function GET(req) {
       .sort({ date: -1 })
       .lean();
 
-    // 2. Patients with PRP/GFC sessions recorded today (afterSurgery.prp)
     const patientsWithSessions = await Patient.find(
       {
         "afterSurgery.prp": {
@@ -66,15 +63,12 @@ export async function GET(req) {
       }
     ).lean();
 
-    // Patient IDs with a paid transaction today (per procedure type)
-    // Key: `${patientId}-${procedure}`
     const paidKeys = new Set(
       paidTransactions
         .filter((t) => t.patient?._id)
         .map((t) => `${t.patient._id}-${t.procedure}`)
     );
 
-    // 3. Unpaid = recorded in patient record but no matching paid transaction
     const unpaidSessions = patientsWithSessions.flatMap((p) => {
       const todaySessions = (p.afterSurgery?.prp || []).filter((s) => {
         const d = new Date(s.date);
@@ -98,7 +92,6 @@ export async function GET(req) {
         }));
     });
 
-    // 4. Format paid list
     const paidList = paidTransactions.map((t) => ({
       transactionId: t._id,
       patientId: t.patient?._id || null,
@@ -115,9 +108,6 @@ export async function GET(req) {
       status: "paid",
     }));
 
-    // paidList itself stays unfiltered — every row still shows, unsettled ones included (badge
-    // in the UI, per §2.5). Only the revenue TOTALS below exclude paid_to_external — that money
-    // isn't ours yet.
     const settledPaidList = paidList.filter(
       (t) => !UNSETTLED_METHODS.includes(t.method) && t.isSettlement !== true,
     );
@@ -150,8 +140,6 @@ export async function GET(req) {
   }
 }
 
-// ── POST /api/collab/prp ──────────────────────────────────────────────────
-// Add a new PRP or GFC session. If isPaid=true, creates a transaction.
 export async function POST(req) {
   try {
     const session = await getServerSession(authOptions);
@@ -189,21 +177,17 @@ export async function POST(req) {
     }
 
     const sessionDate = date ? new Date(date) : new Date();
-    // Collab accounts carry the "Collab" sentinel (not a real city) — the
-    // client-submitted city (body.branch) always wins for the actual record.
     const branch = body.branch || (session.user.branch !== "Collab" ? session.user.branch : "");
 
     let sessionNumber = null;
     let updatedPatient = null;
 
-    // Update patient record if a registered patient is selected
     if (patientId) {
       const patient = await Patient.findById(patientId);
       if (!patient) {
         return NextResponse.json({ error: "Patient not found" }, { status: 404 });
       }
 
-      // Use manual session number if provided, otherwise auto-assign
       if (manualSessionNumber) {
         sessionNumber = manualSessionNumber;
       } else {
@@ -237,7 +221,6 @@ export async function POST(req) {
       updatedPatient = { _id: patient._id, sessionNumber };
     }
 
-    // Create transaction if paid
     let transaction = null;
     if (isPaid) {
       if (!amount || amount <= 0) {
@@ -278,7 +261,6 @@ export async function POST(req) {
         },
       });
 
-      // Update patient payment records
       if (patientId) {
         const patient = await Patient.findById(patientId);
         if (patient) {
@@ -322,8 +304,6 @@ export async function POST(req) {
   }
 }
 
-// ── PATCH /api/collab/prp ─────────────────────────────────────────────────
-// Mark an existing unpaid session as paid.
 export async function PATCH(req) {
   try {
     const session = await getServerSession(authOptions);

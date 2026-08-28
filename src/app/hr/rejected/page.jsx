@@ -9,7 +9,6 @@ import {
 } from "lucide-react";
 import CandidateEditModal from "@/components/hr/CandidateEditModal";
 
-/* ── Helpers ─────────────────────────────────────────────────────────────── */
 const fmt     = (n) => n ? `₹${Number(n).toLocaleString("en-IN")}` : "—";
 const fmtDate = (d) => d ? new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "—";
 const avgRating = (c) => {
@@ -33,7 +32,6 @@ function RatingBar({ value }) {
   );
 }
 
-/* ── View Modal ──────────────────────────────────────────────────────────── */
 function ViewModal({ candidate: c, onClose }) {
   if (!c) return null;
   const avg = avgRating(c);
@@ -47,7 +45,6 @@ function ViewModal({ candidate: c, onClose }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-        {/* Header */}
         <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between rounded-t-2xl z-10">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
@@ -69,7 +66,6 @@ function ViewModal({ candidate: c, onClose }) {
         </div>
 
         <div className="p-6 space-y-5">
-          {/* Contact Info */}
           <section>
             <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Contact</h3>
             <div className="grid grid-cols-2 gap-3">
@@ -79,7 +75,6 @@ function ViewModal({ candidate: c, onClose }) {
             </div>
           </section>
 
-          {/* Work */}
           <section>
             <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Work History</h3>
             <div className="grid grid-cols-2 gap-3">
@@ -93,7 +88,6 @@ function ViewModal({ candidate: c, onClose }) {
             </div>
           </section>
 
-          {/* Interview */}
           <section>
             <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Interview</h3>
             <div className="grid grid-cols-2 gap-3">
@@ -104,7 +98,6 @@ function ViewModal({ candidate: c, onClose }) {
             </div>
           </section>
 
-          {/* Ratings */}
           <section>
             <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">
               Evaluation {avg && <span className="text-red-500 normal-case font-semibold">· Avg {avg}/10</span>}
@@ -156,7 +149,6 @@ function InfoRow({ icon: Icon, label, value }) {
   );
 }
 
-/* ── Main ────────────────────────────────────────────────────────────────── */
 const PAGE_SIZE = 25;
 
 export default function RejectedPage() {
@@ -199,7 +191,6 @@ export default function RejectedPage() {
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const paged = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-  // Group by reason for leaving (top rejection reasons insight)
   const topPositions = Object.entries(
     filtered.reduce((acc, c) => {
       const key = c.position || "Unknown";
@@ -213,7 +204,6 @@ export default function RejectedPage() {
       <HRSidebar />
 
       <main className="flex-1 p-6 lg:p-8 overflow-auto">
-        {/* Header */}
         <div className="mb-6">
           <div className="flex items-center gap-3 mb-1">
             <div className="w-9 h-9 rounded-xl bg-red-100 flex items-center justify-center">
@@ -224,7 +214,6 @@ export default function RejectedPage() {
           <p className="text-sm text-gray-500 ml-12">Candidates who did not clear the interview process</p>
         </div>
 
-        {/* KPI row */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
           <KpiTile label="Total Rejected" value={filtered.length} accent="red" />
           <KpiTile label="Freshers"       value={filtered.filter(c => c.experienceType === "Fresher").length} accent="blue" />
@@ -236,7 +225,6 @@ export default function RejectedPage() {
           </div>
         </div>
 
-        {/* Table card */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="p-4 border-b border-gray-100 flex items-center gap-3">
             <div className="relative flex-1 max-w-sm">
@@ -351,7 +339,6 @@ export default function RejectedPage() {
             </div>
           )}
 
-          {/* Pagination */}
           {totalPages > 1 && (
             <div className="px-4 py-3 border-t border-gray-100 flex items-center justify-between">
               <span className="text-xs text-gray-500">

@@ -3,10 +3,10 @@ import { useState, useEffect } from "react";
 import CollabSidebar from "@/components/Sidebars/CollabSidebar";
 import { COLLAB_BRANCHES } from "@/lib/branches";
 import {
-  Download, 
-  Filter, 
-  Search, 
-  Calendar, 
+  Download,
+  Filter,
+  Search,
+  Calendar,
   FileText,
   Users,
   IndianRupee,
@@ -24,7 +24,7 @@ export default function ReportsPage() {
   const [loadingId, setLoadingId] = useState(null);
   const [showFilters, setShowFilters] = useState(false);
   const [favorites, setFavorites] = useState([]);
-  
+
   const [filters, setFilters] = useState({
     period: "all",
     category: "all",
@@ -48,7 +48,6 @@ export default function ReportsPage() {
   });
 
   const reports = [
-    // Patient Reports
     {
       id: 1,
       name: "Comprehensive Patient Report",
@@ -86,7 +85,6 @@ export default function ReportsPage() {
       color: "red",
     },
 
-    // Staff Performance Reports
     {
       id: 5,
       name: "Counsellor Performance Report",
@@ -133,7 +131,6 @@ export default function ReportsPage() {
       color: "cyan",
     },
 
-    // Surgery & Medical Reports
     {
       id: 10,
       name: "Surgical Technique Analysis",
@@ -171,7 +168,6 @@ export default function ReportsPage() {
       color: "blue",
     },
 
-    // Financial Reports
     {
       id: 14,
       name: "Revenue Report",
@@ -227,7 +223,6 @@ export default function ReportsPage() {
       color: "indigo",
     },
 
-    // Branch Performance Reports
     {
       id: 20,
       name: "Branch Performance Comparison",
@@ -296,7 +291,7 @@ export default function ReportsPage() {
     const newFavorites = favorites.includes(reportId)
       ? favorites.filter((id) => id !== reportId)
       : [...favorites, reportId];
-    
+
     setFavorites(newFavorites);
     localStorage.setItem("favoriteReports", JSON.stringify(newFavorites));
   };
@@ -315,7 +310,7 @@ export default function ReportsPage() {
 
   const downloadExcel = async (reportType, reportId, reportName) => {
     setLoadingId(reportId);
-    
+
     try {
       const params = new URLSearchParams({
         type: reportType,
@@ -340,7 +335,7 @@ export default function ReportsPage() {
       const { utils, writeFile } = await import("xlsx");
       const wb = utils.book_new();
       const ws = utils.json_to_sheet(result.data);
-      
+
       const maxWidth = 50;
       const colWidths = Object.keys(result.data[0] || {}).map(key => ({
         wch: Math.min(Math.max(key.length, 10), maxWidth)
@@ -389,7 +384,6 @@ export default function ReportsPage() {
 
       <div className="flex-1 p-8 overflow-auto">
         <div className="max-w-7xl mx-auto">
-          {/* Header */}
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
               Reports Dashboard
@@ -399,7 +393,6 @@ export default function ReportsPage() {
             </p>
           </div>
 
-          {/* Filter Bar */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-semibold text-gray-900">All Reports</h2>
@@ -410,8 +403,8 @@ export default function ReportsPage() {
                 <button
                   onClick={() => setShowFilters(!showFilters)}
                   className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${
-                    showFilters 
-                      ? "bg-blue-50 border-blue-300 text-blue-700" 
+                    showFilters
+                      ? "bg-blue-50 border-blue-300 text-blue-700"
                       : "border-gray-300 text-gray-700 hover:bg-gray-50"
                   }`}
                 >
@@ -421,9 +414,7 @@ export default function ReportsPage() {
               </div>
             </div>
 
-            {/* Basic Filters */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {/* Search */}
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                 <input
@@ -435,7 +426,6 @@ export default function ReportsPage() {
                 />
               </div>
 
-              {/* Category Filter */}
               <select
                 value={filters.category}
                 onChange={(e) =>
@@ -453,7 +443,6 @@ export default function ReportsPage() {
                 ))}
               </select>
 
-              {/* Time Period */}
               <select
                 value={filters.period}
                 onChange={(e) =>
@@ -468,7 +457,6 @@ export default function ReportsPage() {
                 <option value="custom">Custom Range</option>
               </select>
 
-              {/* Clear Filters */}
               <button
                 onClick={clearFilters}
                 className="px-4 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors font-medium"
@@ -477,7 +465,6 @@ export default function ReportsPage() {
               </button>
             </div>
 
-            {/* Date Range */}
             {showDateRange && (
               <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -515,14 +502,12 @@ export default function ReportsPage() {
               </div>
             )}
 
-            {/* Advanced Filters */}
             {showFilters && (
               <div className="mt-4 pt-4 border-t border-gray-200">
                 <h3 className="text-sm font-semibold text-gray-900 mb-3">
                   Advanced Filters
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {/* Branch Filter */}
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-2">
                       Branch
@@ -546,7 +531,6 @@ export default function ReportsPage() {
                     </select>
                   </div>
 
-                  {/* Staff Filter */}
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-2">
                       Staff Member
@@ -570,7 +554,6 @@ export default function ReportsPage() {
                     </select>
                   </div>
 
-                  {/* Technique Filter */}
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-2">
                       Surgical Technique
@@ -594,7 +577,6 @@ export default function ReportsPage() {
                     </select>
                   </div>
 
-                  {/* Status Filter */}
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-2">
                       Patient Status
@@ -618,7 +600,6 @@ export default function ReportsPage() {
                     </select>
                   </div>
 
-                  {/* Procedure Filter */}
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-2">
                       Procedure Type
@@ -642,7 +623,6 @@ export default function ReportsPage() {
                     </select>
                   </div>
 
-                  {/* Payment Type Filter */}
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-2">
                       Payment Type
@@ -670,35 +650,31 @@ export default function ReportsPage() {
             )}
           </div>
 
-          {/* Reports Grid */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             {filteredReports.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredReports.map((report) => {
                   const Icon = report.icon;
                   const isFavorite = favorites.includes(report.id);
-                  
+
                   return (
                     <div
                       key={report.id}
                       className="relative bg-white border-2 border-gray-200 rounded-xl p-6 hover:border-blue-400 hover:shadow-lg transition-all duration-200"
                     >
-                      {/* Favorite Button */}
                       <button
                         onClick={() => toggleFavorite(report.id)}
                         className="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-100 transition-colors"
                       >
-                        <Star 
+                        <Star
                           className={`w-5 h-5 ${isFavorite ? 'fill-yellow-500 text-yellow-500' : 'text-gray-400'}`}
                         />
                       </button>
 
-                      {/* Report Icon */}
                       <div className={`inline-flex p-3 rounded-xl bg-${report.color}-100 mb-4`}>
                         <Icon className={`w-6 h-6 text-${report.color}-600`} />
                       </div>
 
-                      {/* Report Info */}
                       <h3 className="text-lg font-bold text-gray-900 mb-2 pr-8">
                         {report.name}
                       </h3>
@@ -706,7 +682,6 @@ export default function ReportsPage() {
                         {report.description}
                       </p>
 
-                      {/* Category Badge */}
                       <span
                         className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium mb-4 ${
                           report.category === "Patient Reports"
@@ -723,7 +698,6 @@ export default function ReportsPage() {
                         {report.category}
                       </span>
 
-                      {/* Download Button */}
                       <button
                         onClick={() => downloadExcel(report.type, report.id, report.name)}
                         disabled={loadingId === report.id}

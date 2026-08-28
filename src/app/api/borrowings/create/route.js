@@ -14,16 +14,6 @@ const ALLOWED_ROLES = ["admin", "super-admin"];
 const BORROWING_SUBTYPES = getExpenseTypes("Borrowings");
 const REFID_REQUIRED_KINDS = ["VENDOR", "EMPLOYEE", "PATIENT"];
 
-// Creates a Borrowing row — either:
-//   direction: "IN",  payableId: null      -> a brand-new loan: creates the Payable (liability)
-//                                             AND the first Borrowing row, atomically.
-//   direction: "IN",  payableId: <id>      -> an additional tranche on an EXISTING loan: raises
-//                                             that Payable's totalAmount and appends a row.
-//   direction: "OUT", payableId: <id>      -> a repayment against an existing loan. Never
-//                                             changes totalAmount — paid/pending is always
-//                                             computed live (see buildPayableAggregationStages).
-//
-// Neither direction ever creates a Transaction or touches P&L — see src/models/Borrowing.js.
 export async function POST(req) {
   try {
     const session = await getServerSession(authOptions);
@@ -40,9 +30,9 @@ export async function POST(req) {
       direction,
       account,
       amount,
-      party, // { kind, refId, label }
+      party,
       payableId,
-      subType, // Deposit Received / Loan from Party / Advance Received — new IN only
+      subType,
       branch,
       date,
       reference,
@@ -107,7 +97,6 @@ export async function POST(req) {
       createdBy,
     };
 
-    // ── OUT — a repayment against an existing loan ──────────────────────────────────────
     if (direction === "OUT") {
       if (!payableId || !mongoose.Types.ObjectId.isValid(payableId)) {
         return NextResponse.json({ error: "A valid payableId is required for a repayment" }, { status: 400 });
@@ -119,8 +108,6 @@ export async function POST(req) {
       if (payable.isCancelled) {
         return NextResponse.json({ error: "This loan has been cancelled" }, { status: 400 });
       }
-      // Defence in depth: this endpoint may only ever repay a Payable it (or an earlier IN on
-      // this same endpoint) actually created — never an unrelated trade payable.
       const hasBorrowingIn = await Borrowing.exists({
         payableId: payable._id,
         direction: "IN",
@@ -162,7 +149,6 @@ export async function POST(req) {
       return NextResponse.json({ message: "Repayment recorded", borrowing, payable }, { status: 201 });
     }
 
-    // ── IN, additional tranche on an existing loan ──────────────────────────────────────
     if (payableId) {
       if (!mongoose.Types.ObjectId.isValid(payableId)) {
         return NextResponse.json({ error: "Invalid payableId" }, { status: 400 });
@@ -226,7 +212,6 @@ export async function POST(req) {
       return NextResponse.json({ message: "Tranche recorded", borrowing, payable }, { status: 201 });
     }
 
-    // ── IN, brand-new loan — creates the Payable and the first Borrowing row together ───
     if (!subType || !BORROWING_SUBTYPES.includes(subType)) {
       return NextResponse.json(
         { error: `subType must be one of: ${BORROWING_SUBTYPES.join(", ")}` },
@@ -247,8 +232,6 @@ export async function POST(req) {
           totalAmount: parsedAmount,
           branch: branch || session.user.branch,
           costAlreadyRecognised: false,
-          // Borrowed money is not an expense — see Payable.excludeFromPnl. Without this the full
-          // borrowed amount lands in P&L as a cost the moment this document is raised.
           excludeFromPnl: true,
           remarks: remarks || "",
           createdBy,

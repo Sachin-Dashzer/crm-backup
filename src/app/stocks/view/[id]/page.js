@@ -88,10 +88,8 @@ export default function ViewStockPage() {
       <div className="flex">
         <Sidebar />
         <main className="flex-1 flex flex-col min-h-screen">
-          {/* Sticky Header */}
           <div className="bg-white border-b border-gray-200 shadow-sm px-6 py-4 sticky top-0 z-10">
             <div className="flex items-center justify-between">
-              {/* Left: back + icon + name + badge */}
               <div className="flex items-center gap-4">
                 <button
                   onClick={() => router.back()}
@@ -104,7 +102,6 @@ export default function ViewStockPage() {
                 </button>
 
                 <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-sm">
-                  {/* Package icon */}
                   <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                   </svg>
@@ -134,7 +131,6 @@ export default function ViewStockPage() {
                 </div>
               </div>
 
-              {/* Right: Edit button */}
               <button
                 onClick={() => router.push(`/stocks/edit/${stockId}`)}
                 className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg font-medium text-sm hover:bg-emerald-700 transition-colors shadow-sm"
@@ -147,30 +143,25 @@ export default function ViewStockPage() {
             </div>
           </div>
 
-          {/* KPI Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 p-6">
-            {/* Current Stock */}
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 border-t-2 border-t-emerald-500">
               <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Current Stock</p>
               <p className="text-3xl font-bold text-gray-900">{stock.totalQuantity}</p>
               <p className="text-sm text-gray-500 mt-1">{stock.unit || "units"}</p>
             </div>
 
-            {/* MRP */}
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 border-t-2 border-t-indigo-500">
               <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">MRP</p>
               <p className="text-3xl font-bold text-gray-900">{formatCurrency(stock.mrp)}</p>
               <p className="text-sm text-gray-500 mt-1">per {stock.unit || "unit"}</p>
             </div>
 
-            {/* Stock Value */}
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 border-t-2 border-t-purple-500">
               <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Stock Value</p>
               <p className="text-3xl font-bold text-gray-900">{formatCurrency(stock.totalQuantity * stock.mrp)}</p>
               <p className="text-sm text-gray-500 mt-1">current inventory</p>
             </div>
 
-            {/* Sold Amount */}
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 border-t-2 border-t-teal-500">
               <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Sold Amount</p>
               <p className="text-3xl font-bold text-gray-900">{formatCurrency(stock.soldAmt || 0)}</p>
@@ -178,10 +169,8 @@ export default function ViewStockPage() {
             </div>
           </div>
 
-          {/* Tab Content */}
           <div className="px-6 pb-8">
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-              {/* Tab Nav */}
               <div className="border-b border-gray-100">
                 <nav className="flex">
                   <button
@@ -228,11 +217,9 @@ export default function ViewStockPage() {
               </div>
 
               <div className="p-6">
-                {/* Details Tab */}
                 {activeTab === "details" && (
                   <div className="space-y-6">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                      {/* Product Info */}
                       <div className="bg-gray-50/50 rounded-xl p-5">
                         <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wide mb-4">Product Info</h3>
                         <div className="space-y-0">
@@ -261,7 +248,6 @@ export default function ViewStockPage() {
                         </div>
                       </div>
 
-                      {/* Financial Info */}
                       <div className="bg-gray-50/50 rounded-xl p-5">
                         <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wide mb-4">Financial Info</h3>
                         <div className="space-y-0">
@@ -292,7 +278,6 @@ export default function ViewStockPage() {
                     </div>
 
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                      {/* Creation Info */}
                       <div className="bg-gray-50/50 rounded-xl p-5">
                         <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wide mb-4">Creation Info</h3>
                         <div className="space-y-0">
@@ -317,7 +302,6 @@ export default function ViewStockPage() {
                         </div>
                       </div>
 
-                      {/* System Info */}
                       <div className="bg-gray-50/50 rounded-xl p-5">
                         <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wide mb-4">System Info</h3>
                         <div className="space-y-0">
@@ -345,7 +329,6 @@ export default function ViewStockPage() {
                   </div>
                 )}
 
-                {/* Transactions Tab */}
                 {activeTab === "transactions" && (
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
@@ -412,7 +395,6 @@ export default function ViewStockPage() {
                   </div>
                 )}
 
-                {/* History Tab */}
                 {activeTab === "history" && (
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">

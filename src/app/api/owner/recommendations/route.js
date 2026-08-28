@@ -1,21 +1,3 @@
-// src/app/api/owner/recommendations/route.js
-//
-// Rule-based findings for the Owner Command Center's "AI Recommendations" panel — every
-// finding here comes from an actual Patient query, never invented text.
-//
-// POST body: { branch?: string }
-//
-// Rule implemented: "stalled bookings" — a patient has paid something (payments.amountReceived
-// > 0, i.e. at least a token/booking amount was collected) but has no surgery date scheduled
-// yet, and their visit was 14+ days ago. That's real money collected with nothing booked —
-// a genuine conversion leak, not a period-scoped metric, so `branch` is the only filter (no
-// date range): this is a standing "is anything stuck right now" check, not a per-period stat.
-//
-// visitDate also has an upper bound (180 days). Without one this rule pulls in decades-old
-// records with placeholder/garbage visitDate values (seen in production data as far back as
-// 1995) that were never meaningfully populated — real fields, but not a real "stuck this
-// quarter" signal. Bounding the window keeps every result something a manager can actually
-// act on today.
 
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";

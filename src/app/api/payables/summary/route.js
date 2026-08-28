@@ -9,13 +9,6 @@ import { buildPayableAggregationStages } from "@/lib/payableAggregation";
 
 const ALLOWED_ROLES = ["admin", "super-admin", "owner"];
 
-// Grouped pending totals — feeds the inline "Paid / Pending" chips on the
-// Agent, Rent+Electricity, Collab, and Taxes sections of the expense form.
-//
-//   ?purpose=SALARY                                 -> org-wide Salary totals
-//   ?purpose=SALARY&payeeKind=EMPLOYEE&payeeRefId=X  -> + that employee's Salary totals
-//   ?purpose=RENT&payeeKind=RENT_UNIT&payeeLabel=Y   -> that rent unit's totals
-//   ?branch=Delhi                                    -> totals grouped by purpose
 export async function GET(request) {
   try {
     const session = await getServerSession(authOptions);
@@ -33,19 +26,12 @@ export async function GET(request) {
     const payeeKind = searchParams.get("payeeKind") || "";
     const payeeRefId = searchParams.get("payeeRefId") || "";
     const payeeLabel = searchParams.get("payeeLabel") || "";
-    // Only meaningful alongside payeeKind/payeeRefId — narrows a vendor's totals to one sub-type,
-    // since a vendor's bills can span several (e.g. Professional Expenses: Turkey Technician vs.
-    // Legal Consultant Fee). Every other payeeKind's payeeLabel already IS the sub-type, so this
-    // stays unset for those callers.
     const expenseSubType = searchParams.get("expenseSubType") || "";
     const branch = searchParams.get("branch") || "";
     const ageing = searchParams.get("ageing") || "";
 
     const txCollection = Transactions.collection.name;
 
-    // Ageing-bucketed pending totals, for the dashboard's payables/receivables ageing chart.
-    // Reuses buildPayableAggregationStages (which already appends ageingBucket via
-    // buildAgeingStages) rather than a separate pipeline just for this chart.
     if (ageing) {
       const byBucket = await Payable.aggregate([
         { $match: { isCancelled: false, ...(branch ? { branch } : {}) } },
@@ -96,10 +82,6 @@ export async function GET(request) {
         ? { count: agg.count, totalOwed: agg.totalOwed, totalPaid: agg.totalPaid, totalPending: agg.totalPending }
         : emptyTotals;
 
-    // NOTE ON DATE FILTERING: this route deliberately accepts no from/to. `pending` is an
-    // OUTSTANDING BALANCE — what is still owed as of now — not a period flow. Scoping it to a
-    // month would silently exclude everything raised earlier and still unpaid, i.e. understate
-    // the debt. The current-month default that the list routes use must not be applied here.
 
     let overall;
     let byPurpose = null;
@@ -111,9 +93,6 @@ export async function GET(request) {
         { $group: { _id: null, ...TOTALS_GROUP } },
       ]))[0]);
     } else {
-      // Without a purpose filter, `overall` and `byPurpose` share an identical $match, so they
-      // used to run the same whole-collection pipeline — including its $lookup into Transactions
-      // — twice per request. $facet computes both from a single pass.
       const [facet] = await Payable.aggregate([
         { $match: baseMatch },
         ...buildPayableAggregationStages(txCollection),

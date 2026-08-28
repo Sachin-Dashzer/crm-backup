@@ -34,25 +34,12 @@ function readMongoUri() {
   );
 }
 
-// ------------------------------------------------------------
-// ARGUMENTS
-// ------------------------------------------------------------
-
 const args = process.argv.slice(2);
 
 const APPLY = args.includes("--apply");
 const FORCE_LINKED = args.includes("--force-linked");
 
-// ------------------------------------------------------------
-// DATE FILTER
-// ------------------------------------------------------------
-
-// Only transactions on or after 1 August 2026 will be considered.
 const START_DATE = new Date("2026-08-13T00:00:00.000Z");
-
-// ------------------------------------------------------------
-// MODELS
-// ------------------------------------------------------------
 
 const Transactions =
   mongoose.models.Transactions ||
@@ -77,15 +64,6 @@ const Receivable =
     new mongoose.Schema({}, { strict: false }),
     "receivables"
   );
-
-// ------------------------------------------------------------
-// CREATOR LINKS
-// ------------------------------------------------------------
-// Mirrors creatorLinks() in src/lib/cascadeIntegrity.js.
-//
-// These links mean that a transaction CREATED a
-// Payable/Receivable, not merely paid an existing one.
-// ------------------------------------------------------------
 
 function creatorLinks(txn) {
   const links = [];
@@ -124,10 +102,6 @@ function creatorLinks(txn) {
   return links;
 }
 
-// ------------------------------------------------------------
-// MAIN
-// ------------------------------------------------------------
-
 async function run() {
   console.log(
     APPLY
@@ -139,24 +113,11 @@ async function run() {
     'Filter: costType="Expenses", expense="Salary", date >= 2026-08-13 — no branch restriction\n'
   );
 
-  // ----------------------------------------------------------
-  // CONNECT TO MONGODB
-  // ----------------------------------------------------------
-
   await mongoose.connect(readMongoUri(), {
     serverSelectionTimeoutMS: 5000,
   });
 
   console.log("Connected to MongoDB.\n");
-
-  // ----------------------------------------------------------
-  // FIND SALARY TRANSACTIONS
-  // ----------------------------------------------------------
-  //
-  // IMPORTANT:
-  // Only transactions dated 1 August 2026 or later
-  // will be selected.
-  // ----------------------------------------------------------
 
   const matches = await Transactions.find({
     costType: "Expenses",
@@ -176,10 +137,6 @@ async function run() {
     await mongoose.disconnect();
     return;
   }
-
-  // ----------------------------------------------------------
-  // SUMMARY
-  // ----------------------------------------------------------
 
   const byBranch = {};
   let totalAmount = 0;
@@ -202,21 +159,12 @@ async function run() {
     `  Total amount: ₹${totalAmount.toLocaleString("en-IN")}\n`
   );
 
-  // ----------------------------------------------------------
-  // CASCADE / LINK CHECK
-  // ----------------------------------------------------------
-  //
-  // Skip rows that created a Payable/Receivable unless
-  // --force-linked was supplied.
-  // ----------------------------------------------------------
-
   const safe = [];
   const linked = [];
 
   for (const t of matches) {
     const links = creatorLinks(t);
 
-    // No Payable/Receivable creator links.
     if (links.length === 0) {
       safe.push(t);
       continue;
@@ -232,7 +180,6 @@ async function run() {
 
       const doc = await Model.findById(link.id).lean();
 
-      // Already deleted — nothing to protect.
       if (!doc) continue;
 
       const others = await Transactions.countDocuments({
@@ -261,10 +208,6 @@ async function run() {
       safe.push(t);
     }
   }
-
-  // ----------------------------------------------------------
-  // SHOW LINKED TRANSACTIONS
-  // ----------------------------------------------------------
 
   if (linked.length) {
     console.log(
@@ -296,10 +239,6 @@ async function run() {
     console.log("");
   }
 
-  // ----------------------------------------------------------
-  // DETERMINE WHAT WILL BE DELETED
-  // ----------------------------------------------------------
-
   const toDelete = FORCE_LINKED ? matches : safe;
 
   console.log(
@@ -309,10 +248,6 @@ async function run() {
         : `; ${linked.length} skipped for being linked`
     }.\n`
   );
-
-  // ----------------------------------------------------------
-  // DRY RUN
-  // ----------------------------------------------------------
 
   if (!APPLY) {
     console.log("Sample rows (up to 15):");
@@ -352,10 +287,6 @@ async function run() {
     return;
   }
 
-  // ----------------------------------------------------------
-  // DELETE
-  // ----------------------------------------------------------
-
   if (toDelete.length === 0) {
     console.log("Nothing to delete.");
 
@@ -372,10 +303,6 @@ async function run() {
     },
   });
 
-  // ----------------------------------------------------------
-  // FINAL RESULT
-  // ----------------------------------------------------------
-
   console.log(
     `Deleted ${result.deletedCount} transaction(s).`
   );
@@ -384,10 +311,6 @@ async function run() {
 
   console.log("Done.");
 }
-
-// ------------------------------------------------------------
-// ERROR HANDLING
-// ------------------------------------------------------------
 
 run().catch(async (err) => {
   console.error("\nFATAL:", err);

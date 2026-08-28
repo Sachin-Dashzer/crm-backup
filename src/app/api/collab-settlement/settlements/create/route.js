@@ -11,10 +11,6 @@ import { COLLAB_BRANCHES } from "@/lib/branches";
 
 const ALLOWED_ROLES = ["admin", "super-admin"];
 
-// Receivable.revenueCategory mirrors the revenue taxonomy (prose OR the enum itself — collab
-// receivables store it pre-enum-cased via collabDerivation.js's categoryForProcedure — both
-// normalise through .toLowerCase() below). Same map /api/receivables/[id]/receipt uses, so a
-// case settled here and one settled by hand from the Receivables page agree on category.
 const CATEGORY_BY_REVENUE_CATEGORY = {
   transplant: "TRANSPLANT",
   service: "SERVICE",
@@ -44,7 +40,7 @@ export async function POST(req) {
       remarks,
       receiptMode,
       furtherMode,
-      coveredCases, // optional: [{ case: caseId, amount }] — either direction now (see below)
+      coveredCases,
     } = await req.json();
 
     if (!clinic || !direction || !amount || amount <= 0) {
@@ -73,8 +69,6 @@ export async function POST(req) {
       branch: session.user.branch,
     };
 
-    // Settlement is saved first and fully valid on its own — transaction
-    // generation below is best-effort and never leaves this half-saved.
     const settlement = new CollabSettlement({
       clinic,
       direction,
@@ -89,24 +83,11 @@ export async function POST(req) {
 
     await settlement.save();
 
-    // Every Transaction this settlement produces, across both branches — persisted onto
-    // settlement.generatedTransactions once at the end (the schema's actual field; earlier code
-    // wrote to linkedTransaction/linkedRevenueTransactions, which aren't declared paths and were
-    // silently dropped by Mongoose's default strict mode).
     const generatedTransactionIds = [];
-    // Cases an allocation named but couldn't actually be settled against (no Payable/Receivable
-    // was ever created for that case — e.g. its own caseNet was 0 at creation). Reported back
-    // rather than silently either dropping the money or inventing a transaction with nothing
-    // real to link to.
     const skippedAllocations = [];
 
     try {
       if (direction === "WE_PAID") {
-        // Money we send the clinic. Allocated cases each pay down their OWN clinicSharePayable
-        // (mirrors RecordPaymentModal's payableId-carrying expense) so that payable's pending
-        // actually decreases — previously nothing here ever did, so a payable stayed open
-        // forever no matter how many settlements were recorded against it (see
-        // balances/route.js's header comment, which already assumed this was wired up).
         for (const allocation of allocations) {
           const collabCase = await CollabCase.findById(allocation.case).select("clinic clinicSharePayable");
           if (!collabCase || collabCase.clinic !== clinic) continue;
@@ -135,8 +116,6 @@ export async function POST(req) {
           generatedTransactionIds.push(expenseTx._id);
         }
 
-        // Whatever wasn't allocated to a specific case is a lump payment not tied to any one
-        // case's payable — same as before, just now also carrying collabRef for traceability.
         const unallocated = Math.round((parsedAmount - allocatedTotal) * 100) / 100;
         if (unallocated > 0.005) {
           const expenseTx = await Transactions.create({
@@ -159,12 +138,6 @@ export async function POST(req) {
           generatedTransactionIds.push(expenseTx._id);
         }
       } else if (direction === "THEY_PAID" && allocations.length > 0) {
-        // Money the clinic sends us. Each allocated case's Receivable already exists — created
-        // by createCollabCaseAtomic at case-creation time, which ALSO already booked the case's
-        // full package as gross revenue. So this must NOT recognise fresh revenue (that would
-        // double-count it); it settles the existing Receivable exactly the way
-        // /api/receivables/[id]/receipt does for every other receivable — isSettlement flags it
-        // out of P&L when the receivable says the cost was already recognised.
         for (const allocation of allocations) {
           const collabCase = await CollabCase.findById(allocation.case).select("patient procedure clinic clinicShareReceivable");
           if (!collabCase || collabCase.clinic !== clinic) continue;
@@ -197,10 +170,6 @@ export async function POST(req) {
             approvalStatus: "APPROVED",
             receivableId: receivable._id,
             isSettlement: receivable.costAlreadyRecognised === true,
-            // Only caseId/settlementId here — collabRef.receivableId means "this transaction
-            // CREATED that receivable" (provenance, set once by createCollabCaseAtomic), which
-            // this settlement transaction did not do; the top-level receivableId above already
-            // correctly says "this is a PAYMENT against" it.
             collabRef: { settlementId: settlement._id, caseId: allocation.case },
             createdBy: { ...performedBy, date: new Date() },
             remarks: remarks || `Collab settlement — ${clinic}`,
@@ -208,9 +177,6 @@ export async function POST(req) {
           generatedTransactionIds.push(revenueTx._id);
         }
       }
-      // THEY_PAID with no case allocation: pure balance-only settlement,
-      // intentionally no transaction generated — we can't attribute
-      // unallocated money to a patient or a specific receivable.
 
       if (generatedTransactionIds.length) {
         settlement.generatedTransactions = generatedTransactionIds;

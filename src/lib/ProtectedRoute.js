@@ -11,7 +11,6 @@ export default function ProtectedRoute({ children, allowedRoles = [] }) {
 
   const checkAuth = useCallback(async () => {
     try {
-      // Get user role from cookie
       const userRole = document.cookie
         .split("; ")
         .find((row) => row.startsWith("userRole="))
@@ -27,9 +26,7 @@ export default function ProtectedRoute({ children, allowedRoles = [] }) {
         return;
       }
 
-      // Check if user role is allowed
       if (allowedRoles.length > 0 && !allowedRoles.includes(userRole)) {
-        // Redirect to their proper dashboard
         const roleRoutes = {
           admin: '/admin/dashboard',
           sales: '/sales/dashboard',

@@ -21,7 +21,7 @@ export default function BookAppointment() {
       branch: "",
       visitDate: "",
       reference: "",
-      purpose: "", // ✅ Added purpose field
+      purpose: "",
       packageQuoted: "",
       techniqueQuoted: "",
       remarks: "",
@@ -31,7 +31,6 @@ export default function BookAppointment() {
     },
   });
 
-  /* ================= FETCH AGENTS ================= */
   useEffect(() => {
     const fetchEmployees = async () => {
       try {
@@ -39,7 +38,6 @@ export default function BookAppointment() {
         const data = await res.json();
 
         if (data.success) {
-          // 🔹 SORT AGENTS A → Z
           const sortedAgents = [...data.data.Agent].sort((a, b) =>
             a.name.localeCompare(b.name)
           );
@@ -54,7 +52,6 @@ export default function BookAppointment() {
     fetchEmployees();
   }, []);
 
-  /* ================= HANDLERS ================= */
   const handleChange = (section, field, value) => {
     setFormData((prev) => ({
       ...prev,
@@ -68,7 +65,6 @@ export default function BookAppointment() {
   const createChangeHandler = (section, field) => (e) =>
     handleChange(section, field, e.target.value);
 
-  /* ================= CLEAN DATA ================= */
   const cleanObjectIdFields = (data) => {
     const cleaned = JSON.parse(JSON.stringify(data));
 
@@ -85,7 +81,6 @@ export default function BookAppointment() {
     return cleaned;
   };
 
-  /* ================= SUBMIT ================= */
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -118,7 +113,7 @@ export default function BookAppointment() {
             branch: "",
             visitDate: "",
             reference: "",
-            purpose: "", // ✅ Reset purpose field
+            purpose: "",
             packageQuoted: "",
             techniqueQuoted: "",
             remarks: "",
@@ -133,11 +128,9 @@ export default function BookAppointment() {
     }
   };
 
-  /* ================= UI ================= */
   return (
     <section className="min-h-screen md:bg-gray-50 flex items-center justify-center px-3 sm:px-6">
       <main className="w-full max-w-6xl bg-white rounded-xl md:shadow-sm">
-        {/* HEADER */}
         <div className="text-center p-6 sm:p-8 border-b">
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-blue-100">
             <Calendar className="text-blue-600" />
@@ -150,7 +143,6 @@ export default function BookAppointment() {
           </p>
         </div>
 
-        {/* FORM */}
         <form onSubmit={handleSubmit} className="p-5 sm:p-8">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <InputField
@@ -170,13 +162,6 @@ export default function BookAppointment() {
               icon={Phone}
             />
 
-            {/* <InputField
-              label="Email"
-              type="email"
-              value={formData.personal.email}
-              onChange={createChangeHandler("personal", "email")}
-              icon={Mail}
-            /> */}
 
             <InputField
               label="Age"
@@ -217,7 +202,6 @@ export default function BookAppointment() {
               onChange={createChangeHandler("personal", "visitDate")}
             />
 
-            {/* REFERENCE DROPDOWN (SORTED A → Z) */}
             <InputField
               label="Referred By (Agent)"
               type="select"
@@ -232,7 +216,6 @@ export default function BookAppointment() {
               ]}
             />
 
-            {/* ✅ PURPOSE FIELD */}
             <InputField
               label="Purpose of Visit"
               type="select"
@@ -280,7 +263,6 @@ export default function BookAppointment() {
             />
           </div>
 
-          {/* SUBMIT */}
           <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4 border-t pt-6">
             <p className="text-sm text-gray-500">
               We'll contact you within 24 hours

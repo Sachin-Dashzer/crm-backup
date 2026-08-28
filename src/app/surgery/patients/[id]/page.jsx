@@ -62,46 +62,39 @@ const PatientProfile = () => {
     fetchPatientData();
   }, [id, router]);
 
-  // Helper function to format employee names from array
   const formatEmployeeNames = (employees) => {
     if (!employees) return "N/A";
-    
-    // If it's an array
+
     if (Array.isArray(employees)) {
       if (employees.length === 0) return "N/A";
-      
-      // Map employees - handle both populated objects and IDs
+
       const names = employees.map((emp) => {
         if (typeof emp === "object" && emp !== null) {
           return emp.name || "Unknown";
         }
         return "Unknown";
       });
-      
+
       return names.filter(name => name !== "Unknown").join(", ") || "N/A";
     }
-    
-    // If it's a single object
+
     if (typeof employees === "object" && employees !== null && employees.name) {
       return employees.name;
     }
-    
+
     return "N/A";
   };
 
-  // Helper functions for formatting
   const formatDate = (date) => {
     if (!date) return "Not scheduled";
-    
+
     try {
-      // Handle both Date objects and ISO strings
       const dateObj = date instanceof Date ? date : new Date(date);
-      
-      // Check if date is valid
+
       if (isNaN(dateObj.getTime())) {
         return "Invalid date";
       }
-      
+
       return dateObj.toLocaleDateString("en-IN", {
         day: "2-digit",
         month: "short",
@@ -189,7 +182,7 @@ const PatientProfile = () => {
 
     const formatEmployeeNamesPDF = (employees) => {
       if (!employees) return "N/A";
-      
+
       if (Array.isArray(employees)) {
         if (employees.length === 0) return "N/A";
         const names = employees
@@ -197,15 +190,14 @@ const PatientProfile = () => {
           .filter(name => name !== "Unknown");
         return names.length > 0 ? names.join(", ") : "N/A";
       }
-      
+
       if (typeof employees === "object" && employees !== null && employees.name) {
         return employees.name;
       }
-      
+
       return "N/A";
     };
 
-    // Generate medicines HTML
     let medicinesHTML = "";
     if (data.counselling?.medicines && data.counselling.medicines.length > 0) {
       const medicinesList = data.counselling.medicines
@@ -214,7 +206,6 @@ const PatientProfile = () => {
       medicinesHTML = `<div style="margin-top: 15px;"><strong>Prescribed Medicines:</strong><br>${medicinesList}</div>`;
     }
 
-    // Generate benefits HTML
     let benefitsHTML = "";
     if (data.counselling?.additionalbenefits && data.counselling.additionalbenefits.length > 0) {
       const benefitsList = data.counselling.additionalbenefits
@@ -223,26 +214,23 @@ const PatientProfile = () => {
       benefitsHTML = `<div style="margin-top: 15px;"><strong>Additional Benefits:</strong><br>${benefitsList}</div>`;
     }
 
-    // Generate notes HTML
     let notesHTML = "";
     if (data.counselling?.notes) {
       notesHTML = `<div style="margin-top: 15px; padding: 15px; background: #f8f9fa; border-radius: 5px;"><strong>Notes:</strong><br>${data.counselling.notes}</div>`;
     }
 
-    // Generate reference HTML
     let referenceHTML = "";
     if (data.personal?.reference) {
       referenceHTML = `<div style="margin-top: 15px; padding: 15px; background: #f8f9fa; border-radius: 5px;"><strong>Reference:</strong> ${data.personal.reference.name || "N/A"}</div>`;
     }
 
-    // Generate surgery HTML - FIXED CONDITION
     let surgeryHTML = "";
     if (data.surgery) {
-      const hasSurgeryData = data.surgery.surgeryDate || 
-                             data.surgery.location || 
-                             data.surgery.OT || 
+      const hasSurgeryData = data.surgery.surgeryDate ||
+                             data.surgery.location ||
+                             data.surgery.OT ||
                              data.surgery.doctor?.length > 0;
-      
+
       if (hasSurgeryData) {
         surgeryHTML = `
           <div class="grid">
@@ -254,7 +242,7 @@ const PatientProfile = () => {
             <div class="info-item"><span class="info-label">Grafts Implanted:</span> <span class="info-value">${data.surgery.graftsImplanted || "N/A"}</span></div>
           </div>
           <div class="info-item"><span class="info-label">Donor Condition:</span> <span class="info-value">${data.surgery.donorCondition || "N/A"}</span></div>
-          
+
           <h3 style="color: #2c5aa0; margin: 20px 0 10px 0;">Surgical Team</h3>
           <div class="grid">
             <div class="info-item"><span class="info-label">Doctor(s):</span> <span class="info-value">${formatEmployeeNamesPDF(data.surgery.doctor)}</span></div>
@@ -272,7 +260,6 @@ const PatientProfile = () => {
       surgeryHTML = '<p style="text-align: center; color: #666; padding: 20px;">No surgery details available</p>';
     }
 
-    // Generate PRP sessions HTML
     let prpHTML = "";
     if (data.afterSurgery?.prp && data.afterSurgery.prp.length > 0) {
       const prpRows = data.afterSurgery.prp
@@ -299,7 +286,6 @@ const PatientProfile = () => {
       prpHTML = '<p style="color: #666; margin-top: 10px;">No PRP sessions scheduled</p>';
     }
 
-    // Generate transactions HTML
     let transactionsHTML = "";
     if (data.payments?.transactions && data.payments.transactions.length > 0) {
       const transactionRows = data.payments.transactions
@@ -335,90 +321,90 @@ const PatientProfile = () => {
           <title>Patient Medical Record - ${data.personal?.name || "Unknown"}</title>
           <meta charset="UTF-8">
           <style>
-            body { 
-              font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-              margin: 20px; 
-              color: #333; 
+            body {
+              font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+              margin: 20px;
+              color: #333;
               background: #fff;
               line-height: 1.4;
             }
-            .header { 
-              text-align: center; 
-              border-bottom: 3px solid #2c5aa0; 
-              padding-bottom: 20px; 
-              margin-bottom: 30px; 
+            .header {
+              text-align: center;
+              border-bottom: 3px solid #2c5aa0;
+              padding-bottom: 20px;
+              margin-bottom: 30px;
             }
             .header h1 {
               color: #2c5aa0;
               margin: 0;
               font-size: 28px;
             }
-            .section { 
-              margin-bottom: 25px; 
-              border: 1px solid #ddd; 
-              padding: 20px; 
+            .section {
+              margin-bottom: 25px;
+              border: 1px solid #ddd;
+              padding: 20px;
               page-break-inside: avoid;
               border-radius: 5px;
             }
-            .section h2 { 
-              background: #f8f9fa; 
-              padding: 12px 15px; 
-              margin: -20px -20px 20px -20px; 
+            .section h2 {
+              background: #f8f9fa;
+              padding: 12px 15px;
+              margin: -20px -20px 20px -20px;
               border-bottom: 1px solid #ddd;
               color: #2c5aa0;
               font-size: 18px;
             }
-            .grid { 
-              display: grid; 
-              grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); 
-              gap: 15px; 
+            .grid {
+              display: grid;
+              grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+              gap: 15px;
             }
-            .info-item { 
+            .info-item {
               margin-bottom: 12px;
               padding-bottom: 8px;
               border-bottom: 1px solid #f0f0f0;
             }
-            .info-label { 
-              font-weight: 600; 
-              color: #555; 
+            .info-label {
+              font-weight: 600;
+              color: #555;
               font-size: 13px;
               display: block;
               margin-bottom: 4px;
             }
-            .info-value { 
+            .info-value {
               font-weight: normal;
               color: #000;
             }
-            table { 
-              width: 100%; 
-              border-collapse: collapse; 
+            table {
+              width: 100%;
+              border-collapse: collapse;
               margin-top: 15px;
               font-size: 13px;
             }
-            th, td { 
-              border: 1px solid #ddd; 
-              padding: 10px; 
-              text-align: left; 
+            th, td {
+              border: 1px solid #ddd;
+              padding: 10px;
+              text-align: left;
             }
-            th { 
-              background: #f8f9fa; 
+            th {
+              background: #f8f9fa;
               font-weight: 600;
               color: #2c5aa0;
             }
-            .status-badge { 
-              background: #d4edda; 
-              color: #155724; 
-              padding: 4px 8px; 
+            .status-badge {
+              background: #d4edda;
+              color: #155724;
+              padding: 4px 8px;
               border-radius: 4px;
               font-size: 12px;
               font-weight: 600;
             }
-            .footer { 
-              text-align: center; 
-              margin-top: 40px; 
-              padding-top: 20px; 
-              border-top: 2px solid #2c5aa0; 
-              font-size: 12px; 
+            .footer {
+              text-align: center;
+              margin-top: 40px;
+              padding-top: 20px;
+              border-top: 2px solid #2c5aa0;
+              font-size: 12px;
               color: #666;
             }
             .amount-positive { color: #28a745; font-weight: 600; }
@@ -617,7 +603,6 @@ const PatientProfile = () => {
 
       <main className="flex-1 px-12 py-4 bg-gray-50">
         <div className="max-w-7xl mx-auto">
-          {/* Header Actions */}
           <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">
@@ -658,10 +643,8 @@ const PatientProfile = () => {
             </div>
           </div>
 
-          {/* A4 Form Style Container */}
           <div className="bg-white shadow-lg rounded-lg overflow-hidden border border-gray-200">
             <div className="p-8">
-              {/* Header Section */}
               <div className="text-center border-b-2 border-gray-300 pb-6 mb-6">
                 <h1 className="text-3xl font-bold text-gray-900 mb-2">
                   MEDICAL RECORD
@@ -691,7 +674,6 @@ const PatientProfile = () => {
                 </div>
               </div>
 
-              {/* Patient Basic Information */}
               <div className="mb-8">
                 <h2 className="text-xl font-bold text-gray-900 mb-4 border-b pb-2">
                   PATIENT INFORMATION
@@ -801,7 +783,6 @@ const PatientProfile = () => {
                 )}
               </div>
 
-              {/* Counselling Details */}
               <div className="mb-8">
                 <h2 className="text-xl font-bold text-gray-900 mb-4 border-b pb-2">
                   COUNSELLING DETAILS
@@ -945,7 +926,6 @@ const PatientProfile = () => {
                 )}
               </div>
 
-              {/* Medical Information */}
               <div className="mb-8">
                 <h2 className="text-xl font-bold text-gray-900 mb-4 border-b pb-2">
                   MEDICAL INFORMATION
@@ -1034,21 +1014,19 @@ const PatientProfile = () => {
                 </div>
               </div>
 
-              {/* Surgery Information - FIXED CONDITION */}
               <div className="mb-8">
                 <h2 className="text-xl font-bold text-gray-900 mb-4 border-b pb-2">
                   SURGERY INFORMATION
                 </h2>
-                
-                {/* Check if surgery object exists and has any data */}
+
                 {patientData.surgery ? (
                   (() => {
-                    const hasSurgeryData = 
-                      patientData.surgery.surgeryDate || 
-                      patientData.surgery.location || 
-                      patientData.surgery.OT || 
+                    const hasSurgeryData =
+                      patientData.surgery.surgeryDate ||
+                      patientData.surgery.location ||
+                      patientData.surgery.OT ||
                       (patientData.surgery.doctor && patientData.surgery.doctor.length > 0);
-                    
+
                     return hasSurgeryData ? (
                       <>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
@@ -1125,7 +1103,6 @@ const PatientProfile = () => {
                           </div>
                         )}
 
-                        {/* Surgical Team */}
                         <div className="mb-4">
                           <h3 className="text-lg font-semibold text-gray-800 mb-3">
                             Surgical Team
@@ -1217,7 +1194,6 @@ const PatientProfile = () => {
                 )}
               </div>
 
-              {/* After Surgery Care */}
               <div className="mb-8">
                 <h2 className="text-xl font-bold text-gray-900 mb-4 border-b pb-2">
                   AFTER SURGERY CARE
@@ -1283,13 +1259,11 @@ const PatientProfile = () => {
                 )}
               </div>
 
-              {/* Payment Information */}
               <div className="mb-8">
                 <h2 className="text-xl font-bold text-gray-900 mb-4 border-b pb-2">
                   PAYMENT INFORMATION
                 </h2>
 
-                {/* Payment Summary */}
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
                   <div className="bg-gray-50 p-4 rounded border text-center">
                     <label className="block text-sm text-gray-600 mb-1">
@@ -1333,7 +1307,6 @@ const PatientProfile = () => {
                   </div>
                 </div>
 
-                {/* Transaction History */}
                 {patientData.payments?.transactions &&
                   patientData.payments.transactions.length > 0 && (
                     <div className="mb-4">
@@ -1384,14 +1357,12 @@ const PatientProfile = () => {
                   )}
               </div>
 
-              {/* Documents Section */}
               <div className="mb-8">
                 <h2 className="text-xl font-bold text-gray-900 mb-4 border-b pb-2">
                   DOCUMENTS & ATTACHMENTS
                 </h2>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Patient Images */}
                   <div className="border rounded-lg p-4 bg-gray-50">
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-2">
@@ -1435,7 +1406,6 @@ const PatientProfile = () => {
                     )}
                   </div>
 
-                  {/* Consent Forms */}
                   <div className="border rounded-lg p-4 bg-gray-50">
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-2">
@@ -1480,7 +1450,6 @@ const PatientProfile = () => {
                     )}
                   </div>
 
-                  {/* Surgery Forms */}
                   <div className="border rounded-lg p-4 bg-gray-50">
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-2">
@@ -1525,7 +1494,6 @@ const PatientProfile = () => {
                     )}
                   </div>
 
-                  {/* Consult Forms */}
                   <div className="border rounded-lg p-4 bg-gray-50">
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-2">
@@ -1572,7 +1540,6 @@ const PatientProfile = () => {
                 </div>
               </div>
 
-              {/* Footer */}
               <div className="mt-8 pt-6 border-t border-gray-300 text-center text-sm text-gray-600">
                 <p>
                   This is an electronically generated medical record. No
@@ -1586,7 +1553,6 @@ const PatientProfile = () => {
             </div>
           </div>
 
-          {/* Additional Actions */}
           <div className="mt-6 flex justify-center gap-4">
             <button
               onClick={downloadPDF}
@@ -1606,7 +1572,6 @@ const PatientProfile = () => {
         </div>
       </main>
 
-      {/* Image Modal */}
       {selectedImage && (
         <div
           className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4"

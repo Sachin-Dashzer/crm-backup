@@ -22,7 +22,6 @@ async function buildResponse(query, threshold, restrictedLocation = null) {
     ).length,
   };
 
-  // Per-location breakdown (only stocks that have a location set)
   const locationMap = {};
   allStocks.forEach((s) => {
     const loc = s.location || "Unassigned";
@@ -73,12 +72,10 @@ export async function GET(req) {
     const expired   = searchParams.get("expired");
     const threshold = parseInt(searchParams.get("threshold")) || 10;
 
-    // Determine branch restriction (applies to all queries)
     const userBranch = session.user.branch;
     const isAdmin = ["admin", "super-admin"].includes(session.user.role);
     const branchRestricted = !isAdmin && userBranch;
 
-    // Single stock by ID
     if (id) {
       const stock = await Stock.findById(id).lean();
       if (!stock) {
@@ -96,7 +93,6 @@ export async function GET(req) {
       return NextResponse.json({ success: true, data: stock }, { status: 200 });
     }
 
-    // Build filter query
     const query = {};
     if (branchRestricted) {
       query.location = userBranch;
@@ -142,12 +138,10 @@ export async function POST(req) {
     const body = await req.json();
     const { id, location, search, lowStock, expired, threshold = 10 } = body;
 
-    // Determine branch restriction
     const userBranch = session.user.branch;
     const isAdmin = ["admin", "super-admin"].includes(session.user.role);
     const branchRestricted = !isAdmin && userBranch;
 
-    // Single stock by ID
     if (id) {
       const stock = await Stock.findById(id).lean();
       if (!stock) {

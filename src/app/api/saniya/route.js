@@ -15,9 +15,9 @@ export async function POST(req) {
 
     await dbConnect();
 
-    
-    
-    
+
+
+
     const IST_MS = 5.5 * 60 * 60 * 1000;
     const now = new Date();
     const nowIST = new Date(now.getTime() + IST_MS);
@@ -36,19 +36,16 @@ export async function POST(req) {
     const lastMonthEnd = new Date(monthStart - 1);
     const weekStart = istMid(Y, M, D - 7);
 
-    
+
     const fmt = (n) => `₹${Number(n || 0).toLocaleString("en-IN")}`;
     const ist = (d) =>
       d
         ? new Date(d).toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })
         : "—";
 
-    
-    
-    
-    // Every branch below excludes UNSETTLED_METHODS — this is all "how much revenue" figures
-    // fed to the LLM as ground truth — EXCEPT todayByMethod/monthByMethod, which stay
-    // unfiltered on purpose (a breakdown BY method is where that bucket should still show).
+
+
+
     const revenueFacetPromise = Transactions.aggregate([
       { $match: { costType: "Revenue", date: { $gte: lastMonthStart } } },
       {
@@ -207,7 +204,6 @@ export async function POST(req) {
       { $group: { _id: null, total: { $sum: "$amount" }, count: { $sum: 1 } } },
     ]);
 
-    // paid_by_other expenses similarly aren't costs we've actually paid yet.
     const expensesFacetPromise = Transactions.aggregate([
       { $match: { costType: "Expenses", date: { $gte: monthStart }, method: { $nin: UNSETTLED_METHODS }, ...SETTLEMENT_EXCLUSION } },
       {
@@ -225,10 +221,10 @@ export async function POST(req) {
       },
     ]);
 
-    
-    
-    
-    
+
+
+
+
     const agentRevQuery = (dateFilter) =>
       Transactions.aggregate([
         { $match: { costType: "Revenue", method: { $nin: UNSETTLED_METHODS }, ...SETTLEMENT_EXCLUSION, ...dateFilter } },
@@ -271,8 +267,8 @@ export async function POST(req) {
         { $sort: { revenue: -1 } },
       ]);
 
-    
-    
+
+
     const agentRefQuery = (visitDateFilter) =>
       Patient.aggregate([
         {
@@ -318,8 +314,8 @@ export async function POST(req) {
         { $sort: { referrals: -1 } },
       ]);
 
-    
-    
+
+
     const patientFacetPromise = Patient.aggregate([
       { $match: { "personal.visitDate": { $gte: lastMonthStart } } },
       {
@@ -446,7 +442,7 @@ export async function POST(req) {
 
     const totalPatientsPromise = Patient.countDocuments();
 
-    
+
     const recentPatientsPromise = Patient.find()
       .sort({ createdAt: -1 })
       .limit(10)
@@ -455,7 +451,7 @@ export async function POST(req) {
       )
       .lean();
 
-    
+
     const recentTxPromise = Transactions.find({ costType: "Revenue" })
       .sort({ date: -1 })
       .limit(10)
@@ -464,7 +460,7 @@ export async function POST(req) {
       )
       .lean();
 
-    
+
     const counsellorQuery = (visitDateFilter) =>
       Patient.aggregate([
         {
@@ -505,7 +501,7 @@ export async function POST(req) {
         { $sort: { converted: -1 } },
       ]);
 
-    
+
     const doctorMonthPromise = Patient.aggregate([
       {
         $match: {
@@ -544,7 +540,7 @@ export async function POST(req) {
       { $sort: { surgeries: -1 } },
     ]);
 
-    
+
     const leadsFacetPromise = Leads.aggregate([
       {
         $facet: {
@@ -596,17 +592,17 @@ export async function POST(req) {
       },
     ]);
 
-    
+
     const stockPromise = Stock.find()
       .select("name totalQuantity unit mrp expiry location")
       .lean();
 
-    
+
     const employeesPromise = Employee.find({ isactive: true })
       .select("name role phone")
       .lean();
 
-    
+
     const [
       revenueFacet,
       revenueAllTime,
@@ -655,7 +651,7 @@ export async function POST(req) {
       employeesPromise,
     ]);
 
-    
+
     const mergeAgent = (revArr, refArr) => {
       const revMap = {};
       revArr.forEach((a) => {
@@ -693,7 +689,7 @@ export async function POST(req) {
         );
     };
 
-    
+
     const rv = revenueFacet[0] || {};
     const pt = patientFacet[0] || {};
     const ld = leadsFacet[0] || {};
@@ -710,12 +706,12 @@ export async function POST(req) {
     const fmtPatStatus = (arr) =>
       (arr || []).map((x) => ({ status: x._id || "Unknown", count: x.count }));
 
-    
+
     const ctx = {
       reportedAt: ist(now),
 
-      
-      
+
+
       revenue: {
         allTime: fmt(revenueAllTime[0]?.total),
 
@@ -753,8 +749,8 @@ export async function POST(req) {
         },
       },
 
-      
-      
+
+
       patients: {
         total: totalPatients,
 
@@ -794,9 +790,9 @@ export async function POST(req) {
         })),
       },
 
-      
-      
-      
+
+
+
       agentPerformance: {
         note: "Revenue = actual transactions in that period. Referrals = patients who visited in that period.",
         today: mergeAgent(agentRevToday, agentRefToday),
@@ -804,8 +800,8 @@ export async function POST(req) {
         thisMonth: mergeAgent(agentRevMonth, agentRefMonth),
       },
 
-      
-      
+
+
       counsellorPerformance: {
         yesterday: counsellorYesterday.map((c) => ({
           name: c.name,
@@ -831,7 +827,7 @@ export async function POST(req) {
         })),
       },
 
-      
+
       doctorPerformance: {
         thisMonth: doctorMonth.map((d) => ({
           name: d.name,
@@ -842,7 +838,7 @@ export async function POST(req) {
         })),
       },
 
-      
+
       leads: {
         total: ld.total?.[0]?.count || 0,
         today: ld.todayTotal?.[0]?.count || 0,
@@ -867,7 +863,7 @@ export async function POST(req) {
         })),
       },
 
-      
+
       stock: {
         totalItems: allStock.length,
         lowStock: allStock
@@ -882,7 +878,7 @@ export async function POST(req) {
         })),
       },
 
-      
+
       team: {
         total: allEmployees.length,
         byRole: allEmployees.reduce((acc, e) => {
@@ -896,7 +892,7 @@ export async function POST(req) {
         })),
       },
 
-      
+
       recentTransactions: recentTx.map((t) => ({
         patient: t.patientName,
         phone: t.patientPhone,
@@ -909,7 +905,7 @@ export async function POST(req) {
       })),
     };
 
-    
+
     const openaiRes = await fetch(
       "https://api.openai.com/v1/chat/completions",
       {

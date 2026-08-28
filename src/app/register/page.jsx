@@ -27,7 +27,6 @@ export default function Register() {
     setError('');
     setLoading(true);
 
-    // Validation
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match');
       setLoading(false);
@@ -57,7 +56,6 @@ export default function Register() {
       const data = await response.json();
 
       if (response.ok) {
-        // Registration successful
         router.push('/login?message=Registration successful');
       } else {
         setError(data.error || 'Registration failed');

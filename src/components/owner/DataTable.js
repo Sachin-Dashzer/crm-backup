@@ -1,11 +1,3 @@
-// .table-wrap[.tall] + <table>. columns: [{ key, label, render?(row), sortable? }], rows: object[].
-// Pass onRowClick to get tr.clickable + a click handler; rows need a stable `id` (or `_id`)
-// field for React keys, falling back to index when neither is present.
-//
-// Sorting is opt-in and controlled by the caller: mark a column `sortable: true` and pass
-// `sortKey`/`sortDir` ("asc"|"desc") + `onSort(key)` — clicking that column's header calls
-// onSort(col.key) so the caller can flip direction and re-sort `rows` itself. DataTable never
-// sorts rows on its own; it only renders whatever order it's given and shows the arrow.
 export default function DataTable({
   columns = [],
   rows = [],

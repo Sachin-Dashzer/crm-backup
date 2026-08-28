@@ -21,12 +21,11 @@ export async function GET(req) {
     const location   = searchParams.get("location");
     const from       = searchParams.get("from");
     const to         = searchParams.get("to");
-    const eventType  = searchParams.get("eventType"); // PURCHASE | SALE | ALL
+    const eventType  = searchParams.get("eventType");
 
     const isAdmin    = ["admin", "super-admin"].includes(session.user.role);
     const userBranch = session.user.branch;
 
-    // ── 1. Fetch Stocks ──────────────────────────────────────────────────────
     const stockQuery = {};
     if (stockId)                          stockQuery._id      = stockId;
     if (!isAdmin && userBranch)           stockQuery.location = userBranch;
@@ -37,7 +36,6 @@ export async function GET(req) {
     stocks.forEach(s => { stockMap[s._id.toString()] = s; });
     const stockIds = stocks.map(s => s._id);
 
-    // ── 2. Fetch MEDICINE Transactions (sales) ────────────────────────────────
     const txQuery = {
       transactionCategory: "MEDICINE",
       medicineId: { $in: stockIds },
@@ -48,26 +46,22 @@ export async function GET(req) {
       .populate("patient", "personal.name personal.phone")
       .lean();
 
-    // ── 3. Fetch Vendors (for purchase event labels) ───────────────────────────
     const allVendors = await Vendor.find({}).select("_id name").lean();
     const vendorMap = {};
     allVendors.forEach(v => { vendorMap[v._id.toString()] = v.name; });
 
-    // ── 4. Build events array ─────────────────────────────────────────────────
     const events = [];
 
-    // — Purchase events from Stock.editors[] ——————————————————————————————————
     if (!eventType || eventType === "ALL" || eventType === "PURCHASE") {
       for (const stock of stocks) {
         for (const editor of (stock.editors || [])) {
-          // A purchase entry always updates totalQuantity
           const qtyField = editor.updatedFields?.find(f => f.name === "totalQuantity");
           if (!qtyField) continue;
 
           const prevQty  = parseFloat(qtyField.previousValue) || 0;
           const newQty   = parseFloat(qtyField.newValue)      || 0;
           const qtyAdded = newQty - prevQty;
-          if (qtyAdded <= 0) continue; // skip if quantity decreased (manual edit)
+          if (qtyAdded <= 0) continue;
 
           const priceField  = editor.updatedFields?.find(f => f.name === "purchaseAmt");
           const vendorField = editor.updatedFields?.find(f => f.name === "vendor");
@@ -78,7 +72,6 @@ export async function GET(req) {
 
           const eventDate = editor.date ? new Date(editor.date) : null;
 
-          // Apply date filter
           if (from && eventDate && eventDate < new Date(from)) continue;
           if (to   && eventDate && eventDate > new Date(new Date(to).setHours(23, 59, 59, 999))) continue;
 
@@ -107,7 +100,6 @@ export async function GET(req) {
       }
     }
 
-    // — Sale events from MEDICINE Transactions ————————————————————————————————
     if (!eventType || eventType === "ALL" || eventType === "SALE") {
       for (const tx of saleTxns) {
         const stockRef = stockMap[tx.medicineId?.toString()];
@@ -157,10 +149,8 @@ export async function GET(req) {
       }
     }
 
-    // Sort all events newest-first
     events.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
 
-    // ── 5. Per-stock summaries ─────────────────────────────────────────────────
     const summaryMap = {};
     for (const stock of stocks) {
       summaryMap[stock._id.toString()] = {
@@ -185,9 +175,6 @@ export async function GET(req) {
         s.unitsPurchased += ev.quantity;
         s.totalCost      += ev.totalAmount;
       } else {
-        // Every sale event still shows in `events` (with its method, badged in the UI) — only
-        // the revenue/profit TOTALS below exclude paid_to_external, since that money isn't
-        // ours yet. Units sold still counts — the stock genuinely left the shelf.
         s.unitsSold += ev.quantity;
         if (!UNSETTLED_METHODS.includes(ev.method)) {
           s.totalRevenue += ev.totalAmount;
@@ -198,7 +185,6 @@ export async function GET(req) {
 
     const stockSummaries = Object.values(summaryMap).sort((a, b) => b.totalRevenue - a.totalRevenue);
 
-    // ── 6. Overall summary ────────────────────────────────────────────────────
     const summary = stockSummaries.reduce(
       (acc, s) => {
         acc.totalRevenue    += s.totalRevenue;

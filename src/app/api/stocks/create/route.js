@@ -19,7 +19,6 @@ export async function POST(req) {
     const body = await req.json();
     const { name, location, gstNo, weight, unit, mrp, expiry , purchaseAmt , soldAmt } = body;
 
-    // Validation
     if (!name || !mrp) {
       return NextResponse.json(
         { success: false, message: "Name and MRP are required" },
@@ -27,11 +26,9 @@ export async function POST(req) {
       );
     }
 
-    // Non-admin users can only create stock for their own branch
     const isAdmin = ["admin", "super-admin"].includes(session.user.role);
     const effectiveLocation = !isAdmin && session.user.branch ? session.user.branch : location;
 
-    // Create new stock item
     const stock = await Stock.create({
       name,
       location: effectiveLocation,

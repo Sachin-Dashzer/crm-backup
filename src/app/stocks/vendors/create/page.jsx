@@ -58,7 +58,6 @@ export default function CreateVendorPage() {
     address: "", gstNumber: "", DealsIn: "",
   });
 
-  /* ── Validation helpers ── */
   const validators = {
     contact:   v => /^\d{10}$/.test(v.replace(/\D/g, "")),
     email:     v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v),
@@ -70,7 +69,6 @@ export default function CreateVendorPage() {
     ? formData.name.trim().split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase()
     : null;
 
-  /* ── Profile completeness ── */
   const filledCount = Object.values(formData).filter(Boolean).length;
   const totalFields = Object.keys(formData).length;
   const completePct = Math.round((filledCount / totalFields) * 100);
@@ -153,7 +151,6 @@ export default function CreateVendorPage() {
 
       <div className="flex-1 flex flex-col min-w-0 overflow-auto">
 
-        {/* ── Sticky Header ── */}
         <div className="bg-white border-b border-gray-200 px-6 py-4 sticky top-0 z-10 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -173,7 +170,6 @@ export default function CreateVendorPage() {
               </div>
             </div>
 
-            {/* Completion pill */}
             <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-full">
               <div className="w-20 h-1.5 bg-gray-200 rounded-full overflow-hidden">
                 <div className="h-full bg-linear-to-r from-emerald-500 to-teal-500 rounded-full transition-all duration-500"
@@ -184,15 +180,12 @@ export default function CreateVendorPage() {
           </div>
         </div>
 
-        {/* ── Body ── */}
         <div className="flex-1 p-6">
           <form onSubmit={handleSubmit}>
             <div className="max-w-6xl mx-auto grid grid-cols-1 xl:grid-cols-3 gap-6">
 
-              {/* ── LEFT: Form ── */}
               <div className="xl:col-span-2 space-y-5">
 
-                {/* Section 1 — Identity */}
                 <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
                   <div className="flex items-center gap-3 mb-5">
                     <div className="w-8 h-8 rounded-lg bg-linear-to-br from-emerald-500 to-teal-600 flex items-center justify-center shrink-0 shadow-sm">
@@ -205,7 +198,6 @@ export default function CreateVendorPage() {
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {/* Name */}
                     <div className="sm:col-span-2">
                       <label className={labelCls}>Vendor Name <span className="text-red-400 normal-case">*</span></label>
                       <div className="relative">
@@ -222,7 +214,6 @@ export default function CreateVendorPage() {
                       {errors.name && <p className="mt-1.5 text-xs text-red-500 flex items-center gap-1"><AlertCircle className="w-3.5 h-3.5" />{errors.name}</p>}
                     </div>
 
-                    {/* Deals In */}
                     <div className="sm:col-span-2">
                       <label className={labelCls}>Deals In</label>
                       <div className="relative">
@@ -231,7 +222,6 @@ export default function CreateVendorPage() {
                           placeholder="e.g., Surgical Equipment, Medicines"
                           className={`${inputNormal} pl-9`} />
                       </div>
-                      {/* Quick category chips */}
                       <div className="flex flex-wrap gap-1.5 mt-2.5">
                         {CATEGORY_SUGGESTIONS.map(cat => (
                           <button key={cat} type="button" onClick={() => handleCategoryChip(cat)}
@@ -248,7 +238,6 @@ export default function CreateVendorPage() {
                   </div>
                 </div>
 
-                {/* Section 2 — Contact */}
                 <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
                   <div className="flex items-center gap-3 mb-5">
                     <div className="w-8 h-8 rounded-lg bg-linear-to-br from-indigo-500 to-indigo-600 flex items-center justify-center shrink-0 shadow-sm">
@@ -261,7 +250,6 @@ export default function CreateVendorPage() {
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {/* Phone */}
                     <div>
                       <label className={labelCls}>Phone Number</label>
                       <div className="relative">
@@ -278,7 +266,6 @@ export default function CreateVendorPage() {
                           : null}
                     </div>
 
-                    {/* Email */}
                     <div>
                       <label className={labelCls}>Email Address</label>
                       <div className="relative">
@@ -295,7 +282,6 @@ export default function CreateVendorPage() {
                           : null}
                     </div>
 
-                    {/* Address */}
                     <div className="sm:col-span-2">
                       <label className={labelCls}>Business Address</label>
                       <div className="relative">
@@ -310,7 +296,6 @@ export default function CreateVendorPage() {
                   </div>
                 </div>
 
-                {/* Section 3 — Business */}
                 <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
                   <div className="flex items-center gap-3 mb-5">
                     <div className="w-8 h-8 rounded-lg bg-linear-to-br from-violet-500 to-purple-600 flex items-center justify-center shrink-0 shadow-sm">
@@ -344,14 +329,12 @@ export default function CreateVendorPage() {
                   </div>
                 </div>
 
-                {/* API error */}
                 {errors.api && (
                   <div className="flex items-center gap-2 px-4 py-3 bg-red-50 border border-red-100 rounded-xl text-sm text-red-600">
                     <AlertCircle className="w-4 h-4 shrink-0" /> {errors.api}
                   </div>
                 )}
 
-                {/* Actions */}
                 <div className="flex gap-3 pb-6">
                   <button type="submit" disabled={loading}
                     className="flex items-center gap-2 px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-xl shadow-sm disabled:opacity-50 transition-all">
@@ -371,11 +354,9 @@ export default function CreateVendorPage() {
                 </div>
               </div>
 
-              {/* ── RIGHT: Live Preview ── */}
               <div className="xl:col-span-1">
                 <div className="sticky top-24 space-y-4">
 
-                  {/* Vendor card preview */}
                   <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
                     <div className="h-1 bg-linear-to-r from-emerald-500 to-teal-500" />
                     <div className="p-5">
@@ -384,7 +365,6 @@ export default function CreateVendorPage() {
                         <span className="text-xs font-bold text-gray-500 uppercase tracking-wide">Vendor Preview</span>
                       </div>
 
-                      {/* Avatar */}
                       <div className="flex items-center gap-3 mb-5">
                         <div className={`w-14 h-14 rounded-2xl bg-linear-to-br ${avatarColor} flex items-center justify-center text-white font-bold text-xl shadow-md transition-all duration-300`}>
                           {initials || <Store className="w-7 h-7 opacity-60" />}
@@ -399,7 +379,6 @@ export default function CreateVendorPage() {
                         </div>
                       </div>
 
-                      {/* Contact info preview */}
                       <div className="space-y-2.5">
                         {[
                           { icon: Phone, value: formData.contact, placeholder: "No phone added",   valid: formData.contact ? validators.contact(formData.contact) : null },
@@ -425,7 +404,6 @@ export default function CreateVendorPage() {
                     </div>
                   </div>
 
-                  {/* Completeness */}
                   <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
                     <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-3">Profile Completeness</p>
                     <div className="space-y-2">

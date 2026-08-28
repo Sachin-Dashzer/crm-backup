@@ -11,9 +11,6 @@ const handler = async (req) => {
     const dateTo    = searchParams.get("dateTo");
     const technique = searchParams.get("technique");
 
-    // Pushed into the populate match instead of fetching every employee's full patient list and
-    // filtering it in JS afterward — when dateFrom/dateTo/technique narrow the range, this cuts
-    // the actual data transferred from Mongo instead of just discarding most of it in Node.
     const patientMatch = {};
     if (dateFrom || dateTo) {
       patientMatch["personal.visitDate"] = {};
@@ -42,8 +39,6 @@ const handler = async (req) => {
       .sort({ name: 1 })
       .lean();
 
-    // One aggregation covering every HR employee's candidate counts, instead of a separate
-    // Interviewer.find() per HR employee inside the loop below.
     const hrEmployeeIds = data
       .filter((e) => (e.role || "").toLowerCase() === "hr")
       .map((e) => e._id);
@@ -93,8 +88,6 @@ const handler = async (req) => {
           selectionRate,
         });
       } else {
-        // populate's `match` already applied date/technique filtering above — the array here
-        // is exactly the filtered set, no further JS filtering needed.
         const patients = employee.patient || [];
 
         const patientCount = patients.length;

@@ -1,4 +1,3 @@
-// lib/auth.js - REPLACE YOUR EXISTING FILE
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
@@ -26,7 +25,6 @@ export async function getSession() {
   }
 }
 
-// Role-based permissions
 export const ROLE_PERMISSIONS = {
   owner: {
     routes: ['/owner', '/super-admin', '/admin', '/sales', '/reception', '/surgery', '/counsellor', '/stocks', '/hr'],
@@ -85,7 +83,7 @@ export function hasPermission(userRole, permission) {
 export function canAccessRoute(userRole, pathname) {
   const rolePermissions = ROLE_PERMISSIONS[userRole];
   if (!rolePermissions) return false;
-  if (userRole === 'super-admin' || userRole === 'owner') return true; // super-admin and owner can access everything
+  if (userRole === 'super-admin' || userRole === 'owner') return true;
   return rolePermissions.routes.some(route => pathname.startsWith(route));
 }
 

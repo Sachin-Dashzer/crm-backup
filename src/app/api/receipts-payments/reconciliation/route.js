@@ -8,19 +8,8 @@ import { getOpeningBalances, computeContraMovements, computeSuspenseMovements, r
 
 const ALLOWED_ROLES = ["admin", "super-admin"];
 const LOAN_ACCOUNTS = ["Bajaj Loan", "Fibe Loan"];
-// Same "cash" account set the Assets page's Cash & Bank section uses (close-book/accounts
-// ?filter=cash) — loan-financing accounts are excluded there and here for the same reason.
 const CASH_ACCOUNTS = ACCOUNTS.filter((a) => !LOAN_ACCOUNTS.includes(a));
 
-// Feeds the Opening/+Receipts/-Payments/[+Contra][+Suspense]/=Closing reconciliation strip on
-// /admin/receipts and /admin/payments. Every figure here comes from src/lib/accountBalances.js —
-// never re-derived — so this route can only ever agree with /api/close-book/accounts?filter=cash
-// for the same window, by construction. See src/lib/cashFlowAggregation.js's header for why
-// Receipts/Payments themselves are computed separately (they come from the two /grouped routes,
-// summed client-side) and why Contra/Suspense are surfaced as their own terms instead of folded
-// silently into "Receipts" or "Payments" — neither is a Transaction, so neither belongs in a
-// cash-basis P&L-adjacent figure, but both DO move the cash balance and must be accounted for or
-// the strip would show a false mismatch on every internal transfer / unresolved bank entry.
 export async function GET(request) {
   try {
     const session = await getServerSession(authOptions);
@@ -35,11 +24,6 @@ export async function GET(request) {
     const from = searchParams.get("from") || "";
     const to = searchParams.get("to") || new Date().toISOString();
     const branchParam = searchParams.get("branch") || "";
-    // Deliberately a raw branch string, not resolveBranchFilter's collab-expanded filter object —
-    // accountBalances.js's branch param is "one branch, or company-wide (null)"; a real
-    // Transactions.branch value is always a single city, never the "Collab" role sentinel, so
-    // this is safe and stays consistent with how the /grouped routes are queried for the same
-    // window (see the two pages, which pass this same single value through to both).
     const branch = branchParam && ALL_BRANCHES.includes(branchParam) ? branchParam : null;
 
     if (!from) {

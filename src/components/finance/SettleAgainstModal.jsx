@@ -4,16 +4,6 @@ import { useEffect, useState } from "react";
 import { X, Link2, Unlink, Loader2 } from "lucide-react";
 import { formatCurrency } from "@/lib/financeUI";
 
-// §4.3 — one shared modal for both directions: an Advance row settling a Payable, or a
-// Borrowing row settling a Receivable. Restricted to the SAME party as the financing row
-// (payee.refId / payer.refId matching row.party.refId) — the API enforces this too; the picker
-// only ever fetches within that restriction so nothing cross-party is ever shown to pick.
-//
-// `row` is the Advance/Borrowing document (the OUT/IN row already open for settlement — the
-// caller only renders this for rows in the correct creating direction). `kind` selects which
-// side this is:
-//   kind: "advance"   -> lists open Payables for row.party.refId, PATCHes /api/advances/[id]
-//   kind: "borrowing" -> lists open Receivables for row.party.refId, PATCHes /api/borrowings/[id]
 export default function SettleAgainstModal({ kind, row, onClose, onSuccess, toast }) {
   const isAdvance = kind === "advance";
   const endpoint = isAdvance ? `/api/advances/${row._id}` : `/api/borrowings/${row._id}`;

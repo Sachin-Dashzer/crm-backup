@@ -2,15 +2,6 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 
-// Patient search/cache logic shared by every transaction form. Previously copy-pasted
-// verbatim (fetchPatients, handlePatientSearch, addToPatientCache, patientOptions memo) in
-// admin/collab/reception/stocks — byte-identical in all four. Extracted so a fifth panel
-// (sales) doesn't become a fifth copy.
-//
-// The cache exists because a patient selected earlier in the session (e.g. picked for the
-// Transplant tab) must still render correctly by name even if a later server-side search
-// result list no longer includes them — SearchableSelect looks the selected id up in
-// `options`, so a stale id with no matching option would render blank.
 export default function usePatientPicker() {
   const [patients, setPatients] = useState([]);
   const [patientSearching, setPatientSearching] = useState(false);
@@ -36,8 +27,6 @@ export default function usePatientPicker() {
 
   useEffect(() => {
     fetchPatients("");
-    // Initial load only — searches after this go through handleSearch's debounce.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleSearch = (term) => {

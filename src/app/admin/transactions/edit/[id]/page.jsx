@@ -31,15 +31,9 @@ export default function EditTransactionPage() {
   const [vendors, setVendors] = useState([]);
   const [transaction, setTransaction] = useState(null);
   const [toast, setToast] = useState({ show: false, message: "", type: "" });
-  // Linked payable/receivable is set at creation and settled via the dedicated Record
-  // Payment/Receipt flows on the Payables/Receivables pages — this edit form never offers a
-  // way to change the link itself. This just surfaces what it's currently linked to (same
-  // live fetch the transactions list's row-expand uses) so an edit here isn't made blind to
-  // an in-progress payable/receivable it counts against.
   const [linkedInfo, setLinkedInfo] = useState(null);
   const [linkedLoading, setLinkedLoading] = useState(false);
 
-  // TRANSPLANT DATA
   const [transplantData, setTransplantData] = useState({
     patient: "",
     procedure: "Sapphire FUE",
@@ -58,7 +52,6 @@ export default function EditTransactionPage() {
     receivableId: "",
   });
 
-  // SERVICE DATA
   const [serviceData, setServiceData] = useState({
     patient: "",
     patientName: "",
@@ -80,7 +73,6 @@ export default function EditTransactionPage() {
     receivableId: "",
   });
 
-  // MEDICINE DATA
   const [medicineData, setMedicineData] = useState({
     patient: "",
     patientName: "",
@@ -103,7 +95,6 @@ export default function EditTransactionPage() {
     receivableId: "",
   });
 
-  // EXPENSE DATA
   const [expenseData, setExpenseData] = useState({
     expenseCategory: "",
     expenseType: "",
@@ -137,10 +128,6 @@ export default function EditTransactionPage() {
   const fetchData = async () => {
     setFetchLoading(true);
     try {
-      // The transaction, the medicines list and the vendors list are independent of each other,
-      // but used to be awaited in sequence — so the form's time-to-interactive was the SUM of
-      // three round trips. Only fetchLinkedInfo below genuinely depends on the transaction.
-      // Each dropdown fetch still swallows its own error, so one failing doesn't block the others.
       const [transRes] = await Promise.all([
         fetch(`/api/transactions/get-by-id?id=${transactionId}`),
 
@@ -193,8 +180,6 @@ export default function EditTransactionPage() {
     }
   };
 
-  // Mirrors DataTable.toggleExpand in admin/transactions/page.jsx — same lookup order and
-  // same two endpoints, so the figure shown here always matches what the list page shows.
   const fetchLinkedInfo = async (trans) => {
     const linkedReceivableId = trans.receivableId || trans.externalParty?.linkedReceivableId;
     const linkedPayableId = trans.payableId || trans.externalParty?.linkedPayableId;
@@ -219,9 +204,8 @@ export default function EditTransactionPage() {
   };
 
   const prefillFormData = (trans) => {
-    console.log("Transaction data:", trans); // Debug log
+    console.log("Transaction data:", trans);
 
-    // Determine transaction category
     let category = trans.transactionCategory;
 
     if (!category) {
@@ -249,7 +233,6 @@ export default function EditTransactionPage() {
       ? new Date(trans.date).toISOString().split("T")[0]
       : new Date().toISOString().split("T")[0];
 
-    // Extract patient ID and seed cache so the selected patient stays visible
     const patientId =
       typeof trans.patient === "object" && trans.patient !== null
         ? trans.patient._id
@@ -262,8 +245,8 @@ export default function EditTransactionPage() {
       picker.addToCache(trans.patient);
     }
 
-    console.log("Category:", category); // Debug log
-    console.log("Patient ID:", patientId); // Debug log
+    console.log("Category:", category);
+    console.log("Patient ID:", patientId);
 
     switch (category) {
       case "TRANSPLANT":
@@ -320,20 +303,18 @@ export default function EditTransactionPage() {
           procedure: trans.procedure,
           quantity: trans.quantity,
           perSessionCost: trans.perSessionCost,
-        }); // Debug log
+        });
         break;
 
       case "MEDICINE":
         setActiveTab("medicine");
         const isMedicineWalkIn = !patientId;
 
-        // Extract medicine ID
         const medicineIdValue =
           typeof trans.medicineId === "object" && trans.medicineId !== null
             ? trans.medicineId._id
             : trans.medicineId || "";
 
-        // Extract medicine name
         const medicineName =
           typeof trans.medicineId === "object" && trans.medicineId !== null
             ? trans.medicineId.name
@@ -370,7 +351,7 @@ export default function EditTransactionPage() {
           medicineName: medicineName,
           quantity: trans.quantity,
           perUnitCost: trans.perUnitCost,
-        }); // Debug log
+        });
         break;
 
       case "EXPENSE":
@@ -408,7 +389,6 @@ export default function EditTransactionPage() {
     }
   };
 
-  // TRANSPLANT HANDLERS
 
   const handleUpdateTransplant = async () => {
     if (!transplantData.patient) {
@@ -467,7 +447,6 @@ export default function EditTransactionPage() {
     }
   };
 
-  // SERVICE HANDLERS
   const handleUpdateService = async () => {
     if (!serviceData.isWalkIn && !serviceData.patient) {
       showToast("Please select a patient", "error");
@@ -534,7 +513,6 @@ export default function EditTransactionPage() {
     }
   };
 
-  // MEDICINE HANDLERS
   const handleMedicineSelect = (medicineId) => {
     const medicine = medicines.find((m) => m._id === medicineId);
     if (medicine) {
@@ -613,7 +591,6 @@ export default function EditTransactionPage() {
     }
   };
 
-  // EXPENSE HANDLERS
   const calculateExpenseTotal = () => {
     return parseFloat(expenseData.amount) || 0;
   };
@@ -681,8 +658,6 @@ export default function EditTransactionPage() {
       }));
 
       if (res.ok) {
-        // A payable-relink warning means something the user should actually read, not a
-        // "success and gone in 1.5s" toast — give it real time on screen before navigating away.
         if (data.warning) {
           showToast(data.warning, "info");
           setTimeout(() => router.back(), 4000);
@@ -735,7 +710,6 @@ export default function EditTransactionPage() {
   return (
     <div className="flex min-h-screen bg-gray-50">
 
-      {/* Toast Notification */}
       {toast.show && (
         <div className="fixed top-4 right-4 z-50 animate-fade-in">
           <div
@@ -765,7 +739,6 @@ export default function EditTransactionPage() {
       <main className="flex-1 flex flex-col">
         <div className="flex-1 overflow-auto">
           <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
-            {/* Header */}
             <div className="mb-6 flex justify-between">
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">
@@ -790,7 +763,6 @@ export default function EditTransactionPage() {
               </button>
             </div>
 
-            {/* Tabs */}
             <div className="mb-6 border-b border-gray-200">
               <div className="flex gap-4">
                 <button
@@ -848,9 +820,6 @@ export default function EditTransactionPage() {
               </div>
             </div>
 
-            {/* Linked payable/receivable — read-only context. The link itself is set at
-                creation and settled via Record Payment/Receipt on the Payables/Receivables
-                pages, never edited from here, so this only shows what's currently linked. */}
             {(linkedLoading || linkedInfo) && (
               <div className="mb-6 p-4 bg-white border border-slate-200 rounded-lg max-w-sm">
                 <p className="text-sm font-semibold text-slate-700 mb-2">
@@ -886,7 +855,6 @@ export default function EditTransactionPage() {
               </div>
             )}
 
-            {/* TRANSPLANT TAB */}
             {activeTab === "transplant" && (
               <RevenueSection
                 key={transactionId}
@@ -902,7 +870,6 @@ export default function EditTransactionPage() {
               />
             )}
 
-            {/* SERVICE TAB */}
             {activeTab === "service" && (
               <RevenueSection
                 key={transactionId}
@@ -924,7 +891,6 @@ export default function EditTransactionPage() {
               />
             )}
 
-            {/* MEDICINE TAB */}
             {activeTab === "medicine" && (
               <RevenueSection
                 key={transactionId}
@@ -946,7 +912,6 @@ export default function EditTransactionPage() {
               />
             )}
 
-            {/* EXPENSE TAB */}
             {activeTab === "expense" && (
               <DirectExpenseSection
                 key={transactionId}

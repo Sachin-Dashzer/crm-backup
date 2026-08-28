@@ -5,13 +5,6 @@ import connectDB from "@/lib/db";
 import CollabCase from "@/models/CollabCase";
 import { recordCollabCollectionAtomic, computeCaseBalance } from "@/lib/collabDerivation";
 
-// Records a later instalment against a collab case — either the patient paying US more
-// (collectedBy: "US") or the clinic collecting more directly (collectedBy: "CLINIC", the
-// original and still most common case). Both now create a real revenue Transaction, exactly
-// like the amounts recorded at case-creation time — see recordCollabCollectionAtomic
-// (src/lib/collabDerivation.js) for why that's the fix: this route used to only append to
-// clinicCollections[] and explicitly never created a Transaction, so every instalment after the
-// first was invisible to revenue, to Patient.payments, and to the clinic's Receivable.
 const ALLOWED_ROLES = ["collab", "admin", "super-admin"];
 
 export async function POST(req, { params }) {
@@ -31,9 +24,9 @@ export async function POST(req, { params }) {
       amount,
       discount,
       date,
-      collectedBy = "CLINIC", // matches clinicCollections[].collectedBy's own default
-      method, // "US" only
-      mode, // "CLINIC" only
+      collectedBy = "CLINIC",
+      method,
+      mode,
       reference,
       receiptMode,
       furtherMode,
@@ -64,9 +57,6 @@ export async function POST(req, { params }) {
       return NextResponse.json({ error: "This case has been cancelled" }, { status: 400 });
     }
 
-    // How much of THIS case's package is already accounted for — same aggregation
-    // crystalliseClinicShare's completion check and the reversal-driven unwind check use (see
-    // collabDerivation.js's computeCaseBalance), so all three can never disagree on "remaining".
     const { totalCollected, totalDiscount } = await computeCaseBalance(collabCase._id);
     const remaining = round2(collabCase.packageAmount - totalCollected - totalDiscount);
 

@@ -33,7 +33,14 @@
       "PowerShell(try { Remove-Item -Recurse -Force \"c:\\\\codes\\\\crm-backup-main\\\\crm-backup-main\" -ErrorAction Stop; \"deleted OK\" } catch { \"DELETE FAILED: $\\($_.Exception.Message\\)\" }; \"--- still present? ---\"; if \\(Test-Path \"c:\\\\codes\\\\crm-backup-main\\\\crm-backup-main\"\\) { \"yes\"; Get-ChildItem \"c:\\\\codes\\\\crm-backup-main\\\\crm-backup-main\" | Select-Object -ExpandProperty Name } else { \"no - gone\" })",
       "PowerShell(Get-CimInstance Win32_Process -Filter \"Name='node.exe'\" | Select-Object ProcessId, @{n='Cmd';e={ if \\($_.CommandLine.Length -gt 150\\) { $_.CommandLine.Substring\\(0,150\\) } else { $_.CommandLine } }} | Format-List)",
       "PowerShell(foreach \\($id in 18712,9076,19432,20096\\) { try { Stop-Process -Id $id -Force -ErrorAction Stop; \"killed $id\" } catch { \"already gone: $id\" } }; Start-Sleep -Milliseconds 800; \"--- remaining node processes ---\"; $r = Get-CimInstance Win32_Process -Filter \"Name='node.exe'\"; if \\($r\\) { $r | Select-Object ProcessId | Format-Table -AutoSize } else { \"none\" })",
-      "PowerShell(try { Remove-Item -Recurse -Force \"c:\\\\codes\\\\crm-backup-main\\\\crm-backup-main\" -ErrorAction Stop; \"deleted OK\" } catch { \"DELETE FAILED: $\\($_.Exception.Message\\)\" }; \"--- still present? ---\"; if \\(Test-Path \"c:\\\\codes\\\\crm-backup-main\\\\crm-backup-main\"\\) { \"yes\" } else { \"no - gone\" })"
+      "PowerShell(try { Remove-Item -Recurse -Force \"c:\\\\codes\\\\crm-backup-main\\\\crm-backup-main\" -ErrorAction Stop; \"deleted OK\" } catch { \"DELETE FAILED: $\\($_.Exception.Message\\)\" }; \"--- still present? ---\"; if \\(Test-Path \"c:\\\\codes\\\\crm-backup-main\\\\crm-backup-main\"\\) { \"yes\" } else { \"no - gone\" })",
+      "Bash(node -e \"console.log\\(require\\('acorn/package.json'\\).version\\); console.log\\(require\\('acorn-jsx/package.json'\\).version\\)\")",
+      "Bash(node -e \"console.log\\(require\\('acorn-walk/package.json'\\).version\\)\")",
+      "Bash(node \"C:/Users/sachi/AppData/Local/Temp/claude/c--dashzer-New-folder-ryan-crm/e991aaae-04a7-454b-b490-1854239267f1/scratchpad/strip-comments.mjs\" --dry)",
+      "Bash(node .strip-comments-tmp.mjs --dry)",
+      "Bash(node .strip-comments-tmp.mjs)",
+      "Bash(grep -n \"{/\\\\*\\\\|/\\\\*\\\\|//\" src/components/CollabCaseForm.jsx)",
+      "Bash(grep -c \"{/\\\\*\\\\|/\\\\*\\\\|//\" src/components/CollabCaseForm.jsx)"
     ]
   }
 }

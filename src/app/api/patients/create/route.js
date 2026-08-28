@@ -10,15 +10,6 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 const handler = async (req) => {
   const session = await getServerSession(authOptions);
 
-  // if (!session || !session.user) {
-  //   return NextResponse.json(
-  //     {
-  //       success: false,
-  //       error: "Unauthorized. Please login.",
-  //     },
-  //     { status: 401 }
-  //   );
-  // }
 
   const userBranch = session?.user?.branch || null;
 
@@ -45,21 +36,9 @@ const handler = async (req) => {
 
   const phone = personal.phone.trim();
 
-  // if (!/^\d{10}$/.test(phone)) {
-  //   return NextResponse.json(
-  //     {
-  //       success: false,
-  //       error: "Phone number must be exactly 10 digits",
-  //     },
-  //     { status: 400 },
-  //   );
-  // }
 
   const phoneNormalized = normalizePhone(phone);
 
-  // Match on the normalized form so "+919876543210" and "9876543210" are caught as
-  // the same patient. Guarded: a null normalized value would match every document
-  // that has no phoneNormalized field at all.
   if (phoneNormalized) {
     const existingPatient = await Patient.findOne({
       "personal.phoneNormalized": phoneNormalized,
@@ -112,12 +91,6 @@ const handler = async (req) => {
       counselling: counselling || {},
       surgery: surgery || {},
       afterSurgery: afterSurgery || {},
-      // Omitted entirely (not `payments || {}`) when the client sends none — every add-patient
-      // form on this app only ever sends counselling.finlpackage, never a payments object of its
-      // own. Passing `payments: {}` explicitly makes Mongoose treat the schema-defaulted
-      // payments.totalAmount (0) as "modified", which trips the pre-save hook's guard
-      // (`!isModified("payments.totalAmount")`) meant to derive it from finlpackage — so the
-      // package amount silently stayed 0 on every new patient instead of being set.
       ...(payments ? { payments } : {}),
       documents: documents || {},
       ops: ops || {},
@@ -126,8 +99,6 @@ const handler = async (req) => {
 
     const savedPatient = await newPatient.save();
 
-    // If this phone exists in Leads, remove that lead
-    // await Leads.findOneAndDelete({ phone: phone });
 
     const employeeUpdatePromises = [];
 

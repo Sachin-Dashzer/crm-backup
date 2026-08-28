@@ -3,12 +3,6 @@
 import Link from "next/link";
 import { ArrowLeftRight } from "lucide-react";
 
-// A contra transfer lives in the AccountTransfer collection, not Transactions — it has no
-// /admin/transactions/edit/[id] counterpart (that route resolves a Transactions _id) and no
-// DELETE_ENDPOINTS entry, so it gets its own action instead of Edit/Delete: a link into the
-// existing Contra manager (ContraManager, rendered under the Transactions page's own "Contra"
-// tab), which already owns full contra CRUD. This row never offers Settle/Cancel Loan either —
-// see DrillDownTable's leafActions, which never calls this for a row that IS itself a transfer.
 export default function ContraRowActions() {
   return (
     <Link

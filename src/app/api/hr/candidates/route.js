@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import connectDB from "@/lib/db";
 import Interviewer from "@/models/Interviewer";
 
-// ── CORS helper ────────────────────────────────────────────────────────────────
 function withCORS(response) {
   response.headers.set("Access-Control-Allow-Origin", "*");
   response.headers.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
@@ -10,12 +9,10 @@ function withCORS(response) {
   return response;
 }
 
-// ── OPTIONS — preflight (required for cross-origin POST/GET with custom headers)
 export async function OPTIONS() {
   return withCORS(new NextResponse(null, { status: 204 }));
 }
 
-// ── GET — list candidates with optional filters ────────────────────────────────
 export async function GET(req) {
   try {
     await connectDB();
@@ -67,14 +64,12 @@ export async function GET(req) {
   }
 }
 
-// ── POST — create single candidate OR bulk import an array ────────────────────
 export async function POST(req) {
   try {
     await connectDB();
 
     const body = await req.json();
 
-    // ── Bulk import ────────────────────────────────────────────────────────────
     if (Array.isArray(body)) {
       if (body.length === 0) {
         return withCORS(
@@ -91,7 +86,6 @@ export async function POST(req) {
         );
       }
 
-      // Validate every item has name + position
       const invalid = body
         .map((item, i) => (!item.name || !item.position ? i : null))
         .filter((i) => i !== null);
@@ -108,7 +102,6 @@ export async function POST(req) {
         );
       }
 
-      // Insert in chunks of 200 — ordered:false so one bad doc doesn't stop the rest
       const CHUNK_SIZE = 200;
       let inserted = 0;
       const errors = [];
@@ -139,7 +132,6 @@ export async function POST(req) {
       );
     }
 
-    // ── Single create ──────────────────────────────────────────────────────────
     if (!body.name || !body.position) {
       return withCORS(
         NextResponse.json(

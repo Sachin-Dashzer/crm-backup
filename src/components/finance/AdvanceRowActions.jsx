@@ -3,11 +3,6 @@
 import Link from "next/link";
 import { HandCoins } from "lucide-react";
 
-// An advance lives in the Advance collection, not Transactions — exact mirror of
-// BorrowingRowActions. No /admin/transactions/edit/[id] route resolves its _id, and it has no
-// manager tab on /admin/transactions either. Its actual actions (Record Recovery / Further
-// Advance) live on the Assets page's own Advances section / the dedicated /admin/financing page
-// (§4.1 — merged with Borrowings).
 export default function AdvanceRowActions() {
   return (
     <Link

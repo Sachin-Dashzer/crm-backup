@@ -2,7 +2,6 @@
 import StockDashboard from "@/components/StockDashboard";
 import SuperAdminSidebar from "@/components/Sidebars/SuperAdminSidebar";
 
-// Super-admin: view-only, no add/purchase/edit buttons
 const CONFIG = {
   SidebarComponent: SuperAdminSidebar,
   title:         "Inventory Overview",

@@ -148,7 +148,6 @@ export default function EmployeeUpdate() {
     }));
   };
 
-  // Fetch employee data on mount
   useEffect(() => {
     const fetchEmployee = async () => {
       if (!employeeId) {
@@ -159,7 +158,7 @@ export default function EmployeeUpdate() {
 
       try {
         const response = await fetch(`/api/employees/get/${employeeId}`);
-        
+
         if (!response.ok) {
           if (response.status === 404) {
             setNotFound(true);
@@ -168,7 +167,7 @@ export default function EmployeeUpdate() {
         }
 
         const result = await response.json();
-        
+
         if (result.success && result.data) {
           setFormData({
             name: result.data.name || "",
@@ -188,7 +187,7 @@ export default function EmployeeUpdate() {
         }
       } catch (error) {
         toast.error("Error fetching employee data:", error.message);
-        
+
       } finally {
         setIsLoading(false);
       }
@@ -215,17 +214,17 @@ export default function EmployeeUpdate() {
   const validateForm = () => {
 
     if (!formData.name.trim()) {
-      toast.error("Employee name is required");      
+      toast.error("Employee name is required");
       return false;
     }
 
     if (!formData.role) {
-      toast.error("Employee role is required");      
+      toast.error("Employee role is required");
       return false;
     }
 
     if (formData.email && !formData.email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
-      toast.error("Please enter a valid email address");     
+      toast.error("Please enter a valid email address");
       return false;
     }
 
@@ -271,9 +270,8 @@ export default function EmployeeUpdate() {
 
                 toast.success("Employee data loaded successfully");
 
-      // Redirect after successful update
       setTimeout(() => {
-        router.push("/admin/employees"); // Adjust this path to your employee list page
+        router.push("/admin/employees");
       }, 2000);
     } catch (error) {
       toast.error("Error updating employee data:", error.message)
@@ -292,7 +290,6 @@ export default function EmployeeUpdate() {
     { value: "Hr", label: "Hr" },
   ];
 
-  // Loading state
   if (isLoading) {
     return (
       <section className="flex min-h-screen">
@@ -306,7 +303,6 @@ export default function EmployeeUpdate() {
     );
   }
 
-  // Not found state
   if (notFound) {
     return (
       <section className="flex min-h-screen">
@@ -336,7 +332,6 @@ export default function EmployeeUpdate() {
       <main className="flex-1 px-4 md:px-12 py-4">
         <div className="max-w-4xl mx-auto">
           <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-            {/* Header */}
             <div className="px-8 py-6 bg-linear-to-r from-blue-600 to-indigo-600 text-white">
               <div className="flex items-center justify-between">
                 <div>
@@ -355,8 +350,7 @@ export default function EmployeeUpdate() {
               </div>
             </div>
 
-            
-            {/* Back Button */}
+
             <div className="px-8 pt-6">
               <button
                 onClick={() => router.back()}
@@ -367,17 +361,14 @@ export default function EmployeeUpdate() {
               </button>
             </div>
 
-            {/* Form */}
             <form onSubmit={handleSubmit} className="px-8 py-8">
               <div className="space-y-8">
-                {/* Section Header */}
                 <div className="text-center mb-8">
                   <User className="mx-auto h-16 w-16 text-blue-500 mb-4" />
                   <h3 className="text-2xl font-bold text-gray-900">Employee Information</h3>
                   <p className="text-gray-600">Update the employee details below</p>
                 </div>
 
-                {/* Form Fields */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 gap-x-12">
                   <InputField
                     label="Full Name"
@@ -414,7 +405,6 @@ export default function EmployeeUpdate() {
                     className="md:col-span-2"
                   />
 
-                  {/* Role Description Card */}
                   {formData.role && (
                     <div className="md:col-span-2">
                       <RoleDescriptionCard role={formData.role} />
@@ -429,7 +419,6 @@ export default function EmployeeUpdate() {
                     className="md:col-span-2"
                   />
 
-                  {/* Salary Structure */}
                   <div className="md:col-span-2 pt-4 border-t border-gray-200">
                     <h4 className="text-sm font-bold text-gray-900 mb-4">Salary Structure</h4>
                   </div>
@@ -470,7 +459,6 @@ export default function EmployeeUpdate() {
                   />
                 </div>
 
-                {/* Info Box */}
                 <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                   <div className="flex items-start">
                     <AlertCircle className="text-yellow-600 mr-3 shrink-0 mt-0.5" size={20} />
@@ -487,7 +475,6 @@ export default function EmployeeUpdate() {
                   </div>
                 </div>
 
-                {/* Submit Button */}
                 <div className="flex justify-between pt-6 border-t border-gray-200">
                   <button
                     type="button"
@@ -496,7 +483,7 @@ export default function EmployeeUpdate() {
                   >
                     Cancel
                   </button>
-                  
+
                   <button
                     type="submit"
                     className="inline-flex items-center px-8 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors duration-200"
@@ -518,7 +505,6 @@ export default function EmployeeUpdate() {
               </div>
             </form>
 
-            {/* Footer */}
             <div className="px-8 py-4 bg-gray-50 border-t border-gray-200">
               <p className="text-xs text-gray-600 text-center">
                 Employee ID: {employeeId} • Last updated information will be reflected immediately

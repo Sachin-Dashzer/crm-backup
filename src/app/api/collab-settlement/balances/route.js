@@ -12,20 +12,6 @@ import { COLLAB_BRANCHES } from "@/lib/branches";
 
 const ALLOWED_ROLES = ["collab", "admin", "super-admin"];
 
-// One row per collab clinic.
-//
-// SOURCE OF TRUTH: Payable/Receivable documents, with paid/received computed live from
-// the Transactions linked to them — the same aggregation the payables and receivables
-// pages use, so the three screens can never disagree.
-//
-// This deliberately no longer derives the balance from CollabCase.clinicCollections.
-// Doing both would report the same debt twice (once here, once on /admin/liabilities and
-// /admin/assets' Payables/Receivables drill-downs) and the two would drift apart permanently: settling a
-// CollabSettlement moved this number but never closed the payable, and paying the
-// payable never moved this number. CollabCase now carries case metadata only.
-//
-//   netPosition = outstanding receivables - outstanding payables
-//   > 0  clinics owe us    < 0  we owe clinics
 export async function GET(request) {
   try {
     const session = await getServerSession(authOptions);
@@ -44,8 +30,6 @@ export async function GET(request) {
       return NextResponse.json({ error: "Invalid clinic" }, { status: 400 });
     }
 
-    // Every branch of this query is pinned to collab clinics only. A main branch
-    // (Delhi/Mumbai/Hyderabad/Noida) can never be matched here.
     const clinicMatch = clinicParam ? clinicParam : { $in: COLLAB_BRANCHES };
     const txCollection = Transactions.collection.name;
 
@@ -100,7 +84,6 @@ export async function GET(request) {
       ]),
     ]);
 
-    // Empirical guard — fail loudly if a non-collab branch ever slipped through.
     const leaked = [...receivableRows, ...payableRows, ...caseRows].filter(
       (r) => !COLLAB_BRANCHES.includes(r._id),
     );

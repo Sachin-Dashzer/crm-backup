@@ -36,7 +36,7 @@ export default function SalesReports() {
 
   const downloadReport = async (reportType) => {
     setLoading(prev => ({ ...prev, [reportType]: true }));
-    
+
     try {
       const { from, to } = getDateRange();
       const params = new URLSearchParams({
@@ -50,7 +50,6 @@ export default function SalesReports() {
       const data = await res.json();
 
       if (data.success && data.csvData) {
-        // Create and download CSV
         const blob = new Blob([data.csvData], { type: "text/csv" });
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement("a");
@@ -128,33 +127,14 @@ export default function SalesReports() {
       />
 
       <main className="flex-1 overflow-auto">
-        
+
         <div className="p-4 lg:p-8">
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Reports</h1>
             <p className="text-gray-600">Download comprehensive reports for your sales data</p>
           </div>
 
-          {/* Report Period Info */}
-          {/* <div className="bg-linear-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-xl p-6 mb-8">
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-white rounded-lg shadow-sm">
-                <Calendar className="h-6 w-6 text-indigo-600" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-gray-600">Selected Period</p>
-                <p className="text-lg font-bold text-gray-900">{dateRange}</p>
-              </div>
-              {branch !== "All" && (
-                <div className="ml-auto">
-                  <p className="text-sm font-semibold text-gray-600">Branch Filter</p>
-                  <p className="text-lg font-bold text-gray-900">{branch}</p>
-                </div>
-              )}
-            </div>
-          </div> */}
 
-          {/* Reports Grid */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {reports.map((report) => (
               <div
@@ -209,7 +189,6 @@ export default function SalesReports() {
             ))}
           </div>
 
-          {/* Info Box */}
           <div className="mt-8 bg-blue-50 border border-blue-200 rounded-xl p-6">
             <div className="flex gap-4">
               <div className="shrink-0">

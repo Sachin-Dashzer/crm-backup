@@ -9,13 +9,6 @@ import { computePeriodFigures } from "@/lib/accountPeriods";
 
 const ALLOWED_ROLES = ["admin", "super-admin"];
 
-// Close one or more accounts for a period, freezing their figures.
-//
-// GET  ?from&to&accounts=A,B   -> preview: exactly what would be frozen, computed the same
-//                                 way the write will compute it. The confirm dialog shows
-//                                 this, so nobody closes a period without seeing the numbers.
-// POST                          -> writes the snapshots, all accounts together or none.
-
 function parseAccounts(param) {
   if (!param) return ACCOUNTS;
   const wanted = param.split(",").map((a) => a.trim()).filter(Boolean);
@@ -48,7 +41,6 @@ export async function GET(request) {
     const preview = await Promise.all(
       accounts.map(async (account) => {
         const figures = await computePeriodFigures(account, from, to);
-        // branch: null — closes are company-level; branch rows are opening seeds only.
         const existing = await AccountPeriod.findOne({
           account,
           branch: null,
@@ -114,8 +106,6 @@ export async function POST(req) {
 
     const actor = { name: session.user.name, email: session.user.email };
 
-    // Refuse up front if any requested account is already closed for this exact period —
-    // re-closing would overwrite a frozen snapshot without any record of it.
     const already = await AccountPeriod.find({
       account: { $in: accounts },
       branch: null,
@@ -133,8 +123,6 @@ export async function POST(req) {
       );
     }
 
-    // All accounts freeze together or none — a partially-written close would leave the books
-    // in a state nobody asked for.
     const dbSession = await mongoose.startSession();
     let closed = [];
     try {

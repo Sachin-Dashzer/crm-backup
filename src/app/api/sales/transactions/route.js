@@ -4,15 +4,13 @@ import Transactions from "@/models/Transactions";
 
 const handler = async (req) => {
   try {
-    // Fetch only Revenue transactions for sales panel
     const transactions = await Transactions.find({ costType: "Revenue" })
       .populate({
         path: "patient",
         select: "personal.name personal.phone personal.branch personal.email",
       })
-      .sort({ date: -1 }); // Sort by most recent first
+      .sort({ date: -1 });
 
-    // Format the data
     const revenueData = transactions.map((transaction) => ({
       _id: transaction._id,
       patient: transaction.patient,

@@ -1,7 +1,6 @@
 "use client";
 import StockDashboard from "@/components/StockDashboard";
 
-// No SidebarComponent: /admin routes get theirs from src/app/admin/layout.jsx.
 const CONFIG = {
   showAddStock:  true,
   addStockPath:  "/stocks/create",

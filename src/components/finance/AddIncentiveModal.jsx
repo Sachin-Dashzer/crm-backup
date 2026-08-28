@@ -7,10 +7,6 @@ import { INCENTIVE_PURPOSES, purposeForRole } from "@/constants/incentivePurpose
 
 const getTodayIST = () => new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
 
-// §3.4 — "Add Incentive" on the patient detail page. Employee picker via SearchableSelect
-// (reuses /api/employees/get, same component every other picker in this codebase already uses);
-// selecting an employee prefills amount from incentiveRate and purpose from role — both then
-// freely editable, same "pre-fill, not a lock" shortcut CollabCaseForm.jsx already established.
 export default function AddIncentiveModal({ patientId, onClose, onSuccess }) {
   const [employeeOptions, setEmployeeOptions] = useState([]);
   const [employeeSearching, setEmployeeSearching] = useState(false);
@@ -88,7 +84,6 @@ export default function AddIncentiveModal({ patientId, onClose, onSuccess }) {
               onChange={(v, obj) => {
                 setEmployeeId(v);
                 setEmployeeLabel(obj?.name || "");
-                // Prefill shortcut, not a lock — both fields stay freely editable afterward.
                 if (obj?.incentiveRate) setAmount(String(obj.incentiveRate));
                 setPurpose(purposeForRole(obj?.role));
               }}

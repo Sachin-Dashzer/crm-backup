@@ -64,7 +64,6 @@ const handler = async (req) => {
 
     const saved = await newPatient.save();
 
-    // Override createdAt to surgery date (or fallback) — bypasses Mongoose timestamp
     const createdAt = surgery?.surgeryDate ? new Date(surgery.surgeryDate) : FALLBACK_DATE;
     await Patient.collection.updateOne(
       { _id: saved._id },

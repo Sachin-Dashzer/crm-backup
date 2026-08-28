@@ -1,11 +1,5 @@
 "use client";
 
-// src/app/super-admin/lead-funnel/page.jsx
-//
-// Org-chart style funnel tree — every level renders at once (no expand/collapse
-// clicks needed), boxes connected with lines top-to-bottom, matching a classic
-// hierarchy-chart layout. Clicking any box still opens the lead-list drawer.
-
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import SuperAdminSidebar from "@/components/Sidebars/SuperAdminSidebar";
@@ -21,10 +15,6 @@ import {
   Phone,
 } from "lucide-react";
 
-/* ─────────────────────────────────────────────
-   Visual language per node — label match is by
-   substring so nested renames don't break styling.
-───────────────────────────────────────────── */
 const NODE_STYLE = [
   { match: /^Total Leads/, bar: "#475569", chip: "bg-slate-100 text-slate-700", border: "border-slate-300" },
   { match: /Not Attempted/, bar: "#9ca3af", chip: "bg-gray-100 text-gray-600", border: "border-gray-300" },
@@ -69,10 +59,6 @@ function CountUp({ value }) {
   return <>{display}</>;
 }
 
-/* ─────────────────────────────────────────────
-   Org-chart connector CSS — classic parent/child
-   line technique via ::before/::after on <li>.
-───────────────────────────────────────────── */
 function OrgChartStyles() {
   return (
     <style>{`
@@ -137,9 +123,6 @@ function OrgChartStyles() {
   );
 }
 
-/* ─────────────────────────────────────────────
-   A single org-chart box
-───────────────────────────────────────────── */
 function NodeBox({ node, parentCount, onSelectLeads }) {
   const style = styleFor(node.label);
   const pct = parentCount ? Math.round((node.count / parentCount) * 100) : 100;
@@ -173,9 +156,6 @@ function NodeBox({ node, parentCount, onSelectLeads }) {
   );
 }
 
-/* ─────────────────────────────────────────────
-   Recursive org-chart list item
-───────────────────────────────────────────── */
 function OrgNode({ node, parentCount, onSelectLeads }) {
   return (
     <li>
@@ -191,12 +171,6 @@ function OrgNode({ node, parentCount, onSelectLeads }) {
   );
 }
 
-/* ─────────────────────────────────────────────
-   Auto-fit wrapper — measures the tree's natural
-   size and scales it down (never up) so the whole
-   thing fits in the available viewport space with
-   no scrolling, however deep/wide the tree gets.
-───────────────────────────────────────────── */
 function FitToScreen({ children }) {
   const outerRef = useRef(null);
   const innerRef = useRef(null);
@@ -209,12 +183,11 @@ function FitToScreen({ children }) {
       const inner = innerRef.current;
       if (!outer || !inner) return;
 
-      // reset scale first so scrollWidth/Height reflect natural (unscaled) size
       inner.style.transform = "scale(1)";
       const naturalWidth = inner.scrollWidth;
       const naturalHeight = inner.scrollHeight;
 
-      const availWidth = outer.clientWidth - 24; // small breathing room
+      const availWidth = outer.clientWidth - 24;
       const topOffset = outer.getBoundingClientRect().top;
       const availHeight = window.innerHeight - topOffset - 24;
 
@@ -233,7 +206,6 @@ function FitToScreen({ children }) {
       ro.disconnect();
       window.removeEventListener("resize", recompute);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [children]);
 
   return (
@@ -248,9 +220,6 @@ function FitToScreen({ children }) {
   );
 }
 
-/* ─────────────────────────────────────────────
-   Multiselect popover (agents / teams)
-───────────────────────────────────────────── */
 function MultiSelect({ label, icon: Icon, options, selected, onChange, getKey = (o) => o, getLabel = (o) => o }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
@@ -301,9 +270,6 @@ function MultiSelect({ label, icon: Icon, options, selected, onChange, getKey = 
   );
 }
 
-/* ─────────────────────────────────────────────
-   Drill-down lead list drawer
-───────────────────────────────────────────── */
 function LeadsDrawer({ node, onClose }) {
   if (!node) return null;
   return (
@@ -359,9 +325,6 @@ function LeadsDrawer({ node, onClose }) {
   );
 }
 
-/* ─────────────────────────────────────────────
-   Page
-───────────────────────────────────────────── */
 export default function LeadFunnelPage() {
   const [agentOptions, setAgentOptions] = useState([]);
   const [teamOptions, setTeamOptions] = useState([]);
@@ -416,7 +379,6 @@ export default function LeadFunnelPage() {
 
   useEffect(() => {
     fetchTree();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const clearFilters = () => {
@@ -453,7 +415,6 @@ export default function LeadFunnelPage() {
             </button>
           </div>
 
-          {/* Filter bar */}
           <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm mb-6 max-w-5xl">
             <div className="flex flex-wrap items-center gap-2.5">
               <MultiSelect
@@ -507,7 +468,6 @@ export default function LeadFunnelPage() {
             <div className="rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm p-3 mb-4 max-w-5xl">{error}</div>
           )}
 
-          {/* Org-chart tree — auto-scaled to fit the available screen space */}
           {loading && !tree ? (
             <div className="flex items-center justify-center py-24 text-gray-400">
               <Loader2 className="h-6 w-6 animate-spin mr-2" /> Building funnel…

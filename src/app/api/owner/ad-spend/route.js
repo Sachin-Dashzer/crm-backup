@@ -1,13 +1,3 @@
-// src/app/api/owner/ad-spend/route.js
-//
-// Manual ad spend entry — there is no campaign-level spend field anywhere else in the system
-// (ad spend today is only an aggregate EXPENSE transaction under Marketing/Meta ads/Google ads).
-// This is a standalone ledger the Owner panel maintains directly, not derived from Transactions.
-//
-// GET    -> list, filtered by branch / date range / platform, newest spend-date first
-// POST   -> create one entry
-// PUT    -> update one entry (?id=)
-// DELETE -> remove one entry (?id=)
 
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";

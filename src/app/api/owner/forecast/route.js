@@ -1,20 +1,3 @@
-// src/app/api/owner/forecast/route.js
-//
-// Real 30-day averages to seed the Forecast & Staffing slider calculator's default positions —
-// not hardcoded demo numbers.
-//
-//   leadsPerDay — Leads created in the last 30 days ÷ 30 (internal, always available)
-//   consultRate — of Patients whose visitDate falls in the last 30 days, the fraction whose
-//                 ops.status is NOT NEW/NOT_VISITED (i.e. they were actually seen/counselled)
-//                 (internal, always available)
-//   agents, connectRate — from callby's workforce-summary. This is the same endpoint
-//                 src/app/api/owner/workforce-summary/route.js proxies, called directly here
-//                 rather than through that route since we only need two aggregate numbers, not
-//                 the full per-agent payload. If callby is unreachable (it currently is —
-//                 CALLBY_SERVICE_TOKEN is expired, see the note in
-//                 src/app/api/owner/live-workforce/route.js), these two fall back to round
-//                 placeholder numbers and `liveDataAvailable: false` tells the client so the UI
-//                 can say so rather than presenting a guess as if it were measured.
 
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
@@ -67,7 +50,6 @@ export async function GET() {
         }
       }
     } catch {
-      // callby unreachable — keep fallback defaults, liveDataAvailable stays false
     }
 
     return NextResponse.json({

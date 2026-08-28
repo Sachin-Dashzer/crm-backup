@@ -85,8 +85,7 @@ const RoleDescriptionCard = ({ role }) => {
   if (!role || !roleDescriptions[role]) return null;
 
   const roleInfo = roleDescriptions[role];
-  
-  // Use static color classes instead of template strings
+
   const colorClasses = {
     blue: { bg: "bg-blue-50", border: "border-blue-500", text: "text-blue-600", textDark: "text-blue-900", textMedium: "text-blue-700", textLight: "text-blue-800" },
     green: { bg: "bg-green-50", border: "border-green-500", text: "text-green-600", textDark: "text-green-900", textMedium: "text-green-700", textLight: "text-green-800" },
@@ -128,7 +127,7 @@ const RoleDescriptionCard = ({ role }) => {
 
 export default function EmployeeRegistration() {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const toast = useToast(); 
+  const toast = useToast();
 
   const [formData, setFormData] = useState({
     name: "",
@@ -224,7 +223,6 @@ export default function EmployeeRegistration() {
 
       toast.success("Employee registered successfully!");
 
-      // Reset form after successful submission
       setTimeout(() => {
         setFormData({
           name: "",
@@ -263,7 +261,6 @@ export default function EmployeeRegistration() {
       <main className="flex-1 px-4 md:px-12 py-4">
         <div className="max-w-4xl mx-auto">
           <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-            {/* Header */}
             <div className="px-8 py-6 bg-linear-to-r from-blue-600 to-indigo-600 text-white">
               <div className="flex items-center justify-between">
                 <div>
@@ -282,17 +279,14 @@ export default function EmployeeRegistration() {
               </div>
             </div>
 
-            {/* Form */}
             <form onSubmit={handleSubmit} className="px-8 py-8">
               <div className="space-y-8">
-                {/* Section Header */}
                 <div className="text-center mb-8">
                   <User className="mx-auto h-16 w-16 text-blue-500 mb-4" />
                   <h3 className="text-2xl font-bold text-gray-900">Employee Information</h3>
                   <p className="text-gray-600">Fill in the details below to register a new employee</p>
                 </div>
 
-                {/* Form Fields */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 gap-x-12">
                   <InputField
                     label="Full Name"
@@ -329,7 +323,6 @@ export default function EmployeeRegistration() {
                     className="md:col-span-2"
                   />
 
-                  {/* Role Description Card */}
                   {formData.role && (
                     <div className="md:col-span-2">
                       <RoleDescriptionCard role={formData.role} />
@@ -344,7 +337,6 @@ export default function EmployeeRegistration() {
                     className="md:col-span-2"
                   />
 
-                  {/* Salary Structure */}
                   <div className="md:col-span-2 pt-4 border-t border-gray-200">
                     <h4 className="text-sm font-bold text-gray-900 mb-4">Salary Structure</h4>
                   </div>
@@ -385,7 +377,6 @@ export default function EmployeeRegistration() {
                   />
                 </div>
 
-                {/* Info Box */}
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                   <div className="flex items-start">
                     <AlertCircle className="text-blue-600 mr-3 shrink-0 mt-0.5" size={20} />
@@ -403,7 +394,6 @@ export default function EmployeeRegistration() {
                   </div>
                 </div>
 
-                {/* Submit Button */}
                 <div className="flex justify-end pt-6 border-t border-gray-200">
                   <button
                     type="submit"
@@ -426,7 +416,6 @@ export default function EmployeeRegistration() {
               </div>
             </form>
 
-            {/* Footer */}
             <div className="px-8 py-4 bg-gray-50 border-t border-gray-200">
               <p className="text-xs text-gray-600 text-center">
                 All employee data is securely stored and can be managed from the employee dashboard

@@ -8,27 +8,6 @@ import { ALL_BRANCHES } from "@/lib/branches";
 
 const ALLOWED_ROLES = ["admin", "super-admin"];
 
-// Manual opening balances — the seed the whole ledger counts forward from.
-//
-// No historical transaction carries furtherMode, so per-account history before this
-// feature cannot be derived. Rather than invent it by inferring from method, the opening
-// position is entered by hand once per account as of a chosen start date, and every figure
-// is computed forward from there.
-//
-// A seed is stored as an AccountPeriod with zero movement (openingBalance ===
-// closingBalance, isClosed true) so the ordinary "previous closed period" lookup finds it
-// with no special-casing.
-//
-// This is NOT the close action — it neither closes a real period nor blocks edits. Period
-// closing and edit-locking belong to the next step.
-
-// GET                -> company-level seeds, one row per account (unchanged shape)
-// GET ?branch=Delhi  -> that branch's seeds, one row per account
-//
-// Also returns `branchTotals`: every branch seed that exists, per account, so the UI can show
-// the company figure against the sum of its branches. They are NOT required to agree — contra
-// entries carry no branch, so an internal transfer moves the company position without moving
-// any branch's. The difference is reported, never auto-corrected.
 export async function GET(request) {
   try {
     const session = await getServerSession(authOptions);
@@ -49,8 +28,6 @@ export async function GET(request) {
     }
     const branch = branchParam || null;
 
-    // A seed is a zero-movement closed row. Fetch company and branch rows in one pass so the
-    // reconciliation figures come from the same read as the list.
     const seeds = await AccountPeriod.find({
       account: { $in: ACCOUNTS },
       isClosed: true,
@@ -61,7 +38,6 @@ export async function GET(request) {
       .sort({ periodEnd: 1 })
       .lean();
 
-    // Earliest seed wins per (account, branch) — that is the position everything counts from.
     const pick = new Map();
     for (const s of seeds) {
       const key = `${s.account}|${s.branch ?? ""}`;
@@ -76,10 +52,6 @@ export async function GET(request) {
     const openingBalances = ACCOUNTS.map((account) => {
       const branchRows = branchesOf(account);
 
-      // "All branches" is DERIVED — the total of the branch figures, matching what
-      // getOpeningBalance() hands the unfiltered ledger and balance sheet. It is not editable:
-      // opening balances are entered per branch, and a separately-typed company figure would
-      // just be a second number free to disagree with the sum of its own parts.
       if (!branch) {
         const companySeed = pick.get(`${account}|`);
         if (branchRows.length > 0) {
@@ -95,7 +67,6 @@ export async function GET(request) {
             branches: branchRows,
           };
         }
-        // No branch figures at all — fall back to a company-wide seed if one was ever entered.
         return {
           account,
           branch: null,
@@ -146,7 +117,6 @@ export async function POST(req) {
         { status: 400 },
       );
     }
-    // Omitted / empty branch means the company-level seed — the existing behaviour, unchanged.
     if (branchInput && !ALL_BRANCHES.includes(branchInput)) {
       return NextResponse.json(
         { error: `branch must be one of: ${ALL_BRANCHES.join(", ")}` },
@@ -166,8 +136,6 @@ export async function POST(req) {
       return NextResponse.json({ error: "asOf is not a valid date" }, { status: 400 });
     }
 
-    // A seed is a zero-length period ending at asOf: everything from asOf onward is counted
-    // from transactions, everything before it is represented by this single figure.
     const seed = await AccountPeriod.findOneAndUpdate(
       { account, branch, periodStart: asOfDate, periodEnd: asOfDate },
       {

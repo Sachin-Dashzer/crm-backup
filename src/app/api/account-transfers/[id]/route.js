@@ -8,19 +8,8 @@ import { ACCOUNTS } from "@/constants/bankRouting";
 import { ALL_BRANCHES } from "@/lib/branches";
 import { getAccountBalance } from "@/lib/accountBalances";
 
-// Edit, cancel or delete one contra entry.
-//
-// Every write here MOVES MONEY between account balances in the close book — a contra entry is
-// subtracted from fromAccount and added to toAccount, so changing its amount or either side
-// shifts both. That is why the responses report the resulting balances: the caller can surface
-// what the edit actually did rather than the user discovering it later in the balance sheet.
-//
-// Cancelling is preferred over deleting: it stops the entry counting toward balances while
-// keeping the record that the money was once moved. Delete is provided for entries created in
-// genuine error, where there is no history worth keeping.
 const ALLOWED_ROLES = ["admin", "super-admin"];
 
-// Shared shape checks. Returns an error string, or null when the payload is usable.
 function validate({ fromAccount, toAccount, amount, branch }) {
   if (fromAccount !== undefined && !ACCOUNTS.includes(fromAccount)) {
     return `fromAccount must be one of: ${ACCOUNTS.join(", ")}`;
@@ -34,7 +23,6 @@ function validate({ fromAccount, toAccount, amount, branch }) {
   if (amount !== undefined && !(parseFloat(amount) > 0)) {
     return "Amount must be greater than zero";
   }
-  // A BRANCH, not an account — the two lists share naming conventions but mean different things.
   if (branch !== undefined && branch && !ALL_BRANCHES.includes(branch)) {
     return `branch must be one of: ${ALL_BRANCHES.join(", ")}`;
   }
@@ -66,8 +54,6 @@ export async function PUT(req, { params }) {
     const body = await req.json();
     const { fromAccount, toAccount, amount, date, branch, reference, remarks, receipts } = body;
 
-    // Validated against the MERGED result, not the payload alone: sending only toAccount could
-    // otherwise make it equal the existing fromAccount and slip past a payload-only check.
     const err = validate({
       fromAccount: fromAccount ?? transfer.fromAccount,
       toAccount: toAccount ?? transfer.toAccount,
@@ -120,9 +106,6 @@ export async function PUT(req, { params }) {
 
     await transfer.save();
 
-    // Warn, never block — the same rule the create route uses. Entering transactions out of
-    // order is legitimate, and refusing the write would force a fabricated date to get the real
-    // one in. Computed AFTER the save so it reflects the balance actually left behind.
     let warning = null;
     try {
       const balance = await getAccountBalance(transfer.fromAccount, transfer.date);
@@ -143,7 +126,6 @@ export async function PUT(req, { params }) {
   }
 }
 
-// Lifecycle actions: cancel (stop counting, keep the record), reinstate, or annotate.
 export async function PATCH(req, { params }) {
   try {
     const session = await getServerSession(authOptions);

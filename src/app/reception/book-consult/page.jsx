@@ -16,7 +16,6 @@ import {
   CheckCircle,
 } from "lucide-react";
 
-// BenefitsManager Component
 const BenefitsManager = ({ benefits, onChange, onAdd, onRemove }) => {
   const predefinedBenefits = [
     "5 Free PRP Sessions",
@@ -49,7 +48,6 @@ const BenefitsManager = ({ benefits, onChange, onAdd, onRemove }) => {
         Additional Benefits
       </label>
 
-      {/* Predefined Benefits */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-4">
         {predefinedBenefits.map((benefit) => (
           <label
@@ -67,7 +65,6 @@ const BenefitsManager = ({ benefits, onChange, onAdd, onRemove }) => {
         ))}
       </div>
 
-      {/* Custom Benefits Input */}
       <div className="mb-3">
         <label className="block text-md mb-3 font-um text-gray-700 ">
           Add Custom Benefit
@@ -98,7 +95,6 @@ const BenefitsManager = ({ benefits, onChange, onAdd, onRemove }) => {
         </div>
       </div>
 
-      {/* Selected Benefits Display */}
       {benefits.length > 0 && (
         <div className="mt-3">
           <label className="block text-md mb-3 font-um text-gray-700 ">
@@ -173,7 +169,6 @@ export default function BookAppointment() {
     },
   });
 
-  // Fetch employees on component mount
   useEffect(() => {
     const fetchEmployees = async () => {
       try {
@@ -228,11 +223,9 @@ export default function BookAppointment() {
     }));
   };
 
-  // Clean empty ObjectId fields before sending to API
   const cleanObjectIdFields = (data) => {
     const cleaned = JSON.parse(JSON.stringify(data));
 
-    // Convert empty strings to null for ObjectId fields
     if (cleaned.personal && cleaned.personal.reference === "") {
       cleaned.personal.reference = null;
     }
@@ -240,7 +233,6 @@ export default function BookAppointment() {
       cleaned.counselling.counsellor = null;
     }
 
-    // Clean empty number fields
     const numberFields = ["age", "packageQuoted", "finlpackage", "graftsSuggested"];
     numberFields.forEach((field) => {
       if (cleaned.personal && cleaned.personal[field] === "") {
@@ -258,7 +250,6 @@ export default function BookAppointment() {
     e.preventDefault();
     setIsSubmitting(true);
 
-    // Basic validation
     if (!formData.personal.name || !formData.personal.phone) {
       toast.error("Please fill in all required fields (Name and Phone are required)");
       setIsSubmitting(false);
@@ -266,7 +257,6 @@ export default function BookAppointment() {
     }
 
     try {
-      // Clean the form data before sending
       const cleanedData = cleanObjectIdFields(formData);
 
       const response = await fetch("/api/patients/create", {
@@ -285,7 +275,6 @@ export default function BookAppointment() {
       const result = await response.json();
       toast.success("Appointment booked successfully! Our team will contact you soon.");
 
-      // Reset form after successful submission
       setTimeout(() => {
         setFormData({
           personal: {
@@ -335,7 +324,6 @@ export default function BookAppointment() {
 
       <main className="flex-1 px-4 py-6 lg:px-8 lg:py-8">
         <div className="max-w-7xl mx-auto">
-          {/* Header */}
           <div className="text-center mb-8">
             <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4">
               <Calendar className="h-8 w-8 text-blue-600" />
@@ -348,11 +336,9 @@ export default function BookAppointment() {
             </p>
           </div>
 
-          {/* Appointment Form */}
           <div className="bg-white rounded-xl shadow-lg overflow-hidden">
             <form onSubmit={handleSubmit} className="p-6 lg:p-8">
               <div className="space-y-8">
-                {/* Personal Information Section */}
                 <div>
                   <h3 className="text-xl font-semibold text-gray-900 mb-6 pb-2 border-b border-gray-200">
                     Personal Information
@@ -463,7 +449,6 @@ export default function BookAppointment() {
                   </div>
                 </div>
 
-                {/* Counselling Information Section */}
                 <div>
                   <h3 className="text-xl font-semibold text-gray-900 mb-6 pb-2 border-b border-gray-200">
                     Counselling Details
@@ -515,7 +500,6 @@ export default function BookAppointment() {
                       placeholder="Number of grafts"
                     />
 
-                    {/* Hair Loss Type */}
                     <div className="space-y-2">
                       <label className="block text-md mb-3 font-bold text-gray-700">
                         Hair Loss Type
@@ -546,7 +530,6 @@ export default function BookAppointment() {
                       </div>
                     </div>
 
-                    {/* Area of Concern */}
                     <div className="space-y-2">
                       <label className="block text-md mb-3 font-bold text-gray-700">
                         Area of Concern
@@ -576,7 +559,6 @@ export default function BookAppointment() {
                       </div>
                     </div>
 
-                    {/* Hair Loss Reason */}
                     <div className="space-y-2">
                       <label className="block text-md mb-3 font-bold text-gray-700">
                         Hair Loss Reason
@@ -608,7 +590,6 @@ export default function BookAppointment() {
                       </div>
                     </div>
 
-                    {/* Hair Loss Duration */}
                     <div className="space-y-2">
                       <label className="block text-md mb-3 font-bold text-gray-700">
                         Hair Loss Duration
@@ -638,7 +619,6 @@ export default function BookAppointment() {
                       </div>
                     </div>
 
-                    {/* Benefits Manager */}
                     <BenefitsManager
                       benefits={formData.counselling.additionalbenefits}
                       onChange={(value, index) =>
@@ -654,7 +634,7 @@ export default function BookAppointment() {
                       }
                     />
 
-                    
+
                     <InputField
                       label="Additional Notes"
                       type="textarea"
@@ -677,7 +657,6 @@ export default function BookAppointment() {
                 </div>
               </div>
 
-              {/* Submit Button */}
               <div className="mt-8 pt-6 border-t border-gray-200">
                 <div className="flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0">
                   <div className="text-sm text-gray-600">

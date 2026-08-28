@@ -1,4 +1,3 @@
-// /api/transactions/expense/create/route.js
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
@@ -14,8 +13,6 @@ import {
 } from "@/lib/externalPartyDerivation";
 import { UNSETTLED_METHODS, NON_CASH_METHODS } from "@/constants/bankRouting";
 
-// Expense categories driven by the Agent/Patient/Rent/Collab tabs never use
-// the vendor/manual "Paid To" picker — only the Other Expense tab does.
 const NO_GIVER_CATEGORIES = [
   "Salary",
   "Incentive",
@@ -47,20 +44,15 @@ export async function POST(req) {
       remarks,
       patientId,
       commissionReceiver,
-      // Links this expense as a payment against an existing Payable. Optional —
-      // absent for every "direct" (Type B) expense.
       payableId,
       allowOverpayment,
       receipts,
       furtherMode,
       receiptMode,
       externalParty,
-      // GST breakdown for a Direct Payment entered with "Include GST". Display/audit only —
-      // GST never becomes a payable. `amount` above is already the invoice total.
       taxDetails,
     } = await req.json();
 
-    // Back-date entry prevention — only admin/super-admin can enter past dates
     if (date) {
       const todayStart = new Date();
       todayStart.setUTCHours(0, 0, 0, 0);
@@ -74,7 +66,6 @@ export async function POST(req) {
       }
     }
 
-    // Validation
     if (!expenseCategory || !amount) {
       return NextResponse.json(
         { error: "Missing required fields" },
@@ -82,10 +73,6 @@ export async function POST(req) {
       );
     }
 
-    // §1.2 — a settlement (payment against a payable) moving real cash must name the account it
-    // left from, or it is invisible to Close Book. Scoped to payableId payments deliberately:
-    // direct expenses keep today's behaviour, since tightening those is not in scope here.
-    // Enforced server-side because a UI-only rule is bypassed by calling the endpoint directly.
     if (payableId && furtherMode !== undefined && !furtherMode && !NON_CASH_METHODS.includes(method)) {
       return NextResponse.json(
         { error: "furtherMode is required — name the account this payment left from" },
@@ -108,9 +95,6 @@ export async function POST(req) {
       );
     }
 
-    // Validate expenseGiver structure per type (Other Expense tab only —
-    // VENDOR keeps its existing rule; EMPLOYEE/PATIENT need refId + name;
-    // MANUAL needs name only).
     if (needsGiver) {
       if (!expenseGiver.type) {
         return NextResponse.json({ error: "Invalid expense giver data" }, { status: 400 });
@@ -131,7 +115,6 @@ export async function POST(req) {
 
     let vendorDoc = null;
 
-    // If vendor type, verify vendor exists (unchanged)
     if (expenseGiver?.type === "VENDOR") {
       if (!expenseGiver.vendorId) {
         return NextResponse.json(
@@ -149,9 +132,6 @@ export async function POST(req) {
       }
     }
 
-    // If this payment is against a Payable, verify it exists, isn't
-    // cancelled, and (unless explicitly overridden) doesn't overpay it.
-    // Paid-so-far is computed live from Transactions — never cached.
     let payableDoc = null;
     if (payableId) {
       payableDoc = await Payable.findById(payableId);
@@ -188,8 +168,6 @@ export async function POST(req) {
       }
     }
 
-    // "Paid by Other" — someone else physically paid this cost on our behalf.
-    // The expense still books in full here; a Payable tracks what we owe them.
     if (method === "paid_by_other") {
       const partyError = validateExternalParty(externalParty, "PAID_BY");
       if (partyError) {
@@ -197,7 +175,6 @@ export async function POST(req) {
       }
     }
 
-    // WhatsApp approval step is temporarily disabled — expenses are auto-approved on creation.
     const transactionData = {
       transactionCategory: "EXPENSE",
       costType: "Expenses",
@@ -233,14 +210,6 @@ export async function POST(req) {
       receipts: receipts || [],
       furtherMode: furtherMode || "",
       receiptMode: receiptMode || "",
-      // A payment is a settlement ONLY when the cost was already recognised elsewhere — which is
-      // the payable's own recorded fact, not something inferable from the presence of payableId.
-      //
-      // This used to read `!!payableId`, which was wrong for every MANUALLY raised payable (rent,
-      // salary, tax, electricity): nothing books an expense when those are created, so their
-      // payment is the only expense transaction that will ever exist for that cost. Flagging it a
-      // settlement dropped it from every SETTLEMENT_EXCLUSION report — admin/reports and
-      // super-admin/reports both compute Total Expenses that way — with nothing else counting it.
       isSettlement: payableDoc ? payableDoc.costAlreadyRecognised === true : false,
       taxDetails: taxDetails || undefined,
       vendor: expenseGiver?.type === "VENDOR" ? expenseGiver.vendorId : null,

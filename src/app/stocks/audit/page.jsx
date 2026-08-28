@@ -26,7 +26,6 @@ import {
   AlertCircle,
 } from "lucide-react";
 
-// ─── helpers ────────────────────────────────────────────────────────────────
 const fmt = (n) =>
   new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(n || 0);
 
@@ -38,7 +37,6 @@ const fmtDateTime = (d) =>
     ? new Date(d).toLocaleString("en-IN", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })
     : "—";
 
-// ─── KPI Card ────────────────────────────────────────────────────────────────
 function KpiCard({ label, value, icon: Icon, color, sub }) {
   return (
     <div className={`bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex items-start gap-4`}>
@@ -54,7 +52,6 @@ function KpiCard({ label, value, icon: Icon, color, sub }) {
   );
 }
 
-// ─── Event Badge ─────────────────────────────────────────────────────────────
 function EventBadge({ type }) {
   return type === "PURCHASE" ? (
     <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
@@ -67,7 +64,6 @@ function EventBadge({ type }) {
   );
 }
 
-// ─── Profit Badge ─────────────────────────────────────────────────────────────
 function ProfitBadge({ profit }) {
   if (profit === null || profit === undefined) return <span className="text-gray-400 text-xs">—</span>;
   const positive = profit >= 0;
@@ -79,7 +75,6 @@ function ProfitBadge({ profit }) {
   );
 }
 
-// ─── Stock Summary Row ────────────────────────────────────────────────────────
 function StockSummaryRow({ s, onClick, isExpanded }) {
   const profitColor = s.totalProfit > 0 ? "text-emerald-600" : s.totalProfit < 0 ? "text-red-500" : "text-gray-500";
   return (
@@ -112,7 +107,6 @@ function StockSummaryRow({ s, onClick, isExpanded }) {
   );
 }
 
-// ─── Main Page ────────────────────────────────────────────────────────────────
 export default function StockAuditPage() {
   const { data: session } = useSession();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -123,15 +117,13 @@ export default function StockAuditPage() {
   const [events, setEvents]         = useState([]);
   const [stockSummaries, setStockSummaries] = useState([]);
 
-  // Filters
   const [search, setSearch]         = useState("");
   const [location, setLocation]     = useState("All");
   const [eventType, setEventType]   = useState("ALL");
   const [from, setFrom]             = useState("");
   const [to, setTo]                 = useState("");
 
-  // View
-  const [activeTab, setActiveTab]   = useState("events"); // events | stocks
+  const [activeTab, setActiveTab]   = useState("events");
   const [expandedStocks, setExpandedStocks] = useState({});
   const [sortField, setSortField]   = useState("date");
   const [sortDir, setSortDir]       = useState("desc");
@@ -161,7 +153,6 @@ export default function StockAuditPage() {
 
   useEffect(() => { fetchAudit(); }, []);
 
-  // Client-side filtering by search
   const filteredEvents = useMemo(() => {
     let arr = [...events];
     if (search) {
@@ -175,7 +166,6 @@ export default function StockAuditPage() {
     }
     if (eventType !== "ALL") arr = arr.filter(e => e.type === eventType);
 
-    // Sort
     arr.sort((a, b) => {
       let va = a[sortField], vb = b[sortField];
       if (sortField === "date") { va = new Date(va || 0); vb = new Date(vb || 0); }
@@ -208,7 +198,6 @@ export default function StockAuditPage() {
   const exportExcel = async () => {
     const { utils, writeFile } = await import("xlsx");
 
-    // Events sheet
     const evRows = filteredEvents.map(e => ({
       "Date":         fmtDateTime(e.date),
       "Type":         e.type,
@@ -234,7 +223,6 @@ export default function StockAuditPage() {
       { wch: 12 }, { wch: 10 }, { wch: 15 }, { wch: 20 }, { wch: 12 },
     ];
 
-    // Stock summary sheet
     const sumRows = stockSummaries.map(s => ({
       "Stock Name":      s.name,
       "Location":        s.location,
@@ -265,7 +253,6 @@ export default function StockAuditPage() {
       <StockSidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
 
       <main className="flex-1 min-w-0 p-6 lg:p-8 space-y-6">
-        {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
@@ -292,7 +279,6 @@ export default function StockAuditPage() {
           </div>
         </div>
 
-        {/* Error */}
         {error && (
           <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3 text-red-700">
             <AlertCircle className="w-5 h-5 shrink-0" />
@@ -300,7 +286,6 @@ export default function StockAuditPage() {
           </div>
         )}
 
-        {/* KPI Cards */}
         {summary && (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
             <KpiCard
@@ -339,10 +324,8 @@ export default function StockAuditPage() {
           </div>
         )}
 
-        {/* Filters */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
           <div className="flex flex-col sm:flex-row gap-3 flex-wrap">
-            {/* Search */}
             <div className="relative flex-1 min-w-48">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
@@ -354,7 +337,6 @@ export default function StockAuditPage() {
               />
             </div>
 
-            {/* Event type */}
             <select
               value={eventType}
               onChange={e => setEventType(e.target.value)}
@@ -365,7 +347,6 @@ export default function StockAuditPage() {
               <option value="SALE">Sales Only</option>
             </select>
 
-            {/* Location */}
             <select
               value={location}
               onChange={e => setLocation(e.target.value)}
@@ -378,7 +359,6 @@ export default function StockAuditPage() {
               <option value="Noida">Noida</option>
             </select>
 
-            {/* Date range */}
             <input
               type="date"
               value={from}
@@ -402,7 +382,6 @@ export default function StockAuditPage() {
           </div>
         </div>
 
-        {/* Tabs */}
         <div className="flex gap-1 bg-gray-100 p-1 rounded-xl w-fit">
           {[
             { id: "events", label: "Event Timeline", icon: BarChart3 },
@@ -423,7 +402,6 @@ export default function StockAuditPage() {
           ))}
         </div>
 
-        {/* Loading skeleton */}
         {loading && (
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 text-center">
             <RefreshCw className="w-8 h-8 text-emerald-400 animate-spin mx-auto mb-3" />
@@ -431,7 +409,6 @@ export default function StockAuditPage() {
           </div>
         )}
 
-        {/* ── EVENT TIMELINE ───────────────────────────────────────────────── */}
         {!loading && activeTab === "events" && (
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
             <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
@@ -520,7 +497,6 @@ export default function StockAuditPage() {
           </div>
         )}
 
-        {/* ── BY PRODUCT ───────────────────────────────────────────────────── */}
         {!loading && activeTab === "stocks" && (
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
             <div className="px-5 py-4 border-b border-gray-100">
@@ -582,7 +558,6 @@ export default function StockAuditPage() {
                                 </div>
                               </div>
 
-                              {/* Events for this stock */}
                               <p className="text-xs font-semibold text-gray-500 uppercase mb-2">Transaction History</p>
                               <div className="space-y-2 max-h-64 overflow-y-auto scrollbar-hide">
                                 {events

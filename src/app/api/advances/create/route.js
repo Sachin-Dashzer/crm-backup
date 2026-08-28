@@ -13,20 +13,6 @@ import { checkPeriodLock } from "@/lib/periodLock";
 const ALLOWED_ROLES = ["admin", "super-admin"];
 const REFID_REQUIRED_KINDS = ["EMPLOYEE", "VENDOR", "PATIENT"];
 
-// Creates an Advance row — the exact mirror of /api/borrowings/create, with the directions and
-// the linked document flipped (Receivable, not Payable; OUT creates, not IN):
-//   direction: "OUT", receivableId: null   -> a brand-new advance: creates the Receivable (what
-//                                              they now owe us) AND the first Advance row,
-//                                              atomically.
-//   direction: "OUT", receivableId: <id>   -> a further advance to the same party on the same
-//                                              running account: raises that Receivable's
-//                                              totalAmount and appends a row.
-//   direction: "IN",  receivableId: <id>   -> a recovery. Never changes totalAmount —
-//                                              received/pending is always computed live (see
-//                                              buildReceivableAggregationStages).
-//
-// Neither direction ever creates a Transaction or touches P&L — see src/models/Advance.js, and
-// the excludeFromPnl flag set on the Receivable below.
 export async function POST(req) {
   try {
     const session = await getServerSession(authOptions);
@@ -43,9 +29,9 @@ export async function POST(req) {
       direction,
       account,
       amount,
-      party, // { kind, refId, label }
+      party,
       receivableId,
-      subType, // Advance Salary / Advance Rent / … — new OUT only
+      subType,
       branch,
       date,
       dueDate,
@@ -111,7 +97,6 @@ export async function POST(req) {
       createdBy,
     };
 
-    // ── IN — a recovery against an existing advance ─────────────────────────────────────
     if (direction === "IN") {
       if (!receivableId || !mongoose.Types.ObjectId.isValid(receivableId)) {
         return NextResponse.json({ error: "A valid receivableId is required for a recovery" }, { status: 400 });
@@ -123,8 +108,6 @@ export async function POST(req) {
       if (receivable.isCancelled) {
         return NextResponse.json({ error: "This advance has been cancelled" }, { status: 400 });
       }
-      // Defence in depth: this endpoint may only ever recover against a Receivable it (or an
-      // earlier OUT on this same endpoint) actually created — never an unrelated patient due.
       const hasAdvanceOut = await Advance.exists({
         receivableId: receivable._id,
         direction: "OUT",
@@ -166,7 +149,6 @@ export async function POST(req) {
       return NextResponse.json({ message: "Recovery recorded", advance, receivable }, { status: 201 });
     }
 
-    // ── OUT, further advance on an existing running account ────────────────────────────
     if (receivableId) {
       if (!mongoose.Types.ObjectId.isValid(receivableId)) {
         return NextResponse.json({ error: "Invalid receivableId" }, { status: 400 });
@@ -230,7 +212,6 @@ export async function POST(req) {
       return NextResponse.json({ message: "Further advance recorded", advance, receivable }, { status: 201 });
     }
 
-    // ── OUT, brand-new advance — creates the Receivable and the first Advance row together ──
     if (!subType || !ADVANCE_TYPES.includes(subType)) {
       return NextResponse.json(
         { error: `subType must be one of: ${ADVANCE_TYPES.join(", ")}` },
@@ -252,8 +233,6 @@ export async function POST(req) {
           dueDate: dueDate ? new Date(dueDate) : undefined,
           branch: branch || session.user.branch,
           costAlreadyRecognised: false,
-          // Money lent out is not income — see Receivable.excludeFromPnl. Without this the full
-          // advanced amount lands in P&L as revenue the moment this document is raised.
           excludeFromPnl: true,
           remarks: remarks || "",
           createdBy,

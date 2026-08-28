@@ -5,12 +5,6 @@ import { X, Loader2 } from "lucide-react";
 import TransactionFieldSet, { validateTransactionFields } from "@/components/TransactionFieldSet";
 import { formatCurrency } from "@/lib/financeUI";
 
-// Extracted from admin/payables/page.jsx (Task 5, Step 1) — behaviour unchanged, only the
-// location moved, so the Liabilities page's Level-3 document drill-down and the (now retired)
-// standalone Payables page can share exactly one implementation.
-
-// Same purpose-label map the old payables page kept inline — display-only, duplicated here
-// rather than shared, same as every other small UI label enum in this codebase.
 const PURPOSE_LABELS = {
   SALARY: "Salary",
   INCENTIVE: "Incentive",
@@ -34,13 +28,10 @@ export function buildGiverForPayable(payable) {
   if (kind === "EMPLOYEE") return { type: "EMPLOYEE", refId, name: label };
   if (kind === "PATIENT") return { type: "PATIENT", refId, name: label };
   if (kind === "VENDOR") return { type: "VENDOR", vendorId: refId, name: label };
-  return { type: "MANUAL", name: label }; // RENT_UNIT, UTILITY_UNIT, COLLAB_CLINIC, OTHER
+  return { type: "MANUAL", name: label };
 }
 
 export default function RecordPaymentModal({ payable, onClose, onSuccess, toast }) {
-  // Flat object handed to TransactionFieldSet — see the receipt modal for the same shape. The
-  // routing fields here are what was missing: a payment with no furtherMode never reaches an
-  // account in Close Book.
   const [fields, setFields] = useState({
     amount: String(payable.pending || ""),
     date: new Date().toISOString().split("T")[0],
@@ -126,8 +117,6 @@ export default function RecordPaymentModal({ payable, onClose, onSuccess, toast 
           </div>
 
           <div>
-            {/* Full parity with a directly-entered expense — the routing fields are the
-                point: a payment with no furtherMode never lands in a Close Book account. */}
             <TransactionFieldSet
               context="payable-payment"
               value={fields}

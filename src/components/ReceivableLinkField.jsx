@@ -12,11 +12,6 @@ const PURPOSE_LABELS = {
   OTHER: "Other",
 };
 
-// Given the patient's open receivables (oldest-due-first, as returned by the API) and the
-// amount about to be paid, walks the same left-to-right FIFO order the server allocator runs —
-// display only, so the preview matches what will actually happen without a round-trip per
-// keystroke. The server re-reads live and re-allocates at submit time regardless (see
-// src/lib/receivableAllocation.js) — this function never writes anything.
 function previewFifo(receivables, amount) {
   let remaining = Number(amount) || 0;
   const allocations = [];
@@ -30,14 +25,6 @@ function previewFifo(receivables, amount) {
   return { allocations, unallocated: Math.max(0, remaining) };
 }
 
-// Shows a patient's open receivables and previews/controls how the current revenue
-// transaction's amount will be allocated against them. Auto-allocation (oldest-due-first) is
-// the default and needs no interaction — the point of this field is just to make that visible
-// before saving, and to let it be overridden. The allocation itself is decided and applied
-// server-side, inside the same transaction as the write (see the three revenue create routes)
-// — this component only ever sends an intent (`receivableAllocationChoice`), never a result.
-// Hidden entirely for paid_to_external — that method never touches an existing receivable, it
-// spawns its own (see externalPartyDerivation.js).
 export default function ReceivableLinkField({ patientId, amount, method, value, onChange }) {
   const [receivables, setReceivables] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -59,15 +46,10 @@ export default function ReceivableLinkField({ patientId, amount, method, value, 
   const mode = value?.mode || "auto";
   const chosenId = value?.allocations?.[0]?.receivableId || "";
 
-  // Keeps a manual single-receivable choice's amount current as the transaction amount changes
-  // elsewhere on the form — without this, picking a receivable early and then editing the
-  // amount would silently submit a stale figure. Deliberately keyed on `amount` alone: this
-  // should re-fire only when the amount itself moves, not on every render.
   useEffect(() => {
     if (mode === "manual" && chosenId) {
       onChange({ mode: "manual", allocations: [{ receivableId: chosenId, amount }] });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [amount]);
 
   if (method === "paid_to_external") return null;

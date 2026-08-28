@@ -1,4 +1,3 @@
-// pages/api/patients/create-appointment.js
 import Patient from "@/models/Patient";
 import { withDB } from "@/lib/withDB";
 import { NextResponse } from "next/server";
@@ -10,8 +9,7 @@ const handler = async (req) => {
 
   try {
     const data = await req.json();
-    
-    // Create new patient with appointment status
+
     const patient = new Patient({
       personal: data.personal,
       createdAt: new Date(),
@@ -19,7 +17,7 @@ const handler = async (req) => {
     });
 
     await patient.save();
-    
+
     return NextResponse.json({
       success: true,
       message: "Appointment booked successfully",
@@ -28,9 +26,9 @@ const handler = async (req) => {
   } catch (error) {
     console.error("Error creating appointment:", error);
     return NextResponse.json(
-      { 
-        success: false, 
-        error: "Failed to book appointment" 
+      {
+        success: false,
+        error: "Failed to book appointment"
       },
       { status: 500 }
     );

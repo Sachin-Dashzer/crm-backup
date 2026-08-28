@@ -7,18 +7,6 @@ import DrillDownTable from "@/components/finance/DrillDownTable";
 import { formatCurrency } from "@/lib/financeUI";
 import DebouncedDateInput from "@/components/finance/DebouncedDateInput";
 
-// Receipts & Payments is the missing cash-basis statement, and it is the mirror of the P&L.
-// Its inclusion rule is the EXACT INVERSE of the P&L's:
-//
-//                                        | P&L      | Receipts & Payments
-//   isSettlement: true                  | EXCLUDE  | INCLUDE — cash genuinely moved
-//   paid_to_external / paid_by_other    | EXCLUDE  | EXCLUDE — cash never touched us
-//   offset_settlement, including-package| INCLUDE  | EXCLUDE — no cash moved
-//   reversals (negative rows)           | INCLUDE  | INCLUDE — they net out correctly
-//
-// See src/lib/cashFlowAggregation.js for the shared match/bucketing this page and /admin/receipts
-// both call through — nothing here re-derives that rule. This page is the cash-OUT half; see
-// /admin/receipts for the cash-IN half and the shared reconciliation strip logic.
 const round2 = (n) => Math.round((Number(n) || 0) * 100) / 100;
 
 function monthStart() {
@@ -111,13 +99,9 @@ function PaymentsPageInner() {
             </button>
           </div>
 
-          {/* ── Reconciliation strip — identical math to /admin/receipts, same period tied to
-              the same Close Book cash figure. Kept as its own fetch (not shared state) so
-              either page can be opened standalone without the other having run first. ── */}
           <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 space-y-3">
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Period</span>
-              {/* Debounced — see the identical note in admin/receipts/page.jsx. */}
               <DebouncedDateInput
                 value={from}
                 onCommit={setFrom}

@@ -68,7 +68,6 @@ export default function ReceptionSidebar({ sidebarOpen: externalOpen, setSidebar
 
   return (
     <>
-      {/* Mobile Menu Button */}
       <button
         onClick={() => setSidebarOpen(true)}
         className="lg:hidden fixed top-4 left-4 z-40 p-2 bg-white rounded-lg shadow-md"
@@ -76,7 +75,6 @@ export default function ReceptionSidebar({ sidebarOpen: externalOpen, setSidebar
         <Menu className="w-6 h-6 text-gray-700" />
       </button>
 
-      {/* Overlay */}
       {sidebarOpen && (
         <div
           className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
@@ -84,13 +82,11 @@ export default function ReceptionSidebar({ sidebarOpen: externalOpen, setSidebar
         ></div>
       )}
 
-      {/* Sidebar */}
       <aside
         className={`fixed left-0 top-0 lg:sticky w-72 bg-white border-r shadow-sm p-6 space-y-6 z-50 h-screen transition-transform duration-300 flex flex-col ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         }`}
       >
-        {/* Header */}
         <div className="flex items-center justify-between">
           <Link href="/reception/dashboard" className="flex items-center gap-2">
             <div className="w-10 h-10 bg-linear-to-r from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center brand-glow">
@@ -101,7 +97,7 @@ export default function ReceptionSidebar({ sidebarOpen: externalOpen, setSidebar
               <p className="text-xs text-gray-500">Reception Panel</p>
             </div>
           </Link>
-          <button 
+          <button
             className="lg:hidden p-1 hover:bg-gray-100 rounded"
             onClick={() => setSidebarOpen(false)}
           >
@@ -109,7 +105,6 @@ export default function ReceptionSidebar({ sidebarOpen: externalOpen, setSidebar
           </button>
         </div>
 
-        {/* Navigation */}
         <nav className="flex-1 space-y-1 overflow-y-auto lg:mt-4 scrollbar-hide">
           {navItems.map((item) => (
             <NavItem
@@ -123,7 +118,6 @@ export default function ReceptionSidebar({ sidebarOpen: externalOpen, setSidebar
           ))}
         </nav>
 
-        {/* User Info & Logout */}
         <div className="space-y-3 border-t pt-4">
           <div className="p-3 bg-linear-to-r from-blue-50 to-indigo-50 rounded-lg">
             <div className="flex items-center gap-3">
@@ -138,7 +132,7 @@ export default function ReceptionSidebar({ sidebarOpen: externalOpen, setSidebar
           </div>
 
           <LogoutButton />
-          
+
         </div>
       </aside>
     </>

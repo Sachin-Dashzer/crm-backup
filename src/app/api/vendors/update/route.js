@@ -26,7 +26,6 @@ export async function PUT(req) {
       );
     }
 
-    // Find existing vendor
     const existingVendor = await Vendor.findById(id);
     if (!existingVendor) {
       return NextResponse.json(
@@ -35,9 +34,8 @@ export async function PUT(req) {
       );
     }
 
-    // Track field changes for audit
     const updatedFields = [];
-    
+
     if (name && name !== existingVendor.name) {
       updatedFields.push({
         name: "name",
@@ -45,7 +43,7 @@ export async function PUT(req) {
         newValue: name,
       });
     }
-    
+
     if (contact && contact !== existingVendor.contact) {
       updatedFields.push({
         name: "contact",
@@ -53,7 +51,7 @@ export async function PUT(req) {
         newValue: contact.toString(),
       });
     }
-    
+
     if (email && email !== existingVendor.email) {
       updatedFields.push({
         name: "email",
@@ -61,7 +59,7 @@ export async function PUT(req) {
         newValue: email,
       });
     }
-    
+
     if (address && address !== existingVendor.address) {
       updatedFields.push({
         name: "address",
@@ -69,7 +67,7 @@ export async function PUT(req) {
         newValue: address,
       });
     }
-    
+
     if (gstNumber && gstNumber !== existingVendor.gstNumber) {
       updatedFields.push({
         name: "gstNumber",
@@ -77,7 +75,7 @@ export async function PUT(req) {
         newValue: gstNumber,
       });
     }
-    
+
     if (DealsIn && DealsIn !== existingVendor.DealsIn) {
       updatedFields.push({
         name: "DealsIn",
@@ -86,7 +84,6 @@ export async function PUT(req) {
       });
     }
 
-    // Update vendor
     const updateData = {
       ...(name && { name }),
       ...(contact && { contact }),
@@ -96,7 +93,6 @@ export async function PUT(req) {
       ...(DealsIn && { DealsIn }),
     };
 
-    // Add editor information
     const editorInfo = {
       name: session.user.name,
       email: session.user.email,

@@ -16,9 +16,6 @@ import {
 import SuperAdminSidebar from "@/components/Sidebars/SuperAdminSidebar";
 import { ALL_BRANCHES } from "@/lib/branches";
 
-/* ─────────────────────────────────────────────
-   Constants
-───────────────────────────────────────────── */
 const BRANCHES    = ["All", ...ALL_BRANCHES];
 const DATE_RANGES = ["Today", "Yesterday", "Last 7 Days", "Last 30 Days", "Custom"];
 
@@ -33,9 +30,6 @@ const METHOD_ICONS = {
   other: "💰",
 };
 
-/* ─────────────────────────────────────────────
-   Helpers
-───────────────────────────────────────────── */
 const rupee = (n) =>
   new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(n || 0);
 
@@ -67,9 +61,6 @@ function fmtDate(iso) {
   return new Date(iso).toLocaleDateString("en-IN", { day: "2-digit", month: "short" });
 }
 
-/* ─────────────────────────────────────────────
-   KPI Card
-───────────────────────────────────────────── */
 const COLOR_MAP = {
   indigo: { accent: "bg-indigo-500",  soft: "bg-indigo-50",  text: "text-indigo-600", border: "border-indigo-100" },
   purple: { accent: "bg-purple-500",  soft: "bg-purple-50",  text: "text-purple-600", border: "border-purple-100" },
@@ -101,9 +92,6 @@ function KpiCard({ title, value, subtitle, icon: Icon, color }) {
   );
 }
 
-/* ─────────────────────────────────────────────
-   Section Header
-───────────────────────────────────────────── */
 function SectionHeader({ icon: Icon, title, color = "text-gray-700", accent = "bg-gray-100" }) {
   return (
     <div className="flex items-center gap-2.5 mb-4">
@@ -116,9 +104,6 @@ function SectionHeader({ icon: Icon, title, color = "text-gray-700", accent = "b
   );
 }
 
-/* ─────────────────────────────────────────────
-   Chart Card
-───────────────────────────────────────────── */
 function ChartCard({ title, subtitle, children, className = "" }) {
   return (
     <div className={`bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden ${className}`}>
@@ -133,9 +118,6 @@ function ChartCard({ title, subtitle, children, className = "" }) {
   );
 }
 
-/* ─────────────────────────────────────────────
-   Staff Role Colors
-───────────────────────────────────────────── */
 const STAFF_COLORS = {
   Agent:      { soft: "bg-blue-50",   text: "text-blue-700",   bar: "#3b82f6" },
   Counsellor: { soft: "bg-purple-50", text: "text-purple-700", bar: "#8b5cf6" },
@@ -146,9 +128,6 @@ const STAFF_COLORS = {
   Hr:         { soft: "bg-rose-50",   text: "text-rose-700",   bar: "#f43f5e" },
 };
 
-/* ─────────────────────────────────────────────
-   Skeleton Loader
-───────────────────────────────────────────── */
 function Skeleton({ className = "" }) {
   return <div className={`animate-pulse bg-gray-100 rounded-xl ${className}`} />;
 }
@@ -174,9 +153,6 @@ function DashboardSkeleton() {
   );
 }
 
-/* ─────────────────────────────────────────────
-   Main Page
-───────────────────────────────────────────── */
 export default function SuperAdminDashboard() {
   const router = useRouter();
   const [branch, setBranch]       = useState("All");
@@ -186,8 +162,6 @@ export default function SuperAdminDashboard() {
   const [data, setData]           = useState(null);
   const [error, setError]         = useState(null);
 
-  // Receivables/payables are running balances, not period-scoped like the rest of the
-  // dashboard — fetched independently, only re-sliced by branch.
   const [finance, setFinance]         = useState(null);
   const [financeLoading, setFinanceLoading] = useState(true);
 
@@ -244,10 +218,8 @@ export default function SuperAdminDashboard() {
 
       <main className="flex-1 flex flex-col min-w-0 overflow-auto">
 
-        {/* ── Header ── */}
         <div className="bg-white border-b border-gray-200 px-6 py-4 sticky top-0 z-10 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
           <div className="flex flex-wrap items-center justify-between gap-4">
-            {/* Title */}
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-linear-to-br from-amber-400 via-orange-500 to-red-500 flex items-center justify-center shadow-md">
                 <Crown className="w-5 h-5 text-white" />
@@ -258,9 +230,7 @@ export default function SuperAdminDashboard() {
               </div>
             </div>
 
-            {/* Controls */}
             <div className="flex items-center gap-2 flex-wrap">
-              {/* Branch */}
               <div className="relative">
                 <MapPin className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
                 <select
@@ -273,7 +243,6 @@ export default function SuperAdminDashboard() {
                 <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
               </div>
 
-              {/* Date Range */}
               <div className="relative">
                 <Calendar className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
                 <select
@@ -286,7 +255,6 @@ export default function SuperAdminDashboard() {
                 <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
               </div>
 
-              {/* Custom date inputs */}
               {dateRange === "Custom" && (
                 <>
                   <input
@@ -304,7 +272,6 @@ export default function SuperAdminDashboard() {
                 </>
               )}
 
-              {/* Refresh */}
               <button
                 onClick={fetchData}
                 disabled={loading}
@@ -317,7 +284,6 @@ export default function SuperAdminDashboard() {
           </div>
         </div>
 
-        {/* ── Content ── */}
         <div className="flex-1 p-6 space-y-8">
 
           {loading ? (
@@ -337,7 +303,6 @@ export default function SuperAdminDashboard() {
           ) : (
             <>
 
-              {/* ── Leads & Patients ── */}
               <div>
                 <SectionHeader icon={HeartPulse} title="Leads & Patients" color="text-blue-600" accent="bg-blue-50" />
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
@@ -350,7 +315,6 @@ export default function SuperAdminDashboard() {
                 </div>
               </div>
 
-              {/* ── HR Recruitment ── */}
               <div>
                 <SectionHeader icon={Briefcase} title="HR Recruitment" color="text-rose-600" accent="bg-rose-50" />
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -360,7 +324,6 @@ export default function SuperAdminDashboard() {
                   <KpiCard title="Scheduled"          value={fmt(d.scheduledInterviews)} icon={Calendar}      color="amber"  subtitle="Upcoming" />
                 </div>
 
-                {/* Mini HR progress bar */}
                 {(d.totalInterviews > 0) && (
                   <div className="mt-3 bg-white rounded-2xl border border-gray-200 shadow-sm p-4">
                     <div className="flex items-center justify-between mb-2">
@@ -400,7 +363,6 @@ export default function SuperAdminDashboard() {
                 )}
               </div>
 
-              {/* ── PRP & GFC ── */}
               <div>
                 <SectionHeader icon={Droplets} title="PRP & GFC Sessions" color="text-teal-600" accent="bg-teal-50" />
                 <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3">
@@ -441,7 +403,6 @@ export default function SuperAdminDashboard() {
                 )}
               </div>
 
-              {/* ── Revenue & Stock ── */}
               <div>
                 <SectionHeader icon={IndianRupee} title="Revenue & Inventory" color="text-emerald-600" accent="bg-emerald-50" />
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -452,7 +413,6 @@ export default function SuperAdminDashboard() {
                 </div>
               </div>
 
-              {/* ── Receivables & Payables ── */}
               <div>
                 <SectionHeader icon={Wallet} title="Receivables & Payables" color="text-teal-600" accent="bg-teal-50" />
                 {financeLoading ? (
@@ -485,7 +445,6 @@ export default function SuperAdminDashboard() {
                 )}
               </div>
 
-              {/* ── Daily Revenue Chart ── */}
               <ChartCard
                 title="Daily Revenue"
                 subtitle={`${dateRange}${branch !== "All" ? ` · ${branch}` : ""}`}
@@ -538,10 +497,8 @@ export default function SuperAdminDashboard() {
                 )}
               </ChartCard>
 
-              {/* ── Technique-wise + Staff ── */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-                {/* Technique-wise */}
                 <ChartCard title="Services / Technique-wise Sales" subtitle="By revenue contribution">
                   {d.techniqueWise && d.techniqueWise.length > 0 ? (
                     <div className="space-y-3.5">
@@ -579,11 +536,9 @@ export default function SuperAdminDashboard() {
                   )}
                 </ChartCard>
 
-                {/* Staff Breakdown */}
                 <ChartCard title="Staff Breakdown" subtitle="Active employees by role">
                   {d.staffBreakdown && Object.keys(d.staffBreakdown).length > 0 ? (
                     <>
-                      {/* Total badge */}
                       <div className="flex items-center gap-3 mb-5 p-3 bg-gray-50 rounded-xl border border-gray-100">
                         <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center">
                           <Users className="w-5 h-5 text-amber-600" />
@@ -594,7 +549,6 @@ export default function SuperAdminDashboard() {
                         </div>
                       </div>
 
-                      {/* Role rows */}
                       <div className="space-y-2.5">
                         {Object.entries(d.staffBreakdown)
                           .sort((a, b) => b[1] - a[1])
@@ -627,7 +581,6 @@ export default function SuperAdminDashboard() {
                 </ChartCard>
               </div>
 
-              {/* ── Payment Method Breakdown ── */}
               {d.byMethod && d.byMethod.length > 0 && (
                 <div>
                   <SectionHeader icon={CreditCard} title="Revenue by Payment Method" color="text-indigo-600" accent="bg-indigo-50" />

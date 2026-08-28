@@ -41,7 +41,6 @@ export default function Topbar({
     <section>
       <div className="pr-2 lg:pr-4 pb-8">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-          {/* Left side - Title Section */}
           <div className="flex items-center gap-4">
             <button
               onClick={() => setSidebarOpen(true)}
@@ -61,9 +60,7 @@ export default function Topbar({
             </div>
           </div>
 
-          {/* Right side - Filters */}
           <div className="flex flex-col sm:flex-row gap-3">
-            {/* Branch Filter */}
             {typeof setBranch === "function" ? (
               <div className="flex items-center gap-2">
                 <select
@@ -79,7 +76,6 @@ export default function Topbar({
                 </select>
               </div>
             ) : null}
-            {/* Date Range Filter */}
             <div className="flex items-center gap-2 relative">
               <select
                 value={timeRange}
@@ -98,7 +94,6 @@ export default function Topbar({
                 ))}
               </select>
 
-              {/* Calendar Button - Shows when Custom is selected */}
               {timeRange === "Custom" && (
                 <button
                   onClick={() => setShowDatePicker(!showDatePicker)}
@@ -108,11 +103,9 @@ export default function Topbar({
                 </button>
               )}
 
-              {/* Custom Date Picker Modal */}
               {showDatePicker && timeRange === "Custom" && (
                 <div className="absolute top-full right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg p-4 z-50 min-w-75">
                   <div className="space-y-3">
-                    {/* From Date */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         From Date
@@ -127,7 +120,6 @@ export default function Topbar({
                       />
                     </div>
 
-                    {/* To Date */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         To Date
@@ -143,7 +135,6 @@ export default function Topbar({
                       />
                     </div>
 
-                    {/* Action Buttons */}
                     <div className="flex gap-2 pt-2">
                       <button
                         onClick={applyCustomDate}

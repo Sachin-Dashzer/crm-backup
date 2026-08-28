@@ -1,8 +1,3 @@
-// src/app/api/owner/patient-journey/route.js
-//
-// Search endpoint for Patient Journey 360° — GET ?q=name-or-phone returns a short match list
-// (name/phone/branch/status only). The full document lives at
-// src/app/api/owner/patient-journey/[id]/route.js, fetched once a specific patient is picked.
 
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";

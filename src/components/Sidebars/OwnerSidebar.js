@@ -5,9 +5,6 @@ import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
 import LogoutButton from "../LogoutButton";
 
-// Exact section structure and order as specified — every item (including the 6 "Coming Soon"
-// pages: Phone & SIM Health, Productivity Attendance, AI Health & Audit, Clinical AI Quality,
-// Incentives & Payroll, HR Action Center) is a real route, never hidden or disabled.
 const SECTIONS = [
   {
     title: "Executive",

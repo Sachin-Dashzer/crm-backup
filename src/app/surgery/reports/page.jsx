@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { 
-  FileText, 
-  Calendar, 
-  Download, 
+import {
+  FileText,
+  Calendar,
+  Download,
   Filter,
   TrendingUp,
   Users,
@@ -38,13 +38,12 @@ export default function SurgeryReports() {
         ...(startDate && { startDate }),
         ...(endDate && { endDate })
       });
-      
+
       const response = await fetch(`/api/surgery/reports?${params}`);
       const data = await response.json();
       setReports(data);
     } catch (error) {
       console.error("Error:", error);
-      // Mock data for development
       setReports({
         summary: {
           totalSurgeries: 45,
@@ -75,8 +74,8 @@ export default function SurgeryReports() {
           {
             _id: "1",
             personal: { name: "John Doe", branch: "Delhi" },
-            surgery: { 
-              surgeryDate: new Date().toISOString(), 
+            surgery: {
+              surgeryDate: new Date().toISOString(),
               technique: "FUE",
               graftsImplanted: 2500
             },
@@ -90,7 +89,6 @@ export default function SurgeryReports() {
   };
 
   const handleExportReport = () => {
-    // Export functionality
     alert('Export functionality will be implemented with API');
   };
 
@@ -118,13 +116,6 @@ export default function SurgeryReports() {
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar role="surgery" />
       <main className="flex-1 p-4 lg:p-8">
-        {/* <Topbar 
-          role="surgery"
-          timeRange={dateRange}
-          setTimeRange={setDateRange}
-          branch={branch}
-          setBranch={setBranch}
-        /> */}
 
         <div className="mb-6">
           <div className="flex items-center justify-between mb-4">
@@ -141,7 +132,6 @@ export default function SurgeryReports() {
             </button>
           </div>
 
-          {/* Filters */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <select
@@ -187,7 +177,6 @@ export default function SurgeryReports() {
           </div>
         ) : (
           <div className="space-y-6">
-            {/* Summary Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
                 <div className="flex items-center justify-between mb-2">
@@ -233,9 +222,7 @@ export default function SurgeryReports() {
               </div>
             </div>
 
-            {/* Technique and Location Analysis */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Technique Breakdown */}
               <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
                   <Activity className="w-5 h-5 text-indigo-600" />
@@ -254,7 +241,7 @@ export default function SurgeryReports() {
                         </div>
                       </div>
                       <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div 
+                        <div
                           className="bg-linear-to-r from-green-500 to-green-600 h-2 rounded-full transition-all duration-300"
                           style={{ width: `${data.percentage}%` }}
                         ></div>
@@ -264,7 +251,6 @@ export default function SurgeryReports() {
                 </div>
               </div>
 
-              {/* Location Breakdown */}
               <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
                   <MapPin className="w-5 h-5 text-green-600" />
@@ -284,7 +270,7 @@ export default function SurgeryReports() {
                         </div>
                       </div>
                       <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div 
+                        <div
                           className="bg-linear-to-r from-blue-500 to-blue-600 h-2 rounded-full transition-all duration-300"
                           style={{ width: `${data.percentage}%` }}
                         ></div>
@@ -295,7 +281,6 @@ export default function SurgeryReports() {
               </div>
             </div>
 
-            {/* Recent Surgeries Table */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-100">
               <div className="p-6 border-b border-gray-100">
                 <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">

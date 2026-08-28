@@ -1,16 +1,3 @@
-// One-off revision of specific March 2026 Rent opening-payable amounts, per corrected figures
-// supplied directly. Mirrors what PATCH /api/payables/[id] (RevisePayableModal) would do —
-// updates totalAmount and appends an "Amount Revised" log entry — but run as a script since these
-// are historical opening balances, not a live revise-from-the-UI action.
-//
-// Only touches documents that already exist (expenseCategory: "Rent", the given expenseSubType,
-// period 3/2026). Does NOT create new payables — a sub-type with no existing opening payable is
-// reported and skipped rather than guessed at.
-//
-// Dry run by default. Re-run with --apply to write.
-//
-//   node scripts/update-rent-opening-amounts.js
-//   node scripts/update-rent-opening-amounts.js --apply
 
 import mongoose from "mongoose";
 import fs from "fs";
@@ -32,12 +19,6 @@ function readMongoUri() {
 const args = process.argv.slice(2);
 const APPLY = args.includes("--apply");
 
-// Rent-Backend 1st Floor is deliberately excluded — the corrected figure for it (-130760) is
-// negative, which the Payable schema cannot hold (totalAmount has `min: 0`) and which the
-// Liabilities page's opening-balance aggregation also can't represent (each document's
-// contribution is floored at 0 before summing — see buildPayableGroupedStages' openingRow). That
-// one needs a decision on what a "negative opening due" should actually mean before it can be
-// written anywhere; see the conversation this script came out of.
 const REVISIONS = [
   { expenseSubType: "Rent-Backend upper ground floor", newAmount: 198307.1 },
   { expenseSubType: "Rent-Backend Basement", newAmount: 34400 },

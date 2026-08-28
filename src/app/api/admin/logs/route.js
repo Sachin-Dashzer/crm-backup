@@ -12,7 +12,6 @@ function fmtDate(d) {
   return new Date(d).toLocaleString("en-IN", { timeZone: "Asia/Kolkata" });
 }
 
-// Strict date range check — null dates are excluded when a range is active
 function inRange(date, dateFrom, dateTo) {
   if (!dateFrom || !dateTo) return true;
   if (!date) return false;
@@ -37,7 +36,6 @@ export async function GET(request) {
     const from = searchParams.get("from");
     const to = searchParams.get("to");
 
-    // Admin is scoped to their own branch; if branch is null/empty/All, don't filter by branch
     const branch = session.user.branch;
     const hasBranch = branch && branch !== "All" && branch !== "all";
 
@@ -47,7 +45,6 @@ export async function GET(request) {
     let data = [];
 
     switch (type) {
-      // ── PATIENT CHANGES LOG ──────────────────────────────────────────
       case "patient-changes-log": {
         const query = hasBranch ? { "personal.branch": branch } : {};
 
@@ -109,7 +106,6 @@ export async function GET(request) {
         break;
       }
 
-      // ── TRANSACTION CHANGES LOG ──────────────────────────────────────
       case "transaction-changes-log": {
         const txQuery = hasBranch ? { branch } : {};
 
@@ -185,7 +181,6 @@ export async function GET(request) {
         break;
       }
 
-      // ── STOCK CHANGES LOG ────────────────────────────────────────────
       case "stock-changes-log": {
         const stockQuery = hasBranch ? { location: branch } : {};
 
@@ -249,7 +244,6 @@ export async function GET(request) {
         break;
       }
 
-      // ── DELETE LOG ───────────────────────────────────────────────────
       case "delete-log": {
         const deleteQuery = {};
         if (hasBranch) deleteQuery.branch = branch;

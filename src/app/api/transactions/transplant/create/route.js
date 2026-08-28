@@ -1,4 +1,3 @@
-// /api/transactions/transplant/create/route.js
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
@@ -16,7 +15,6 @@ import { resolveReceivableAllocations } from "@/lib/receivableAllocation";
 
 export async function POST(req) {
   try {
-    // Authentication check
     const session = await getServerSession(authOptions);
     if (!session?.user?.name || !session?.user?.email || !session?.user?.branch) {
       return NextResponse.json(
@@ -45,7 +43,6 @@ export async function POST(req) {
       externalParty,
     } = await req.json();
 
-    // Back-date entry prevention — only admin/super-admin can enter past dates
     if (date) {
       const todayStart = new Date();
       todayStart.setUTCHours(0, 0, 0, 0);
@@ -59,7 +56,6 @@ export async function POST(req) {
       }
     }
 
-    // Basic validations
     if (!patientId || !procedure || !amount || !method) {
       return NextResponse.json(
         { success: false, message: "Patient, procedure, amount, and payment method are required" },
@@ -74,7 +70,6 @@ export async function POST(req) {
       );
     }
 
-    // Validate procedure is a transplant procedure
     const validTransplantProcedures = ["Sapphire FUE", "DHI", "Turkish DHI", "Beard Transplant"];
     if (!validTransplantProcedures.includes(procedure)) {
       return NextResponse.json(
@@ -83,7 +78,6 @@ export async function POST(req) {
       );
     }
 
-    // Validate patient ID format
     if (!mongoose.Types.ObjectId.isValid(patientId)) {
       return NextResponse.json(
         { success: false, message: "Invalid patient ID" },
@@ -91,7 +85,6 @@ export async function POST(req) {
       );
     }
 
-    // Check if patient exists
     const patientExists = await Patient.findById(patientId);
     if (!patientExists) {
       return NextResponse.json(
@@ -100,8 +93,6 @@ export async function POST(req) {
       );
     }
 
-    // "Paid to External" — someone else physically received the cash on our behalf.
-    // The sale still books in full here; a Receivable tracks what they owe us.
     if (method === "paid_to_external") {
       const partyError = validateExternalParty(externalParty, "RECEIVED_BY");
       if (partyError) {
@@ -173,9 +164,6 @@ export async function POST(req) {
         return txn;
       });
     } else {
-      // Auto-allocation (or an explicit override) happens server-side, inside the same
-      // transaction as the write — see src/lib/receivableAllocation.js. Two concurrent
-      // payments against the same receivable can't both allocate the same headroom.
       try {
         newTransaction = await withDbTransaction(async (dbSession) => {
           const [{ receivableId: resolvedReceivableId, receivableAllocations }] =
@@ -200,11 +188,9 @@ export async function POST(req) {
       }
     }
 
-    // Update patient payments (TRANSPLANT-specific logic)
     const patient = await Patient.findById(patientId);
-    
+
     if (patient) {
-      // Initialize payments if needed
       patient.payments = patient.payments || {
         amountReceived: 0,
         pendingAmount: 0,
@@ -214,13 +200,10 @@ export async function POST(req) {
         transactions: [],
       };
 
-      // Add transaction reference
       patient.payments.transactions.push(newTransaction._id);
 
-      // For TRANSPLANT: always add to amountReceived
       patient.payments.amountReceived += parseFloat(amount);
 
-      // Recalculate discount from all transactions
       const allTransactions = await Transactions.find({
         _id: { $in: patient.payments.transactions },
         costType: "Revenue",
@@ -230,7 +213,6 @@ export async function POST(req) {
         0
       );
 
-      // Calculate pending amount
       const adjustedTotal = Math.max(
         0,
         patient.payments.totalAmount - patient.payments.discount
@@ -240,7 +222,6 @@ export async function POST(req) {
         adjustedTotal - patient.payments.amountReceived
       );
 
-      // Add editor entry
       patient.editors = patient.editors || [];
       patient.editors.push({
         name: session.user.name,

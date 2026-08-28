@@ -1,33 +1,12 @@
-// scripts/employees-bulk-import.mjs
-//
-// Bulk-imports 91 employee records from emp.txt into the Employee collection. Matches the
-// model exactly (src/models/Employee.js): name, phone, email, role, isactive, salaryStructure
-// {baseSalary, salaryType, effectiveFrom}, incentiveRate. All 91 rows validated clean before
-// being embedded here — every role is a valid enum value, no blank phones, no phone repeated
-// within the source file itself.
-//
-// NO DUPLICATE GUARD EXISTS in src/app/api/employees/create/route.js — it does a bare
-// `new Employee({...}).save()` with no check at all, so re-running the real create form twice
-// would happily create two identical employees. This script adds its own guard, matching by
-// `phone` (the closest thing to a real identifier here — names have no enforced uniqueness and
-// several are common first names only, e.g. "Nandni", "Arjun"): a row whose phone already
-// exists in the database is skipped and reported, never duplicated.
-//
-// Usage:
-//   node scripts/employees-bulk-import.mjs                        # dry run
-//   node scripts/employees-bulk-import.mjs --dump-json             # write entries out, no DB
-//   node scripts/employees-bulk-import.mjs --apply                # write
 
 import mongoose from "mongoose";
 import fs from "fs";
 
-// --- env -----------------------------------------------------------------
 for (const f of [".env.local", ".env"]) {
   if (fs.existsSync(f)) {
     try {
       process.loadEnvFile(f);
     } catch {
-      /* already loaded / unsupported — fall through to the MONGODB_URI check below */
     }
   }
 }
@@ -35,10 +14,6 @@ const MONGODB_URI = process.env.MONGODB_URI;
 
 const VALID_ROLES = ["Agent", "Counsellor", "Doctor", "Technician", "Implanter", "Others", "Hr"];
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// THE DATA — parsed directly from emp.txt (one JSON object per line, trailing commas
-// stripped), not hand-transcribed.
-// ═══════════════════════════════════════════════════════════════════════════════
 const EMPLOYEES = [
   {
     "name": "KAVITA BORA",
@@ -1225,7 +1200,6 @@ const EMPLOYEES = [
   }
 ];
 
-// --- args ------------------------------------------------------------------
 const args = process.argv.slice(2);
 const APPLY = args.includes("--apply");
 const DUMP_JSON = args.includes("--dump-json");

@@ -34,7 +34,6 @@ import {
   UserX,
 } from "lucide-react";
 
-/* ─── Constants ─────────────────────────────────────────────────────────────── */
 const BRANCHES = ["All", ...ALL_BRANCHES];
 
 const DATE_PRESETS = [
@@ -69,7 +68,6 @@ const HR_STATUSES = [
   "Applied", "Interview Scheduled", "Selected", "Rejected", "On Hold",
 ];
 
-/* ─── Color map (amber/orange theme for super-admin) ─────────────────────── */
 const COLOR_MAP = {
   amber:  { accent: "bg-amber-500",   soft: "bg-amber-50",   text: "text-amber-700",  border: "border-amber-200",  badge: "bg-amber-100 text-amber-700" },
   orange: { accent: "bg-orange-500",  soft: "bg-orange-50",  text: "text-orange-700", border: "border-orange-200", badge: "bg-orange-100 text-orange-700" },
@@ -82,9 +80,7 @@ const COLOR_MAP = {
   pink:   { accent: "bg-pink-500",    soft: "bg-pink-50",    text: "text-pink-700",   border: "border-pink-200",   badge: "bg-pink-100 text-pink-700" },
 };
 
-/* ─── Report definitions ─────────────────────────────────────────────────── */
 const REPORTS = [
-  // Patient Reports
   {
     id: 1, type: "patients-comprehensive", category: "Patient Reports",
     name: "Comprehensive Patient Report",
@@ -135,7 +131,6 @@ const REPORTS = [
     filters: ["branch", "technique"],
   },
 
-  // Staff Reports
   {
     id: 8, type: "employees-all", category: "Staff Reports",
     name: "All Employees Report",
@@ -179,7 +174,6 @@ const REPORTS = [
     filters: ["branch", "staff"],
   },
 
-  // Financial Reports
   {
     id: 14, type: "revenue", category: "Financial Reports",
     name: "Revenue Report",
@@ -223,7 +217,6 @@ const REPORTS = [
     filters: [],
   },
 
-  // Inventory Reports
   {
     id: 20, type: "stocks-all", category: "Inventory Reports",
     name: "Stock Inventory Report",
@@ -239,7 +232,6 @@ const REPORTS = [
     filters: [],
   },
 
-  // Leads Reports
   {
     id: 22, type: "leads-all", category: "Leads Reports",
     name: "All Leads Report",
@@ -248,7 +240,6 @@ const REPORTS = [
     filters: [],
   },
 
-  // Audit Log Reports
   {
     id: 30, type: "transaction-changes-log", category: "Audit Logs",
     name: "Transaction Changes Log",
@@ -274,7 +265,6 @@ const REPORTS = [
     apiPath: "/api/super-admin/logs",
   },
 
-  // HR Reports
   {
     id: 23, type: "hr-interviews-all", category: "HR Reports",
     name: "All Candidates Report",
@@ -321,7 +311,6 @@ const REPORTS = [
 
 const CATEGORIES = ["All", ...new Set(REPORTS.map((r) => r.category))];
 
-/* ─── Helpers ─────────────────────────────────────────────────────────────── */
 function buildDateRange(preset, custom) {
   const now = new Date();
 
@@ -361,13 +350,11 @@ function buildDateRange(preset, custom) {
     to.setHours(23, 59, 59, 999);
     return { from: from.toISOString(), to: to.toISOString() };
   }
-  // "allTime" or unrecognized — no date filter
   return { from: null, to: null };
 }
 
 function PieChart(props) { return <BarChart2 {...props} />; }
 
-/* ─── Report Card ─────────────────────────────────────────────────────────── */
 function ReportCard({ report, filters, loadingId, favorites, onDownload, onToggleFavorite }) {
   const c = COLOR_MAP[report.color] || COLOR_MAP.blue;
   const Icon = report.icon;
@@ -378,11 +365,9 @@ function ReportCard({ report, filters, loadingId, favorites, onDownload, onToggl
     <div
       className={`bg-white rounded-2xl border ${c.border} shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden flex flex-col group`}
     >
-      {/* color strip */}
       <div className={`h-1 ${c.accent}`} />
 
       <div className="p-5 flex flex-col flex-1">
-        {/* header */}
         <div className="flex items-start justify-between mb-3">
           <div className={`w-10 h-10 rounded-xl ${c.soft} flex items-center justify-center shrink-0`}>
             <Icon className={`w-5 h-5 ${c.text}`} />
@@ -398,7 +383,6 @@ function ReportCard({ report, filters, loadingId, favorites, onDownload, onToggl
           </button>
         </div>
 
-        {/* title + category badge */}
         <div className="mb-2">
           <span className={`text-[10px] font-bold uppercase tracking-widest ${c.text} opacity-80`}>
             {report.category}
@@ -412,7 +396,6 @@ function ReportCard({ report, filters, loadingId, favorites, onDownload, onToggl
           {report.description}
         </p>
 
-        {/* active filter chips */}
         {report.filters.length > 0 && (
           <div className="flex flex-wrap gap-1.5 mb-4">
             {report.filters.includes("branch") && filters.branch && filters.branch !== "All" && (
@@ -448,7 +431,6 @@ function ReportCard({ report, filters, loadingId, favorites, onDownload, onToggl
           </div>
         )}
 
-        {/* download button */}
         <button
           onClick={() => onDownload(report)}
           disabled={isLoading}
@@ -475,7 +457,6 @@ function ReportCard({ report, filters, loadingId, favorites, onDownload, onToggl
   );
 }
 
-/* ─── Toast ───────────────────────────────────────────────────────────────── */
 function Toast({ toast, onDismiss }) {
   if (!toast) return null;
   const isError = toast.type === "error";
@@ -508,7 +489,6 @@ function Toast({ toast, onDismiss }) {
   );
 }
 
-/* ─── Main Page ───────────────────────────────────────────────────────────── */
 export default function SuperAdminReportsPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [loadingId, setLoadingId] = useState(null);
@@ -521,7 +501,6 @@ export default function SuperAdminReportsPage() {
     catch { return []; }
   });
 
-  // Filters
   const [datePreset, setDatePreset] = useState("last30");
   const [customDates, setCustomDates] = useState({ from: "", to: "" });
   const [pendingCustom, setPendingCustom] = useState({ from: "", to: "" });
@@ -535,7 +514,6 @@ export default function SuperAdminReportsPage() {
     hrStatus: "",
   });
 
-  /* helpers */
   const showToast = (title, message, type = "success") => {
     setToast({ title, message, type });
     setTimeout(() => setToast(null), 5000);
@@ -563,7 +541,6 @@ export default function SuperAdminReportsPage() {
     setDatePreset("custom");
   };
 
-  /* filtered + sorted reports */
   const visibleReports = useMemo(() => {
     let list = REPORTS;
     if (activeCategory !== "All") list = list.filter((r) => r.category === activeCategory);
@@ -576,7 +553,6 @@ export default function SuperAdminReportsPage() {
           r.category.toLowerCase().includes(s)
       );
     }
-    // Favorites first
     return [...list].sort((a, b) => {
       const af = favorites.includes(a.id);
       const bf = favorites.includes(b.id);
@@ -586,7 +562,6 @@ export default function SuperAdminReportsPage() {
     });
   }, [activeCategory, searchTerm, favorites]);
 
-  /* count active advanced filters */
   const activeFilterCount = [
     filters.branch !== "All" && filters.branch,
     filters.status,
@@ -597,7 +572,6 @@ export default function SuperAdminReportsPage() {
     datePreset !== "last30" && datePreset !== "allTime" && datePreset,
   ].filter(Boolean).length;
 
-  /* download handler */
   const handleDownload = async (report) => {
     setLoadingId(report.id);
 
@@ -607,7 +581,6 @@ export default function SuperAdminReportsPage() {
 
       const params = new URLSearchParams({ type: report.type });
 
-      // Always send dates — strict filtering for all report types
       if (from) params.append("from", from);
       if (to) params.append("to", to);
 
@@ -638,12 +611,10 @@ export default function SuperAdminReportsPage() {
         return;
       }
 
-      // Build Excel
       const { utils, writeFile } = await import("xlsx");
       const wb = utils.book_new();
       const ws = utils.json_to_sheet(result.data);
 
-      // Auto column widths
       const cols = Object.keys(result.data[0] || {});
       ws["!cols"] = cols.map((k) => ({
         wch: Math.min(Math.max(k.length + 2, 12), 40),
@@ -651,7 +622,6 @@ export default function SuperAdminReportsPage() {
 
       utils.book_append_sheet(wb, ws, "Report");
 
-      // Second sheet: meta info
       const meta = [
         { Field: "Report Name", Value: report.name },
         { Field: "Category", Value: report.category },
@@ -682,7 +652,6 @@ export default function SuperAdminReportsPage() {
     }
   };
 
-  /* category counts */
   const categoryCounts = useMemo(() => {
     const counts = {};
     CATEGORIES.forEach((cat) => {
@@ -699,7 +668,6 @@ export default function SuperAdminReportsPage() {
         <div className="p-4 sm:p-6 lg:p-8">
           <div className="max-w-7xl mx-auto space-y-6">
 
-            {/* ── Page Header ── */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
                 <div className="flex items-center gap-3 mb-1">
@@ -730,9 +698,7 @@ export default function SuperAdminReportsPage() {
               </div>
             </div>
 
-            {/* ── Filter Panel ── */}
             <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-              {/* filter header */}
               <div className="px-5 py-4 flex items-center justify-between border-b border-gray-100">
                 <div className="flex items-center gap-2.5">
                   <Filter className="w-4.5 h-4.5 text-amber-600" />
@@ -753,9 +719,7 @@ export default function SuperAdminReportsPage() {
               </div>
 
               <div className="p-5 space-y-5">
-                {/* Row 1: Date + Branch */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {/* Date preset */}
                   <div>
                     <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">
                       Date Range
@@ -787,7 +751,6 @@ export default function SuperAdminReportsPage() {
                     </div>
                   </div>
 
-                  {/* Branch */}
                   <div>
                     <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">
                       Branch
@@ -809,7 +772,6 @@ export default function SuperAdminReportsPage() {
                     </div>
                   </div>
 
-                  {/* Search */}
                   <div>
                     <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">
                       Search Reports
@@ -835,7 +797,6 @@ export default function SuperAdminReportsPage() {
                   </div>
                 </div>
 
-                {/* Custom date picker */}
                 {datePreset === "custom" && (
                   <div className="flex flex-wrap items-end gap-3 p-4 bg-amber-50 rounded-xl border border-amber-200">
                     <Calendar className="w-4 h-4 text-amber-600 self-center" />
@@ -873,10 +834,8 @@ export default function SuperAdminReportsPage() {
                   </div>
                 )}
 
-                {/* Advanced filters (collapsible) */}
                 {showFilters && (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 pt-1 border-t border-gray-100">
-                    {/* Status */}
                     <div>
                       <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">
                         Patient Status
@@ -893,7 +852,6 @@ export default function SuperAdminReportsPage() {
                       </select>
                     </div>
 
-                    {/* Technique */}
                     <div>
                       <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">
                         Technique
@@ -910,7 +868,6 @@ export default function SuperAdminReportsPage() {
                       </select>
                     </div>
 
-                    {/* Procedure */}
                     <div>
                       <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">
                         Procedure
@@ -927,7 +884,6 @@ export default function SuperAdminReportsPage() {
                       </select>
                     </div>
 
-                    {/* Payment Type */}
                     <div>
                       <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">
                         Payment Type
@@ -944,7 +900,6 @@ export default function SuperAdminReportsPage() {
                       </select>
                     </div>
 
-                    {/* HR Candidate Status */}
                     <div>
                       <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">
                         HR Candidate Status
@@ -965,7 +920,6 @@ export default function SuperAdminReportsPage() {
               </div>
             </div>
 
-            {/* ── Category Tabs ── */}
             <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide">
               {CATEGORIES.map((cat) => (
                 <button
@@ -991,7 +945,6 @@ export default function SuperAdminReportsPage() {
               ))}
             </div>
 
-            {/* ── Reports Grid ── */}
             {visibleReports.length === 0 ? (
               <div className="bg-white rounded-2xl border border-gray-200 p-16 text-center">
                 <Search className="w-12 h-12 text-gray-300 mx-auto mb-4" />
@@ -1005,7 +958,6 @@ export default function SuperAdminReportsPage() {
               </div>
             ) : (
               <>
-                {/* Section label */}
                 <div className="flex items-center justify-between">
                   <p className="text-sm text-gray-500 font-medium">
                     Showing <span className="font-bold text-gray-900">{visibleReports.length}</span> reports
@@ -1035,7 +987,6 @@ export default function SuperAdminReportsPage() {
               </>
             )}
 
-            {/* ── Quick Reference ── */}
             <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
               <h3 className="text-sm font-bold text-gray-900 mb-3">
                 Quick Reference — Report Coverage
@@ -1072,7 +1023,6 @@ export default function SuperAdminReportsPage() {
         </div>
       </div>
 
-      {/* Toast */}
       <Toast toast={toast} onDismiss={() => setToast(null)} />
     </div>
   );

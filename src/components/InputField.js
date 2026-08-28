@@ -1,11 +1,7 @@
-// src/components/InputField.js
 "use client";
 
 import { useId, useEffect, useRef, useState } from "react";
 
-// Combobox variant of the plain <select> — a text input that filters the option list as you
-// type, for dropdowns long enough that scrolling to find a name (e.g. every Agent) is slower
-// than typing a few letters of it.
 function SearchableSelect({ id, value, onChange, options, label, placeholder, required, disabled }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -124,7 +120,7 @@ export default function InputField({
         <textarea
           id={id}
           className={`
-            w-full px-4 py-3 rounded-lg border border-gray-300 
+            w-full px-4 py-3 rounded-lg border border-gray-300
             focus:ring-2 focus:ring-blue-500 focus:border-transparent
             transition-all duration-200 ease-in-out
             placeholder:text-gray-400
@@ -141,7 +137,7 @@ export default function InputField({
         <select
           id={id}
           className={`
-            w-full px-4 py-3 rounded-lg border border-gray-300 
+            w-full px-4 py-3 rounded-lg border border-gray-300
             focus:ring-2 focus:ring-blue-500 focus:border-transparent
             transition-all duration-200 ease-in-out
             ${disabled ? "bg-gray-100 cursor-not-allowed" : "bg-white"}
@@ -207,7 +203,6 @@ export default function InputField({
         </div>
       ) : type === "multiselect" ? (
         <div className="space-y-2">
-          {/* PART 1: Display Selected Items as Tags */}
           <div className="flex flex-wrap gap-2 mb-2">
             {value &&
               value.length > 0 &&
@@ -217,11 +212,10 @@ export default function InputField({
                 );
                 return selectedOption ? (
                   <span key={i} className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
-                    {selectedOption.label} {/* Shows: "John Doe" */}
+                    {selectedOption.label}
                     <button
                       type="button"
                       onClick={() => {
-                        // Remove this ID from array
                         const newValue = value.filter(
                           (id) => id !== selectedId
                         );
@@ -235,18 +229,15 @@ export default function InputField({
               })}
           </div>
 
-          {/* PART 2: Dropdown to Add More */}
           <select
-            value="" // Always empty so it acts as "Add" button
+            value=""
             onChange={(e) => {
               if (e.target.value && !value.includes(e.target.value)) {
-                // Add new ID to array
                 onChange({ target: { value: [...value, e.target.value] } });
               }
             }}
           >
             <option value="">Add Surgery Helpers</option>
-            {/* Only show options NOT already selected */}
             {options
               .filter((opt) => !value.includes(opt.value))
               .map((option, i ) => (
@@ -260,7 +251,7 @@ export default function InputField({
             id={id}
             type="checkbox"
             className={`
-              h-5 w-5 rounded border-gray-300 
+              h-5 w-5 rounded border-gray-300
               focus:ring-2 focus:ring-blue-500
               text-blue-600 transition-all duration-200
               ${disabled ? "bg-gray-100 cursor-not-allowed" : ""}
@@ -285,7 +276,7 @@ export default function InputField({
           id={id}
           type={type}
           className={`
-            w-full px-4 py-3 rounded-lg border border-gray-300 
+            w-full px-4 py-3 rounded-lg border border-gray-300
             focus:ring-2 focus:ring-blue-500 focus:border-transparent
             transition-all duration-200 ease-in-out
             placeholder:text-gray-400

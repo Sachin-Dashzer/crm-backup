@@ -1,29 +1,5 @@
 "use client";
 
-/**
- * PatientTable — shared patient list component used across all role panels.
- *
- * Props:
- *   config {Object}
- *     basePath          string   — e.g. "/admin/patients"
- *     title             string
- *     subtitle          string
- *     columns           string[] — subset of AVAILABLE_COLUMNS keys
- *     actions           string[] — ["view"] | ["view","edit"]
- *     showCsvExport     boolean
- *     showAddButton     boolean
- *     addButtonHref     string
- *     defaultPageSize   number
- *     pageSizeOptions   number[]
- *     enableSorting     boolean
- *     formatCurrency    boolean  — show amounts as ₹ formatted strings
- *     filters           object   — flags controlling which filter fields appear
- *       showSurgeryDate, showVisited, showReadyForSurgery,
- *       showDoctor, showSeniorTech, showImplanter
- *
- * Usage:
- *   Wrap in <Suspense> in the page because this component calls useSearchParams().
- */
 
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
@@ -39,9 +15,6 @@ import {
   Download, Plus, Phone, MapPin, Users, Scissors,
 } from "lucide-react";
 
-/* ─────────────────────────────────────────────
-   Constants
-───────────────────────────────────────────── */
 const STATUS_OPTIONS = ["NEW","NOT_VISITED","CONSULTED","NOT_CONVERTED","BOOKING_DONE","SURGERY_BOOKED","CLOSED"];
 
 const STATUS_COLORS = {
@@ -71,18 +44,12 @@ const COL_DEFS = {
   status:      { label: "Status" },
 };
 
-/* ─────────────────────────────────────────────
-   Helpers
-───────────────────────────────────────────── */
 const fmtDate = (d) =>
   d ? new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "—";
 
 const fmtRupee = (n) =>
   new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(n || 0);
 
-/* ─────────────────────────────────────────────
-   Drawer sub-components (internal)
-───────────────────────────────────────────── */
 function DrawerSection({ title, icon, children }) {
   return (
     <div className="rounded-xl border border-gray-200 overflow-hidden">
@@ -130,9 +97,6 @@ function DDateInput({ value, onChange }) {
   );
 }
 
-/* ─────────────────────────────────────────────
-   Main component
-───────────────────────────────────────────── */
 export default function PatientTable({ config = {} }) {
   const {
     basePath       = "/admin/patients",
@@ -155,9 +119,6 @@ export default function PatientTable({ config = {} }) {
   const { data: session } = useSession();
   const userRole = session?.user?.role || "";
 
-  /* ── State ──
-     `patients`, `total`, `dateWindow`, `loading` and `error` are no longer useState: they come
-     from the SWR hook below, which caches them per query string. */
   const [filterOptions, setFOpts]   = useState({
     counsellors: [], agents: [], techniques: [],
     doctors: [], seniorTechs: [], implanters: [],
@@ -184,8 +145,6 @@ const [drawerOpen, setDrawerOpen] = useState(false);
     doctor:           [],
     seniorTech:       [],
     implanter:        [],
-    // "All time" escape hatch for the server's default current-month window. Deliberately a
-    // filter (not separate state) so clearFilters/chips treat it like every other one.
     allTime:          searchParams.get("all") === "1",
   });
 
@@ -193,14 +152,12 @@ const [drawerOpen, setDrawerOpen] = useState(false);
   const [page, setPage]       = useState(1);
   const [perPage, setPerPage] = useState(defaultPageSize);
 
-  /* ── Debounce search ── */
   const handleSearch = (val) => {
     setSearchInput(val);
     clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => { setSearch(val); setPage(1); }, 400);
   };
 
-  /* ── Load dropdown options once on mount ── */
   useEffect(() => {
     fetch("/api/patients/filter-options")
       .then((r) => r.json())
@@ -214,8 +171,6 @@ const [drawerOpen, setDrawerOpen] = useState(false);
             doctors:     data.doctors      || [],
             seniorTechs: data.seniorTechs  || [],
             implanters:  data.implanters   || [],
-            // Moved here from the list response, which recomputed it with a full collection scan
-            // on every page/sort/filter change.
             surgeryLocations: data.surgeryLocations || [],
           }));
         }
@@ -223,9 +178,6 @@ const [drawerOpen, setDrawerOpen] = useState(false);
       .catch(() => {});
   }, []);
 
-  /* ── Fetch ──
-     One place builds the query string, used by both the list request and the CSV export, so the
-     two can never cover different rows. */
   const buildQuery = (overrides = {}) => {
     const p = new URLSearchParams({
       page, limit: perPage,
@@ -252,21 +204,14 @@ const [drawerOpen, setDrawerOpen] = useState(false);
     return p.toString();
   };
 
-  // SWR rather than a hand-rolled useEffect + `cancelled` flag: the URL IS the cache key, so
-  // paging back to a page you've already seen, or navigating away and returning, renders from
-  // cache instantly. keepPreviousData (see lib/useCrmData.js) means a filter change keeps the
-  // current rows on screen instead of flashing an empty table.
   const listKey = `/api/patients/get-patient?${buildQuery()}`;
   const { data, error, isLoading, isValidating } = useCrmData(listKey);
 
   const patients   = data?.patients || [];
   const total      = data?.total || 0;
   const dateWindow = data?.dateWindow || null;
-  // Only blank the table on a genuine first load. A background revalidation dims it instead —
-  // showing the spinner there would undo keepPreviousData entirely.
   const loading    = isLoading && !data;
 
-  /* ── Pagination helpers ── */
   const totalPages = Math.max(1, Math.ceil(total / perPage));
   const startIdx   = (page - 1) * perPage;
   const endIdx     = Math.min(startIdx + perPage, total);
@@ -290,17 +235,10 @@ const [drawerOpen, setDrawerOpen] = useState(false);
     setPage(1);
   };
 
-  /* ── CSV Export (all filtered records) ── */
   const [exporting, setExporting] = useState(false);
   const exportCSV = async () => {
     setExporting(true);
     try {
-      // Same builder as the list request, overriding only the paging — so the export can never
-      // silently cover a different set of rows than the table the user is looking at.
-      //
-      // Paged rather than one big request: /api/patients/get-patient caps limit at 500, so the
-      // old `limit=10000` was silently clamped and any export past 500 patients was quietly
-      // incomplete with nothing in the file to say so.
       const { rows: all, truncated } = await fetchAllPages(
         (page, limit) => `/api/patients/get-patient?${buildQuery({ page, limit })}`,
         "patients",
@@ -336,7 +274,6 @@ const [drawerOpen, setDrawerOpen] = useState(false);
     }
   };
 
-  /* ── Active filter chips ── */
   const chips = [
     filters.status.length     > 0 && { k: "status",          label: `Status: ${filters.status.map(s => s.replace(/_/g," ")).join(", ")}` },
     filters.branch.length     > 0 && { k: "branch",          label: `Branch: ${filters.branch.join(", ")}` },
@@ -361,11 +298,8 @@ const [drawerOpen, setDrawerOpen] = useState(false);
     else applyFilter(k, []);
   };
 
-  // Shown only when the SERVER narrowed the range on its own (no explicit date filter, not
-  // "All time"). Without this the list would silently look like the whole database.
   const showDefaultWindowNotice = dateWindow?.isDefault && !filters.allTime;
 
-  /* ── Cell content renderer ── */
   const cellContent = (col, pt) => {
     switch (col) {
       case "visitDate":
@@ -417,25 +351,18 @@ const [drawerOpen, setDrawerOpen] = useState(false);
     }
   };
 
-  /* ── Error state ── */
   if (error) return (
     <main className="flex-1 flex items-center justify-center bg-gray-50">
       <div className="text-center space-y-1">
         <p className="text-base font-semibold text-gray-800">Something went wrong</p>
-        {/* `.message`, not the object — SWR hands back an Error, and rendering an object
-            directly in JSX throws. */}
         <p className="text-sm text-red-500">{error.message || "Error"}</p>
       </div>
     </main>
   );
 
-  /* ─────────────────────────────────────────────
-     Render
-  ───────────────────────────────────────────── */
   return (
     <main className="flex-1 flex flex-col overflow-hidden min-w-0">
 
-      {/* ── Header ── */}
       <div className="bg-white border-b border-gray-200 px-5 py-4 flex items-center justify-between gap-4 shrink-0">
         <div>
           <h1 className="text-xl font-bold text-gray-900 leading-tight">{title}</h1>
@@ -452,9 +379,7 @@ const [drawerOpen, setDrawerOpen] = useState(false);
         )}
       </div>
 
-      {/* ── Filter Bar ── */}
       <div className="bg-white border-b border-gray-200 px-5 py-2.5 flex flex-wrap items-center gap-2 shrink-0">
-        {/* Filter toggle */}
         <button
           onClick={() => setDrawerOpen(true)}
           className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 transition-colors"
@@ -468,8 +393,6 @@ const [drawerOpen, setDrawerOpen] = useState(false);
           )}
         </button>
 
-        {/* Default-window notice — the server scoped this to the current month because no date
-            filter was set. One click widens it to everything. */}
         {showDefaultWindowNotice && (
           <span className="inline-flex items-center gap-2 px-2.5 py-1 rounded-lg bg-amber-50 text-amber-800 text-xs font-medium border border-amber-200">
             <Calendar className="w-3.5 h-3.5" />
@@ -483,7 +406,6 @@ const [drawerOpen, setDrawerOpen] = useState(false);
           </span>
         )}
 
-        {/* Active chips */}
         {chips.map((chip) => (
           <button
             key={chip.k}
@@ -504,7 +426,6 @@ const [drawerOpen, setDrawerOpen] = useState(false);
 
         <div className="flex-1" />
 
-        {/* Search */}
         <div className="relative w-56">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4 pointer-events-none" />
           <input
@@ -516,7 +437,6 @@ const [drawerOpen, setDrawerOpen] = useState(false);
           />
         </div>
 
-        {/* CSV export */}
         {showCsvExport && (
           <button
             onClick={exportCSV}
@@ -530,7 +450,6 @@ const [drawerOpen, setDrawerOpen] = useState(false);
         )}
       </div>
 
-      {/* ── Table area ── */}
       <div className="flex-1 overflow-auto px-5 py-4">
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
 
@@ -539,9 +458,6 @@ const [drawerOpen, setDrawerOpen] = useState(false);
               <div className="animate-spin h-10 w-10 border-4 border-indigo-100 border-t-indigo-500 rounded-full" />
             </div>
           ) : (
-            // Dimmed, not blanked, while a background revalidation is in flight — the previous
-            // rows stay readable and in place (keepPreviousData), so changing a filter or page no
-            // longer flashes an empty table.
             <div
               className={`overflow-x-auto transition-opacity duration-150 ${
                 isValidating ? "opacity-60" : "opacity-100"
@@ -618,7 +534,6 @@ const [drawerOpen, setDrawerOpen] = useState(false);
             </div>
           )}
 
-          {/* ── Pagination ── */}
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-3 bg-gray-50 border-t border-gray-200">
             <div className="flex items-center gap-2">
               <span className="text-xs text-gray-500">Rows per page:</span>
@@ -657,13 +572,11 @@ const [drawerOpen, setDrawerOpen] = useState(false);
         </div>
       </div>
 
-      {/* ── Filter Drawer ── */}
       {drawerOpen && (
         <div className="fixed inset-0 z-50">
           <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setDrawerOpen(false)} />
           <div className="absolute right-0 top-0 h-full w-full max-w-md bg-white shadow-2xl flex flex-col">
 
-            {/* Drawer header */}
             <div className="px-6 py-4 border-b flex items-center justify-between shrink-0">
               <div>
                 <h3 className="text-base font-bold text-gray-900">Advanced Filters</h3>
@@ -674,10 +587,8 @@ const [drawerOpen, setDrawerOpen] = useState(false);
               </button>
             </div>
 
-            {/* Drawer body */}
             <div className="flex-1 overflow-y-auto p-5 space-y-4">
 
-              {/* Basic */}
               <DrawerSection title="Basic" icon={<Filter className="w-4 h-4" />}>
                 <DrawerField label="Status">
                   <MultiSelect
@@ -705,7 +616,6 @@ const [drawerOpen, setDrawerOpen] = useState(false);
                 </div>
               </DrawerSection>
 
-              {/* Staff */}
               <DrawerSection title="Staff & Team" icon={<Users className="w-4 h-4" />}>
                 <DrawerField label="Counsellor">
                   <MultiSelect
@@ -759,7 +669,6 @@ const [drawerOpen, setDrawerOpen] = useState(false);
                 )}
               </DrawerSection>
 
-              {/* Surgery */}
               <DrawerSection title="Surgery Details" icon={<Scissors className="w-4 h-4" />}>
                 <DrawerField label="Technique">
                   <MultiSelect
@@ -830,7 +739,6 @@ const [drawerOpen, setDrawerOpen] = useState(false);
               </DrawerSection>
             </div>
 
-            {/* Drawer footer */}
             <div className="px-5 py-4 border-t bg-gray-50 flex gap-3 shrink-0">
               <button
                 onClick={() => { clearFilters(); setDrawerOpen(false); }}

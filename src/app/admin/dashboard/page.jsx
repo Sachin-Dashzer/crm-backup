@@ -12,9 +12,6 @@ import { formatCurrency } from "@/lib/financeUI";
 import { ACCOUNTS } from "@/constants/bankRouting";
 import { ALL_BRANCHES } from "@/lib/branches";
 
-// Code-split so `recharts` is fetched only once the page itself has rendered — it used to be a
-// static import and delayed first paint of the KPI cards, which don't use it. ssr:false because
-// recharts measures the DOM to size its ResponsiveContainer.
 const DashboardCharts = dynamic(() => import("@/components/finance/DashboardCharts"), {
   ssr: false,
   loading: () => (
@@ -57,8 +54,6 @@ function periodRange(preset, custom) {
 }
 
 const iso = (d) => d.toISOString().slice(0, 10);
-// fmtK moved to components/finance/DashboardCharts.jsx along with the charts — it was only ever
-// used as a recharts tickFormatter.
 
 const AGEING_BUCKET_ORDER = ["current", "1-30", "31-60", "61-90", "90+"];
 
@@ -74,10 +69,6 @@ const overdueAmount = (rows) =>
 const overdueCount = (rows) =>
   (rows || []).filter((r) => r._id && r._id !== "current").reduce((s, r) => s + (r.count || 0), 0);
 
-// C3 — every card names its own basis so "the number looks wrong" defaults to "which basis is
-// this" before anything else. Accrual = booked (P&L); Cash = actually moved (Receipts/Payments);
-// "As of <date>" = a point-in-time balance (Assets/Liabilities/Net Position) — three genuinely
-// different kinds of number that happen to share a page.
 function BasisTag({ children }) {
   return (
     <span className="inline-block text-[10px] font-semibold uppercase tracking-wide text-gray-400 bg-gray-50 border border-gray-200 rounded px-1.5 py-0.5">
@@ -86,10 +77,6 @@ function BasisTag({ children }) {
   );
 }
 
-// Local card wrapper — deliberately NOT the shared MetricCard (used across many other pages);
-// this page needs a real <Link> (so middle-click/new-tab work, per C3) plus a basis tag and a
-// skeleton/error sub-state MetricCard doesn't have, and retrofitting those onto a component many
-// other pages depend on risked regressing all of them for one page's needs.
 function DashboardCard({ href, title, basis, value, icon: Icon, color, subtitle, status = "ready", onRetry }) {
   const body = (
     <div
@@ -141,9 +128,6 @@ function DashboardCard({ href, title, basis, value, icon: Icon, color, subtitle,
 }
 
 export default function AdminDashboard() {
-  // Draft = bound to the filter controls, edited freely. Applied = what every fetch below
-  // actually uses. They only converge when Apply is clicked, so changing the period, branch, or
-  // account selection doesn't refetch anything until the user says so.
   const [draftPreset, setDraftPreset] = useState("month");
   const [draftCustomRange, setDraftCustomRange] = useState({ from: "", to: "" });
   const [draftAccounts, setDraftAccounts] = useState(ACCOUNTS);
@@ -188,22 +172,17 @@ export default function AdminDashboard() {
 
   const [assets, setAssets] = useState(null);
   const [liabilities, setLiabilities] = useState(null);
-  const [cashFlow, setCashFlow] = useState(null); // { receipts, payments, balanceLeft }
+  const [cashFlow, setCashFlow] = useState(null);
   const [pnl, setPnl] = useState(null);
   const [priorPnl, setPriorPnl] = useState(null);
   const [expenseByHead, setExpenseByHead] = useState([]);
   const [monthlyTrend, setMonthlyTrend] = useState([]);
   const [ageing, setAgeing] = useState({ payables: {}, receivables: {} });
   const [attention, setAttention] = useState(null);
-  // The whole Row 1-3 + charts batch shares ONE status — see the header comment on the effect
-  // for why this is deliberately not 11 independent per-card loading states.
-  const [batchStatus, setBatchStatus] = useState("loading"); // "loading" | "error" | "ready"
+  const [batchStatus, setBatchStatus] = useState("loading");
   const [lastRefreshed, setLastRefreshed] = useState(null);
   const [refreshNonce, setRefreshNonce] = useState(0);
 
-  // Shared query-string builder for every "open the filtered page" link (C2) — every destination
-  // gets the SAME from/to/branch the cards were computed with, so a card never links to a page
-  // that shows a different number than the card itself.
   const buildFilterQS = (extra = {}) => {
     const p = new URLSearchParams();
     if (appliedBranch) p.set("branch", appliedBranch);
@@ -213,13 +192,6 @@ export default function AdminDashboard() {
     return p.toString();
   };
 
-  // All 9 Row 1-3 cards + the ageing/expense charts come from ONE effect, keyed only to APPLIED
-  // filters. Deliberately ONE Promise.all, not 11 independent effects: this page exists because
-  // 11 independently-filtered fetches is exactly the bug class Task A fixed on Assets/
-  // Liabilities — splitting into per-card effects would let two cards legitimately show figures
-  // computed from two different filter states mid-transition. The tradeoff is that "loading"/
-  // "error" is a single batch status rather than per-card; a genuinely empty result (a fetch that
-  // SUCCEEDED with zero rows) still renders its own "No data for this period" card instead of ₹0.
   useEffect(() => {
     if (!customReady) return;
     let cancelled = false;
@@ -234,32 +206,16 @@ export default function AdminDashboard() {
           cashJson, receivablesJson, payablesJson, suspenseJson,
           pnlJson, priorPnlJson, headJson, ageingPayJson, ageingRecJson, unattributedJson, cashFlowJson,
         ] = await Promise.all([
-          // Row 1 balances are AS OF the period's end date (`to` only, no `from`) — a balance
-          // sheet figure is a point-in-time position, not a flow. Cash/Suspense now filter by
-          // `accounts` SERVER-SIDE (Task C4) — no more `.filter(inSelection)` after the fact,
-          // which could only ever agree with the server by coincidence.
-          //
-          // No `filter` = every account in ACCOUNTS, including the Bajaj/Fibe loan-financing
-          // settlement accounts — those are ordinary asset accounts (money the financier pays the
-          // clinic), not a liability, so they belong in this total same as Cash Book/Paytm/etc.
           fetch(`/api/close-book/accounts?to=${iso(to)}${accountsQS}${branchQS}`).then((r) => r.json()),
           fetch(`/api/receivables/grouped?level=1&to=${iso(to)}${branchQS}`).then((r) => r.json()),
           fetch(`/api/payables/grouped?level=1&to=${iso(to)}${branchQS}`).then((r) => r.json()),
           fetch(`/api/suspense?groupBy=account&to=${iso(to)}${accountsQS}${branchQS}`).then((r) => r.json()),
-          // Row 2 — accrual Income/Expense, current period and the prior period of equal length.
           fetch(`/api/close-book/pnl?from=${iso(from)}&to=${iso(to)}${accountsQS}${branchQS}`).then((r) => r.json()),
           fetch(`/api/close-book/pnl?from=${iso(priorFrom)}&to=${iso(priorTo)}${accountsQS}${branchQS}`).then((r) => r.json()),
           fetch(`/api/payables/grouped?level=1&from=${iso(from)}&to=${iso(to)}${branchQS}`).then((r) => r.json()),
-          // Ageing is inherently "as of NOW" (days overdue from today), never a period range — a
-          // due date that already passed before the applied window would be misreported if this
-          // were scoped to from/to. Branch is the only filter that legitimately applies. Do not
-          // "fix" this into a period-filtered fetch.
           fetch(`/api/payables/summary?ageing=1${appliedBranch ? `&branch=${appliedBranch}` : ""}`).then((r) => r.json()),
           fetch(`/api/receivables/summary?ageing=1${appliedBranch ? `&branch=${appliedBranch}` : ""}`).then((r) => r.json()),
-          // All-time by design — a balance-sheet position, not a period figure; relabelled
-          // "All-time unattributed" below rather than pretending it's scoped to the period.
           fetch(`/api/close-book/balance-sheet?from=1970-01-01&to=${iso(to)}${branchQS}`).then((r) => r.json()),
-          // Row 3 — cash-basis Receipts/Payments for the SAME applied period + accounts + branch.
           fetch(`/api/close-book/cash-flow?from=${iso(from)}&to=${iso(to)}${accountsQS}${branchQS}`).then((r) => r.json()),
         ]);
         if (cancelled) return;
@@ -290,11 +246,6 @@ export default function AdminDashboard() {
           unattributed: unattributedJson.unattributed || { count: 0, amount: 0 },
         });
 
-        // Dev-only reconciliation check — cashTotal (a closing BALANCE) and cashFlow.balanceLeft
-        // (a period FLOW) only coincide when the period's own opening balance is zero, so this
-        // decomposes the same way Round 1's Receipts/Payments reconciliation strip does:
-        // opening + receipts - payments should equal closing, to the rupee, by construction.
-        // A real divergence here means one of the two routes drifted from accountBalances.js.
         if (process.env.NODE_ENV === "development") {
           const expectedClosing = Math.round((cashOpening + receipts - payments) * 100) / 100;
           if (Math.abs(expectedClosing - cashTotal) > 1) {
@@ -354,9 +305,6 @@ export default function AdminDashboard() {
   const netPosition = assets && liabilities ? assets.total - liabilities.total : null;
   const profit = pnl ? pnl.income - pnl.expense : null;
   const priorProfit = priorPnl ? priorPnl.income - priorPnl.expense : null;
-  // Only a genuine prior figure supports a percentage — a prior of 0 would otherwise render as
-  // either a nonsensical 0% or an infinite swing, neither of which is honest about "no prior
-  // data to compare against".
   const growth = (curr, prior) => (prior > 0 ? Math.round(((curr - prior) / prior) * 100) : null);
 
   const ageingChartData = AGEING_BUCKET_ORDER.map((b) => ({
@@ -393,7 +341,6 @@ export default function AdminDashboard() {
   return (
     <div className="flex min-h-screen bg-[#f8f9fc]">
       <main className="flex-1 p-4 sm:p-6 lg:p-8 space-y-6">
-        {/* C3 — sticky filter bar */}
         <div className="sticky top-0 z-30 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-3 bg-[#f8f9fc]/95 backdrop-blur-sm border-b border-gray-100 space-y-2">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
@@ -481,7 +428,6 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* Row 1 — as of {periodLabel}'s end date */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <DashboardCard
             href={`/admin/assets?${buildFilterQS()}`}
@@ -514,7 +460,6 @@ export default function AdminDashboard() {
           />
         </div>
 
-        {/* Sub-cards — Cash & Bank / Receivables / Payables / Suspense */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <DashboardCard
             href={`/admin/assets?section=cash-bank&${buildFilterQS()}`}
@@ -556,7 +501,6 @@ export default function AdminDashboard() {
           />
         </div>
 
-        {/* Row 2 — P&L strip (accrual) */}
         <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
           <div className="flex items-center gap-2 mb-1">
             <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wide">
@@ -608,7 +552,6 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* Row 3 — Cash flow strip (cash basis) */}
         <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
           <div className="flex items-center gap-2 mb-1">
             <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wide">
@@ -663,9 +606,6 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* Row 4 — three charts. Lazy: see the DashboardCharts header — recharts used to be a
-            static import here and blocked first paint of the nine cards above, none of which need
-            it. ssr:false because recharts measures the DOM to size itself. */}
         <DashboardCharts
           expenseByHead={expenseByHead}
           monthlyTrend={monthlyTrend}
@@ -675,7 +615,6 @@ export default function AdminDashboard() {
           basisTag={<BasisTag>Accrual</BasisTag>}
         />
 
-        {/* Row 5 — attention list */}
         <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
           <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wide mb-4">Needs Attention</h2>
           <div className="space-y-2">

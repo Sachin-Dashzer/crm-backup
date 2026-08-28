@@ -5,11 +5,6 @@ import { Loader2, X } from "lucide-react";
 import { formatCurrency, formatDate, StatusBadge } from "@/lib/financeUI";
 import { formatAgeing } from "@/lib/ageing";
 
-// Read-only "complete detail" view for one Payable/Receivable document — the level-3 documents
-// table (DrillDownTable) only ever shows party/purpose/totalAmount/paid/pending/status/due, so
-// this fetches the single-document GET (/api/payables/[id] or /api/receivables/[id], the same
-// live paid/pending aggregation the list uses) to show everything else: category/sub-type,
-// period, branch, remarks, receipts, TDS link (payable only), and the full log.
 export default function DocumentDetailModal({ documentId, kind, onClose }) {
   const isPayable = kind === "payable";
   const [doc, setDoc] = useState(null);

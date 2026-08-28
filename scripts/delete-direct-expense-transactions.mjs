@@ -1,64 +1,17 @@
-// scripts/delete-direct-expense-transactions.mjs
-//
-// Deletes EXPENSE transactions in the DIRECT-PAYMENT expense categories, dated 2026-08-13
-// onward (through whenever the script is run — no upper bound).
-//
-// WHAT "DIRECT EXPENSE" MEANS HERE — this script uses the app's own definition, not a guess:
-// src/constants/expenseCategories.js exports DIRECT_PAYMENT_CATEGORIES, documented there as
-// "Everything else in EXPENSE_CATEGORY_TREE — paid in full when logged, no payable". Those
-// eleven categories are duplicated in the list below (a script can't import the @/-aliased
-// module outside the Next.js build):
-//
-//   Marketing · Welfare Expenses · Office Exp. · Travelling Expenses · Hotel Charges ·
-//   Telephone Expenses · Bank Charges · Forex Conversion and Fluctuation Charges ·
-//   Asset Based Payment · Drawings · Patient Related Expenses
-//
-// Everything else is deliberately OUT of scope: Salary, Rent, Electricity Bill, Collab Clinic
-// Payment, Medicine Procurement, Medical Consumables, Professional Expenses, Taxes, Incentive,
-// Commision and the rest are payable-backed categories, not direct payments. If you meant a
-// different set, pass --categories="A,B" to override the list explicitly rather than editing
-// this file.
-//
-// SAFETY — mirrors src/app/api/transactions/expense/delete/route.js, because this script
-// bypasses the authenticated API and must not skip what that route enforces:
-//   - Only transactionCategory "EXPENSE" is ever touched.
-//   - PERIOD LOCK: a transaction whose (furtherMode, date) falls in a closed AccountPeriod is
-//     refused, exactly as periodLockResponse() refuses it in the route.
-//   - CASCADE: refused if this transaction CREATED a Payable/Receivable that something else is
-//     now settling (checkCascadeOnDelete Direction A) — deleting it would strand those.
-//   - payableId set  -> SKIPPED. Such a row is a payment against a payable; it shouldn't occur
-//     in a direct-payment category at all, and deleting it would silently reopen that payable.
-//   - reversalOf set, or isReversed true -> SKIPPED. Deleting half of a reversal pair leaves the
-//     other half pointing at nothing.
-//   - Vendor back-reference cleanup and a DeleteLog entry per deletion, as the route does.
-//   - A FULL BACKUP of every matched document is written BEFORE any delete. Plain Transactions
-//     have no soft-delete and DeleteLog records only that a deletion happened, not the document
-//     — this backup file is the only way to restore one.
-//
-// Usage:
-//   node scripts/delete-direct-expense-transactions.mjs                      # dry run
-//   node scripts/delete-direct-expense-transactions.mjs --apply              # delete
-//   node scripts/delete-direct-expense-transactions.mjs --from=2026-08-13    # override start date
-//   node scripts/delete-direct-expense-transactions.mjs --to=2026-08-31      # add an end date
-//   node scripts/delete-direct-expense-transactions.mjs --branch=Delhi       # one branch only
-//   node scripts/delete-direct-expense-transactions.mjs --categories="Marketing,Drawings"
 
 import mongoose from "mongoose";
 import fs from "fs";
 
-// --- env -----------------------------------------------------------------
 for (const f of [".env.local", ".env"]) {
   if (fs.existsSync(f)) {
     try {
       process.loadEnvFile(f);
     } catch {
-      /* already loaded / unsupported — falls through to the MONGODB_URI check below */
     }
   }
 }
 const MONGODB_URI = process.env.MONGODB_URI;
 
-// Mirrors DIRECT_PAYMENT_CATEGORIES in src/constants/expenseCategories.js.
 const DIRECT_PAYMENT_CATEGORIES = [
   "Marketing",
   "Welfare Expenses",
@@ -73,14 +26,12 @@ const DIRECT_PAYMENT_CATEGORIES = [
   "Patient Related Expenses",
 ];
 
-// Mirrors ACCOUNTS in src/constants/bankRouting.js — needed by the period-lock check below.
 const ACCOUNTS = [
   "Cash Book", "HDFC Skin", "HDFC Medihub", "ICICI Medihub", "Mumbai Receipts",
   "Cash ( backend )", "Paytm ( Delhi T44P )", "Paytm ( Noida CK5Y )",
   "Bajaj Loan", "Fibe Loan", "Pine Lab",
 ];
 
-// --- args ------------------------------------------------------------------
 const args = process.argv.slice(2);
 const arg = (name) => args.find((a) => a.startsWith(`--${name}=`))?.split("=")[1];
 const APPLY = args.includes("--apply");
@@ -122,8 +73,6 @@ async function run() {
   const Transactions = mongoose.models.Transactions || mongoose.model("Transactions", new mongoose.Schema({}, { strict: false, collection: "transactions" }));
   const DeleteLog = mongoose.models.DeleteLog || mongoose.model("DeleteLog", new mongoose.Schema({}, { strict: false, collection: "deletelogs" }));
 
-  // --- period lock, reimplemented (src/lib/periodLock.js imports @/-aliased modules that don't
-  // resolve outside the Next.js build, so the logic is mirrored rather than imported) ---------
   const isOpeningSeed = (p) => new Date(p.periodStart).getTime() === new Date(p.periodEnd).getTime();
   async function closedPeriodsCovering(account, date) {
     const rows = await AccountPeriod.find({
@@ -142,7 +91,6 @@ async function run() {
     return perAccount.every(Boolean) ? "the books are closed for that period across all accounts" : null;
   }
 
-  // --- cascade Direction A, mirroring src/lib/cascadeIntegrity.js ----------------------------
   async function cascadeBlockReason(tx) {
     const links = [];
     const ep = tx.externalParty || {};
@@ -162,7 +110,6 @@ async function run() {
     return null;
   }
 
-  // --- find candidates ----------------------------------------------------------------------
   const query = {
     transactionCategory: "EXPENSE",
     expense: { $in: CATEGORIES },
@@ -208,7 +155,6 @@ async function run() {
     deletable.push(tx);
   }
 
-  // --- report -------------------------------------------------------------------------------
   const byCategory = {};
   deletable.forEach((t) => {
     byCategory[t.expense] = byCategory[t.expense] || { count: 0, amount: 0 };
@@ -253,15 +199,12 @@ async function run() {
     return;
   }
 
-  // --- delete -------------------------------------------------------------------------------
   console.log("\nDeleting...");
   const deleted = [];
   const failed = [];
 
   for (const tx of deletable) {
     try {
-      // Vendor back-reference cleanup — mirrors the route, both the expenseGiver.vendorId path
-      // and the legacy top-level `vendor` field.
       for (const vendorId of [tx.expenseGiver?.vendorId, tx.vendor].filter(Boolean)) {
         const vendorDoc = await Vendor.findById(vendorId);
         if (vendorDoc?.Transactions?.toString() === String(tx._id)) {

@@ -1,73 +1,18 @@
-// scripts/vendor-payables-bulk-import.mjs
-//
-// Creates a Payable for every vendor bill in patient-vouncher.xlsx — 16 opening balances (Bill
-// Type "Opening") plus 105 purchase/journal bills, across all 24 vendors imported by
-// scripts/vendors-bulk-import.mjs. This is what finally categorises the vendor opening
-// balances flagged (but deliberately not written) by that script — this sheet gives the
-// Expense Category / Expense Type each bill actually belongs under, which the vendor sheet
-// alone didn't.
-//
-// PURPOSE MAPPING (all three map cleanly onto PAYABLE_PURPOSES — no guessing needed this time):
-//   "Medicine Procurement"  -> MEDICINE_PROCUREMENT
-//   "Medical Consumables"   -> MEDICAL_CONSUMABLES
-//   "Professional Expenses" -> PROFESSIONAL_EXPENSES
-//
-// "Bill Type" (Opening / Purchase / Journal) doesn't change how a row is written — all three
-// create the same kind of Payable; the type is folded into remarks for traceability, nothing
-// more. An "Opening" row is exactly the same opening-balance figure vendors.xlsx carried,
-// finally getting a purpose/expenseCategory.
-//
-// VENDOR RESOLUTION IS LIVE, NOT EMBEDDED: payee.refId must be an actual Vendor _id, which only
-// exists once scripts/vendors-bulk-import.mjs has run. Every row looks its vendor up by name at
-// run time — exact match first, then a case/whitespace-insensitive fallback (covers a vendor
-// whose messy DB name hasn't been cleaned up by the safe-update pass yet). A row whose vendor
-// can't be found is SKIPPED and reported — never silently created against no vendor.
-//
-// NO BRANCH COLUMN in this sheet, and vendor purchases like these (medicine/consumables
-// procurement, professional/consultancy fees) aren't naturally tied to one clinic branch the
-// way rent or per-branch electricity is — a wholesaler like Helpsure supplies stock centrally.
-// branch is deliberately left UNSET on every payable this script creates (the Payable model
-// does not require it). If you want these tagged to a specific branch instead, tell me which
-// and I'll add that as a mapping rather than guessing one.
-//
-// dueDate: the sheet has no separate due date column, so each payable's dueDate is set to its
-// own Bill Date — the neutral choice when no payment-terms figure was given, rather than
-// inventing a 30/45-day term that isn't in the data.
-//
-// NO DUPLICATE-GUARD EXISTS AT THE DATABASE LEVEL for these purposes: the Payable model's own
-// partial unique index only covers the MONTHLY_PURPOSES (SALARY/RENT/ELECTRICITY/COLLAB_CLINIC/
-// TAX) — MEDICINE_PROCUREMENT etc. are deliberately not in that list, because many bills from
-// the same vendor in the same month is completely normal, not a duplicate. So this script
-// builds its OWN idempotency: every payable's remarks is prefixed with a
-// "[BULK-VENDOR-BILL-<rowNum>]" tag, checked before creating — safe to re-run after a partial
-// failure, never double-imports a row that already succeeded.
-//
-// Usage:
-//   node scripts/vendor-payables-bulk-import.mjs                        # dry run
-//   node scripts/vendor-payables-bulk-import.mjs --dump-json             # write entries out, no DB
-//   node scripts/vendor-payables-bulk-import.mjs --apply                # write
-//   node scripts/vendor-payables-bulk-import.mjs --rows=2,3,4            # only these source rows
 
 import mongoose from "mongoose";
 import fs from "fs";
 import { EXPENSE_CATEGORY_TREE } from "../src/constants/expenseCategories.js";
 
-// --- env -----------------------------------------------------------------
 for (const f of [".env.local", ".env"]) {
   if (fs.existsSync(f)) {
     try {
       process.loadEnvFile(f);
     } catch {
-      /* already loaded / unsupported — fall through to the MONGODB_URI check below */
     }
   }
 }
 const MONGODB_URI = process.env.MONGODB_URI;
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// THE DATA — parsed from patient-vouncher.xlsx, one entry per bill row (opening balance,
-// purchase, or journal — see note above, all handled identically).
-// ═══════════════════════════════════════════════════════════════════════════════
 const BILL_ENTRIES = [
   {
     "rowNum": 2,
@@ -1644,7 +1589,6 @@ const BILL_ENTRIES = [
   }
 ];
 
-// --- args ------------------------------------------------------------------
 const args = process.argv.slice(2);
 const arg = (name) => args.find((a) => a.startsWith(`--${name}=`))?.split("=")[1];
 const APPLY = args.includes("--apply");
@@ -1712,9 +1656,6 @@ async function run() {
   const Vendor = mongoose.models.Vendor || mongoose.model("Vendor", new mongoose.Schema({}, { strict: false, collection: "vendors" }));
   const Payable = mongoose.models.Payable || mongoose.model("Payable", new mongoose.Schema({}, { strict: false, collection: "payables" }));
 
-  // ---------------------------------------------------------------------------
-  // PASS 1 — resolve every row's vendor and check idempotency, WITHOUT writing anything.
-  // ---------------------------------------------------------------------------
   console.log("Resolving vendors and checking for already-imported rows...\n");
   const vendorCache = new Map();
   async function resolveVendor(name) {
@@ -1782,8 +1723,6 @@ async function run() {
         expenseSubType: e.expenseSubType,
         totalAmount: e.billAmount,
         dueDate: new Date(e.billDate),
-        // No branch column in the source and these purchases aren't branch-specific — see the
-        // header note. Left unset rather than guessed.
         remarks,
         isCancelled: false,
         createdBy: { ...IMPORT_IDENTITY, date: new Date() },

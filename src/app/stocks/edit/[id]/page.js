@@ -171,7 +171,6 @@ export default function EditStockPage() {
       <Sidebar />
 
       <main className="flex-1 flex flex-col min-h-screen">
-        {/* Sticky header */}
         <div className="sticky top-0 z-10 bg-[#f8f9fc] border-b border-gray-100 px-4 py-4 lg:px-8">
           <div className="max-w-3xl mx-auto">
             <button
@@ -205,11 +204,8 @@ export default function EditStockPage() {
           </div>
         </div>
 
-        {/* Page body */}
         <div className="flex-1 px-4 py-6 lg:px-8 lg:py-8">
-          {/* Card */}
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden max-w-3xl mx-auto">
-            {/* Card section header */}
             <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-3">
               <div className="w-1 h-5 rounded-full bg-green-500" />
               <h2 className="text-sm font-semibold text-gray-800">
@@ -217,11 +213,9 @@ export default function EditStockPage() {
               </h2>
             </div>
 
-            {/* Card body */}
             <form onSubmit={handleSubmit}>
               <div className="p-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  {/* Product Name */}
                   <div>
                     <label className={labelClass}>
                       <span className="flex items-center gap-2">
@@ -242,7 +236,6 @@ export default function EditStockPage() {
                     />
                   </div>
 
-                  {/* Branch / Location */}
                   <div>
                     <label className={labelClass}>
                       <span className="flex items-center gap-2">
@@ -274,7 +267,6 @@ export default function EditStockPage() {
                     )}
                   </div>
 
-                  {/* MRP */}
                   <div>
                     <label className={labelClass}>
                       <span className="flex items-center gap-2">
@@ -297,7 +289,6 @@ export default function EditStockPage() {
                     />
                   </div>
 
-                  {/* Purchase Amount */}
                   <div>
                     <label className={labelClass}>
                       <span className="flex items-center gap-2">
@@ -322,7 +313,6 @@ export default function EditStockPage() {
                     />
                   </div>
 
-                  {/* Sell Price */}
                   <div>
                     <label className={labelClass}>
                       <span className="flex items-center gap-2">
@@ -347,7 +337,6 @@ export default function EditStockPage() {
                     />
                   </div>
 
-                  {/* Weight */}
                   <div>
                     <label className={labelClass}>
                       <span className="flex items-center gap-2">
@@ -371,7 +360,6 @@ export default function EditStockPage() {
                     />
                   </div>
 
-                  {/* Unit */}
                   <div>
                     <label className={labelClass}>
                       <span className="flex items-center gap-2">
@@ -399,7 +387,6 @@ export default function EditStockPage() {
                     </select>
                   </div>
 
-                  {/* GST Number */}
                   <div>
                     <label className={labelClass}>
                       <span className="flex items-center gap-2">
@@ -421,7 +408,6 @@ export default function EditStockPage() {
                     />
                   </div>
 
-                  {/* Expiry Date */}
                   <div>
                     <label className={labelClass}>
                       <span className="flex items-center gap-2">
@@ -444,7 +430,6 @@ export default function EditStockPage() {
                 </div>
               </div>
 
-              {/* Card footer */}
               <div className="px-6 py-4 border-t border-gray-100 flex gap-3">
                 <button
                   type="submit"

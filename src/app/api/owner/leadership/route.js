@@ -1,13 +1,3 @@
-// src/app/api/owner/leadership/route.js
-//
-// TL ranking for the "TL & Manager" screen — sourced entirely from callby's workforce-summary
-// teamTotals. There's no real "Sales Manager" concept anywhere in this data model, so this
-// route (and the page consuming it) only ever produces the TL table — no second, invented table.
-//
-// teamTotals is already grouped by tlName server-side (backend/routes/workforceSummary.js),
-// each entry shaped { tlName, agentCount, calls: {total,connected,connectRate,...},
-// leads: {assigned, byStatus:{...,converted,...}} } — one row per TL already, nothing left to
-// merge on this side. Ranked by connectRate (call-quality), falling back to total calls handled.
 
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";

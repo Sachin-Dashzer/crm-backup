@@ -1,8 +1,5 @@
 "use client";
 
-// Bordered card + heading — the WHAT / MONEY / HOW section container used across every
-// transaction form. Pure presentation, extracted so the four (soon five) panels stop
-// redefining the same `bg-white rounded-lg shadow-sm border ...` wrapper by hand.
 export default function TransactionSectionCard({ title, subtitle, icon: Icon, children, className = "" }) {
   return (
     <div className={`bg-white rounded-lg shadow-sm border border-gray-200 p-6 ${className}`}>

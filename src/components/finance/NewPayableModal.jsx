@@ -6,9 +6,6 @@ import SearchableSelect from "@/components/SearchableSelect";
 import { getExpenseTypes } from "@/constants/expenseCategories";
 import { ALL_BRANCHES, COLLAB_BRANCHES } from "@/lib/branches";
 
-// Extracted from admin/payables/page.jsx (Task 5, Step 1) — behaviour unchanged, only the
-// location moved.
-
 const PURPOSES = [
   "SALARY",
   "INCENTIVE",
@@ -25,8 +22,6 @@ const PURPOSES = [
   "SOFTWARE_RENTAL",
   "HARDWARE_RENTAL",
 ];
-// Purposes whose picker is just "pick a sub-type under this category" — no dedicated
-// payee (mirrors how RENT/ELECTRICITY/TAX already work, just without a special unit label).
 const GENERIC_SUBTYPE_PURPOSES = [
   "MEDICAL_CONSUMABLES",
   "MEDICINE_PROCUREMENT",
@@ -54,7 +49,6 @@ const PURPOSE_LABELS = {
   HARDWARE_RENTAL: "Hardware Rental",
 };
 
-// purpose -> the expenseCategory it always maps to (mirrors the expense form's own mapping).
 const PURPOSE_TO_CATEGORY = {
   SALARY: "Salary",
   INCENTIVE: "Incentive",
@@ -81,14 +75,12 @@ export default function NewPayableModal({ onClose, onSuccess, toast }) {
   const [remarks, setRemarks] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  // Payee fields
   const [employeeId, setEmployeeId] = useState("");
   const [employeeName, setEmployeeName] = useState("");
   const [unitLabel, setUnitLabel] = useState("");
   const [collabBranch, setCollabBranch] = useState("");
   const [taxType, setTaxType] = useState("");
 
-  // Related patient (Incentive / Patient Commission)
   const [patients, setPatients] = useState([]);
   const [patientSearching, setPatientSearching] = useState(false);
   const patientDebounce = useRef(null);
@@ -145,8 +137,6 @@ export default function NewPayableModal({ onClose, onSuccess, toast }) {
   };
   const formatEmployeeOption = (e) => `${e.name} — ${e.role}`;
 
-  // Fetched once — the vendor list is small and has no search endpoint, so SearchableSelect
-  // filters it locally instead of round-tripping per keystroke like patients and employees.
   const fetchVendors = async () => {
     try {
       const res = await fetch("/api/vendors/get");
@@ -155,7 +145,6 @@ export default function NewPayableModal({ onClose, onSuccess, toast }) {
         setVendors(data.data || data.vendors || []);
       }
     } catch {
-      // An empty picker is recoverable — the vendor is optional here.
     }
   };
   const formatVendorOption = (v) => (v.DealsIn ? `${v.name} — ${v.DealsIn}` : v.name);
@@ -182,10 +171,6 @@ export default function NewPayableModal({ onClose, onSuccess, toast }) {
     }
     if (purpose === "TAX") return { kind: "OTHER", refId: null, label: taxType };
     if (GENERIC_SUBTYPE_PURPOSES.includes(purpose)) {
-      // The vendor is optional and additive: these purposes have always recorded kind OTHER
-      // labelled with the sub-type, and every existing payable stays valid. Naming a vendor
-      // upgrades the payee to a linked VENDOR, which buildGiverForPayable then turns into a
-      // VENDOR expenseGiver on the payment transaction.
       if (vendorId && vendorName) return { kind: "VENDOR", refId: vendorId, label: vendorName };
       return { kind: "OTHER", refId: null, label: subType };
     }
@@ -202,9 +187,6 @@ export default function NewPayableModal({ onClose, onSuccess, toast }) {
       toast.error("Complete the payee details for this purpose");
       return;
     }
-    // Sub-type used to be checked implicitly — it WAS the payee label, so a blank one failed
-    // the check above. A selected vendor now supplies the label, so it needs its own guard or
-    // the payable would be filed with no expense sub-type.
     if (GENERIC_SUBTYPE_PURPOSES.includes(purpose) && !subType) {
       toast.error("Select the expense sub-type");
       return;

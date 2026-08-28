@@ -27,14 +27,6 @@ import { formatCurrency, formatDate, StatusBadge } from "@/lib/financeUI";
 import { ALL_BRANCHES } from "@/lib/branches";
 import { useToast } from "@/components/Toast";
 
-// §4.1 — merges the old /admin/borrowings and /admin/advances into one page, two tabs, sharing
-// the branch/includeCancelled filters, a header totals strip, and a CSV export. Neither model nor
-// API namespace changes — this is a UI merge only (see next.config.mjs for the two redirects that
-// replace the old routes, and src/app/api/borrowings|advances/* which are untouched).
-//
-// §4.3 — both tabs' "transactions" tables gained a Settle Against… action (SettleAgainstModal) on
-// rows in the creating direction (Advance OUT / Borrowing IN) — see that component and
-// src/app/api/advances|borrowings/[id]/route.js's settle/unsettle actions.
 function FinancingPageInner() {
   const toast = useToast();
   const router = useRouter();
@@ -46,11 +38,9 @@ function FinancingPageInner() {
     router.replace(`/admin/financing?tab=${next}`, { scroll: false });
   };
 
-  // ── Shared filters ──────────────────────────────────────────────────────────────────────
   const [branch, setBranch] = useState("");
   const [includeCancelled, setIncludeCancelled] = useState(false);
 
-  // ── Shared header totals — each tab reports its own after loading ─────────────────────────
   const [totals, setTotals] = useState({ totalPrincipal: 0, totalOutstanding: 0, label: "" });
 
   return (
@@ -150,9 +140,6 @@ export default function FinancingPage() {
   );
 }
 
-// Client-side CSV export — no new backend endpoint. Builds one row per record already shaped for
-// display, downloads via a Blob. `rows`/`columns` are the SAME shape AccountingTable renders, so
-// the export never drifts from what's on screen.
 function exportCsv(filename, columns, rows) {
   const headers = columns.map((c) => c.label);
   const lines = [headers.join(",")];
@@ -175,9 +162,6 @@ function exportCsv(filename, columns, rows) {
   URL.revokeObjectURL(url);
 }
 
-// ══════════════════════════════════════════════════════════════════════════════════════════
-// BORROWINGS TAB — the old admin/borrowings/page.jsx's content, filters lifted to the parent.
-// ══════════════════════════════════════════════════════════════════════════════════════════
 function BorrowingsTab({ branch, includeCancelled, toast, onTotalsChange }) {
   const [loans, setLoans] = useState([]);
   const [loansMeta, setLoansMeta] = useState({ total: 0, page: 1, limit: 20 });
@@ -213,7 +197,7 @@ function BorrowingsTab({ branch, includeCancelled, toast, onTotalsChange }) {
         setLoansLoading(false);
       }
     },
-    [branch, includeCancelled, loansSearch], // eslint-disable-line react-hooks/exhaustive-deps
+    [branch, includeCancelled, loansSearch],
   );
 
   useEffect(() => {
@@ -502,9 +486,6 @@ function BorrowingsTab({ branch, includeCancelled, toast, onTotalsChange }) {
   );
 }
 
-// ══════════════════════════════════════════════════════════════════════════════════════════
-// ADVANCES TAB — the old admin/advances/page.jsx's content, filters lifted to the parent.
-// ══════════════════════════════════════════════════════════════════════════════════════════
 function AdvancesTab({ branch, includeCancelled, toast, onTotalsChange }) {
   const [advances, setAdvances] = useState([]);
   const [advancesMeta, setAdvancesMeta] = useState({ total: 0, page: 1, limit: 20 });
@@ -540,7 +521,7 @@ function AdvancesTab({ branch, includeCancelled, toast, onTotalsChange }) {
         setAdvancesLoading(false);
       }
     },
-    [branch, includeCancelled, advancesSearch], // eslint-disable-line react-hooks/exhaustive-deps
+    [branch, includeCancelled, advancesSearch],
   );
 
   useEffect(() => {

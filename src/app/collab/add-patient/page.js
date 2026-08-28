@@ -23,8 +23,6 @@ import {
   Edit3,
 } from "lucide-react";
 
-
-// Reuse the BenefitsManager component from edit page
 const BenefitsManager = ({ benefits, onChange, onAdd, onRemove }) => {
   const predefinedBenefits = [
     "5 Free PRP Sessions",
@@ -132,7 +130,6 @@ const BenefitsManager = ({ benefits, onChange, onAdd, onRemove }) => {
   );
 };
 
-// Reuse the PRPManager component from edit page
 const PRPManager = ({ prpSessions, onChange, onAdd, onRemove }) => {
   return (
     <div className="md:col-span-2">
@@ -197,7 +194,6 @@ const StepHeader = ({ icon: Icon, title, description, color }) => (
   </div>
 );
 
-// DocumentUpload component with view/download functionality
 const DocumentUpload = ({
   title,
   icon: Icon,
@@ -385,7 +381,6 @@ const DocumentUpload = ({
   );
 };
 
-// Multi-select component for employees
 const MultiSelectEmployee = ({ label, options, selectedIds, onChange }) => {
   const handleToggle = (employeeId) => {
     const newSelection = selectedIds.includes(employeeId)
@@ -525,7 +520,6 @@ export default function PatientRegistration() {
     { number: 5, title: "Document Upload", icon: FileUp, color: "indigo" },
   ];
 
-  // Fetch employees on component mount
   useEffect(() => {
     const fetchEmployees = async () => {
       try {
@@ -592,7 +586,6 @@ export default function PatientRegistration() {
     }));
   };
 
-  // PRP handlers from edit page
   const handlePRPChange = (index, field, value) => {
     const newPRP = [...formData.afterSurgery.prp];
     newPRP[index] = {
@@ -722,17 +715,14 @@ export default function PatientRegistration() {
     }
   };
 
-  // Clean empty ObjectId fields before sending to API
   const cleanObjectIdFields = (data) => {
     const cleaned = JSON.parse(JSON.stringify(data));
 
-    // Single ObjectId fields
     const objectIdFields = {
       personal: ["reference"],
       counselling: ["counsellor"],
     };
 
-    // Array ObjectId fields - ALL surgery team fields are now arrays
     const arrayObjectIdFields = {
       surgery: [
         "doctor",
@@ -744,7 +734,6 @@ export default function PatientRegistration() {
       ],
     };
 
-    // Convert empty strings to null for single ObjectId fields
     Object.keys(objectIdFields).forEach((section) => {
       if (cleaned[section]) {
         objectIdFields[section].forEach((field) => {
@@ -758,7 +747,6 @@ export default function PatientRegistration() {
       }
     });
 
-    // Handle array ObjectId fields
     Object.keys(arrayObjectIdFields).forEach((section) => {
       if (cleaned[section]) {
         arrayObjectIdFields[section].forEach((field) => {
@@ -779,7 +767,6 @@ export default function PatientRegistration() {
       }
     });
 
-    // Clean empty number fields
     const numberFields = {
       personal: ["age", "packageQuoted"],
       counselling: ["finlpackage", "graftsSuggested"],
@@ -828,7 +815,6 @@ export default function PatientRegistration() {
 
       toast.success("Patient registered successfully!");
 
-      // Reset form after successful submission
       setTimeout(() => {
         setFormData({
           personal: {
@@ -1181,7 +1167,6 @@ export default function PatientRegistration() {
                     placeholder="Number of grafts"
                   />
 
-                  {/* Hair Loss Type - Radio Buttons */}
                   <div className="space-y-3 my-3">
                     <label className="block mb-4 text-md underline font-bold text-gray-700">
                       Hair Loss Type *
@@ -1237,7 +1222,6 @@ export default function PatientRegistration() {
                     </div>
                   </div>
 
-                  {/* Area of Concern - Radio Buttons */}
                   <div className="space-y-3 my-3">
                     <label className="block mb-4 text-md underline font-bold text-gray-700">
                       Area of Concern *
@@ -1278,7 +1262,6 @@ export default function PatientRegistration() {
                     </div>
                   </div>
 
-                  {/* Hair Loss Reason - Radio Buttons */}
                   <div className="space-y-3">
                     <label className="block mb-4 text-lg underline font-bold text-gray-700">
                       Hair Loss Reason *
@@ -1327,7 +1310,6 @@ export default function PatientRegistration() {
                     </div>
                   </div>
 
-                  {/* Hair Loss Duration - Radio Buttons */}
                   <div className="space-y-3">
                     <label className="block mb-4 text-md underline font-bold text-gray-700">
                       Hair Loss Duration *
@@ -1380,7 +1362,6 @@ export default function PatientRegistration() {
                     </div>
                   </div>
 
-                  {/* Updated Benefits Manager */}
                   <BenefitsManager
                     benefits={formData.counselling.additionalbenefits}
                     onChange={(value, index) =>
@@ -1602,7 +1583,6 @@ export default function PatientRegistration() {
                     className="md:col-span-2"
                   />
 
-                  {/* Multi-select for Doctors */}
                   <div className="md:col-span-2">
                     <MultiSelectEmployee
                       label="Operating Doctors (Select Multiple)"
@@ -1614,7 +1594,6 @@ export default function PatientRegistration() {
                     />
                   </div>
 
-                  {/* Multi-select for Senior Technicians */}
                   <div className="md:col-span-2">
                     <MultiSelectEmployee
                       label="Senior Technicians (Select Multiple)"
@@ -1626,7 +1605,6 @@ export default function PatientRegistration() {
                     />
                   </div>
 
-                  {/* Multi-select for Right Side Implanters */}
                   <div className="md:col-span-2">
                     <MultiSelectEmployee
                       label="Right Side Implanters (Select Multiple)"
@@ -1638,7 +1616,6 @@ export default function PatientRegistration() {
                     />
                   </div>
 
-                  {/* Multi-select for Left Side Implanters */}
                   <div className="md:col-span-2">
                     <MultiSelectEmployee
                       label="Left Side Implanters (Select Multiple)"
@@ -1650,7 +1627,6 @@ export default function PatientRegistration() {
                     />
                   </div>
 
-                  {/* Multi-select for Grafting Persons */}
                   <div className="md:col-span-2">
                     <MultiSelectEmployee
                       label="Grafting Specialists (Select Multiple)"
@@ -1662,7 +1638,6 @@ export default function PatientRegistration() {
                     />
                   </div>
 
-                  {/* Multi-select for Helpers */}
                   <div className="md:col-span-2">
                     <MultiSelectEmployee
                       label="Surgery Helpers (Select Multiple)"

@@ -1,4 +1,3 @@
-// components/ChangePasswordForm.jsx - CREATE THIS FILE
 'use client';
 
 import { useState } from 'react';
@@ -49,7 +48,7 @@ export default function ChangePasswordForm() {
       }
 
       setSuccess(data.message);
-      
+
       setFormData({
         currentPassword: '',
         newPassword: '',
@@ -72,7 +71,7 @@ export default function ChangePasswordForm() {
   return (
     <div className="max-w-md mx-auto p-6 bg-white rounded-lg shadow">
       <h2 className="text-2xl font-bold mb-6">Change Password</h2>
-      
+
       <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded">
         <p className="text-sm text-yellow-800">
           ⚠️ <strong>Important:</strong> Changing your password will log you out from all devices.

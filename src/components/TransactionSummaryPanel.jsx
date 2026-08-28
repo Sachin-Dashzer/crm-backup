@@ -6,27 +6,16 @@ import { Receipt, TrendingDown, TrendingUp, CheckCircle2, Link2 } from "lucide-r
 const formatCurrency = (amount) =>
   `₹${Number(amount || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })}`;
 
-// The single highest-value addition per the redesign brief: a live, sticky panel that shows
-// the user the CONSEQUENCE of what they're about to submit — not just the amount, but what
-// payable or receivable actually gets created — before they click Save.
-//
-// Every number here is computed by importing the same functions the server runs
-// (computeTaxBreakdown from src/lib/taxMath.js), so the prediction cannot drift from what
-// actually gets written. This panel does not re-implement the GST/TDS or external-party
-// rules; it only calls the one place those rules live.
-//
-// `who` shape: { patientLabel, payeeLabel } — never a bare "Amount" when two parties are
-// involved; this panel always names both sides of the money.
 export default function TransactionSummaryPanel({
-  category, // "TRANSPLANT" | "SERVICE" | "MEDICINE" | "EXPENSE"
+  category,
   amount,
   discount = 0,
   method,
   who = {},
-  taxDetails, // optional: { includeGST, gstRate, gstAmount, includeTDS, tdsRate, tdsAmount, tdsCategory }
-  externalParty, // optional: { name, method } — set when method is paid_to_external / paid_by_other
-  linkedReceivable, // optional: { label, pending } — settling an EXISTING receivable
-  linkedPayable, // optional: { label, pending } — settling an EXISTING payable
+  taxDetails,
+  externalParty,
+  linkedReceivable,
+  linkedPayable,
   className = "",
 }) {
   const isExpense = category === "EXPENSE";
@@ -41,8 +30,6 @@ export default function TransactionSummaryPanel({
   const netAmount = tax ? tax.vendorPayable : baseAmount;
   const invoiceTotal = tax ? tax.invoiceTotal : baseAmount;
 
-  // What this save will produce, in order of precedence — a transaction is at most one of
-  // these, never several at once.
   let consequence = null;
   if (tax?.tdsAmount > 0) {
     consequence = {

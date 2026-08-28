@@ -247,7 +247,6 @@ export default function VisitedPage() {
     <div className="flex min-h-screen bg-gray-50">
       <HRSidebar />
       <main className="flex-1 overflow-auto">
-        {/* Header */}
         <div className="bg-white border-b border-gray-200 px-6 py-5 sticky top-0 z-10 shadow-sm">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
@@ -267,7 +266,6 @@ export default function VisitedPage() {
         </div>
 
         <div className="p-6 space-y-5">
-          {/* KPI row */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
             <KpiTile label="Total Visited"  value={kpi.total}     accent="amber" />
             <KpiTile label="Selected"       value={kpi.selected}  accent="emerald" />
@@ -276,7 +274,6 @@ export default function VisitedPage() {
             <KpiTile label="Freshers"       value={kpi.freshers}  accent="blue" />
           </div>
 
-          {/* Status filter tabs */}
           <div className="flex gap-2 flex-wrap">
             {STATUS_TABS.map(({ val, label, icon: Icon }) => {
               const isActive = statusFilter === val;
@@ -298,7 +295,6 @@ export default function VisitedPage() {
             })}
           </div>
 
-          {/* Table card */}
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
             <div className="p-4 border-b border-gray-100 flex items-center gap-3">
               <div className="relative flex-1 max-w-sm">

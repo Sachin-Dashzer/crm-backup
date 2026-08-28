@@ -8,29 +8,8 @@ import { formatCurrency } from "@/lib/financeUI";
 import { useToast } from "@/components/Toast";
 
 const LOAN_ACCOUNTS = ["Bajaj Loan", "Fibe Loan"];
-// Every account EXCEPT the two loan accounts — settling a loan means moving the money it holds
-// into a real bank/cash account, never into the other loan account.
 const BANK_OPTIONS = ACCOUNTS.filter((a) => !LOAN_ACCOUNTS.includes(a));
 
-// Records a loan settlement as a contra entry (AccountTransfer) FROM the loan-financing account
-// (Bajaj Loan / Fibe Loan) TO the bank account the money was swept into — reusing
-// /api/account-transfers/create exactly as the rest of Close Book does, so this settlement shows
-// up in both accounts' ledgers and balances the same way any other internal transfer does. No new
-// backend logic — this is only a purpose-built front end onto the existing contra-entry endpoint.
-//
-// `fromAccount` is fixed — the modal is opened from one specific loan-financing transaction row
-// (inside that account's ledger drill-down), not chosen inside the modal. `defaultAmount` and
-// `contextLabel` pre-fill from that row.
-//
-// `sourceTransactionId` links the transfer this modal creates back to the loan transaction it
-// settles, so a later loan cancellation (CancelLoanModal) can find and reverse this exact
-// transfer instead of guessing by amount and date — via `transferKind: "LOAN_SETTLEMENT"` (D1),
-// not sourceTransactionId alone, which a cancellation's own reversing transfer also carries.
-//
-// D6 — on open, this fetches the SAME probe CancelLoanModal uses (GET .../cancel-loan) to learn
-// how much has already been settled against this transaction, and defaults the amount field to
-// what's actually remaining rather than the raw row amount — settling twice at the full amount
-// would silently over-settle.
 export default function LoanSettlementModal({
   fromAccount,
   defaultAmount,
@@ -51,7 +30,7 @@ export default function LoanSettlementModal({
   const [done, setDone] = useState(false);
   const [remaining, setRemaining] = useState(null);
   const [alreadySettled, setAlreadySettled] = useState(0);
-  const [overSettlement, setOverSettlement] = useState(null); // { alreadySettled, remaining } | null
+  const [overSettlement, setOverSettlement] = useState(null);
   const [allowOverSettlement, setAllowOverSettlement] = useState(false);
 
   useEffect(() => {
@@ -63,13 +42,9 @@ export default function LoanSettlementModal({
         setAlreadySettled(json.totalSettled || 0);
         const rem = json.remaining ?? defaultAmount ?? 0;
         setRemaining(rem);
-        // Only override the amount field if the user hasn't already been given a specific
-        // defaultAmount to work from and hasn't typed anything — the remaining balance is a
-        // better default than the raw row amount whenever something has already settled.
         if (json.totalSettled > 0) setAmount(String(Math.max(rem, 0)));
       })
       .catch(() => {});
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sourceTransactionId]);
 
   const handleSubmit = async () => {
@@ -101,7 +76,6 @@ export default function LoanSettlementModal({
       const json = await res.json();
       if (!res.ok) {
         if (json.remaining !== undefined) {
-          // Over-settlement — offer the escape hatch instead of just failing.
           setOverSettlement({ alreadySettled: json.alreadySettled, remaining: json.remaining });
           setSubmitting(false);
           return;
@@ -196,10 +170,6 @@ export default function LoanSettlementModal({
             </select>
           </div>
 
-          {/* D3 — branch was never sent before, so a branch-filtered Close Book view hid this
-              transfer entirely: the loan account looked like it still held the money, and the
-              destination bank looked like it never arrived. Visible, editable, defaulted to the
-              source transaction's own branch. */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">Branch</label>
             <select

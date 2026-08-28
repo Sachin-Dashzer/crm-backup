@@ -25,7 +25,6 @@ export default function StockPurchasePage() {
   const [vendors, setVendors] = useState([]);
   const [toast, setToast] = useState({ show: false, message: "", type: "" });
 
-  // Purchase form data
   const [purchaseData, setPurchaseData] = useState({
     vendorId: "",
     paymentMethod: "cash",
@@ -33,7 +32,6 @@ export default function StockPurchasePage() {
     remarks: "",
   });
 
-  // Items to purchase (array of stock items)
   const [purchaseItems, setPurchaseItems] = useState([
     {
       id: Date.now(),
@@ -59,14 +57,12 @@ export default function StockPurchasePage() {
   const fetchData = async () => {
     setFetchLoading(true);
     try {
-      // Fetch stocks
       const stockRes = await fetch("/api/stocks/get");
       const stockData = await stockRes.json();
       if (stockData.success) {
         setStocks(stockData.data || stockData.stocks || []);
       }
 
-      // Fetch vendors
       const vendorRes = await fetch("/api/vendors/get");
       const vendorData = await vendorRes.json();
       if (vendorData.success) {
@@ -80,7 +76,6 @@ export default function StockPurchasePage() {
     }
   };
 
-  // Add new item row
   const addItem = () => {
     setPurchaseItems([
       ...purchaseItems,
@@ -95,7 +90,6 @@ export default function StockPurchasePage() {
     ]);
   };
 
-  // Remove item row
   const removeItem = (id) => {
     if (purchaseItems.length === 1) {
       showToast("At least one item is required", "error");
@@ -104,14 +98,12 @@ export default function StockPurchasePage() {
     setPurchaseItems(purchaseItems.filter((item) => item.id !== id));
   };
 
-  // Update item field
   const updateItem = (id, field, value) => {
     setPurchaseItems((prev) =>
       prev.map((item) => {
         if (item.id === id) {
           const updated = { ...item, [field]: value };
 
-          // If stock is selected, get stock details
           if (field === "stockId" && value) {
             const selectedStock = stocks.find((s) => s._id === value);
             if (selectedStock) {
@@ -120,7 +112,6 @@ export default function StockPurchasePage() {
             }
           }
 
-          // Calculate total amount
           if (field === "quantity" || field === "purchasePrice") {
             const qty = parseFloat(
               field === "quantity" ? value : updated.quantity
@@ -138,7 +129,6 @@ export default function StockPurchasePage() {
     );
   };
 
-  // Calculate grand total
   const calculateGrandTotal = () => {
     return purchaseItems.reduce(
       (sum, item) => sum + (parseFloat(item.totalAmount) || 0),
@@ -154,7 +144,6 @@ export default function StockPurchasePage() {
     }).format(amount);
   };
 
-  // Validate form
   const validateForm = () => {
     if (!purchaseData.vendorId) {
       showToast("Please select a vendor", "error");
@@ -184,7 +173,6 @@ export default function StockPurchasePage() {
     return true;
   };
 
-  // Submit purchase
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -250,7 +238,6 @@ export default function StockPurchasePage() {
     <div className="flex min-h-screen bg-[#f8f9fc]">
       <StockSidebar />
 
-      {/* Toast Notification */}
       {toast.show && (
         <div className="fixed top-4 right-4 z-50 animate-fade-in">
           <div
@@ -280,7 +267,6 @@ export default function StockPurchasePage() {
       )}
 
       <main className="flex-1 flex flex-col min-h-screen">
-        {/* Sticky Header */}
         <div className="bg-white border-b border-gray-100 shadow-sm px-6 py-4 sticky top-0 z-10">
           <div className="flex items-center gap-3">
             <button
@@ -308,7 +294,6 @@ export default function StockPurchasePage() {
 
         <div className="flex-1 px-6 py-6">
           <form onSubmit={handleSubmit} className="space-y-5 max-w-5xl">
-            {/* Purchase Details Card */}
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm">
               <div className="px-6 py-4 border-b border-gray-100">
                 <div className="flex items-center gap-2">
@@ -318,7 +303,6 @@ export default function StockPurchasePage() {
               </div>
               <div className="p-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Vendor Selection */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1.5">
                       Vendor <span className="text-red-500">*</span>
@@ -337,7 +321,6 @@ export default function StockPurchasePage() {
                     />
                   </div>
 
-                  {/* Payment Method */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1.5">
                       Payment Method <span className="text-red-500">*</span>
@@ -358,7 +341,6 @@ export default function StockPurchasePage() {
                     </select>
                   </div>
 
-                  {/* Purchase Date */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1.5">
                       Purchase Date <span className="text-red-500">*</span>
@@ -372,7 +354,6 @@ export default function StockPurchasePage() {
                     />
                   </div>
 
-                  {/* Remarks */}
                   <div className="md:col-span-2">
                     <label className="block text-sm font-medium text-gray-700 mb-1.5">Remarks</label>
                     <textarea
@@ -387,7 +368,6 @@ export default function StockPurchasePage() {
               </div>
             </div>
 
-            {/* Items Card */}
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm">
               <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -404,7 +384,6 @@ export default function StockPurchasePage() {
                 </button>
               </div>
               <div className="p-6">
-                {/* Items Table */}
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
@@ -470,7 +449,6 @@ export default function StockPurchasePage() {
                   </table>
                 </div>
 
-                {/* Grand Total */}
                 <div className="mt-4 pt-4 border-t border-gray-100 flex justify-end">
                   <div className="bg-emerald-50 border border-emerald-100 rounded-xl px-5 py-3 min-w-56">
                     <div className="flex justify-between text-sm text-gray-600 mb-1">
@@ -492,7 +470,6 @@ export default function StockPurchasePage() {
               </div>
             </div>
 
-            {/* Action Buttons */}
             <div className="flex gap-3">
               <button
                 type="submit"

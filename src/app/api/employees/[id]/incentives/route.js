@@ -10,11 +10,6 @@ import { buildPayableAggregationStages } from "@/lib/payableAggregation";
 
 const ALLOWED_ROLES = ["admin", "super-admin"];
 
-// The employee-side mirror of Patient.incentives — a live aggregation over every patient, never a
-// second stored copy (see src/models/Patient.js's header comment on the incentives array, and
-// src/lib/incentiveDerivation.js). Returns every non-cancelled row this employee earned, who it
-// was for, totals grouped by month and by purpose, and the outstanding balance across every
-// Incentive payable this employee has (paid/pending computed live, same as everywhere else).
 export async function GET(req, { params }) {
   try {
     const session = await getServerSession(authOptions);
@@ -40,11 +35,6 @@ export async function GET(req, { params }) {
     const page = Math.max(1, parseInt(searchParams.get("page") || "1"));
     const limit = Math.min(200, Math.max(1, parseInt(searchParams.get("limit") || "50")));
 
-    // Index-friendly first match (patientSchema's incentives.employee+isCancelled index — a query
-    // on just the employee half of a compound index still uses it) before $unwind explodes every
-    // patient's array. Deliberately does NOT exclude cancelled rows — §3.4 shows them struck
-    // through rather than hiding them, so the row listing below keeps them; only the totals
-    // aggregations (byMonth/byPurpose, further down) exclude cancelled amounts.
     const preMatch = { "incentives.employee": employeeId };
 
     const rowMatch = { "incentives.employee": employeeId };
@@ -83,8 +73,6 @@ export async function GET(req, { params }) {
     const [rows, totalAgg, byMonth, byPurpose, outstandingPayables] = await Promise.all([
       Patient.aggregate([...basePipeline, { $skip: (page - 1) * limit }, { $limit: limit }]),
       Patient.aggregate([...basePipeline, { $count: "total" }]),
-      // Grouped totals ignore the purpose/month/year filters above — they're the whole-history
-      // breakdown the filters let you drill into, not a mirror of the current filtered view.
       Patient.aggregate([
         { $match: preMatch },
         { $unwind: "$incentives" },

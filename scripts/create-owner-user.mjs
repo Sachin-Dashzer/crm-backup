@@ -1,23 +1,3 @@
-// scripts/create-owner-user.mjs
-//
-// Creates (or upgrades) a single local test user with the new "owner" role, added to the
-// User.role enum alongside super-admin/admin/etc. Reuses the real User model (relative import,
-// not the "@/" alias — this file has no alias imports itself) so the password goes through the
-// model's own pre-save bcrypt hook exactly like every other account, instead of reimplementing
-// hashing here.
-//
-// If a user with the given email already exists:
-//   - and its role is already "owner": reports it and does nothing.
-//   - and its role is something else: updates role to "owner" in place (password left alone
-//     unless --reset-password is passed), so re-running this script against an existing test
-//     account doesn't create a duplicate.
-// Otherwise creates a brand new user.
-//
-// Usage:
-//   node scripts/create-owner-user.mjs                                   # dry run
-//   node scripts/create-owner-user.mjs --apply                           # create/upgrade for real
-//   node scripts/create-owner-user.mjs --apply --email=x@y.com --password=secret123 --name="Jane Owner"
-//   node scripts/create-owner-user.mjs --apply --reset-password          # force password reset on an existing match
 
 import mongoose from "mongoose";
 import fs from "fs";
@@ -76,7 +56,7 @@ async function run() {
       );
       if (APPLY) {
         existing.role = "owner";
-        if (RESET_PASSWORD) existing.password = PASSWORD; // pre-save hook hashes + bumps sessionVersion
+        if (RESET_PASSWORD) existing.password = PASSWORD;
         await existing.save();
         console.log(`Updated user ${existing._id}.`);
       } else {
@@ -89,7 +69,7 @@ async function run() {
       const user = new User({
         name: NAME,
         email: EMAIL,
-        password: PASSWORD, // hashed by the model's pre-save hook
+        password: PASSWORD,
         role: "owner",
         branch: "All",
         sessionVersion: 0,

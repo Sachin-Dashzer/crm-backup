@@ -7,8 +7,6 @@ import { formatCurrency } from "@/lib/financeUI";
 import { ACCOUNTS } from "@/constants/bankRouting";
 import { ALL_BRANCHES } from "@/lib/branches";
 
-// Edits ONE Advance row (OUT or IN) in place — exact mirror of EditBorrowingModal. direction and
-// receivableId are structural and never editable here (see /api/advances/[id]'s PUT handler).
 export default function EditAdvanceModal({ advance, onClose, onSuccess, toast }) {
   const [amount, setAmount] = useState(String(advance.amount));
   const [date, setDate] = useState(new Date(advance.date).toISOString().split("T")[0]);

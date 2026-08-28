@@ -19,7 +19,6 @@ const ROLE_COLOR = {
   hr:            "bg-teal-100 text-teal-700 border-teal-200",
 };
 
-/* ── Modal ── */
 function UserModal({ user, onClose, onSuccess }) {
   const isEdit = !!user;
   const [form, setForm] = useState({
@@ -166,7 +165,6 @@ function UserModal({ user, onClose, onSuccess }) {
   );
 }
 
-/* ── Main Page ── */
 export default function SuperAdminManageUsers() {
   const [users, setUsers] = useState([]);
   const [filtered, setFiltered] = useState([]);
@@ -174,7 +172,7 @@ export default function SuperAdminManageUsers() {
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
   const [branchFilter, setBranchFilter] = useState("all");
-  const [modal, setModal] = useState(null); // null | { mode: "create" | "edit", user?: object }
+  const [modal, setModal] = useState(null);
   const [toast, setToast] = useState({ type: "", text: "" });
 
   const showToast = (type, text) => {
@@ -190,7 +188,7 @@ export default function SuperAdminManageUsers() {
         setUsers(data.users);
         setFiltered(data.users);
       }
-    } catch { /* ignore */ } finally {
+    } catch {  } finally {
       setLoading(false);
     }
   };
@@ -251,7 +249,6 @@ export default function SuperAdminManageUsers() {
       <SuperAdminSidebar />
       <main className="flex-1 p-6 space-y-6 min-w-0">
 
-        {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-linear-to-br from-amber-500 to-orange-500 flex items-center justify-center shadow">
@@ -271,7 +268,6 @@ export default function SuperAdminManageUsers() {
           </button>
         </div>
 
-        {/* Toast */}
         {toast.text && (
           <div className={`px-4 py-3 rounded-xl text-sm font-medium ${
             toast.type === "success"
@@ -282,7 +278,6 @@ export default function SuperAdminManageUsers() {
           </div>
         )}
 
-        {/* Role Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
           {ALL_ROLES.map((role) => (
             <div
@@ -300,7 +295,6 @@ export default function SuperAdminManageUsers() {
           ))}
         </div>
 
-        {/* Filters */}
         <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4">
           <div className="flex flex-col sm:flex-row gap-3">
             <div className="relative flex-1">
@@ -330,7 +324,6 @@ export default function SuperAdminManageUsers() {
           </div>
         </div>
 
-        {/* Table */}
         <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-100">

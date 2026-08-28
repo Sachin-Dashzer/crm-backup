@@ -3,10 +3,6 @@
 import { useEffect, useRef, useState } from "react";
 import { ChevronDown, Check } from "lucide-react";
 
-// Multi-select dropdown for filtering by bank/cash account ("Further Mode"), with a Select All
-// toggle. `selected` is the list of currently-checked account names; `onChange` receives the
-// next full list. An empty `selected` means "nothing selected" (not "no filter") — callers treat
-// selected.length === options.length as the unfiltered/default state.
 export default function AccountMultiSelect({ options, selected, onChange, label = "Further Mode" }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);

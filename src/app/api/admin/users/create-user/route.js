@@ -1,4 +1,3 @@
-// app/api/admin/create-user/route.js - CREATE THIS FILE
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
@@ -10,7 +9,6 @@ export async function POST(req) {
   try {
     const session = await getServerSession(authOptions);
 
-    // Only super-admin can manage users
     if (!session || session?.user?.role !== 'super-admin') {
       return NextResponse.json(
         { success: false, message: "Unauthorized. Super-admin access required." },
@@ -22,7 +20,6 @@ export async function POST(req) {
 
     const { name, email, password, role: newRole, branch } = await req.json();
 
-    // Validation
     if (!name || !email || !password || !newRole) {
       return NextResponse.json(
         { success: false, message: "Name, email, password, and role are required" },
@@ -30,15 +27,7 @@ export async function POST(req) {
       );
     }
 
-    // Prevent creating admin accounts through this endpoint
-    // if (role === 'admin') {
-    //   return NextResponse.json(
-    //     { success: false, message: "Cannot create admin accounts through this interface" },
-    //     { status: 400 }
-    //   );
-    // }
 
-    // Valid roles for creation
     const validRoles = ['super-admin', 'admin', 'sales', 'reception', 'collab', 'surgery', 'counsellor', 'stock', 'hr'];
     if (!validRoles.includes(newRole)) {
       return NextResponse.json(
@@ -47,7 +36,6 @@ export async function POST(req) {
       );
     }
 
-    // Valid branches: a main branch, "Collab" (shared account for the 8 collab-city panel), or "All"
     const validBranches = [...MAIN_BRANCHES, 'Collab', 'All'];
     if (branch && !validBranches.includes(branch)) {
       return NextResponse.json(
@@ -56,7 +44,6 @@ export async function POST(req) {
       );
     }
 
-    // Email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       return NextResponse.json(
@@ -65,7 +52,6 @@ export async function POST(req) {
       );
     }
 
-    // Password validation
     if (password.length < 6) {
       return NextResponse.json(
         { success: false, message: "Password must be at least 6 characters" },
@@ -73,7 +59,6 @@ export async function POST(req) {
       );
     }
 
-    // Check if user already exists
     const existingUser = await User.findOne({ email: email.toLowerCase() });
     if (existingUser) {
       return NextResponse.json(
@@ -82,11 +67,10 @@ export async function POST(req) {
       );
     }
 
-    // Create new user
     const newUser = new User({
       name,
       email: email.toLowerCase(),
-      password, // Will be hashed by pre-save hook
+      password,
       role: newRole,
       branch: branch || 'All',
       sessionVersion: 0,

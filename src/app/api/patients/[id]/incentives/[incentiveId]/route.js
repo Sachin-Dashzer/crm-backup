@@ -13,10 +13,6 @@ function samePeriod(a, b) {
   return a.month === b.month && a.year === b.year;
 }
 
-// Revises one incentive row's amount/purpose/remarks/date. Every change appends to the row's own
-// log[]; existing entries are never edited or removed. If amount or date (month) changes, the
-// linked payable is recomputed (see recomputeIncentivePayable) — moved to a different month's
-// payable first if the date crossed into a new month.
 export async function PATCH(req, { params }) {
   try {
     const session = await getServerSession(authOptions);
@@ -118,10 +114,6 @@ export async function PATCH(req, { params }) {
 
         await patient.save({ session: dbSession });
 
-        // Recompute whatever payable(s) this edit actually touched — the old one first (so a
-        // reduction/move-away is checked against what it still had to justify), then the new one
-        // if the row moved months. Reconputing unconditionally when nothing changed is harmless
-        // (a no-op — see recomputeIncentivePayable) but skipped here to avoid a wasted query.
         if (monthChanged) {
           await recomputeIncentivePayable({ session: dbSession, payableId: oldPayableId, actor });
           await recomputeIncentivePayable({ session: dbSession, payableId: row.payableId, actor });
@@ -147,9 +139,6 @@ export async function PATCH(req, { params }) {
   }
 }
 
-// Cancels an incentive row — sets isCancelled and logs it, never removes the row. Refuses (via
-// recomputeIncentivePayable) if the linked payable has already been paid past what cancelling
-// this row would leave it justified at.
 export async function DELETE(req, { params }) {
   try {
     const session = await getServerSession(authOptions);
@@ -172,7 +161,6 @@ export async function DELETE(req, { params }) {
       const body = await req.json();
       reason = body?.reason || "";
     } catch {
-      /* no body sent — cancellation reason is optional */
     }
 
     const performedBy = { name: session.user.name, email: session.user.email };

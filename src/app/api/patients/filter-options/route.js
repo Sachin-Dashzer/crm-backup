@@ -23,9 +23,6 @@ const handler = async (req) => {
         Patient.distinct("counselling.techniqueSuggested"),
         Patient.distinct("surgery.technique"),
         Patient.distinct("personal.techniqueQuoted"),
-        // Moved here from /api/patients/get-patient, which ran this distinct — a full collection
-        // scan — on EVERY list request, i.e. on every page change, sort and filter tweak, purely
-        // to populate a dropdown. This route is called once per mount, which is where it belongs.
         Patient.distinct("surgery.location"),
       ]);
 
@@ -42,8 +39,6 @@ const handler = async (req) => {
       },
       {
         headers: {
-          // Dropdown contents change on the order of days, not seconds. `private` because the
-          // response is behind a session check and must never land in a shared/CDN cache.
           "Cache-Control": "private, max-age=300",
         },
       },

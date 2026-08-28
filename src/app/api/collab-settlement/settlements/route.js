@@ -5,8 +5,6 @@ import connectDB from "@/lib/db";
 import CollabSettlement from "@/models/CollabSettlement";
 import { COLLAB_BRANCHES } from "@/lib/branches";
 
-// Read-only listing — the collab panel shows settlement history. Creating one (settlements/
-// create) and deleting one (settlements/[id]) remain admin-only: those move real money.
 const ALLOWED_ROLES = ["collab", "admin", "super-admin"];
 
 export async function GET(request) {

@@ -5,13 +5,6 @@ import mongoose from "mongoose";
 import connectDB from "@/lib/db";
 import { fetchOpenReceivablesForPatient } from "@/lib/receivableAllocation";
 
-// Read-only preview for the revenue create/edit forms — "this patient has these open
-// receivables, in FIFO order, with this much pending on each" — so the allocation preview in
-// ReceivableLinkField can render before the transaction is even saved. Deliberately NOT
-// admin-gated like /api/receivables/list: every role that can create a revenue transaction
-// (reception, sales, stocks, collab, admin) needs to see this, not just admin/super-admin who
-// manage the receivables ledger itself. Returns only what the preview needs, not the full
-// receivables-page payload (no branch/purpose filters, no pagination).
 export async function GET(request) {
   try {
     const session = await getServerSession(authOptions);

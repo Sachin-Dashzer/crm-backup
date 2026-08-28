@@ -11,7 +11,7 @@ function speak(text, enabled) {
   if (!enabled || typeof window === "undefined" || !window.speechSynthesis) return;
   window.speechSynthesis.cancel();
   const u = new SpeechSynthesisUtterance(text.replace(/[*_#•\[\]]/g, "").slice(0, 450));
-  
+
   u.lang  = "en-IN";
   u.rate  = 1.0;
   u.pitch = 1.1;
@@ -28,18 +28,18 @@ export default function SaniyaPage() {
   const [input, setInput]         = useState("");
   const [loading, setLoading]     = useState(false);
   const [ttsOn, setTtsOn]         = useState(true);
-  const [phase, setPhase]         = useState("idle"); 
+  const [phase, setPhase]         = useState("idle");
   const [liveText, setLiveText]   = useState("");
   const [status, setStatus]       = useState("Type below or tap the mic");
 
-  
+
   const chatRef      = useRef(null);
   const historyRef   = useRef([]);
   const phaseRef     = useRef("idle");
   const ttsRef       = useRef(true);
   const loadingRef   = useRef(false);
-  const recogRef     = useRef(null);   
-  
+  const recogRef     = useRef(null);
+
   const sendRef      = useRef(null);
 
   const setPhaseSync = (v) => { phaseRef.current = v; setPhase(v); };
@@ -54,7 +54,7 @@ export default function SaniyaPage() {
   }, [messages]);
   useEffect(() => { chatRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, liveText]);
 
-  
+
   useEffect(() => {
     setMessages([{
       id: 1, role: "assistant", time: new Date(),
@@ -62,7 +62,7 @@ export default function SaniyaPage() {
     }]);
   }, []);
 
-  
+
   const killRecog = useCallback(() => {
     if (recogRef.current) {
       try { recogRef.current.abort(); } catch {}
@@ -73,7 +73,7 @@ export default function SaniyaPage() {
     setStatus("Type below or tap the mic");
   }, []);
 
-  
+
   const sendMessage = useCallback(async (text) => {
     const q = (typeof text === "string" ? text : input).trim();
     if (!q || loadingRef.current) return;
@@ -102,18 +102,18 @@ export default function SaniyaPage() {
       loadingRef.current = false;
       setStatus("Type below or tap the mic");
     }
-  }, [input]); 
+  }, [input]);
 
-  
+
   useEffect(() => { sendRef.current = sendMessage; }, [sendMessage]);
 
-  
+
   const makeSR = useCallback((opts = {}) => {
     const SR = typeof window !== "undefined"
       && (window.SpeechRecognition || window.webkitSpeechRecognition);
     if (!SR) return null;
     const r = new SR();
-    
+
     r.lang            = "en-IN";
     r.continuous      = opts.continuous || false;
     r.interimResults  = true;
@@ -121,7 +121,7 @@ export default function SaniyaPage() {
     return r;
   }, []);
 
-  
+
   const startListening = useCallback(() => {
     killRecog();
     const r = makeSR();
@@ -163,7 +163,7 @@ export default function SaniyaPage() {
     try { r.start(); } catch { killRecog(); }
   }, [killRecog, makeSR]);
 
-  
+
   const startWakeMode = useCallback(() => {
     killRecog();
 
@@ -173,7 +173,7 @@ export default function SaniyaPage() {
       recogRef.current = r;
 
       r.onstart = () => {
-        
+
         if (phaseRef.current === "wake") setStatus('🟠 Boliye "Hii Saniya"...');
       };
 
@@ -189,19 +189,19 @@ export default function SaniyaPage() {
         }
       };
 
-      
+
       r.onend = () => {
-        if (phaseRef.current !== "wake") return; 
+        if (phaseRef.current !== "wake") return;
         recogRef.current = null;
         setTimeout(() => { if (phaseRef.current === "wake") build(); }, 300);
       };
 
       r.onerror = (e) => {
-        if (e.error === "no-speech") return; 
+        if (e.error === "no-speech") return;
         if (e.error === "not-allowed") {
           setStatus("⚠️ Mic permission denied."); killRecog(); return;
         }
-        
+
         recogRef.current = null;
         setTimeout(() => { if (phaseRef.current === "wake") build(); }, 500);
       };
@@ -213,10 +213,10 @@ export default function SaniyaPage() {
     build();
   }, [killRecog, makeSR, startListening]);
 
-  
+
   const onMicClick = useCallback(() => {
     if (phaseRef.current === "listening") {
-      
+
       if (recogRef.current) { try { recogRef.current.stop(); } catch {} }
     } else if (phaseRef.current === "wake") {
       killRecog();
@@ -225,7 +225,7 @@ export default function SaniyaPage() {
     }
   }, [killRecog, startListening]);
 
-  
+
   useEffect(() => () => {
     killRecog();
     if (typeof window !== "undefined") window.speechSynthesis?.cancel();
@@ -246,7 +246,6 @@ export default function SaniyaPage() {
   return (
     <div className="flex flex-col h-screen bg-[#fff5ec] overflow-hidden">
 
-      {/* Header */}
       <div className="bg-[#D32F2F] text-white px-5 py-3 flex items-center justify-between shadow-lg shrink-0">
         <div className="flex items-center gap-3">
           <div className="relative">
@@ -275,7 +274,6 @@ export default function SaniyaPage() {
         </div>
       </div>
 
-      {/* Status bar */}
       <div className={`py-1.5 text-xs font-medium text-center flex items-center justify-center gap-1.5 shrink-0 transition-colors ${
         isListening ? "bg-green-50 text-green-700" :
         isWake      ? "bg-amber-50 text-amber-600" :
@@ -290,7 +288,6 @@ export default function SaniyaPage() {
         {status}
       </div>
 
-      {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-4">
         <div className="max-w-2xl mx-auto space-y-4">
 
@@ -314,7 +311,6 @@ export default function SaniyaPage() {
             </div>
           ))}
 
-          {/* Live transcript bubble */}
           {liveText && (
             <div className="flex justify-end">
               <div className="bg-green-100 text-green-800 px-4 py-2 rounded-2xl rounded-tr-sm text-sm italic max-w-[82%] flex items-center gap-2">
@@ -324,7 +320,6 @@ export default function SaniyaPage() {
             </div>
           )}
 
-          {/* Loading dots */}
           {loading && (
             <div className="flex gap-2">
               <div className="w-8 h-8 rounded-full bg-[#D32F2F] flex items-center justify-center shrink-0 shadow">
@@ -342,7 +337,6 @@ export default function SaniyaPage() {
         </div>
       </div>
 
-      {/* Quick prompts */}
       <div className="px-4 pb-2 shrink-0">
         <div className="max-w-2xl mx-auto flex gap-2 overflow-x-auto pb-1 no-scrollbar">
           {quickPrompts.map((p) => (
@@ -354,11 +348,9 @@ export default function SaniyaPage() {
         </div>
       </div>
 
-      {/* Input bar */}
       <div className="bg-white border-t border-red-100 px-4 pt-3 pb-5 shrink-0 shadow-[0_-4px_16px_rgba(0,0,0,0.06)]">
         <div className="max-w-2xl mx-auto space-y-2.5">
 
-          {/* Wake word toggle */}
           <div className="flex justify-center">
             <button onClick={isWake ? killRecog : startWakeMode}
               className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-medium border transition-all ${
@@ -371,7 +363,6 @@ export default function SaniyaPage() {
             </button>
           </div>
 
-          {/* Text + Mic + Send */}
           <div className="flex gap-2 items-end">
             <textarea rows={1} value={input}
               onChange={(e) => setInput(e.target.value)}
@@ -380,7 +371,6 @@ export default function SaniyaPage() {
               className="flex-1 resize-none rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm focus:outline-none focus:border-[#D32F2F] transition"
             />
 
-            {/* Mic — click to start, click again to stop & send */}
             <button onClick={onMicClick} disabled={loading}
               title={isListening ? "Tap to stop & send" : "Tap to speak"}
               className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 transition-all ${

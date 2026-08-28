@@ -9,15 +9,6 @@ import { ALL_BRANCHES } from "@/lib/branches";
 import { formatCurrency, formatDate } from "@/lib/financeUI";
 import { HelpCircle, Loader2, Save, CheckCircle2, Link2 } from "lucide-react";
 
-// Suspense — money on the bank statement that isn't in the CRM and whose source is unknown.
-//
-// The point is reconciliation, not accounting for income: recording it makes the close book
-// agree with the bank, while deliberately keeping it out of every sales and revenue total. It
-// is not income until someone works out what it was. See src/models/SuspenseEntry.js.
-//
-// Open entries are listed underneath the form because the list IS the job — the figure at the
-// top is what should be driven to zero, and an entry nobody can see is an entry nobody chases.
-
 const emptyForm = () => ({
   account: "",
   direction: "IN",
@@ -51,7 +42,6 @@ export default function SuspenseEntryForm({ onSaved }) {
         setSummary(d.openSummary || { count: 0, netAmount: 0 });
       }
     } catch {
-      /* non-fatal — the form still works without the list */
     } finally {
       setLoading(false);
     }
@@ -83,9 +73,6 @@ export default function SuspenseEntryForm({ onSaved }) {
     }
   };
 
-  // Resolving needs the id of the real transaction. Asked for explicitly rather than guessed:
-  // a resolved entry stops counting toward the balance, so linking the wrong row would remove
-  // money from the books that the bank still holds.
   const resolve = async (entry) => {
     const transactionId = window.prompt(
       `Resolving ${formatCurrency(entry.amount)} in ${entry.account}.\n\n` +
@@ -245,7 +232,6 @@ export default function SuspenseEntryForm({ onSaved }) {
           />
         </TransactionSectionCard>
 
-        {/* The open list is the working queue — this figure is what should reach zero. */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
             <div>

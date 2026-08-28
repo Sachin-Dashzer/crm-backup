@@ -1,4 +1,3 @@
-// app/(dashboard)/admin/transactions/edit/[id]/page.jsx
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
@@ -35,7 +34,6 @@ export default function EditTransactionPage() {
   const [transaction, setTransaction] = useState(null);
   const [toast, setToast] = useState({ show: false, message: "", type: "" });
 
-  // TRANSPLANT DATA
   const [transplantData, setTransplantData] = useState({
     patient: "",
     procedure: "Sapphire FUE",
@@ -54,7 +52,6 @@ export default function EditTransactionPage() {
     receivableId: "",
   });
 
-  // SERVICE DATA
   const [serviceData, setServiceData] = useState({
     patient: "",
     patientName: "",
@@ -76,7 +73,6 @@ export default function EditTransactionPage() {
     receivableId: "",
   });
 
-  // MEDICINE DATA
   const [medicineData, setMedicineData] = useState({
     patient: "",
     patientName: "",
@@ -99,7 +95,6 @@ export default function EditTransactionPage() {
     receivableId: "",
   });
 
-  // EXPENSE DATA
   const [expenseData, setExpenseData] = useState({
     expenseCategory: "",
     expenseType: "",
@@ -133,7 +128,6 @@ export default function EditTransactionPage() {
   const fetchData = async () => {
     setFetchLoading(true);
     try {
-      // Fetch transaction details
       const transRes = await fetch(
         `/api/transactions/get-by-id?id=${transactionId}`,
       );
@@ -154,7 +148,6 @@ export default function EditTransactionPage() {
         return;
       }
 
-      // Fetch medicines
       try {
         const medicinesRes = await fetch("/api/stocks/get");
         if (medicinesRes.ok) {
@@ -166,7 +159,6 @@ export default function EditTransactionPage() {
         console.error("Error fetching medicines:", error);
       }
 
-      // Fetch vendors
       try {
         const vendorsRes = await fetch("/api/vendors/get");
         if (vendorsRes.ok) {
@@ -185,7 +177,6 @@ export default function EditTransactionPage() {
   };
 
   const prefillFormData = (trans) => {
-    // Determine transaction category
     let category = trans.transactionCategory;
 
     if (!category) {
@@ -225,7 +216,6 @@ export default function EditTransactionPage() {
       ? new Date(trans.date).toISOString().split("T")[0]
       : new Date().toISOString().split("T")[0];
 
-    // Extract patient ID and seed cache so the selected patient is always visible
     const patientId =
       typeof trans.patient === "object" && trans.patient !== null
         ? trans.patient._id
@@ -291,13 +281,11 @@ export default function EditTransactionPage() {
         setActiveTab("medicine");
         const isMedicineWalkIn = !patientId;
 
-        // Extract medicine ID
         const medicineIdValue =
           typeof trans.medicineId === "object" && trans.medicineId !== null
             ? trans.medicineId._id
             : trans.medicineId || "";
 
-        // Extract medicine name
         const medicineName =
           typeof trans.medicineId === "object" && trans.medicineId !== null
             ? trans.medicineId.name
@@ -362,8 +350,6 @@ export default function EditTransactionPage() {
     }
   };
 
-  // TRANSPLANT HANDLERS
-
   const handleUpdateTransplant = async () => {
     if (!transplantData.patient) {
       showToast("Please select a patient", "error");
@@ -420,8 +406,6 @@ export default function EditTransactionPage() {
       setLoading(false);
     }
   };
-
-  // SERVICE HANDLERS
 
   const handleUpdateService = async () => {
     if (!serviceData.isWalkIn && !serviceData.patient) {
@@ -489,7 +473,6 @@ export default function EditTransactionPage() {
     }
   };
 
-  // MEDICINE HANDLERS
   const handleMedicineSelect = (medicineId) => {
     const medicine = medicines.find((m) => m._id === medicineId);
     if (medicine) {
@@ -568,7 +551,6 @@ export default function EditTransactionPage() {
     }
   };
 
-  // EXPENSE HANDLERS
   const handleUpdateExpense = async () => {
     if (!expenseData.expenseCategory) {
       showToast("Please select expense category", "error");
@@ -682,7 +664,6 @@ export default function EditTransactionPage() {
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
 
-      {/* Toast Notification */}
       {toast.show && (
         <div className="fixed top-4 right-4 z-50 animate-fade-in">
           <div
@@ -712,7 +693,6 @@ export default function EditTransactionPage() {
       <main className="flex-1 flex flex-col">
         <div className="flex-1 overflow-auto">
           <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
-            {/* Header */}
             <div className="mb-6 flex justify-between">
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">
@@ -737,7 +717,6 @@ export default function EditTransactionPage() {
               </button>
             </div>
 
-            {/* Tabs */}
             <div className="mb-6 border-b border-gray-200">
               <div className="flex gap-4">
                 <button
@@ -795,7 +774,6 @@ export default function EditTransactionPage() {
               </div>
             </div>
 
-            {/* TRANSPLANT TAB */}
             {activeTab === "transplant" && (
               <RevenueSection
                 key={transactionId}
@@ -812,7 +790,6 @@ export default function EditTransactionPage() {
               />
             )}
 
-            {/* SERVICE TAB */}
             {activeTab === "service" && (
               <RevenueSection
                 key={transactionId}
@@ -835,7 +812,6 @@ export default function EditTransactionPage() {
               />
             )}
 
-            {/* MEDICINE TAB */}
             {activeTab === "medicine" && (
               <RevenueSection
                 key={transactionId}
@@ -858,7 +834,6 @@ export default function EditTransactionPage() {
               />
             )}
 
-            {/* EXPENSE TAB */}
             {activeTab === "expense" && (
               <DirectExpenseSection
                 key={transactionId}

@@ -1,4 +1,3 @@
-// app/api/transactions/medicine/create/route.js
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
@@ -41,7 +40,6 @@ export async function POST(req) {
       externalParty,
     } = body;
 
-    // Back-date entry prevention — only admin/super-admin can enter past dates
     if (date) {
       const todayStart = new Date();
       todayStart.setUTCHours(0, 0, 0, 0);
@@ -55,7 +53,6 @@ export async function POST(req) {
       }
     }
 
-    // Check if it's multiple medicines or single medicine
     const medicines = body.medicines || [
       {
         medicineId: body.medicineId,
@@ -64,7 +61,6 @@ export async function POST(req) {
       },
     ];
 
-    // Validation
     if (!medicines || medicines.length === 0) {
       return NextResponse.json(
         { error: "At least one medicine is required" },
@@ -72,7 +68,6 @@ export async function POST(req) {
       );
     }
 
-    // Validate patient (either registered or walk-in)
     if (!patientId && (!patientName || !patientPhone)) {
       return NextResponse.json(
         { error: "Either select a patient or provide customer details" },
@@ -80,7 +75,6 @@ export async function POST(req) {
       );
     }
 
-    // If patientId provided, verify it exists
     if (patientId) {
       const patient = await Patient.findById(patientId);
       if (!patient) {
@@ -91,7 +85,6 @@ export async function POST(req) {
       }
     }
 
-    // Validate all medicines
     for (const item of medicines) {
       if (!item.medicineId || !item.quantity || !item.perUnitCost) {
         return NextResponse.json(
@@ -118,8 +111,6 @@ export async function POST(req) {
       }
     }
 
-    // "Paid to External" — someone else physically received the cash on our behalf.
-    // The sale still books in full; a Receivable tracks what they owe us.
     if (method === "paid_to_external") {
       const partyError = validateExternalParty(externalParty, "RECEIVED_BY");
       if (partyError) {
@@ -127,12 +118,10 @@ export async function POST(req) {
       }
     }
 
-    // Generate batch ID
     const batchId = `BATCH-${Date.now()}-${Math.random()
       .toString(36)
       .substr(2, 9)}`;
 
-    // Calculate total amount
     const subtotal = medicines.reduce(
       (sum, item) => sum + item.quantity * parseFloat(item.perUnitCost),
       0
@@ -153,9 +142,6 @@ export async function POST(req) {
       return { itemDiscount, itemFinalAmount: itemSubtotal - itemDiscount };
     };
 
-    // allocationsByIndex: one { receivableId, receivableAllocations } per medicine item, same
-    // order as `medicines` — see resolveReceivableAllocations. Omitted entirely on the
-    // paid_to_external path, where every item's receivableId/receivableAllocations stay empty.
     const buildTxnDocs = (allocationsByIndex) =>
       medicines.map((item, idx) => {
         const { itemDiscount, itemFinalAmount } = computeItemFinalAmount(item);
@@ -226,8 +212,6 @@ export async function POST(req) {
         return txns;
       });
     } else {
-      // Auto-allocation (or an explicit override) happens server-side, inside the same
-      // transaction as the write — see src/lib/receivableAllocation.js.
       try {
         savedTransactions = await withDbTransaction(async (dbSession) => {
           const itemAmounts = medicines.map((item) => computeItemFinalAmount(item).itemFinalAmount);
@@ -245,7 +229,6 @@ export async function POST(req) {
       }
     }
 
-    // Update stock for all medicines
     for (const item of medicines) {
       await Stock.findByIdAndUpdate(item.medicineId, {
         $inc: { totalQuantity: -item.quantity },

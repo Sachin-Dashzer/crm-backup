@@ -7,9 +7,6 @@ import { resolveBranchFilter } from "@/lib/branches";
 
 const ALLOWED_ROLES = ["admin", "super-admin"];
 
-// Flat, filterable list of Advance rows — exact mirror of /api/borrowings/list. Mainly for
-// export/audit; the Assets page's drill-down uses /api/advances/grouped instead, which rolls
-// these up per document.
 export async function GET(request) {
   try {
     const session = await getServerSession(authOptions);

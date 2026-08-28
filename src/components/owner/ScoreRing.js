@@ -1,5 +1,3 @@
-// Conic-gradient ring from a 0-100 value. The inner circle (masking the ring into a donut)
-// comes from .score-ring:before in owner-theme.css — nothing to do here but set the gradient.
 export default function ScoreRing({ value = 0, label, sublabel, size, color = "var(--green)" }) {
   const pct = Math.min(100, Math.max(0, value));
   const style = {

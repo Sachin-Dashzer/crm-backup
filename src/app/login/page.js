@@ -69,7 +69,6 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-[#9a6f2a] to-purple-600 px-4">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl p-8">
-        {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Welcome Back 👋</h1>
           <p className="text-sm text-gray-500 mt-2">
@@ -77,16 +76,13 @@ export default function LoginPage() {
           </p>
         </div>
 
-        {/* Error */}
         {error && (
           <div className="mb-4 rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
             {error}
           </div>
         )}
 
-        {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-5">
-          {/* Email */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Email
@@ -106,7 +102,6 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {/* Password */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Password
@@ -133,7 +128,6 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {/* Button */}
           <button
             type="submit"
             disabled={loading}
@@ -144,7 +138,6 @@ export default function LoginPage() {
           </button>
         </form>
 
-        {/* Footer */}
         <p className="text-center text-xs text-gray-400 mt-6">
           © {new Date().getFullYear()} Your Company. All rights reserved.
         </p>

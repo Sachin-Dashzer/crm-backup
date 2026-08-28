@@ -4,21 +4,6 @@ import BankRoutingFields from "@/components/BankRoutingFields";
 import ExternalPartyFields from "@/components/ExternalPartyFields";
 import { getMethodOptions, withLegacyMethod } from "@/constants/paymentMethods";
 
-// The whole "HOW was this paid" cluster: Payment Method dropdown, then every field that
-// method conditionally reveals — the offset-settlement note, ExternalPartyFields, the
-// Receipt/Further Mode routing fields, and the Transaction ID field, whose placeholder and
-// required-ness are themselves method-driven. All of this was previously re-declared in
-// every panel (including a byte-identical getPaymentIdConfig in four separate files); one
-// component now owns the whole conditional chain so a fifth panel doesn't re-fork it.
-//
-// The two base lists now live in src/constants/paymentMethods.js — every form in every panel
-// reads them from there, so restricting a method is a one-line change in one file rather than
-// an edit across five panels that will drift.
-//
-// `category` picks the option list AND which non-cash method applies:
-//   TRANSPLANT / SERVICE  -> revenue set, "Paid to External"
-//   MEDICINE               -> revenue set + "Including Package", "Paid to External"
-//   EXPENSE                 -> expense set (cash + the three account-of-origin transfers), "Paid by Other"
 function paymentIdConfig(method) {
   if (method === "card") return { placeholder: "Please enter card last no.", required: true };
   if (method?.toLowerCase() === "bajaj_loan" || method?.toLowerCase() === "fibe_loan")
@@ -28,16 +13,6 @@ function paymentIdConfig(method) {
   return { placeholder: "Please add transaction id", required: true };
 }
 
-// `forEdit` narrows the list to what an edit form may safely offer — see getMethodOptions in
-// src/constants/paymentMethods.js for why those three methods are create-only.
-//
-// `methodOptions` still accepts a full override for any caller that genuinely needs one, but
-// no page should hardcode a list just to express "this is an edit form" — pass forEdit.
-//
-// Neither prop gates whether ExternalPartyFields/BankRoutingFields render — that stays keyed
-// off the CURRENT value, never the option list, so a transaction that already carries one of
-// the newer methods still shows its fields correctly even from a context that can't newly
-// select it.
 export default function MethodField({
   category,
   branch,
@@ -51,9 +26,6 @@ export default function MethodField({
   const externalMethod = isExpense ? "paid_by_other" : "paid_to_external";
   const idConfig = paymentIdConfig(value.method);
 
-  // Wrap whichever list applies — the computed one or a caller override — so a stored method
-  // that is no longer offered still renders and stays selected. Without this the <select>
-  // would show blank for legacy rows and quietly write "" over the real value on the next save.
   const options = withLegacyMethod(
     methodOptions || getMethodOptions(category, { forEdit }),
     value.method,

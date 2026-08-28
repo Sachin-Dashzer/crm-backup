@@ -17,7 +17,6 @@ export async function DELETE(req) {
       );
     }
 
-    // Only admin can delete vendors
     if (session.user.role !== "admin") {
       return NextResponse.json(
         { success: false, message: "Only admins can delete vendors" },
@@ -35,7 +34,6 @@ export async function DELETE(req) {
       );
     }
 
-    // Check if vendor exists
     const vendor = await Vendor.findById(id);
     if (!vendor) {
       return NextResponse.json(
@@ -44,7 +42,6 @@ export async function DELETE(req) {
       );
     }
 
-    // Check if vendor has associated stock purchases
     const stocksWithVendor = await Stock.find({
       "purchase.vendor": id
     });
@@ -60,7 +57,6 @@ export async function DELETE(req) {
       );
     }
 
-    // Delete vendor
     await Vendor.findByIdAndDelete(id);
 
     return NextResponse.json(

@@ -7,7 +7,6 @@ const handler = async (req) => {
   try {
     const data = await Employee.find({}).sort({ name: 1 }).collation(NAME_COLLATION);
 
-    // Use the data array, not the Employee model
     const employeesByRole = data.reduce((acc, employee) => {
       const role = employee.role || "Other";
 

@@ -7,17 +7,10 @@ export const ACCOUNTS = [
   "Cash ( backend )",
   "Paytm ( Delhi T44P )",
   "Paytm ( Noida CK5Y )",
-  // Loan financiers settle into their own accounts. Distinct from the "Bajaj Statement" /
-  // "Fibe Statement" RECEIPT_MODES below: those name the document the money arrived against,
-  // these name the account it lands in.
   "Bajaj Loan",
   "Fibe Loan",
-  // The Hyderabad card terminal settles into its own account. Same string also appears in
-  // RECEIPT_MODES below — the instrument and the account it settles into share a name, as they
-  // already do for ICICI Medihub and Mumbai Receipts.
   "Pine Lab",
 ];
-
 
 export const NON_CASH_METHODS = [
   "offset_settlement",
@@ -28,14 +21,6 @@ export const NON_CASH_METHODS = [
 
 export const UNSETTLED_METHODS = ["paid_to_external", "paid_by_other"];
 
-// A settlement moves cash for a sale or cost already recognised elsewhere. It belongs in
-// cash-account balances (the money genuinely moved) but NOT in revenue or expense totals,
-// or the same rupee is counted twice.
-//
-// Distinct from the two lists beside it, and they are not interchangeable:
-//   NON_CASH_METHODS  - no cash moved      -> exclude from BALANCES,  include in P&L
-//   UNSETTLED_METHODS - cash went elsewhere-> exclude from P&L,       (already handled)
-//   isSettlement      - cash moved, P&L already recognised -> exclude from P&L, include in BALANCES
 export const SETTLEMENT_EXCLUSION = { isSettlement: { $ne: true } };
 
 export const FURTHER_MODES = ACCOUNTS;
@@ -134,7 +119,6 @@ const BANK_ROUTING_MAP = {
       card: { receiptMode: "Mumbai Receipts", furtherMode: "Mumbai Receipts" },
       upi: { receiptMode: "Mumbai Receipts", furtherMode: "Mumbai Receipts" },
       bajaj_loan: { receiptMode: "Mumbai Receipts", furtherMode: "Bajaj Loan" },
-      // Sheet: "NA → Mumbai Receipts" — no intermediary, but destination is still Mumbai Receipts.
       fibe_loan: { receiptMode: "", furtherMode: "Fibe Loan" },
     },
     MEDICINE: {
@@ -147,16 +131,11 @@ const BANK_ROUTING_MAP = {
   },
 };
 
-// Collab branches (14 cities) have no entries here by design — lookups fall through to the blank
-// default below and the fields stay visible with no pre-fill (per product decision).
 export function getBankRoutingDefaults(branch, transactionCategory, method) {
   const entry = BANK_ROUTING_MAP?.[branch]?.[transactionCategory]?.[method];
   return entry ? { ...entry } : { receiptMode: "", furtherMode: "" };
 }
 
-// Expense-side furtherMode pre-fill: which account the money LEFT from, inferred from method alone
-// (no branch/category split, unlike revenue). Methods absent here have no obvious single account —
-// the field stays blank and the user picks manually.
 const EXPENSE_METHOD_ACCOUNT_MAP = {
   cash: "Cash Book",
   hdfc_skin_bank_transfer: "HDFC Skin",

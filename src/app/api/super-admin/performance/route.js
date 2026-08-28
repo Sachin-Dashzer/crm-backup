@@ -25,7 +25,6 @@ export async function POST(req) {
     const branchQ   = branch === "All" ? {} : { "personal.branch": branch };
     const txBranchQ = branch === "All" ? {} : { branch };
 
-    // ── 1. Patient Funnel ─────────────────────────────────────────────────
     const patientFunnelPromise = Patient.aggregate([
       { $facet: {
         leads:        [{ $match: { createdAt: { $gte: fromDate, $lte: toDate } } }, { $count: "c" }],
@@ -36,14 +35,12 @@ export async function POST(req) {
       }},
     ]);
 
-    // ── 2. Patient Status Distribution ────────────────────────────────────
     const statusDistPromise = Patient.aggregate([
       { $match: { ...branchQ } },
       { $group: { _id: "$ops.status", count: { $sum: 1 } } },
       { $sort: { count: -1 } },
     ]);
 
-    // ── 3. Daily Patient Trend ─────────────────────────────────────────────
     const dailyPatientPromise = Patient.aggregate([
       { $match: { ...branchQ, "personal.visitDate": { $gte: fromDate, $lte: toDate } } },
       { $group: {
@@ -60,7 +57,6 @@ export async function POST(req) {
       { $sort: { _id: 1 } },
     ]);
 
-    // ── 4. Branch-wise Patient Stats ──────────────────────────────────────
     const branchPatientPromise = Patient.aggregate([
       { $match: { "personal.visitDate": { $gte: fromDate, $lte: toDate } } },
       { $group: {
@@ -72,7 +68,6 @@ export async function POST(req) {
       { $sort: { total: -1 } },
     ]);
 
-    // ── 5. Revenue Daily Trend ─────────────────────────────────────────────
     const revenueDailyPromise = Transactions.aggregate([
       { $match: { ...txBranchQ, date: { $gte: fromDate, $lte: toDate }, method: { $nin: UNSETTLED_METHODS }, ...SETTLEMENT_EXCLUSION } },
       { $group: {
@@ -85,7 +80,6 @@ export async function POST(req) {
       { $sort: { "_id.day": 1 } },
     ]);
 
-    // ── 6. Revenue by Branch ──────────────────────────────────────────────
     const revByBranchPromise = Transactions.aggregate([
       { $match: { date: { $gte: fromDate, $lte: toDate }, method: { $nin: UNSETTLED_METHODS }, ...SETTLEMENT_EXCLUSION } },
       { $group: {
@@ -94,24 +88,18 @@ export async function POST(req) {
       }},
     ]);
 
-    // ── 7. Revenue by Procedure ───────────────────────────────────────────
     const revByProcedurePromise = Transactions.aggregate([
       { $match: { ...txBranchQ, date: { $gte: fromDate, $lte: toDate }, costType: "Revenue", method: { $nin: UNSETTLED_METHODS }, ...SETTLEMENT_EXCLUSION } },
       { $group: { _id: "$procedure", amount: { $sum: "$amount" }, count: { $sum: 1 } } },
       { $sort: { amount: -1 } },
     ]);
 
-    // ── 8. Revenue by Payment Method ─────────────────────────────────────
-    // Deliberately NOT excluding UNSETTLED_METHODS here — this is the one place a
-    // paid_to_external/paid_by_other bucket should still be visible, exactly because it's a
-    // breakdown BY method rather than a total (see the transactions list badge, §2.5).
     const revByMethodPromise = Transactions.aggregate([
       { $match: { ...txBranchQ, date: { $gte: fromDate, $lte: toDate }, costType: "Revenue" } },
       { $group: { _id: "$method", amount: { $sum: "$amount" }, count: { $sum: 1 } } },
       { $sort: { amount: -1 } },
     ]);
 
-    // ── 9. Counsellor Performance ─────────────────────────────────────────
     const counsellorPerfPromise = Patient.aggregate([
       { $match: { ...branchQ, "personal.visitDate": { $gte: fromDate, $lte: toDate }, "counselling.counsellor": { $exists: true, $ne: null } } },
       { $group: {
@@ -126,7 +114,6 @@ export async function POST(req) {
       { $unwind: { path: "$emp", preserveNullAndEmptyArrays: true } },
     ]);
 
-    // ── 10. Agent Performance ─────────────────────────────────────────────
     const agentPerfPromise = Patient.aggregate([
       { $match: { ...branchQ, "personal.visitDate": { $gte: fromDate, $lte: toDate }, "personal.reference": { $exists: true, $ne: null } } },
       { $group: {
@@ -141,7 +128,6 @@ export async function POST(req) {
       { $unwind: { path: "$emp", preserveNullAndEmptyArrays: true } },
     ]);
 
-    // ── 11. Doctor Performance ────────────────────────────────────────────
     const doctorPerfPromise = Patient.aggregate([
       { $match: { ...branchQ, "surgery.surgeryDate": { $gte: fromDate, $lte: toDate } } },
       { $unwind: { path: "$surgery.doctor", preserveNullAndEmptyArrays: false } },
@@ -157,14 +143,12 @@ export async function POST(req) {
       { $unwind: { path: "$emp", preserveNullAndEmptyArrays: true } },
     ]);
 
-    // ── 12. Staff Role Distribution ───────────────────────────────────────
     const staffRolePromise = Employee.aggregate([
       { $match: { isactive: true } },
       { $group: { _id: "$role", count: { $sum: 1 } } },
       { $sort: { count: -1 } },
     ]);
 
-    // ── 13. Surgery Technique Distribution ───────────────────────────────
     const techniqueDistPromise = Patient.aggregate([
       { $match: { ...branchQ, "surgery.surgeryDate": { $gte: fromDate, $lte: toDate }, "surgery.technique": { $exists: true, $ne: null } } },
       { $group: {
@@ -176,7 +160,6 @@ export async function POST(req) {
       { $sort: { count: -1 } },
     ]);
 
-    // ── 14. Surgery Daily Trend ───────────────────────────────────────────
     const surgeryDailyPromise = Patient.aggregate([
       { $match: { ...branchQ, "surgery.surgeryDate": { $gte: fromDate, $lte: toDate } } },
       { $group: {
@@ -187,7 +170,6 @@ export async function POST(req) {
       { $sort: { _id: 1 } },
     ]);
 
-    // ── 15. HR Funnel (with source breakdown) ────────────────────────────
     const hrFunnelPromise = Interviewer.aggregate([
       { $match: { createdAt: { $gte: fromDate, $lte: toDate } } },
       { $group: {
@@ -198,7 +180,6 @@ export async function POST(req) {
       }},
     ]);
 
-    // ── 16. HR Source Summary (qr vs direct) ─────────────────────────────
     const hrSourcePromise = Interviewer.aggregate([
       { $match: { createdAt: { $gte: fromDate, $lte: toDate } } },
       { $group: {
@@ -210,7 +191,6 @@ export async function POST(req) {
       }},
     ]);
 
-    // ── 17. HR Position-wise (with source) ───────────────────────────────
     const hrPositionPromise = Interviewer.aggregate([
       { $match: { createdAt: { $gte: fromDate, $lte: toDate } } },
       { $group: {
@@ -224,7 +204,6 @@ export async function POST(req) {
       { $limit: 10 },
     ]);
 
-    // ── 18. HR Daily Trend (with source) ─────────────────────────────────
     const hrDailyPromise = Interviewer.aggregate([
       { $match: { createdAt: { $gte: fromDate, $lte: toDate } } },
       { $group: {
@@ -237,7 +216,6 @@ export async function POST(req) {
       { $sort: { _id: 1 } },
     ]);
 
-    // ── 18. Leads Daily Trend ─────────────────────────────────────────────
     const leadsDailyPromise = Leads.aggregate([
       { $match: { createdAt: { $gte: fromDate, $lte: toDate } } },
       { $group: {
@@ -247,7 +225,6 @@ export async function POST(req) {
       { $sort: { _id: 1 } },
     ]);
 
-    // ── 19. Outstanding Payments ──────────────────────────────────────────
     const outstandingPromise = Patient.aggregate([
       { $match: { ...branchQ, "payments.pendingAmount": { $gt: 0 } } },
       { $group: {
@@ -259,7 +236,6 @@ export async function POST(req) {
       { $sort: { totalPending: -1 } },
     ]);
 
-    // ── Run all queries in parallel ───────────────────────────────────────
     const [
       patientFunnelRaw,
       statusDistRaw,
@@ -304,7 +280,6 @@ export async function POST(req) {
       outstandingPromise,
     ]);
 
-    // ── Process: Patient Funnel ───────────────────────────────────────────
     const pf = patientFunnelRaw[0] || {};
     const patientFunnel = [
       { stage: "Appointments", count: pf.appointments?.[0]?.c || 0 },
@@ -313,7 +288,6 @@ export async function POST(req) {
       { stage: "Surgeries",    count: pf.surgeries?.[0]?.c    || 0 },
     ];
 
-    // ── Process: Daily Revenue + Expenses (fill gaps) ─────────────────────
     const dayMap = {};
     const dayCount = Math.ceil((toDate - fromDate) / (1000 * 60 * 60 * 24)) + 1;
     for (let i = 0; i < dayCount; i++) {
@@ -331,7 +305,6 @@ export async function POST(req) {
     });
     const revenueDaily = Object.values(dayMap);
 
-    // ── Process: Revenue by Branch ────────────────────────────────────────
     const branchRevMap = {};
     revByBranch.forEach(({ _id, amount }) => {
       const b = _id.branch || "Unknown";
@@ -341,7 +314,6 @@ export async function POST(req) {
     });
     const revenueByBranch = Object.values(branchRevMap).sort((a, b) => b.revenue - a.revenue);
 
-    // ── Process: Counsellor Performance ───────────────────────────────────
     const counsellors = counsellorPerf.map((c) => ({
       name: c.emp?.name || `Unknown (${c._id?.toString().slice(-4)})`,
       total:     c.total,
@@ -350,7 +322,6 @@ export async function POST(req) {
       avgPkg:    c.total > 0 ? Math.round(c.totalPkg / c.total) : 0,
     }));
 
-    // ── Process: Agent Performance ────────────────────────────────────────
     const agents = agentPerf.map((a) => ({
       name:      a.emp?.name || `Unknown (${a._id?.toString().slice(-4)})`,
       referrals: a.referrals,
@@ -359,7 +330,6 @@ export async function POST(req) {
       revenue:   a.revenue,
     }));
 
-    // ── Process: Doctor Performance ───────────────────────────────────────
     const doctors = doctorPerf.map((d) => ({
       name:       d.emp?.name || `Unknown (${d._id?.toString().slice(-4)})`,
       surgeries:  d.surgeries,
@@ -368,7 +338,6 @@ export async function POST(req) {
       revenue:    d.totalRevenue,
     }));
 
-    // ── Process: Technique Distribution ──────────────────────────────────
     const techniques = techniqueDist.map((t) => ({
       technique: t._id || "Unknown",
       count:     t.count,
@@ -376,7 +345,6 @@ export async function POST(req) {
       revenue:   t.totalRev,
     }));
 
-    // ── Process: HR Funnel ────────────────────────────────────────────────
     const hrStatusOrder = ["Applied", "Interview Scheduled", "Selected", "Rejected", "On Hold"];
     const hrMap = {};
     hrFunnel.forEach(({ _id, count, visited, applied }) => {
@@ -389,13 +357,11 @@ export async function POST(req) {
       applied: hrMap[s]?.applied || 0,
     }));
 
-    // ── Process: HR Source Summary ────────────────────────────────────────
     const sourceMap = {};
     hrSource.forEach(({ _id, count, selected, rejected, scheduled }) => {
       sourceMap[_id || "unknown"] = { count, selected, rejected, scheduled };
     });
 
-    // ── Summary totals ────────────────────────────────────────────────────
     const totalRevenue  = revenueByBranch.reduce((s, b) => s + b.revenue,  0);
     const totalExpenses = revenueByBranch.reduce((s, b) => s + b.expenses, 0);
     const totalSurgeries = techniqueDist.reduce((s, t) => s + t.count, 0);

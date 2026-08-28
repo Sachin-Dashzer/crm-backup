@@ -1,14 +1,3 @@
-// src/app/api/owner/counsellor-conversion/route.js
-//
-// Per-counsellor rollup, aggregated over Patient.counselling.counsellor:
-//   visits   — every patient ever assigned to this counsellor
-//   plans    — of those, how many have a final package set (counselling.finlpackage > 0)
-//   tokens   — how many have paid something (payments.amountReceived > 0)
-//   surgeries— how many are fully closed (ops.status === "CLOSED")
-//   revenue  — sum of payments.totalAmount across the counsellor's whole patient set
-//   avgDiscount — average payments.discount across the same set (zero-discount patients
-//                 included, so this is "average discount given per patient", not "average
-//                 among patients who got one")
 
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";

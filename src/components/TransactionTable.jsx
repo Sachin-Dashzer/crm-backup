@@ -13,7 +13,6 @@ import {
 import Link from "next/link";
 import BillGenerator from "@/components/BillGenerator";
 
-// ── Constants ────────────────────────────────────────────────────────────────
 const DATE_RANGES = ["Today", "Yesterday", "Last 7 Days", "This Month", "Custom"];
 
 const CAT_CFG = {
@@ -64,7 +63,6 @@ const BRANCH_COLORS = {
   Noida:     "bg-pink-100 text-pink-800",
 };
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
 const fmtCurrency = (n) =>
   new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 2 }).format(n || 0);
 
@@ -92,16 +90,13 @@ function getRange(label, custom) {
   return { from: null, to: null };
 }
 
-// ── Small UI atoms ────────────────────────────────────────────────────────────
 function Bdg({ cls, val }) {
   return val ? <span className={`inline-block px-2.5 py-0.5 rounded-md text-xs font-semibold ${cls}`}>{val}</span> : <span className="text-gray-300 text-xs">—</span>;
 }
 
-// ── Audit Modal ───────────────────────────────────────────────────────────────
 function AuditModal({ tx, onClose }) {
   const { createdBy, editors = [] } = tx;
 
-  // Build timeline: creation first, then edits newest-first
   const timeline = [
     createdBy && {
       type: "created",
@@ -118,18 +113,15 @@ function AuditModal({ tx, onClose }) {
       branch: e.branch || "",
       date:   e.date,
       fields: e.updatedFields || [],
-    })).reverse(),          // newest edit first
+    })).reverse(),
   ].filter(Boolean);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-end">
-      {/* Backdrop */}
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
 
-      {/* Drawer */}
       <div className="relative z-10 w-full max-w-md h-full bg-white shadow-2xl flex flex-col animate-in slide-in-from-right duration-200">
 
-        {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 bg-gray-50 shrink-0">
           <div className="flex items-center gap-2">
             <div className="p-1.5 bg-indigo-100 rounded-lg">
@@ -147,7 +139,6 @@ function AuditModal({ tx, onClose }) {
           </button>
         </div>
 
-        {/* Transaction summary */}
         <div className="px-5 py-3 bg-indigo-50 border-b border-indigo-100 shrink-0">
           <div className="grid grid-cols-2 gap-2 text-xs">
             <div><span className="text-gray-500">Procedure</span><p className="font-semibold text-gray-800 mt-0.5">{tx.procedure || "—"}</p></div>
@@ -157,7 +148,6 @@ function AuditModal({ tx, onClose }) {
           </div>
         </div>
 
-        {/* Timeline */}
         <div className="flex-1 overflow-y-auto px-5 py-4">
           {timeline.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-32 text-gray-400">
@@ -166,13 +156,11 @@ function AuditModal({ tx, onClose }) {
             </div>
           ) : (
             <div className="relative">
-              {/* Vertical line */}
               <div className="absolute left-4 top-5 bottom-5 w-px bg-gray-200" />
 
               <div className="space-y-5">
                 {timeline.map((entry, idx) => (
                   <div key={idx} className="relative pl-10">
-                    {/* Dot */}
                     <div className={`absolute left-2.5 top-1 w-3 h-3 rounded-full border-2 border-white shadow-sm ${
                       entry.type === "created" ? "bg-emerald-500" : "bg-indigo-500"
                     }`} />
@@ -182,7 +170,6 @@ function AuditModal({ tx, onClose }) {
                         ? "bg-emerald-50 border-emerald-100"
                         : "bg-white border-gray-100 shadow-sm"
                     }`}>
-                      {/* Who + when */}
                       <div className="flex items-start justify-between gap-2 mb-2">
                         <div className="flex items-center gap-2">
                           {entry.type === "created"
@@ -206,14 +193,12 @@ function AuditModal({ tx, onClose }) {
                         </div>
                       </div>
 
-                      {/* Action label */}
                       <p className={`text-xs font-medium mb-2 ${
                         entry.type === "created" ? "text-emerald-700" : "text-indigo-600"
                       }`}>
                         {entry.type === "created" ? "Created transaction" : `Edited ${entry.fields.length} field${entry.fields.length !== 1 ? "s" : ""}`}
                       </p>
 
-                      {/* Field changes */}
                       {entry.fields.length > 0 && (
                         <div className="space-y-1.5 mt-2 pt-2 border-t border-gray-100">
                           {entry.fields.map((f, fi) => (
@@ -240,7 +225,6 @@ function AuditModal({ tx, onClose }) {
           )}
         </div>
 
-        {/* Footer */}
         <div className="px-5 py-3 border-t border-gray-100 bg-gray-50 shrink-0">
           <p className="text-xs text-gray-400 text-center">
             {editors.length} edit{editors.length !== 1 ? "s" : ""} · Created by {createdBy?.name || "Unknown"}
@@ -251,7 +235,6 @@ function AuditModal({ tx, onClose }) {
   );
 }
 
-// ── Stat card ─────────────────────────────────────────────────────────────────
 function StatCard({ catKey, total, count }) {
   const cfg = CAT_CFG[catKey];
   const Icon = cfg.icon;
@@ -268,7 +251,6 @@ function StatCard({ catKey, total, count }) {
   );
 }
 
-// ── Main component ────────────────────────────────────────────────────────────
 export default function TransactionTable({ config = {} }) {
   const {
     title             = "All Transactions",
@@ -292,17 +274,15 @@ export default function TransactionTable({ config = {} }) {
 
   const router = useRouter();
 
-  // ── Session ────────────────────────────────────────────────────────────────
   const { data: session } = useSession();
   const userRole = session?.user?.role || "";
 
-  // ── State ──────────────────────────────────────────────────────────────────
   const [allTx, setAllTx]             = useState([]);
   const [loading, setLoading]         = useState(true);
   const [refreshKey, setRefreshKey]   = useState(0);
-  const [auditTx, setAuditTx]         = useState(null);   // tx being audited
-  const [billTxId, setBillTxId]       = useState(null);   // tx id for bill modal
-  const [deletingId, setDeletingId]   = useState(null);   // tx id being deleted
+  const [auditTx, setAuditTx]         = useState(null);
+  const [billTxId, setBillTxId]       = useState(null);
+  const [deletingId, setDeletingId]   = useState(null);
 
   const [activeTab, setActiveTab]     = useState(visibleCategories[0]);
   const [search, setSearch]           = useState("");
@@ -325,7 +305,6 @@ export default function TransactionTable({ config = {} }) {
     timer.current = setTimeout(() => setDebSearch(v), 300);
   };
 
-  // ── Fetch ──────────────────────────────────────────────────────────────────
   useEffect(() => {
     setLoading(true);
     fetch(apiEndpoint)
@@ -335,7 +314,6 @@ export default function TransactionTable({ config = {} }) {
       .finally(() => setLoading(false));
   }, [apiEndpoint, refreshKey]);
 
-  // ── Delete handler ─────────────────────────────────────────────────────────
   const handleDelete = async (tx) => {
     if (!confirm(`Delete this ${tx.transactionCategory?.toLowerCase()} transaction of ₹${tx.amount}? This cannot be undone.`)) return;
     const categoryEndpointMap = {
@@ -366,7 +344,6 @@ export default function TransactionTable({ config = {} }) {
     }
   };
 
-  // ── Date-filtered base (for stat cards + tabs) ─────────────────────────────
   const dateFiltered = useMemo(() => {
     const { from, to } = getRange(dateRange, customDates);
     return allTx.filter((t) => {
@@ -378,13 +355,10 @@ export default function TransactionTable({ config = {} }) {
     });
   }, [allTx, dateRange, customDates, defaultCostType]);
 
-  // ── Per-category stats ─────────────────────────────────────────────────────
   const catStats = useMemo(() =>
     Object.fromEntries(
       visibleCategories.map((cat) => {
         const rows = dateFiltered.filter((t) => t.transactionCategory === cat);
-        // The StatCard figure is a TOTAL, so settlements are excluded (§2.3) — they move cash
-        // for revenue already recognised elsewhere. The table rows below still list them.
         const totalRows = rows.filter((t) => t.isSettlement !== true);
         return [
           cat,
@@ -394,7 +368,6 @@ export default function TransactionTable({ config = {} }) {
     ),
   [dateFiltered, visibleCategories]);
 
-  // ── Table rows ─────────────────────────────────────────────────────────────
   const tableRows = useMemo(() => {
     let rows = dateFiltered.filter((t) => t.transactionCategory === activeTab);
     if (fMethod)      rows = rows.filter((t) => (t.method || "").toLowerCase() === fMethod.toLowerCase());
@@ -426,7 +399,6 @@ export default function TransactionTable({ config = {} }) {
     return Array.from({ length: end - start + 1 }, (_, i) => start + i);
   }, [page, totalPages]);
 
-  // ── CSV export ─────────────────────────────────────────────────────────────
   const exportCSV = () => {
     const headers = ["Date","Patient","Phone","Procedure","Payment Type","Amount","Method","Trans ID","Branch","Created By","Total Edits"];
     const rows = tableRows.map((t) => [
@@ -455,19 +427,15 @@ export default function TransactionTable({ config = {} }) {
     fBranch      && { key: "br", label: `Branch: ${fBranch}`,        clear: () => setFBranch("") },
   ].filter(Boolean);
 
-  // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <>
-      {/* Audit modal */}
       {auditTx && <AuditModal tx={auditTx} onClose={() => setAuditTx(null)} />}
 
-      {/* Bill modal */}
       {billTxId && <BillGenerator transactionId={billTxId} onClose={() => setBillTxId(null)} />}
 
       <main className="flex-1 overflow-auto bg-gray-50">
         <div className="p-6 lg:p-8 max-w-screen-2xl mx-auto">
 
-          {/* Header */}
           <div className="flex items-start justify-between mb-6">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
@@ -503,14 +471,12 @@ export default function TransactionTable({ config = {} }) {
             </div>
           </div>
 
-          {/* Stat cards */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
             {visibleCategories.map((cat) => (
               <StatCard key={cat} catKey={cat} {...catStats[cat]} />
             ))}
           </div>
 
-          {/* Date range */}
           <div className="flex flex-wrap gap-2 mb-4">
             {DATE_RANGES.map((r) => (
               <button
@@ -542,10 +508,8 @@ export default function TransactionTable({ config = {} }) {
             )}
           </div>
 
-          {/* Main card */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
 
-            {/* Tab bar + search */}
             <div className="flex items-center justify-between gap-4 px-4 py-3 border-b border-gray-100 flex-wrap">
               <div className="flex gap-1.5 flex-wrap">
                 {visibleCategories.map((cat) => {
@@ -608,7 +572,6 @@ export default function TransactionTable({ config = {} }) {
               </div>
             </div>
 
-            {/* Filter panel */}
             {filterOpen && (
               <div className="px-4 py-3 border-b border-gray-100 bg-gray-50 flex flex-wrap gap-3 items-end">
                 {filters.showMethod && (
@@ -666,7 +629,6 @@ export default function TransactionTable({ config = {} }) {
               </div>
             )}
 
-            {/* Active filter chips */}
             {activeChips.length > 0 && (
               <div className="px-4 py-2 border-b border-gray-100 flex gap-2 flex-wrap">
                 {activeChips.map((c) => (
@@ -678,7 +640,6 @@ export default function TransactionTable({ config = {} }) {
               </div>
             )}
 
-            {/* Table */}
             {loading ? (
               <div className="flex items-center justify-center h-64">
                 <div className="animate-spin h-10 w-10 border-4 border-indigo-100 border-t-indigo-500 rounded-full" />
@@ -709,46 +670,37 @@ export default function TransactionTable({ config = {} }) {
                       ) : (
                         paginated.map((tx) => (
                           <tr key={tx._id} className="hover:bg-gray-50/80 transition-colors">
-                            {/* Date */}
                             <td className="px-5 py-3.5 text-sm text-gray-600 whitespace-nowrap">{fmtDate(tx.date)}</td>
 
-                            {/* Patient */}
                             <td className="px-5 py-3.5">
                               <div className="font-semibold text-sm text-gray-900 leading-none">{tx.patient?.personal?.name || tx.patientName || "Walk-in Customer"}</div>
                               <div className="text-xs text-gray-400 mt-0.5">{maskPhone(tx.patient?.personal?.phone || tx.patientPhone, userRole)}</div>
                             </td>
 
-                            {/* Procedure */}
                             <td className="px-5 py-3.5">
                               <Bdg cls={PROCEDURE_COLORS[tx.procedure] || "bg-gray-100 text-gray-700"} val={tx.procedure} />
                             </td>
 
-                            {/* Payment Type */}
                             <td className="px-5 py-3.5">
                               <Bdg cls={PAYMENT_COLORS[tx.paymentType] || "bg-gray-100 text-gray-600"} val={tx.paymentType} />
                             </td>
 
-                            {/* Amount */}
                             <td className="px-5 py-3.5">
                               <span className="text-sm font-bold text-gray-900">{fmtCurrency(tx.amount)}</span>
                             </td>
 
-                            {/* Method */}
                             <td className="px-5 py-3.5">
                               <Bdg cls={METHOD_COLORS[tx.method] || "bg-gray-400 text-white"} val={(tx.method || "").toUpperCase()} />
                             </td>
 
-                            {/* Trans ID */}
                             <td className="px-5 py-3.5">
                               <span className="text-xs text-gray-400 font-mono">{tx.paymentId || "—"}</span>
                             </td>
 
-                            {/* Branch */}
                             <td className="px-5 py-3.5">
                               <Bdg cls={BRANCH_COLORS[tx.branch] || "bg-gray-100 text-gray-600"} val={tx.branch} />
                             </td>
 
-                            {/* Audit */}
                             <td className="px-5 py-3.5">
                               <button
                                 onClick={() => setAuditTx(tx)}
@@ -768,7 +720,6 @@ export default function TransactionTable({ config = {} }) {
                               </button>
                             </td>
 
-                            {/* Actions */}
                             {actions.length > 0 && (
                               <td className="px-5 py-3.5">
                                 <div className="flex items-center gap-1.5">
@@ -823,7 +774,6 @@ export default function TransactionTable({ config = {} }) {
                   </table>
                 </div>
 
-                {/* Pagination */}
                 <div className="flex items-center justify-between px-5 py-3.5 border-t border-gray-100">
                   <p className="text-sm text-gray-500">
                     {tableRows.length === 0

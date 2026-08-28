@@ -20,18 +20,6 @@ import { exportWorkbook, fetchAllPages, filterProvenanceRows } from "@/lib/expor
 import { useToast } from "@/components/Toast";
 import DebouncedDateInput from "@/components/finance/DebouncedDateInput";
 
-// Assets = Cash & Bank + Loan-financing accounts + Receivables. Page total is the sum of the same
-// three closing figures the sections below compute — never a separate calculation, so the header
-// can never disagree with what's under it.
-//
-// "Bajaj Loan"/"Fibe Loan" live here, not on Liabilities: they're patient-financing SETTLEMENT
-// accounts — money the financier pays the clinic when a patient pays via that loan product — not
-// money the clinic owes. Functionally the same as any other account in ACCOUNTS, just kept as
-// its own section since it's a distinct kind of account.
-//
-// DrillDownTable's AccountingTable leaf uses useSearchParams for its own filter URL-sync, which
-// Next.js requires a Suspense boundary around — same pattern TransactionsListPage/payables/
-// receivables pages already use.
 export default function AssetsPage() {
   return (
     <Suspense fallback={null}>
@@ -46,12 +34,6 @@ function AssetsPageInner() {
   const searchParams = useSearchParams();
   const toast = useToast();
 
-  // Task A (Round 2) — ONE scope for the whole page, shared by the header total AND every
-  // DrillDownTable section below (passed down as the `scope`/`onScopeChange` controlled props).
-  // Before this fix the header fetched with no params at all while each section filtered itself
-  // independently — the numbers only ever agreed on a completely unfiltered page. Seeded once
-  // from the URL on mount so a link with ?branch=&from=&to= (the dashboard's card links, Task C)
-  // opens already filtered.
   const [scope, setScope] = useState(() => ({
     branch: searchParams.get("branch") || "",
     dateFrom: searchParams.get("from") || "",
@@ -62,36 +44,20 @@ function AssetsPageInner() {
   const [loansTotal, setLoansTotal] = useState(null);
   const [receivablesTotal, setReceivablesTotal] = useState(null);
   const [unattributed, setUnattributed] = useState(null);
-  // Distinct from the initial `null` totals: `refetching` is true only while a FILTER CHANGE is
-  // in flight, so a filter change shows a skeleton instead of leaving the previous (now stale)
-  // total sitting there looking current.
   const [refetching, setRefetching] = useState(false);
-  const [settleTx, setSettleTx] = useState(null); // { transactionId, account, amount, narration, date } | null
-  const [cancelTx, setCancelTx] = useState(null); // the row being cancelled, or null
-  // Bumped on every successful settlement/cancellation — passed as `key` to BOTH the Loan
-  // Accounts AND Cash & Bank DrillDownTables (either action moves money on both sides) so both
-  // remount and refetch fresh. Only bumping the loans side left the destination bank account
-  // showing stale data until a full page reload, which looked exactly like nothing had happened.
+  const [settleTx, setSettleTx] = useState(null);
+  const [cancelTx, setCancelTx] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
-  // Task 5, Step 4 — summary strip + ageing chips for Receivables, ported from the old
-  // standalone Receivables page.
   const [summary, setSummary] = useState(null);
   const [ageingBuckets, setAgeingBuckets] = useState([]);
   const [ageingFilter, setAgeingFilter] = useState("");
 
-  // Task 5, Step 5 — deep-link restore (section/head/sub/doc), now written back to the URL
-  // ALONGSIDE `scope` by the single sync effect below rather than its own separate one.
   const [receivablesInitialDrill, setReceivablesInitialDrill] = useState(undefined);
   const [receivablesDrill, setReceivablesDrill] = useState(null);
   const [exporting, setExporting] = useState(false);
 
-  // Advances — money WE lent out (advance salary/rent, personal advances) that must come back;
-  // see src/models/Advance.js. A real Receivable document under revenueCategory "Advances", so it
-  // already rides on the same /api/receivables/grouped?level=1 total the header above sums (no
-  // separate header math needed), but gets its own dedicated section since its lifecycle (Record
-  // Recovery/Further Advance) differs from an ordinary receivable's.
-  const [advanceModal, setAdvanceModal] = useState(null); // { mode: "OUT"|"IN", receivable } | null
+  const [advanceModal, setAdvanceModal] = useState(null);
   const [advancesRefreshKey, setAdvancesRefreshKey] = useState(0);
   const [advanceHistoryDoc, setAdvanceHistoryDoc] = useState(null);
   const [advanceHistoryRows, setAdvanceHistoryRows] = useState([]);
@@ -124,13 +90,6 @@ function AssetsPageInner() {
     fetchHeaderTotals();
   };
 
-  // Balances (Cash & Bank / Loans / Receivables closing) are POINT-IN-TIME, not a flow — a
-  // closing figure reads "everything up to this date", not "movement within this date range".
-  // So the header total sends `to` only and DELIBERATELY OMITS `from`; close-book/accounts and
-  // receivables/grouped both already default `from` internally to "1970-01-01" when it's absent,
-  // which is exactly "as of `to`". `from`, when the user sets it, still reaches each section's
-  // own opening/movement columns via the controlled `scope` prop below — this comment describes
-  // ONLY the header total fetch. Do not "fix" this back to sending both.
   const closingQS = useCallback(
     (extra = {}) => {
       const p = new URLSearchParams();
@@ -172,10 +131,6 @@ function AssetsPageInner() {
     fetchHeaderTotals();
   }, [fetchHeaderTotals]);
 
-  // Restores /admin/assets?section=receivables&head=Transplant&sub=PATIENT_DUE&doc=<id> — the
-  // URL Task 1's Entry Type badge points at for a settlement's linked receivable. `scope` itself
-  // is already seeded synchronously in useState above; this only needs the drill path, which
-  // requires a fetch when `doc` is present.
   useEffect(() => {
     const section = searchParams.get("section");
     if (section !== "receivables") {
@@ -211,11 +166,8 @@ function AssetsPageInner() {
     } else {
       setReceivablesInitialDrill(null);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Single sync point for the URL — `scope` (branch/from/to) AND the receivables drill path
-  // (section/head/sub/doc) are written together, so neither overwrites the other's params.
   useEffect(() => {
     const params = new URLSearchParams();
     if (scope.branch) params.set("branch", scope.branch);
@@ -229,7 +181,6 @@ function AssetsPageInner() {
     }
     const qs = params.toString();
     router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scope, receivablesDrill]);
 
   const ageingChipData = (bucket) => {
@@ -239,8 +190,6 @@ function AssetsPageInner() {
 
   const handleSettlementSuccess = () => {
     fetchHeaderTotals();
-    // DrillDownTable has no external refresh hook, so a key bump is the clean way to force both
-    // subtrees to remount and refetch — see the refreshKey comment above.
     setRefreshKey((k) => k + 1);
     setTimeout(() => setSettleTx(null), 1200);
   };
@@ -254,15 +203,9 @@ function AssetsPageInner() {
   const loaded = cashTotal !== null && loansTotal !== null && receivablesTotal !== null;
   const asOfLabel = `As of ${formatDate(scope.dateTo || new Date())}${scope.branch ? ` · ${scope.branch}` : ""}`;
 
-  // Task B — export exactly what the current filters produce: the same params, the same
-  // endpoints, refetched fresh at limit=10000 rather than exported from the paginated in-memory
-  // rows any table on screen is currently holding.
   const handleExport = async () => {
     setExporting(true);
     try {
-      // /api/receivables/list and /api/transactions/get-all both key their date range on
-      // dateFrom/dateTo, not from/to (close-book's own convention) — this is THEIR param name,
-      // not a re-derivation of the balance-vs-flow rule above.
       const flowQS = (() => {
         const p = new URLSearchParams();
         if (scope.branch) p.set("branch", scope.branch);
@@ -271,9 +214,6 @@ function AssetsPageInner() {
         return p.toString();
       })();
 
-      // receivables/list clamps limit to 200, so the old `?limit=10000` here silently produced a
-      // truncated export once there were more than 200 receivables in range. fetchAllPages walks
-      // the pages instead. transactions/get-all genuinely honours a 10000 limit, so it stays.
       const [cashJson, loansJson, receivablesPaged, txJson] = await Promise.all([
         fetch(`/api/close-book/accounts?filter=cash&${closingQS()}`).then((r) => r.json()),
         fetch(`/api/close-book/accounts?filter=loans&${closingQS()}`).then((r) => r.json()),
@@ -310,10 +250,6 @@ function AssetsPageInner() {
         Ageing: r.ageingBucket || "—",
         Status: r.isCancelled ? "Cancelled" : r.status,
       }));
-      // Every Revenue/Expense transaction in the filtered period, flat — running balance is
-      // deliberately not a column here: it's only meaningful WITHIN one account's own ledger
-      // (see Cash & Bank/Loan Accounts sheets for those), not across a combined multi-account,
-      // multi-category list.
       const txRows = (txJson.transactions || []).map((t) => ({
         Date: new Date(t.date),
         "Account/Head": t.furtherMode || t.expense || "—",
@@ -363,8 +299,6 @@ function AssetsPageInner() {
             </p>
           </div>
 
-          {/* Task A — the ONE filter bar for this page. Every section below is controlled by
-              this same `scope`, so the header total and every table under it can never disagree. */}
           <div className="flex flex-wrap items-center gap-2">
             <select
               value={scope.branch}
@@ -376,9 +310,6 @@ function AssetsPageInner() {
                 <option key={b} value={b}>{b}</option>
               ))}
             </select>
-            {/* Debounced: scope is lifted to this page, so each committed change re-runs the
-                header's fetches AND every DrillDownTable below. A native date input fires per
-                segment while typing, so this was up to 3 full rounds per date entered. */}
             <DebouncedDateInput
               value={scope.dateFrom}
               onCommit={(v) => setScope((s) => ({ ...s, dateFrom: v }))}

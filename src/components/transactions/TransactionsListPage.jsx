@@ -49,7 +49,6 @@ import { ENTRY_TYPES, ENTRY_TYPE_TONE_CLASSES, ENTRY_TYPE_FILTER_OPTIONS } from 
 import SuspenseManager from "@/components/SuspenseManager";
 import ContraManager from "@/components/ContraManager";
 
-// ========== UTILITY FUNCTIONS ==========
 const calculateNetAmount = (transaction) => Math.max(0, parseFloat(transaction?.amount) || 0);
 
 const getTodayDate = () => new Date().toISOString().split("T")[0];
@@ -59,9 +58,6 @@ const formatDateForDisplay = (date) => {
   return new Date(date).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
 };
 
-// Shared by the expense table rows and the expense Excel export, so the name shown on screen is
-// always the name written to the sheet. A VENDOR payee may arrive populated (an object) or as a
-// bare id depending on the query, hence the type check.
 const getExpenseGiverName = (row) => {
   if (row.expenseGiver?.type === "VENDOR") {
     return typeof row.expenseGiver.vendorId === "object"
@@ -71,21 +67,12 @@ const getExpenseGiverName = (row) => {
   return row.expenseGiver?.name || "N/A";
 };
 
-// Filter dropdown must cover every value a stored row can carry, including methods retired
-// from entry forms (see src/constants/paymentMethods.js) — otherwise a row using a retired
-// method (e.g. an old expense with method "card") can never be filtered to.
 const PAYMENT_METHODS = Object.keys(METHOD_LABELS);
 const TRANSPLANT_PROCEDURES = ["Sapphire FUE", "DHI", "Turkish DHI", "Beard Transplant"];
 const SERVICE_PROCEDURES    = ["PRP", "GFC", "Alopecia", "Headwash", "Canacot"];
-// Categories whose money moves through an account — revenue tabs show this as "Received In",
-// EXPENSE shows it as "Paid From" (see furtherMode's model comment in src/models/Transactions.js).
 const REVENUE_CATEGORIES = ["TRANSPLANT", "SERVICE", "MEDICINE"];
-// Mirrors UNTRACKED_FURTHER_MODE in src/app/api/transactions/get-all/route.js.
 const UNTRACKED_FURTHER_MODE = "__UNTRACKED__";
 const FILTER_KEYS = ["branch", "dateFrom", "dateTo", "paymentMethod", "procedure", "furtherMode", "expenseCategory", "expenseType", "entryType"];
-// Default window: today only, matching every dashboard page. The date filter (including the
-// "Month" quick-filter button) still widens this on demand — this only controls what the page
-// opens showing before the user touches a filter.
 const defaultFilters = () => ({
   branch: "", dateFrom: getTodayDate(), dateTo: getTodayDate(), paymentMethod: "", procedure: "",
   furtherMode: "", expenseCategory: "", expenseType: "", entryType: "",
@@ -102,9 +89,6 @@ const filtersFromParams = (params) => ({
   entryType:        params.get("entryType") || "",
 });
 
-// Module scope, not inside the component body. Declared inline, it was a NEW component type on
-// every render, so React unmounted and remounted every sort icon each time the table re-rendered
-// instead of updating it in place.
 const SortIcon = ({ columnKey, sortConfig }) => {
   if (sortConfig.key !== columnKey) {
     return <ArrowUpDown className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />;
@@ -119,15 +103,10 @@ const TRANSACTION_CATEGORIES = [
   { value: "SERVICE",    label: "Services",   icon: User, color: "pink"   },
   { value: "MEDICINE",   label: "Medicine",   icon: User, color: "emerald"},
   { value: "EXPENSE",    label: "Expenses",   icon: User, color: "rose"   },
-  // Neither of these is a transactionCategory — contra entries and suspense entries each live in
-  // their own collection with their own lifecycle, and bring their own manager component. They
-  // sit here because this is where someone looks for "all the money movement".
   { value: "CONTRA",     label: "Contra",     icon: ArrowLeftRight, color: "violet" },
   { value: "SUSPENSE",   label: "Suspense",   icon: HelpCircle, color: "amber" },
 ];
 
-// Tabs backed by their own collection rather than the Transactions query. Used to skip the
-// get-all fetch, the search bar and the header export, all of which are Transactions-shaped.
 const NON_TRANSACTION_TABS = ["CONTRA", "SUSPENSE"];
 const VALID_CATEGORIES = new Set(TRANSACTION_CATEGORIES.map((c) => c.value));
 
@@ -144,16 +123,11 @@ const getCategoryGradientClass = (categoryValue, isActive) => {
   return gradients[categoryValue] || "bg-gray-50 text-gray-600";
 };
 
-// ========== APPROVAL BADGE (EXPENSE rows) ==========
-// Delegates to the shared StatusBadge (same component payables/receivables/close-book use) so
-// the color palette can never drift — silent for APPROVED, same as before, since almost every
-// row is approved by default and a badge on every row would be noise.
 function ApprovalBadge({ status }) {
   if (status !== "PENDING" && status !== "REJECTED") return null;
   return <StatusBadge status={status} />;
 }
 
-// ========== STAT CARD ==========
 function StatCard({ title, value, icon: Icon, gradient, count, iconBg, iconColor }) {
   return (
     <div className={`bg-linear-to-br ${gradient} p-4 sm:p-6 rounded-2xl shadow-lg text-white relative overflow-hidden transform hover:scale-105 transition-transform duration-300`}>
@@ -174,7 +148,6 @@ function StatCard({ title, value, icon: Icon, gradient, count, iconBg, iconColor
   );
 }
 
-// ========== DELETE CONFIRM MODAL ==========
 function DeleteConfirmModal({ transaction, onClose, onConfirm }) {
   const [deleting, setDeleting] = useState(false);
   const handleDelete = async () => { setDeleting(true); await onConfirm(); setDeleting(false); };
@@ -226,7 +199,6 @@ function DeleteConfirmModal({ transaction, onClose, onConfirm }) {
   );
 }
 
-// ========== HELPER FORM COMPONENTS ==========
 function Input({ label, type = "text", value, onChange, icon: Icon, required, placeholder, min, max }) {
   return (
     <label className="block">
@@ -261,8 +233,6 @@ function Select({ label, value, onChange, options, required, icon: Icon }) {
   );
 }
 
-// A removable "Active Filters" chip — clicking the X removes just that one filter and applies
-// immediately (the user has already expressed intent by clicking it).
 function FilterChip({ label, onRemove }) {
   return (
     <span className="inline-flex items-center gap-1 pl-2 pr-1 py-1 bg-white text-indigo-700 rounded-md text-xs font-medium border border-indigo-200">
@@ -281,12 +251,6 @@ function FilterChip({ label, onRemove }) {
 
 const UNSETTLED_LABELS = { paid_to_external: "Held by external", paid_by_other: "Paid by other" };
 
-// Task 1a's Entry Type badge — folded into the existing badge row rather than a new grid
-// column (this file's own convention, see the header comment below: "Never a new column").
-// Silent for REGULAR, same as every other badge here — a badge only earns its place when it
-// tells the reader something that isn't the default. Links out to the document it settles
-// against when one exists — the URL shape Task 5 establishes for the Assets/Liabilities
-// document drill-down (?doc=<id>); harmless before that lands, since it's just a query param.
 function EntryTypeBadge({ row }) {
   const type = ENTRY_TYPES[row.entryType];
   if (!type || row.entryType === "REGULAR") return null;
@@ -308,8 +272,6 @@ function EntryTypeBadge({ row }) {
   );
 }
 
-// Compact badge row shown under every transaction row (list view) + the "Details" toggle. Never
-// a new column — per §3, prefer badges here and put the real detail behind the toggle.
 function TransactionBadges({ row, expanded, onToggle }) {
   const isUnsettled = UNSETTLED_METHODS.includes(row.method);
   const linkedReceivableId = row.receivableId || row.externalParty?.linkedReceivableId;
@@ -369,15 +331,11 @@ function TransactionBadges({ row, expanded, onToggle }) {
           <Users className="w-3 h-3" /> Collab
         </span>
       )}
-      {/* Settlement / reversal / unattributed, from the shared finance definitions so the
-          drill-down and this log can never describe the same row differently. */}
       <TransactionStatusBadges row={row} onShowDetail={onToggle} />
     </div>
   );
 }
 
-// Expanded detail panel — tax breakdown, collab split, external party, receipts, and the
-// linked receivable/payable's LIVE pending figure (fetched on expand, never cached on the row).
 function TransactionDetail({ row, linkedInfo, linkedLoading }) {
   const router = useRouter();
   const hasTax = row.taxDetails && (row.taxDetails.gstAmount || row.taxDetails.tdsAmount);
@@ -490,7 +448,6 @@ function TransactionDetail({ row, linkedInfo, linkedLoading }) {
   );
 }
 
-// ========== DATA TABLE ==========
 function DataTable({ category, rows, onDelete, onReverse, onSort, sortConfig, pagination, onGenerateBill }) {
   const router = useRouter();
   const [expandedId, setExpandedId] = useState(null);
@@ -614,7 +571,6 @@ function DataTable({ category, rows, onDelete, onReverse, onSort, sortConfig, pa
 
   return (
     <div className="flex flex-col h-full bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
-      {/* Desktop header */}
       <div className="hidden md:grid items-center bg-linear-to-r from-slate-50 to-slate-100 border-b border-slate-200 min-h-13 px-2" style={{ gridTemplateColumns }}>
         {columns.map((col) => (
           <div
@@ -630,7 +586,6 @@ function DataTable({ category, rows, onDelete, onReverse, onSort, sortConfig, pa
         ))}
       </div>
 
-      {/* Mobile header */}
       <div className="md:hidden bg-linear-to-r from-slate-50 to-slate-100 border-b border-slate-200 px-4 py-3">
         <div className="flex items-center justify-between">
           <div>
@@ -662,7 +617,6 @@ function DataTable({ category, rows, onDelete, onReverse, onSort, sortConfig, pa
 
               return (
                 <div key={row._id || i} className="group transition-all duration-200 hover:bg-indigo-50/30">
-                  {/* Desktop row */}
                   <div className="hidden md:grid items-center min-h-16 px-2" style={{ gridTemplateColumns }}>
                     <div className="px-2 py-3 text-sm font-medium text-slate-900">{formatDateForDisplay(row.date)}</div>
 
@@ -728,13 +682,10 @@ function DataTable({ category, rows, onDelete, onReverse, onSort, sortConfig, pa
                       <div className="px-2 py-3"><ApprovalBadge status={row.approvalStatus} /></div>
                     </>)}
 
-                    {/* Actions */}
                     <div className="px-2 py-3">
                       <div className="flex items-center gap-2">
                         <button onClick={() => onGenerateBill(row)} className="p-2 hover:bg-emerald-100 rounded-lg transition-colors text-emerald-600 hover:text-emerald-800" title="Generate Bill"><Bill size={18} /></button>
                         <button onClick={() => router.push(`/admin/transactions/edit/${row._id}`)} className="p-2 hover:bg-indigo-100 rounded-lg transition-colors text-indigo-600 hover:text-indigo-800" title="Edit record"><Edit2 size={18} /></button>
-                        {/* Hidden once the row is fully reversed or is itself a reversal — the route
-                            refuses both, so offering the action would be a dead end. */}
                         {!row.reversalOf && !row.isReversed && (row.amount || 0) > 0 && (
                           <button onClick={() => onReverse(row)} className="p-2 hover:bg-purple-100 rounded-lg transition-colors text-purple-600 hover:text-purple-800" title="Reverse / Refund"><RotateCcw size={18} /></button>
                         )}
@@ -743,13 +694,11 @@ function DataTable({ category, rows, onDelete, onReverse, onSort, sortConfig, pa
                     </div>
                   </div>
 
-                  {/* Badges + expandable detail — shared across desktop and mobile layouts */}
                   <TransactionBadges row={row} expanded={expandedId === row._id} onToggle={() => toggleExpand(row)} />
                   {expandedId === row._id && (
                     <TransactionDetail row={row} linkedInfo={expandedInfo} linkedLoading={expandedLoading} />
                   )}
 
-                  {/* Mobile row */}
                   <div className="md:hidden p-4">
                     <div className="space-y-4">
                       <div className="flex items-start justify-between">
@@ -787,7 +736,6 @@ function DataTable({ category, rows, onDelete, onReverse, onSort, sortConfig, pa
         )}
       </div>
 
-      {/* Pagination */}
       <div className="border-t border-slate-200 bg-white">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 sm:px-6 py-4">
           <div className="text-sm text-slate-600">
@@ -837,10 +785,6 @@ function DataTable({ category, rows, onDelete, onReverse, onSort, sortConfig, pa
   );
 }
 
-// ========== MAIN COMPONENT ==========
-// Shared by /admin/transactions and /super-admin/transactions — identical behavior in both
-// panels, differing only in which sidebar shell wraps them. Create/edit/receivables/payables
-// links always point into the /admin/* pages, which are themselves shared the same way.
 export default function TransactionsListPage({ Sidebar }) {
   return (
     <Suspense fallback={null}>
@@ -863,20 +807,10 @@ function AllTransactionsPageInner({ Sidebar }) {
   const [error, setError]               = useState(null);
   const [refreshing, setRefreshing]     = useState(false);
 
-  // Restored from the URL (falling back to TRANSPLANT) rather than always defaulting — a
-  // category-scoped filter value (expenseCategory, procedure) restored from the URL below but
-  // applied against the wrong tab silently zeroes out every result, since e.g. a TRANSPLANT
-  // query filtered by expense: "Salary" can never match anything. Reproduced against the live
-  // data before this fix: 0 results whenever the tab defaulted to TRANSPLANT while an
-  // EXPENSE-only filter survived a refresh in the URL.
   const [activeCategory, setActiveCategory] = useState(() => {
     const fromUrl = searchParams.get("category");
     return VALID_CATEGORIES.has(fromUrl) ? fromUrl : "TRANSPLANT";
   });
-  // appliedFilters drives the actual query; draftFilters is what the filter panel's inputs are
-  // bound to. They only converge when Apply is clicked (or a chip/quick-filter/reset acts
-  // immediately on both at once) — see the §4 spec: pagination/sort/search stay live, filters
-  // don't fire a request until applied.
   const [appliedFilters, setAppliedFilters] = useState(() => filtersFromParams(searchParams));
   const [draftFilters, setDraftFilters]     = useState(() => filtersFromParams(searchParams));
   const [tableSearch, setTableSearch]   = useState("");
@@ -891,7 +825,6 @@ function AllTransactionsPageInner({ Sidebar }) {
   const [showBillGenerator, setShowBillGenerator]     = useState(false);
   const [selectedTransactionId, setSelectedTransactionId] = useState(null);
 
-  // Debounce search to avoid firing on every keystroke
   const searchDebounceRef = useRef(null);
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const handleSearchChange = (val) => {
@@ -901,8 +834,6 @@ function AllTransactionsPageInner({ Sidebar }) {
   };
 
   const fetchData = useCallback(async (isRefresh = false) => {
-    // These tabs aren't transactionCategories — each manager loads its own collection. Hitting
-    // get-all with one would query for a category that cannot exist.
     if (NON_TRANSACTION_TABS.includes(activeCategory)) {
       setLoading(false);
       setRefreshing(false);
@@ -950,24 +881,10 @@ function AllTransactionsPageInner({ Sidebar }) {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  // Reset to page 1 when filters or category change
   useEffect(() => { setPage(1); }, [appliedFilters, activeCategory, debouncedSearch, sortConfig, pendingOnly]);
 
-  // The Pending Approvals toggle only makes sense on the EXPENSE tab
   useEffect(() => { if (activeCategory !== "EXPENSE") setPendingOnly(false); }, [activeCategory]);
 
-  // Category-scoped filters must not silently carry over into a tab where the field doesn't
-  // exist — e.g. a leftover Procedure filter from SERVICE would zero out every EXPENSE result,
-  // since EXPENSE rows have no procedure to match. Runs on mount too (not just on tab changes):
-  // activeCategory is now itself restored from the URL's `category` param, so a filter that's
-  // still valid for the restored tab is left alone, and one that isn't (e.g. an expenseCategory
-  // left in a stale/legacy URL that predates `category` being persisted) gets cleared instead of
-  // silently zeroing every result.
-  //
-  // The updaters below MUST return the previous object unchanged when nothing actually needs
-  // clearing. Spreading unconditionally produced a new `appliedFilters` identity on every mount,
-  // which invalidated `fetchData` (it's in the dep array above) and re-fired the effect at :943 —
-  // so every mount ran the whole transaction query twice, and pushed two router.replace calls.
   useEffect(() => {
     const patch = {};
     if (!(activeCategory === "TRANSPLANT" || activeCategory === "SERVICE")) patch.procedure = "";
@@ -979,14 +896,8 @@ function AllTransactionsPageInner({ Sidebar }) {
     };
     setDraftFilters(applyPatch);
     setAppliedFilters(applyPatch);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeCategory]);
 
-  // Applied filters (and the active tab) persist in the URL — a filtered view survives a
-  // refresh and can be shared. Draft edits never touch the URL; only Apply/chip-remove/
-  // quick-filter/reset do. Category MUST be included: without it, reloading while on e.g. the
-  // Expense tab with an expenseCategory filter set drops back to the Transplant tab default but
-  // keeps that filter value in the URL, which then silently zeroes out every result.
   useEffect(() => {
     const params = new URLSearchParams();
     if (activeCategory !== "TRANSPLANT") params.set("category", activeCategory);
@@ -1001,7 +912,6 @@ function AllTransactionsPageInner({ Sidebar }) {
     if (appliedFilters.entryType)       params.set("entryType", appliedFilters.entryType);
     const qs = params.toString();
     router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [appliedFilters, activeCategory]);
 
   const handleRefresh = () => fetchData(true);
@@ -1010,8 +920,6 @@ function AllTransactionsPageInner({ Sidebar }) {
     setSortConfig((prev) => ({ key, direction: prev.key === key && prev.direction === "asc" ? "desc" : "asc" }));
   };
 
-  // Reset clears both draft and applied, and fires exactly one fetch (via the appliedFilters
-  // change triggering the existing fetch effect).
   const clearFilters = () => {
     const defaults = defaultFilters();
     setDraftFilters(defaults);
@@ -1021,8 +929,6 @@ function AllTransactionsPageInner({ Sidebar }) {
     setPage(1);
   };
 
-  // Quick-filter presets are a single decisive click, not a draft edit — they apply
-  // immediately, same as removing a chip.
   const applyQuickFilter = (preset) => {
     const today = getTodayDate();
     const date  = new Date();
@@ -1038,11 +944,8 @@ function AllTransactionsPageInner({ Sidebar }) {
     setAppliedFilters((f) => ({ ...f, ...patch }));
   };
 
-  // The only place a draft filter edit actually reaches the query.
   const applyFilters = () => setAppliedFilters(draftFilters);
 
-  // A chip's X removes just that one filter and applies immediately — the user has already
-  // expressed intent by clicking it.
   const removeFilter = (key) => {
     setDraftFilters((f) => ({ ...f, [key]: "" }));
     setAppliedFilters((f) => ({ ...f, [key]: "" }));
@@ -1058,13 +961,10 @@ function AllTransactionsPageInner({ Sidebar }) {
   const hasActiveFilters = appliedFilters.branch || appliedFilters.paymentMethod || appliedFilters.procedure ||
     appliedFilters.furtherMode || appliedFilters.expenseCategory || appliedFilters.expenseType ||
     appliedFilters.entryType || tableSearch ||
-    // Compared against the DEFAULT window (today), not hardcoded — otherwise the page would
-    // claim a filter is active the moment it loaded with its own defaults.
     appliedFilters.dateFrom !== getTodayDate() || appliedFilters.dateTo !== getTodayDate();
 
   const exportToExcel = async () => {
     try {
-      // Fetch all filtered rows (no pagination) for export
       const p = new URLSearchParams({
         page: 1, limit: 10000,
         category: activeCategory,
@@ -1080,8 +980,6 @@ function AllTransactionsPageInner({ Sidebar }) {
       if (appliedFilters.expenseType)     p.set("expenseType",     appliedFilters.expenseType);
       if (appliedFilters.entryType)       p.set("entryType",       appliedFilters.entryType);
       if (debouncedSearch)       p.set("search",        debouncedSearch);
-      // Must mirror fetchData, or exporting while the Pending Approvals toggle is on silently
-      // writes the APPROVED rows instead of the pending ones the user is looking at.
       if (activeCategory === "EXPENSE" && pendingOnly) p.set("approvalStatus", "PENDING");
 
       const res  = await fetch(`/api/transactions/get-all?${p.toString()}`, { credentials: "include" });
@@ -1094,11 +992,6 @@ function AllTransactionsPageInner({ Sidebar }) {
         d ? new Date(d).toLocaleString("en-IN", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: true }) : "";
       const yesNo = (v) => (v ? "Yes" : "No");
 
-      // Expenses carry an almost entirely different set of fields from revenue rows — payee,
-      // category/type, GST/TDS breakdown, approval, the account it was paid from — and share
-      // barely half the revenue columns. Forcing both through one shape meant the expense
-      // export was mostly blank patient/procedure columns with none of what was actually
-      // entered on the create form, so the EXPENSE tab gets its own column set.
       const isExpenseExport = activeCategory === "EXPENSE";
 
       const expenseRow = (t) => {
@@ -1194,8 +1087,6 @@ function AllTransactionsPageInner({ Sidebar }) {
       const historyRows = [];
       all.forEach((t) => {
         if (!t.editors?.length) return;
-        // An expense has no patient — identify the row by who was paid, and by what it was for,
-        // otherwise every expense edit reads as "Walk-in Customer".
         const subject = isExpenseExport
           ? getExpenseGiverName(t)
           : t.patient?.personal?.name || t.patientName || "Walk-in Customer";
@@ -1296,12 +1187,9 @@ function AllTransactionsPageInner({ Sidebar }) {
 
   return (
     <div className="flex min-h-screen bg-linear-to-br from-blue-50 via-indigo-50 to-purple-50">
-      {/* Optional: /admin passes nothing because src/app/admin/layout.jsx already renders the
-          sidebar once for the whole section. Other roles still pass their own. */}
       {Sidebar && <Sidebar />}
 
       <main className="flex-1 p-4 sm:p-6 lg:p-8 w-full lg:w-auto min-w-0">
-        {/* Header */}
         <div className="mb-4 sm:mb-6">
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
             <div>
@@ -1312,8 +1200,6 @@ function AllTransactionsPageInner({ Sidebar }) {
               <button onClick={handleRefresh} disabled={refreshing} className="p-2 sm:p-3 bg-white border-2 border-gray-200 rounded-xl hover:bg-gray-50 transition-all shadow-sm disabled:opacity-50 shrink-0" title="Refresh data">
                 <RefreshCw className={`w-4 h-4 sm:w-5 sm:h-5 text-gray-600 ${refreshing ? "animate-spin" : ""}`} />
               </button>
-              {/* Exports the Transactions query, which these tabs aren't part of — it would
-                  write an empty sheet. Each manager carries its own export. */}
               {!NON_TRANSACTION_TABS.includes(activeCategory) && (
                 <button onClick={exportToExcel} className="p-2 sm:p-3 bg-white border-2 border-gray-200 rounded-xl hover:bg-indigo-50 hover:border-indigo-200 transition-all shadow-sm shrink-0" title="Download Excel">
                   <FileDown className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-600" />
@@ -1328,7 +1214,6 @@ function AllTransactionsPageInner({ Sidebar }) {
           </div>
         </div>
 
-        {/* Stats */}
         <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-5 mb-4 sm:mb-6">
           <StatCard title="Transplants" value={formatCurrency(stats.TRANSPLANT.total)} icon={User} gradient="from-indigo-400 to-purple-500" count={`${stats.TRANSPLANT.count} transactions`} iconBg="bg-indigo-100" iconColor="text-indigo-600" />
           <StatCard title="Services"    value={formatCurrency(stats.SERVICE.total)}    icon={User} gradient="from-pink-400 to-rose-500"    count={`${stats.SERVICE.count} transactions`}    iconBg="bg-pink-100"    iconColor="text-pink-600"    />
@@ -1336,11 +1221,9 @@ function AllTransactionsPageInner({ Sidebar }) {
           <StatCard title="Expenses"    value={formatCurrency(stats.EXPENSE.total)}    icon={User} gradient="from-rose-400 to-red-500"      count={`${stats.EXPENSE.count} transactions`}    iconBg="bg-rose-100"    iconColor="text-rose-600"    />
         </div>
 
-        {/* Table card */}
         <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
           <div className="border-b border-gray-200">
             <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-3 sm:gap-4 p-4 sm:px-6 sm:py-4">
-              {/* Category tabs */}
               <div className="flex gap-1 sm:gap-2 w-full lg:w-auto overflow-x-auto pb-2 lg:pb-0">
                 {TRANSACTION_CATEGORIES.map((cat) => {
                   const Icon = cat.icon;
@@ -1351,9 +1234,6 @@ function AllTransactionsPageInner({ Sidebar }) {
                       onClick={() => setActiveCategory(cat.value)}
                     >
                       <Icon size={18} />
-                      {/* Guarded: `stats` is keyed by transactionCategory and comes from
-                          /api/transactions/get-all, so SUSPENSE — a separate collection — has no
-                          entry there and renders without a count rather than throwing. */}
                       {cat.label}
                       {stats[cat.value] ? ` (${stats[cat.value].count})` : ""}
                     </button>
@@ -1361,9 +1241,6 @@ function AllTransactionsPageInner({ Sidebar }) {
                 })}
               </div>
 
-              {/* Search + filter toggle. Hidden on the manager tabs — those entries come from
-                  different collections with their own filters, so this bar would silently do
-                  nothing. */}
               <div className={`flex gap-2 sm:gap-3 w-full lg:w-auto ${NON_TRANSACTION_TABS.includes(activeCategory) ? "hidden" : ""}`}>
                 <div className="relative flex-1 lg:flex-initial min-w-0">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 sm:w-5 sm:h-5" />
@@ -1412,7 +1289,6 @@ function AllTransactionsPageInner({ Sidebar }) {
                     ))}
                   </div>
                 </div>
-                {/* Enter in any field here submits — same as clicking Apply Filters. */}
                 <form
                   onSubmit={(e) => { e.preventDefault(); applyFilters(); }}
                   className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-4"
@@ -1528,9 +1404,6 @@ function AllTransactionsPageInner({ Sidebar }) {
             )}
           </div>
 
-          {/* Each of these is its own collection with its own lifecycle, so each brings its own
-              table rather than being forced through DataTable, which is built around the
-              Transactions shape. */}
           {activeCategory === "SUSPENSE" ? (
             <SuspenseManager />
           ) : activeCategory === "CONTRA" ? (

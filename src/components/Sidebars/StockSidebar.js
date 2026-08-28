@@ -62,7 +62,6 @@ export default function StockSidebar({ sidebarOpen, setSidebarOpen }) {
 
   return (
     <>
-      {/* Mobile Menu Button */}
       <button
         onClick={() => setSidebarOpen && setSidebarOpen(true)}
         className="lg:hidden fixed top-4 left-4 z-40 p-2 bg-white rounded-lg shadow-md"
@@ -70,7 +69,6 @@ export default function StockSidebar({ sidebarOpen, setSidebarOpen }) {
         <Menu className="w-6 h-6 text-gray-700" />
       </button>
 
-      {/* Overlay */}
       {sidebarOpen && (
         <div
           className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
@@ -78,13 +76,11 @@ export default function StockSidebar({ sidebarOpen, setSidebarOpen }) {
         ></div>
       )}
 
-      {/* Sidebar */}
       <aside
         className={`fixed left-0 top-0 lg:sticky w-80 bg-white border-r shadow-sm p-6 space-y-6 z-50 h-screen transition-transform duration-300 flex flex-col ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         }`}
       >
-        {/* Header */}
         <div className="flex items-center my-3 justify-between">
           <Link href="/stocks" className="flex items-center gap-2">
             <div className="w-10 h-10 bg-linear-to-r from-emerald-600 to-teal-600 rounded-lg flex items-center justify-center brand-glow">
@@ -95,7 +91,7 @@ export default function StockSidebar({ sidebarOpen, setSidebarOpen }) {
               <p className="text-xs text-gray-500">Stock Management</p>
             </div>
           </Link>
-          <button 
+          <button
             className="lg:hidden p-1 hover:bg-gray-100 rounded"
             onClick={() => setSidebarOpen && setSidebarOpen(false)}
           >
@@ -103,25 +99,7 @@ export default function StockSidebar({ sidebarOpen, setSidebarOpen }) {
           </button>
         </div>
 
-        {/* Quick Stats */}
-        {/* <div className="grid grid-cols-2 gap-3">
-          <div className="p-3 bg-emerald-50 rounded-lg border border-emerald-100">
-            <div className="flex items-center gap-2 mb-1">
-              <Package className="w-4 h-4 text-emerald-600" />
-              <span className="text-xs text-gray-600">Total Items</span>
-            </div>
-            <p className="text-lg font-bold text-gray-900">--</p>
-          </div>
-          <div className="p-3 bg-teal-50 rounded-lg border border-teal-100">
-            <div className="flex items-center gap-2 mb-1">
-              <ShoppingCart className="w-4 h-4 text-teal-600" />
-              <span className="text-xs text-gray-600">Low Stock</span>
-            </div>
-            <p className="text-lg font-bold text-gray-900">--</p>
-          </div>
-        </div> */}
 
-        {/* Navigation */}
         <nav className="flex-1 mt-5 space-y-1 overflow-y-auto scrollbar-hide">
           {navItems.map((item) => (
             <NavItem
@@ -135,7 +113,6 @@ export default function StockSidebar({ sidebarOpen, setSidebarOpen }) {
           ))}
         </nav>
 
-        {/* User Info & Logout */}
         <div className="space-y-3 border-t pt-4">
           <div className="p-3 bg-linear-to-r from-emerald-50 to-teal-50 rounded-lg">
             <div className="flex items-center gap-3">

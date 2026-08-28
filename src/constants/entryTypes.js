@@ -1,7 +1,3 @@
-// Single source of truth for how a transaction row is classified in the /admin/transactions
-// list and its Entry Type filter — labels + badge colours only. Purely presentational: the
-// classification itself (deriveEntryType) lives in the get-all route, next to the fields it
-// reads, and is never persisted (see that route's header comment).
 export const ENTRY_TYPES = {
   REGULAR: { label: "Regular", tone: "gray" },
   RECEIPT_SETTLEMENT: { label: "Receipt (Settlement)", tone: "emerald" },
@@ -12,8 +8,6 @@ export const ENTRY_TYPES = {
   REVERSAL: { label: "Reversal", tone: "purple" },
 };
 
-// Tailwind classes per tone — kept here (not inline in the badge component) so a new tone only
-// ever needs adding in one place.
 export const ENTRY_TYPE_TONE_CLASSES = {
   gray: "bg-gray-100 text-gray-600 border-gray-200",
   emerald: "bg-emerald-50 text-emerald-700 border-emerald-200",

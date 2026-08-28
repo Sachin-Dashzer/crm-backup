@@ -6,8 +6,6 @@ import { COLLAB_BRANCHES } from "@/lib/branches";
 const handler = async (req) => {
   try {
 
-    // Find patients who don't have a counsellor assigned (not visited),
-    // scoped to the 8 collab-city set so collab users don't see main-branch patients.
     const patients = await Patient.find({
       "personal.branch": { $in: COLLAB_BRANCHES },
       $or: [

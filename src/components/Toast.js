@@ -3,9 +3,6 @@
 import { createContext, useContext, useState, useCallback, useEffect, useMemo } from "react";
 import { X, CheckCircle, XCircle, AlertCircle, Info } from "lucide-react";
 
-// ============================================
-// CONTEXT AND PROVIDER
-// ============================================
 
 const ToastContext = createContext(null);
 
@@ -16,7 +13,7 @@ export function ToastProvider({ children }) {
     ({ type = "info", message, title, duration = 5000, position = "top-right" }) => {
       const id = Date.now() + Math.random();
       const toast = { id, type, message, title, duration, position };
-      
+
       setToasts((prev) => [...prev, toast]);
       return id;
     },
@@ -27,7 +24,6 @@ export function ToastProvider({ children }) {
     setToasts((prev) => prev.filter((toast) => toast.id !== id));
   }, []);
 
-  // Memoize the toast methods object so it doesn't change on every render
   const value = useMemo(() => ({
     success: (message, title = "Success", options = {}) =>
       addToast({ type: "success", message, title, ...options }),
@@ -61,9 +57,6 @@ export function useToast() {
   return context;
 }
 
-// ============================================
-// TOAST COMPONENT
-// ============================================
 
 function Toast({ type, message, title, duration, position, onClose }) {
   useEffect(() => {

@@ -5,7 +5,7 @@ import { NextResponse } from "next/server";
 export function withDB(handler) {
   return async (req) => {
     try {
-      await dbConnect(); // Ensure database connection
+      await dbConnect();
       return await handler(req);
     } catch (error) {
       console.error('Database error:', error);

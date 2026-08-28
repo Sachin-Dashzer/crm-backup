@@ -9,13 +9,6 @@ import {
   Loader2, Edit2, Trash2, Ban, RotateCcw, X, ArrowLeftRight, ArrowRight, FileDown, CheckCircle2,
 } from "lucide-react";
 
-// Manage every contra entry — money moved between our own accounts, recorded from the Contra
-// Entry tab on the create page. See src/models/AccountTransfer.js.
-//
-// A contra entry has NO profit-and-loss impact: it is subtracted from one account and added to
-// another, so the total across all accounts is unchanged by definition. That is why the summary
-// shows volume moved rather than a net figure — a net would always be zero and tell you nothing.
-
 const STATUS_TABS = [
   { value: "active", label: "Active" },
   { value: "cancelled", label: "Cancelled" },
@@ -58,8 +51,6 @@ export default function ContraManager() {
 
   useEffect(() => { load(); }, [load]);
 
-  // Volume, not net: contra nets to zero across accounts by construction, so the useful figure
-  // is how much was moved.
   const activeRows = rows.filter((r) => !r.isCancelled);
   const moved = activeRows.reduce((t, r) => t + (r.amount || 0), 0);
 
@@ -316,7 +307,6 @@ export default function ContraManager() {
           </table>
         </div>
 
-        {/* Mobile — stacked cards, matching the other financial pages. */}
         <div className="md:hidden divide-y divide-gray-100">
           {loading ? (
             <div className="py-12 text-center text-gray-400"><Loader2 className="w-5 h-5 animate-spin inline" /></div>

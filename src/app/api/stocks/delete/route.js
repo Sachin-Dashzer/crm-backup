@@ -17,7 +17,6 @@ export async function DELETE(req) {
       );
     }
 
-    // Only admin, super-admin, and stock role can delete stock items
     if (!["admin", "super-admin", "stock"].includes(session.user.role)) {
       return NextResponse.json(
         {
@@ -38,7 +37,6 @@ export async function DELETE(req) {
       );
     }
 
-    // Check if stock exists
     const stock = await Stock.findById(id);
     if (!stock) {
       return NextResponse.json(
@@ -47,7 +45,6 @@ export async function DELETE(req) {
       );
     }
 
-    // Branch restriction: non-admin users can only delete stock from their branch
     const isAdmin = ["admin", "super-admin"].includes(session.user.role);
     const userBranch = session.user.branch;
     if (!isAdmin && userBranch && stock.location !== userBranch) {
@@ -57,7 +54,6 @@ export async function DELETE(req) {
       );
     }
 
-    // Check if there are any sales recorded
     if (stock.sell && stock.sell.length > 0) {
       return NextResponse.json(
         {
@@ -69,7 +65,6 @@ export async function DELETE(req) {
       );
     }
 
-    // Log the deletion
     await DeleteLog.create({
       entityType: "Stock",
       entityId: stock._id.toString(),
@@ -89,7 +84,6 @@ export async function DELETE(req) {
       branch: stock.location,
     });
 
-    // Delete stock
     await Stock.findByIdAndDelete(id);
 
     return NextResponse.json(

@@ -20,14 +20,6 @@ import {
 const ALLOWED_ROLES = ["admin", "super-admin"];
 const LOAN_ACCOUNTS = ["Bajaj Loan", "Fibe Loan"];
 
-// Level-1 rollup for the Assets/Liabilities drill-down (DrillDownTable, levels=2): one row per
-// account, reusing the exact opening/in/out/closing math /api/close-book/balance-sheet uses,
-// reshaped into the { key, label, opening, movement, settled, closing } contract every
-// DrillDownTable section shares.
-//
-// ?filter=cash  -> every account except the two loan financiers (Assets' Cash & Bank section)
-// ?filter=loans -> only the loan financiers (Liabilities' Loans section)
-// no filter     -> all of ACCOUNTS
 export async function GET(request) {
   try {
     const session = await getServerSession(authOptions);
@@ -46,23 +38,9 @@ export async function GET(request) {
     const seriesDays = searchParams.get("series") || "";
     const accountsParam = searchParams.get("accounts") || "";
 
-    // Never trust a raw branch string from the client — run it through the same session-aware
-    // resolver every other branch-scoped query in this codebase uses. This route (and its
-    // downstream helpers in accountBalances.js) work with a single branch NAME, not a Mongo
-    // filter, so a collab session's expanded {$in: COLLAB_BRANCHES} shape (which these
-    // string-keyed helpers can't consume) falls back to "no branch filter" rather than crashing
-    // — moot in practice since this route is admin/super-admin only and neither role is ever
-    // branch-locked, but this is the same convention every branch-scoped route follows.
     const branchFilterObj = resolveBranchFilter(session, branchParam);
     const branch = typeof branchFilterObj.branch === "string" ? branchFilterObj.branch : "";
 
-    // Combined cash-account balance over the trailing N days, for the dashboard's line chart.
-    // Contra transfers are deliberately excluded: summed across the FULL combined set they net to
-    // exactly zero (money moving between two of our own accounts), so leaving them out changes
-    // nothing here. Open suspense entries are also excluded from this rough trend line — a
-    // resolved entry's money is later re-counted via its real transaction on a possibly different
-    // date, and re-including the original suspense day risks double counting; the accounts list
-    // above (and the balance sheet) remain the audited figures, this is a visual trend only.
     if (seriesDays) {
       const days = Math.min(90, Math.max(1, parseInt(seriesDays)));
       const end = new Date();
@@ -108,9 +86,6 @@ export async function GET(request) {
         : filter === "cash"
           ? ACCOUNTS.filter((a) => !LOAN_ACCOUNTS.includes(a))
           : ACCOUNTS;
-    // Task C4 (dashboard) — an explicit account selection narrows further, server-side, instead
-    // of the caller fetching everything and filtering in JS afterward (which the dashboard used
-    // to do, and which can only ever agree with a server-side filter by coincidence).
     const accounts = accountsParam
       ? filterAccounts.filter((a) => accountsParam.split(",").includes(a))
       : filterAccounts;
@@ -130,8 +105,6 @@ export async function GET(request) {
         ...(suspenseStage ? [suspenseStage] : []),
         ...(borrowingStage ? [borrowingStage] : []),
         ...(advanceStage ? [advanceStage] : []),
-        // Contra/suspense rows carry their own `account`, unrestricted by buildBalanceMatch
-        // above — re-scope to the requested subset (loans-only / cash-only) here.
         { $match: { account: { $in: accounts } } },
         {
           $group: {

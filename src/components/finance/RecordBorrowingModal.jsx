@@ -9,16 +9,6 @@ import { ACCOUNTS } from "@/constants/bankRouting";
 import { ALL_BRANCHES } from "@/lib/branches";
 import { getExpenseTypes } from "@/constants/expenseCategories";
 
-// Modelled directly on NewPayableModal.jsx — same structure and styling, same party-picking
-// pattern (SearchableSelect debounced against the real search endpoints for VENDOR/EMPLOYEE/
-// PATIENT, free text for OTHER).
-//
-// mode: "IN"  + payable: null      -> a brand-new loan (creates the Payable AND the first
-//                                      Borrowing row, atomically — /api/borrowings/create).
-// mode: "IN"  + payable: {...}     -> an additional tranche on an existing loan. Party is fixed
-//                                      (hidden), sub-type is fixed (already set on the payable).
-// mode: "OUT" + payable: {...}     -> a repayment. Party fixed; shows Outstanding and guards
-//                                      against overpayment the same way RecordPaymentModal does.
 const SUBTYPES = getExpenseTypes("Borrowings");
 const PARTY_KINDS = [
   { value: "VENDOR", label: "Vendor" },
@@ -71,7 +61,6 @@ export default function RecordBorrowingModal({ open, onClose, onSuccess, mode, p
         setOptions(data.data || data.vendors || data.employees || data.patients || []);
       }
     } catch {
-      // An empty picker is recoverable — the user can still type a label under "Other".
     } finally {
       setSearching(false);
     }
@@ -79,7 +68,6 @@ export default function RecordBorrowingModal({ open, onClose, onSuccess, mode, p
 
   useEffect(() => {
     if (!partyLocked) fetchOptions("");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [partyKind]);
 
   const handlePartySearch = (term) => {

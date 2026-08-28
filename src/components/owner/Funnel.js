@@ -1,5 +1,3 @@
-// .funnel bars from [{ label, value, sub }]. Bar height is proportional to the largest
-// value in the set (or `maxValue` if the caller wants a fixed scale across re-renders).
 const FUNNEL_MAX_BAR_PX = 140;
 
 export default function Funnel({ items = [], maxValue }) {

@@ -124,7 +124,6 @@ export async function GET(request) {
 
       case "employees-by-role": {
         const employees = await Employee.find(dateFilter).lean();
-        // Group by role
         const roleMap = {};
         employees.forEach((e) => {
           if (!roleMap[e.role]) roleMap[e.role] = { role: e.role, total: 0, active: 0, inactive: 0 };

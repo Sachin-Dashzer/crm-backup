@@ -12,7 +12,6 @@ export async function GET(request) {
 
     const { searchParams } = new URL(request.url);
 
-    // Build filter query
     const dateFilter = {};
     const startDate = searchParams.get("startDate");
     const endDate = searchParams.get("endDate");
@@ -31,7 +30,6 @@ export async function GET(request) {
 
     const branch = searchParams.get("branch");
 
-    // ── Filters shared across the independent queries below ──────────────────────────────
     const branchFilter = { costType: "Revenue", method: { $nin: UNSETTLED_METHODS }, ...SETTLEMENT_EXCLUSION, ...dateFilter };
     const branches = ["Delhi", "Mumbai", "Hyderabad", "Noida"];
     const targetBranches = branch ? branches.filter((b) => b === branch) : branches;
@@ -74,14 +72,6 @@ export async function GET(request) {
       ...(branch ? { branch } : {}),
     };
 
-    // ── Everything below is independent of everything else — none of these queries needs
-    // another one's result — so they all run concurrently in one Promise.all instead of one
-    // after another. Only the per-patient revenue aggregation (below this block) genuinely
-    // depends on the agent roster, so it's the one query that has to wait.
-    //
-    // Previously this whole route ran as ~8 sequential stages (one Transactions.find() PER
-    // agent on top of that — see the note below); end-to-end it measured ~40s against this
-    // dataset. Restructured, it now measures ~2-3s.
     const [
       agents,
       branchRevenueAgg,
@@ -122,14 +112,6 @@ export async function GET(request) {
       ]),
     ]);
 
-    // ── 1. Agent Performance Data ──────────────────────────────────────────────────────────
-    //
-    // Was: one Transactions.find() PER agent, all launched together via Promise.all. With
-    // maxPoolSize: 10 on the Mongoose connection (src/lib/db.js), 100+ agents means 100+
-    // concurrent queries competing for 10 pooled connections — the rest just queue, and the
-    // whole request's latency becomes (agent count ÷ 10) sequential round trips instead of the
-    // 1 round trip it should be. Replaced with a single aggregation summing revenue per patient
-    // across every relevant patient at once, then attributed back to each agent in memory.
     const agentPatientSets = agents.map((agent) => {
       let patients = agent.patient || [];
 
@@ -180,21 +162,17 @@ export async function GET(request) {
       };
     });
 
-    // ── 2. Revenue by Branch ───────────────────────────────────────────────────────────────
     const branchRevenueMap = new Map(branchRevenueAgg.map((r) => [r._id, r.total]));
     const filteredRevenueByBranch = targetBranches
       .map((branchName) => ({ name: branchName, revenue: branchRevenueMap.get(branchName) || 0 }))
       .filter((b) => b.revenue > 0);
 
-    // ── 3. Revenue by Procedure ────────────────────────────────────────────────────────────
-    // Filter values (lowercase) kept exactly as before — untouched, this is a speed fix only.
     const procedureRevenueMap = new Map(procedureAgg.map((r) => [r._id, r.total]));
     const revenueByProcedure = procedures.map((procedure) => ({
       procedure,
       revenue: procedureRevenueMap.get(procedure) || 0,
     }));
 
-    // ── 4. Monthly Revenue Trend (last 12 months or filtered range) ───────────────────────
     const revenueMap = Object.fromEntries(revenueByMonth.map((r) => [r._id, r.total]));
     const patientsMap = Object.fromEntries(patientsByMonth.map((r) => [r._id, r.count]));
     const monthlyRevenue = [];
@@ -203,7 +181,6 @@ export async function GET(request) {
       const monthStart = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const monthEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 0);
 
-      // Skip if outside filter range
       if (startDate && monthEnd < new Date(startDate)) continue;
       if (endDate && monthStart > new Date(endDate)) continue;
 
@@ -219,7 +196,6 @@ export async function GET(request) {
       });
     }
 
-    // ── 5 & 6. Patient Status Distribution + Conversion Funnel ─────────────────────────────
     const statusCountMap = Object.fromEntries(statusAgg.map((r) => [r._id, r.count]));
     const totalPatientsForFunnel = statusAgg.reduce((sum, r) => sum + r.count, 0);
 
@@ -241,12 +217,11 @@ export async function GET(request) {
       { stage: "Closed", count: closedPatients },
     ];
 
-    // ── 7. Summary Statistics ───────────────────────────────────────────────────────────────
     const summaryAgg = summaryAggArr[0];
     const totalRevenue = summaryAgg?.total || 0;
     const transactionCount = summaryAgg?.count || 0;
 
-    const totalPatients = totalPatientsForFunnel; // same statusFilter, already computed above
+    const totalPatients = totalPatientsForFunnel;
     const conversionRate =
       totalPatients > 0
         ? ((closedPatients / totalPatients) * 100).toFixed(2)

@@ -12,14 +12,6 @@ import { resolveBranchFilter } from "@/lib/branches";
 
 const ALLOWED_ROLES = ["admin", "super-admin"];
 
-// Grouped payables for the Liabilities drill-down (DrillDownTable, mode: "documents"):
-//   level=1  -> one row per expenseCategory (HEAD)
-//   level=2  -> one row per expenseSubType within ?category= (SUB-TYPE)
-//   level=3  -> one row per Payable DOCUMENT within the HEAD (+ optional SUB-TYPE) bucket, with
-//               live paid/pending/status/ageing — reuses buildPayableAggregationStages (Task 5,
-//               Step 2), never a second paid/pending calculation.
-//   level=4  -> the actual settling Transactions for ONE document (?documentId=), with a
-//               running "paid so far" balance.
 export async function GET(request) {
   try {
     const session = await getServerSession(authOptions);
@@ -34,15 +26,8 @@ export async function GET(request) {
     const level = Math.min(4, Math.max(1, parseInt(searchParams.get("level") || "1")));
     const category = searchParams.get("category") || "";
     const subType = searchParams.get("subType") || "";
-    // Vendors page (Task: vendor ledger) — rolls up by payee.refId instead of expenseCategory,
-    // single level (no sub-type tier), then jumps straight to that vendor's documents at level 3
-    // via vendorId instead of category. See buildPayableGroupedStages' groupBy param.
     const groupBy = searchParams.get("groupBy") === "vendor" ? "vendor" : "category";
     const vendorId = searchParams.get("vendorId") || "";
-    // Never trust a raw branch string from the client — same resolver every branch-scoped route
-    // uses. Extracted back to a plain string since buildPayableGroupedStages and the match below
-    // both key on a single branch NAME (a collab session's expanded {$in: [...]} shape, were one
-    // ever to reach this admin-only route, falls back to no filter rather than crashing).
     const branchFilterObj = resolveBranchFilter(session, searchParams.get("branch") || "");
     const branch = typeof branchFilterObj.branch === "string" ? branchFilterObj.branch : "";
     const from = searchParams.get("from") || "";
@@ -116,7 +101,6 @@ export async function GET(request) {
         Transactions.countDocuments(txMatch),
       ]);
 
-      // One snapshot for the page rather than a query per row — display path only.
       const closedPeriods = await loadClosedPeriodSnapshot();
       const rowsWithLock = rows.map((r) => ({
         ...r,
@@ -126,9 +110,6 @@ export async function GET(request) {
       return NextResponse.json({ success: true, rows: rowsWithLock, total, page, limit });
     }
 
-    // level 3 — one row per document, live-aggregated (never a stored paid/pending figure).
-    // Vendor mode skips the category/sub-type tier entirely and matches on payee.refId instead —
-    // a vendor's bills can legitimately span several expense categories.
     let match;
     if (groupBy === "vendor") {
       if (!vendorId || !mongoose.Types.ObjectId.isValid(vendorId)) {
@@ -142,8 +123,6 @@ export async function GET(request) {
       match = { expenseCategory: category };
       if (subType) match.expenseSubType = subType;
     }
-    // Cancelled documents are excluded from the base match by default (same as every other
-    // payables view); the one exception is when the caller explicitly asked to see them.
     match.isCancelled = status === "Cancelled" ? true : { $ne: true };
     if (branch) match.branch = branch;
     if (party) match["payee.label"] = { $regex: party, $options: "i" };
@@ -153,16 +132,9 @@ export async function GET(request) {
       ...buildPayableAggregationStages(Transactions.collection.name),
     ];
     if (status && status !== "Cancelled") stages.push({ $match: { status } });
-    // Matches the ageing chips' own definition (/api/payables/summary?ageing=1, which sums
-    // { pending: { $gt: 0 } } into these buckets) — a document that's since been fully paid off
-    // still carries whatever ageingBucket its (now irrelevant) dueDate computes to, so without
-    // this a cleared document could appear in a "90+ days" filter the chip's own count says is 0.
     if (ageing) stages.push({ $match: { ageingBucket: ageing, pending: { $gt: 0 } } });
     stages.push({ $sort: { dueDate: 1, createdAt: -1 } });
 
-    // Paginate INSIDE the pipeline. This used to aggregate every matching document — each with
-    // its own $lookup into Transactions — serialise the lot into Node, and only then .slice() one
-    // page out of it, so `limit` bounded what was returned but not what was computed.
     const [facet] = await Payable.aggregate([
       ...stages,
       {
@@ -174,12 +146,6 @@ export async function GET(request) {
     ]);
     const pageRows = facet?.rows || [];
     const total = facet?.total?.[0]?.count || 0;
-    // A document has no account of its own — the "every account closed" fallback (account: null)
-    // is the right semantics for an accrual with no cash side yet.
-    //
-    // One snapshot for the whole page instead of a per-row checkPeriodLock: that fanned out to 11
-    // AccountPeriod queries PER ROW, so a full 200-row page cost ~2,200 queries just to render
-    // lock badges. This is the display path; write guards still call checkPeriodLock directly.
     const closedPeriods = await loadClosedPeriodSnapshot();
     const rows = pageRows.map((r) => ({
       ...r,

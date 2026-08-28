@@ -24,16 +24,6 @@ import { formatCurrency } from "@/lib/financeUI";
 import { ALL_BRANCHES } from "@/lib/branches";
 import VendorLedgerModal from "@/components/finance/VendorLedgerModal";
 
-// Vendors inside the admin shell. The same records the stocks section manages — /api/vendors
-// is the single source for both, so a vendor added here is immediately selectable as a
-// payable payee or receivable payer.
-//
-// Billed/Settled/Balance Due mirror exactly what the Liabilities page shows per expense category
-// — same underlying aggregation (buildPayableGroupedStages, here grouped by payee.refId instead
-// of expenseCategory via groupBy=vendor — see payableAggregation.js), same point-in-time balance
-// carried in from before the branch/date scope's `from`. Clicking a vendor drills into
-// VendorLedgerModal (bills -> settling transactions), the vendor-scoped counterpart of
-// DrillDownTable's documents mode.
 
 const initials = (name) =>
   (name || "")
@@ -64,11 +54,9 @@ export default function AdminVendorsPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [scope, setScope] = useState({ branch: "", dateFrom: "", dateTo: "" });
-  // Rollup keyed by vendor _id -> { opening, movement, settled, closing, count } | undefined
-  // (undefined = no payables at all for that vendor, distinct from a real all-zero row).
   const [ledger, setLedger] = useState({});
   const [ledgerLoading, setLedgerLoading] = useState(true);
-  const [openVendor, setOpenVendor] = useState(null); // vendor row the ledger modal is open for
+  const [openVendor, setOpenVendor] = useState(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -112,8 +100,6 @@ export default function AdminVendorsPage() {
     loadLedger();
   }, [loadLedger]);
 
-  // Filtered on the client: the whole vendor list is small and already in memory, so a
-  // round-trip per keystroke would be slower than the filter itself.
   const term = search.trim().toLowerCase();
   const shown = term
     ? vendors.filter((v) =>
@@ -156,7 +142,6 @@ export default function AdminVendorsPage() {
             </Link>
           </div>
 
-          {/* ── Summary strip ── */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <MetricCard
               title="Total Vendors"
@@ -178,7 +163,6 @@ export default function AdminVendorsPage() {
             />
           </div>
 
-          {/* ── Filters ── */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4">
             <div className="flex flex-wrap items-center gap-2.5">
               <div className="relative flex-1 min-w-55">
@@ -226,7 +210,6 @@ export default function AdminVendorsPage() {
             </div>
           </div>
 
-          {/* ── Vendor table ── */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">

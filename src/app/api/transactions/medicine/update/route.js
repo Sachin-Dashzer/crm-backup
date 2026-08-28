@@ -1,4 +1,3 @@
-// app/api/transactions/medicine/update/route.js
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
@@ -17,13 +16,6 @@ export async function PUT(req) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Only admins can update medicine transactions
-    // if (session.user.role !== "admin") {
-    //   return NextResponse.json(
-    //     { error: "Only admins can update medicine transactions" },
-    //     { status: 403 }
-    //   );
-    // }
 
     await connectDB();
 
@@ -49,7 +41,6 @@ export async function PUT(req) {
       updateLinked,
     } = await req.json();
 
-    // Find existing transaction
     const existingTransaction = await Transactions.findById(transactionId);
     if (!existingTransaction) {
       return NextResponse.json(
@@ -58,23 +49,17 @@ export async function PUT(req) {
       );
     }
 
-    // Closed-period guard — checks both the current position and where the edit moves it.
     const locked = await periodLockResponse(existingTransaction, { date, furtherMode });
     if (locked) {
       return NextResponse.json(locked.body, { status: locked.status });
     }
 
-    // §2.2 — amount changes on a transaction that CREATED a linked document need explicit
-    // confirmation; payments AGAINST one self-correct via aggregation and are not flagged.
-    // finalAmount is computed further down, so the proposed figure is recomputed here from the
-    // same inputs rather than reordering the existing logic.
     const proposedAmount = (Number(quantity) || 0) * (Number(perUnitCost) || 0) - (Number(discount) || 0);
     const linkedWarning = await checkCascadeOnUpdate(existingTransaction, { amount: proposedAmount });
     if (linkedWarning && !updateLinked) {
       return NextResponse.json(linkedWarning, { status: 409 });
     }
 
-    // Check if it's a MEDICINE transaction
     if (existingTransaction.transactionCategory !== "MEDICINE") {
       return NextResponse.json(
         { error: "This is not a medicine transaction" },
@@ -82,7 +67,6 @@ export async function PUT(req) {
       );
     }
 
-    // Validation
     if (!medicineId || !quantity || !perUnitCost) {
       return NextResponse.json(
         { error: "Missing required fields" },
@@ -90,7 +74,6 @@ export async function PUT(req) {
       );
     }
 
-    // Validate patient
     if (!patientId && (!patientName || !patientPhone)) {
       return NextResponse.json(
         { error: "Either select a patient or provide customer details" },
@@ -108,13 +91,11 @@ export async function PUT(req) {
       }
     }
 
-    // Get old medicine ID and quantity
     const oldMedicineId = (existingTransaction.medicineId || existingTransaction.stock)?.toString();
     const oldQuantity = existingTransaction.quantity;
     const newMedicineId = medicineId.toString();
     const newQuantity = parseInt(quantity);
 
-    // Verify new medicine exists
     const newMedicine = await Stock.findById(newMedicineId);
     if (!newMedicine) {
       return NextResponse.json(
@@ -123,18 +104,14 @@ export async function PUT(req) {
       );
     }
 
-    // Handle stock updates based on what changed
     if (oldMedicineId !== newMedicineId) {
-      // Medicine changed - restore old medicine stock and deduct from new medicine
-      
-      // Restore stock to old medicine
+
       if (oldMedicineId) {
         await Stock.findByIdAndUpdate(oldMedicineId, {
           $inc: { totalQuantity: oldQuantity },
         });
       }
 
-      // Check if new medicine has sufficient stock
       if (newMedicine.totalQuantity < newQuantity) {
         return NextResponse.json(
           {
@@ -144,15 +121,12 @@ export async function PUT(req) {
         );
       }
 
-      // Deduct from new medicine
       await Stock.findByIdAndUpdate(newMedicineId, {
         $inc: { totalQuantity: -newQuantity },
       });
     } else if (oldQuantity !== newQuantity) {
-      // Same medicine, different quantity - adjust the difference
       const quantityDifference = newQuantity - oldQuantity;
 
-      // Check if we have sufficient stock for the additional quantity
       if (quantityDifference > 0 && newMedicine.totalQuantity < quantityDifference) {
         return NextResponse.json(
           {
@@ -162,18 +136,14 @@ export async function PUT(req) {
         );
       }
 
-      // Update stock by the difference (negative if reducing quantity, positive if increasing)
       await Stock.findByIdAndUpdate(newMedicineId, {
         $inc: { totalQuantity: -quantityDifference },
       });
     }
-    // If same medicine and same quantity, no stock update needed
 
-    // Calculate amounts
     const subtotal = newQuantity * parseFloat(perUnitCost);
     const finalAmount = subtotal - (discount || 0);
 
-    // Track changes for audit
     const updatedFields = [];
     const trackChange = (fieldName, oldValue, newValue) => {
       if (String(oldValue) !== String(newValue)) {
@@ -199,7 +169,6 @@ export async function PUT(req) {
     trackChange("date", existingTransaction.date, date);
     trackChange("remarks", existingTransaction.remarks, remarks);
 
-    // Update transaction
     existingTransaction.patient = patientId || null;
     existingTransaction.patientName = patientName || "";
     existingTransaction.patientPhone = patientPhone || "";
@@ -217,9 +186,8 @@ export async function PUT(req) {
     if (furtherMode !== undefined) existingTransaction.furtherMode = furtherMode || "";
     if (receipts !== undefined) existingTransaction.receipts = receipts || [];
     if (receivableId !== undefined) existingTransaction.receivableId = receivableId || null;
-    existingTransaction.stock = medicineId; // For backward compatibility
+    existingTransaction.stock = medicineId;
 
-    // Add editor info
     if (updatedFields.length > 0) {
       const editorInfo = {
         name: session.user.name,
@@ -235,8 +203,6 @@ export async function PUT(req) {
       existingTransaction.lastEditedBy = editorInfo;
     }
 
-    // Editing into / out of / within "Paid to External" has to move the linked Receivable with
-    // it, or the amount leaves the books entirely — see syncExternalPartyOnUpdate.
     try {
       await withDbTransaction(async (dbSession) => {
         const patch = await syncExternalPartyOnUpdate({
@@ -252,8 +218,6 @@ export async function PUT(req) {
         });
         if (patch) existingTransaction.set(patch);
         await existingTransaction.save({ session: dbSession });
-        // Same session as the transaction write — the linked total must never move while the
-        // amount that justified it fails to commit.
         if (linkedWarning && updateLinked) {
           await applyCascadeOnUpdate(existingTransaction, { amount: existingTransaction.amount }, dbSession, {
             name: session.user.name,
@@ -262,7 +226,6 @@ export async function PUT(req) {
         }
       });
     } catch (syncError) {
-      // A deliberate refusal (money already settled against the linked receivable), not a fault.
       return NextResponse.json({ error: syncError.message }, { status: 400 });
     }
 

@@ -7,16 +7,9 @@ import { maskPhone } from "@/utils/phoneUtils";
 const formatCurrency = (amount) =>
   `₹${Number(amount || 0).toLocaleString("en-IN")}`;
 
-// Patient search + optional walk-in toggle. Pairs with the usePatientPicker hook (which
-// supplies `options`/`searching`/`onSearch`/`addToCache`) — this component is presentation
-// only, so the search/cache logic stays defined exactly once regardless of how many panels
-// render this UI.
-//
-// `allowWalkIn` controls whether the walk-in checkbox renders at all: TRANSPLANT never
-// allows it (every transplant needs a real patient record); SERVICE and MEDICINE do.
 export default function PatientPicker({
   picker,
-  value, // { patient, isWalkIn, patientName, patientPhone }
+  value,
   onChange,
   allowWalkIn = false,
   required = true,

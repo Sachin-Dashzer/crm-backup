@@ -10,7 +10,6 @@ import {
   Phone, Mail, MapPin, Star, Building2,
 } from "lucide-react";
 
-/* ─── Constants ──────────────────────────────────────────────────────────── */
 const DATE_RANGES = ["Today", "Yesterday", "Last 7 Days", "Last 30 Days", "All Time", "Custom"];
 
 const HR_STATUSES = [
@@ -30,7 +29,6 @@ const STATUS_META = {
   "On Hold":             { color: "bg-gray-100   text-gray-600",    dot: "bg-gray-400",    icon: AlertCircle },
 };
 
-/* ─── Helpers ─────────────────────────────────────────────────────────────── */
 const fmt    = (n) => new Intl.NumberFormat("en-IN").format(n || 0);
 const fmtPay = (n) => n ? `₹${new Intl.NumberFormat("en-IN").format(n)}` : "—";
 
@@ -56,7 +54,6 @@ function buildDateRange(range, custom) {
   return { from: from.toISOString(), to: to.toISOString() };
 }
 
-/* ─── KPI Card ─────────────────────────────────────────────────────────────── */
 const COLOR_MAP = {
   amber:  { accent: "bg-amber-500",   soft: "bg-amber-50",   text: "text-amber-600",   border: "border-amber-100"   },
   blue:   { accent: "bg-blue-500",    soft: "bg-blue-50",    text: "text-blue-600",    border: "border-blue-100"    },
@@ -86,7 +83,6 @@ function KpiCard({ title, value, subtitle, icon: Icon, color = "amber" }) {
   );
 }
 
-/* ─── Candidate Detail Modal ─────────────────────────────────────────────── */
 function CandidateModal({ candidate, onClose }) {
   if (!candidate) return null;
   const meta = STATUS_META[candidate.status] || STATUS_META["Applied"];
@@ -107,7 +103,6 @@ function CandidateModal({ candidate, onClose }) {
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-        {/* Header */}
         <div className="p-6 border-b border-gray-100 flex items-start justify-between">
           <div className="flex items-center gap-4">
             <div className="w-14 h-14 rounded-2xl bg-linear-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white font-bold text-xl shadow-md">
@@ -137,7 +132,6 @@ function CandidateModal({ candidate, onClose }) {
         </div>
 
         <div className="p-6 space-y-5">
-          {/* Contact */}
           <div className="grid grid-cols-2 gap-3">
             {candidate.phone && (
               <div className="flex items-center gap-2.5 p-3 bg-gray-50 rounded-xl">
@@ -168,7 +162,6 @@ function CandidateModal({ candidate, onClose }) {
             )}
           </div>
 
-          {/* Experience & Salary */}
           <div>
             <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">Experience & Salary</p>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -197,7 +190,6 @@ function CandidateModal({ candidate, onClose }) {
             </div>
           </div>
 
-          {/* Evaluation Scores */}
           {scores.length > 0 && (
             <div>
               <div className="flex items-center justify-between mb-3">
@@ -232,7 +224,6 @@ function CandidateModal({ candidate, onClose }) {
             </div>
           )}
 
-          {/* Comments */}
           {(candidate.hrComments || candidate.finalRemarks || candidate.reasonForLeaving) && (
             <div>
               <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">Notes</p>
@@ -259,7 +250,6 @@ function CandidateModal({ candidate, onClose }) {
             </div>
           )}
 
-          {/* Metadata */}
           <div className="grid grid-cols-2 gap-3 text-xs text-gray-500">
             {candidate.interviewDate && (
               <div>
@@ -290,7 +280,6 @@ function CandidateModal({ candidate, onClose }) {
   );
 }
 
-/* ─── Candidate Row ─────────────────────────────────────────────────────── */
 function CandidateRow({ candidate, onView }) {
   const meta = STATUS_META[candidate.status] || STATUS_META["Applied"];
   const StatusIcon = meta.icon;
@@ -343,9 +332,8 @@ function CandidateRow({ candidate, onView }) {
   );
 }
 
-/* ─── Main Page ───────────────────────────────────────────────────────────── */
 export default function InterviewsPage() {
-  const [activeTab,  setActiveTab]  = useState("all");   // "all" | "visited" | "applied"
+  const [activeTab,  setActiveTab]  = useState("all");
   const [candidates, setCandidates] = useState([]);
   const [stats,      setStats]      = useState({});
   const [pagination, setPagination] = useState({ total: 0, page: 1, limit: 25, pages: 1 });
@@ -355,10 +343,9 @@ export default function InterviewsPage() {
   const [status,     setStatus]     = useState("");
   const [dateRange,  setDateRange]  = useState("Last 30 Days");
   const [custom,     setCustom]     = useState({ from: "", to: "" });
-  const [selected,   setSelected]   = useState(null); // for modal
+  const [selected,   setSelected]   = useState(null);
   const searchTimer = useRef(null);
 
-  // Debounce search
   useEffect(() => {
     clearTimeout(searchTimer.current);
     searchTimer.current = setTimeout(() => setDebouncedSearch(search), 400);
@@ -408,7 +395,6 @@ export default function InterviewsPage() {
       <SuperAdminSidebar />
 
       <div className="flex-1 overflow-auto">
-        {/* ── Header ── */}
         <div className="bg-white border-b border-gray-200 px-6 py-4 sticky top-0 z-10 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-3">
@@ -422,7 +408,6 @@ export default function InterviewsPage() {
             </div>
 
             <div className="flex items-center gap-2 flex-wrap">
-              {/* Date range */}
               <div className="relative">
                 <Calendar className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
                 <select value={dateRange} onChange={(e) => setDateRange(e.target.value)}
@@ -443,7 +428,6 @@ export default function InterviewsPage() {
                 </>
               )}
 
-              {/* Status filter */}
               <div className="relative">
                 <select value={status} onChange={(e) => setStatus(e.target.value)}
                   className="pl-3 pr-7 py-2 border border-gray-200 rounded-xl text-xs font-semibold text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-amber-300 appearance-none cursor-pointer shadow-sm">
@@ -462,7 +446,6 @@ export default function InterviewsPage() {
 
         <div className="p-6 space-y-6">
 
-          {/* ── KPI Cards ── */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
             <KpiCard title="Total Candidates"   value={fmt(stats.total)}              icon={Users}     color="blue"   subtitle="Filtered" />
             <KpiCard title="Visited (QR)"       value={fmt(stats.visitedCount || 0)}  icon={QrCode}    color="amber"  subtitle="source: qr" />
@@ -474,9 +457,7 @@ export default function InterviewsPage() {
               value={stats.selectionRate ? `${stats.selectionRate}%` : "0%"}          icon={Target}    color="teal"   subtitle="Success" />
           </div>
 
-          {/* ── Source Summary Cards ── */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* Visited (QR) */}
             <div
               onClick={() => setActiveTab(activeTab === "visited" ? "all" : "visited")}
               className={`cursor-pointer rounded-2xl border-2 p-5 transition-all ${
@@ -508,7 +489,6 @@ export default function InterviewsPage() {
               <p className="text-xs text-gray-400 mt-1">Click to filter by Visited (QR) candidates</p>
             </div>
 
-            {/* Applied Online */}
             <div
               onClick={() => setActiveTab(activeTab === "applied" ? "all" : "applied")}
               className={`cursor-pointer rounded-2xl border-2 p-5 transition-all ${
@@ -541,9 +521,7 @@ export default function InterviewsPage() {
             </div>
           </div>
 
-          {/* ── Tabs ── */}
           <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-            {/* Tab bar + Search */}
             <div className="flex flex-wrap items-center justify-between gap-4 px-5 py-4 border-b border-gray-100">
               <div className="flex gap-1">
                 {TABS.map((tab) => {
@@ -576,7 +554,6 @@ export default function InterviewsPage() {
               </div>
             </div>
 
-            {/* Table */}
             <div className="overflow-x-auto">
               {loading ? (
                 <div className="flex items-center justify-center py-24">
@@ -606,7 +583,6 @@ export default function InterviewsPage() {
               )}
             </div>
 
-            {/* Pagination */}
             {pagination.pages > 1 && (
               <div className="flex items-center justify-between px-5 py-4 border-t border-gray-100">
                 <p className="text-xs text-gray-500">
@@ -641,7 +617,6 @@ export default function InterviewsPage() {
         </div>
       </div>
 
-      {/* Candidate Detail Modal */}
       {selected && <CandidateModal candidate={selected} onClose={() => setSelected(null)} />}
     </div>
   );

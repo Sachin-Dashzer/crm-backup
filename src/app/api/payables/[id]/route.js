@@ -11,9 +11,6 @@ import { buildPayableAggregationStages } from "@/lib/payableAggregation";
 
 const ALLOWED_ROLES = ["admin", "super-admin"];
 
-// Single-payable read, computed the exact same way the list/summary routes are — see
-// buildPayableAggregationStages. Used by the transaction detail view to show "current pending"
-// on a linked payable without duplicating the aggregation.
 export async function GET(req, { params }) {
   try {
     const session = await getServerSession(authOptions);
@@ -46,9 +43,6 @@ export async function GET(req, { params }) {
   }
 }
 
-// Revises totalAmount / dueDate, or cancels a Payable (soft-close via
-// isCancelled — never hard-deleted). Every change appends to log[]; existing
-// log entries are never edited or removed.
 export async function PATCH(req, { params }) {
   try {
     const session = await getServerSession(authOptions);
@@ -102,10 +96,6 @@ export async function PATCH(req, { params }) {
 
     let linkedTdsPayable = null;
     if (isCancelled === true && !payable.isCancelled) {
-      // §4.4 — refuse to cancel a payable an open advance is settling (settlesPayableId — see
-      // src/models/Advance.js). The advance's own paid/pending netting depends on this payable
-      // still claiming to be owed; cancelling it out from under an open settlement would strand
-      // that link with nothing left to net against.
       const settlingAdvance = await Advance.findOne({
         settlesPayableId: payable._id,
         isCancelled: { $ne: true },
@@ -121,7 +111,6 @@ export async function PATCH(req, { params }) {
         );
       }
 
-      // Never silently orphan a linked TDS payable — require explicit confirmation to cascade.
       if (payable.tdsLink?.role === "PARENT" && payable.tdsLink?.linkedId) {
         const linked = await Payable.findById(payable.tdsLink.linkedId);
         if (linked && !linked.isCancelled) {
@@ -189,12 +178,6 @@ export async function PATCH(req, { params }) {
   }
 }
 
-// Hard-deletes a Payable, recording it in DeleteLog first so the removal is auditable.
-//
-// REFUSES when money has already been paid against it: those transactions carry payableId and
-// are what the paid/pending aggregation sums, so deleting the document they point at would
-// strand them — the payments stay on the books while the obligation they settled disappears.
-// Cancelling (PATCH isCancelled) is the reversible route; this is for entries created in error.
 export async function DELETE(req, { params }) {
   try {
     const session = await getServerSession(authOptions);
@@ -230,10 +213,6 @@ export async function DELETE(req, { params }) {
       );
     }
 
-    // A "Borrowings" payable's rows (the IN that raised it, every repayment OUT) live in the
-    // Borrowing collection, not Transactions — the check above never sees them. Without this,
-    // a loan with real activity could be hard-deleted here, leaving every Borrowing row pointing
-    // at a payableId that no longer exists. See src/models/Borrowing.js.
     const { default: Borrowing } = await import("@/models/Borrowing");
     const linkedBorrowings = await Borrowing.countDocuments({ payableId: payable._id });
     if (linkedBorrowings > 0) {

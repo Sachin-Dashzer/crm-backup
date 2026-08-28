@@ -33,7 +33,6 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
-// ========== UTILITY FUNCTIONS ==========
 const calculateNetAmount = (transaction) => {
   if (!transaction) return 0;
   return Math.max(0, parseFloat(transaction.amount) || 0);
@@ -423,7 +422,6 @@ function DataTable({ category, rows, onDelete, onSort, sortConfig, pagination, o
   );
 }
 
-// ========== MAIN COMPONENT ==========
 export default function SalesTransactionsPage() {
   const tenantBranches = ["Delhi", "Mumbai", "Hyderabad", "Noida"];
 

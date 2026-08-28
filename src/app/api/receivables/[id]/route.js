@@ -11,9 +11,6 @@ import { buildReceivableAggregationStages } from "@/lib/receivableAggregation";
 
 const ALLOWED_ROLES = ["admin", "super-admin"];
 
-// Single-receivable read, computed the exact same way the list/summary routes are — see
-// buildReceivableAggregationStages. Used by the transaction detail view to show "current
-// pending" on a linked receivable without duplicating the aggregation.
 export async function GET(req, { params }) {
   try {
     const session = await getServerSession(authOptions);
@@ -46,9 +43,6 @@ export async function GET(req, { params }) {
   }
 }
 
-// Revises totalAmount / dueDate, or cancels a Receivable (soft-close via
-// isCancelled — never hard-deleted). Every change appends to log[]; existing
-// log entries are never edited or removed.
 export async function PATCH(req, { params }) {
   try {
     const session = await getServerSession(authOptions);
@@ -101,8 +95,6 @@ export async function PATCH(req, { params }) {
     }
 
     if (isCancelled === true && !receivable.isCancelled) {
-      // §4.4 — mirror of the payable-side guard: refuse to cancel a receivable an open
-      // borrowing is settling (settlesReceivableId — see src/models/Borrowing.js).
       const settlingBorrowing = await Borrowing.findOne({
         settlesReceivableId: receivable._id,
         isCancelled: { $ne: true },
@@ -157,13 +149,6 @@ export async function PATCH(req, { params }) {
   }
 }
 
-// Hard-deletes a Receivable, recording it in DeleteLog first so the removal is auditable.
-//
-// REFUSES when money has already been received against it: those transactions carry
-// receivableId and are what the paid/pending aggregation sums, so deleting the document they
-// point at would strand them against nothing — the receipts stay on the books while the thing
-// they settled disappears. Cancelling (PATCH isCancelled) is the reversible route and is what
-// the error steers the user to; this endpoint exists for entries created in genuine error.
 export async function DELETE(req, { params }) {
   try {
     const session = await getServerSession(authOptions);
@@ -199,10 +184,6 @@ export async function DELETE(req, { params }) {
       );
     }
 
-    // An "Advances" receivable's rows (the OUT that raised it, every recovery IN) live in the
-    // Advance collection, not Transactions — the check above never sees them. Without this, an
-    // advance with real activity could be hard-deleted here, leaving every Advance row pointing
-    // at a receivableId that no longer exists. See src/models/Advance.js.
     const { default: Advance } = await import("@/models/Advance");
     const linkedAdvances = await Advance.countDocuments({ receivableId: receivable._id });
     if (linkedAdvances > 0) {

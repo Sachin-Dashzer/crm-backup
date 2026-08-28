@@ -1,14 +1,3 @@
-// src/app/api/owner/finance/branch-profitability/route.js
-//
-// The one genuinely new piece of Step 11's finance screen — grouping Transactions by branch to
-// compare revenue/expense/profit across branches. Everything else on the Owner finance page
-// (P&L, balance sheet, cash flow, payables/receivables summary) is a direct client-side fetch
-// against the existing /api/close-book/{pnl,balance-sheet,cash-flow} and /api/{payables,
-// receivables}/summary routes — real, already-correct logic, not re-derived here.
-//
-// Scoping mirrors src/app/api/close-book/pnl/route.js's txBase exactly (approvalStatus not
-// PENDING/REJECTED, UNSETTLED_METHODS excluded) so branch totals agree with the P&L card above
-// them rather than using a second, slightly different definition of "real revenue".
 
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";

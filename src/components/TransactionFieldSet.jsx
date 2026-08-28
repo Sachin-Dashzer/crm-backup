@@ -8,15 +8,6 @@ import ReceiptUpload from "@/components/ReceiptUpload";
 import { NON_CASH_METHODS, UNSETTLED_METHODS } from "@/constants/bankRouting";
 import { ALL_BRANCHES } from "@/lib/branches";
 
-// §1.3 — the COMPOSITION of the money-form field components, which already existed separately
-// (MethodField, BankRoutingFields, ExternalPartyFields, ReceiptUpload) but were never assembled.
-// A settlement form that captures only paymentId is exactly what produced 4,309 transactions with
-// no account attribution; this is the piece that stops that recurring.
-//
-// Deliberately NOT used by the four main transaction forms in this pass — they work today and
-// migrating them is a separate change with its own regression surface. This is built around the
-// settlement contexts, proven there first.
-
 export const TRANSACTION_CONTEXTS = [
   "transplant",
   "service",
@@ -34,13 +25,8 @@ const SETTLEMENT_CONTEXTS = new Set([
   "collab-settlement",
 ]);
 
-// A voucher only records that an obligation now exists — no cash moves yet, so payment method,
-// transaction ID, and the "paid from" account routing (all of which the eventual settlement
-// transaction captures) don't apply here and are hidden.
 const HIDE_PAYMENT_FIELDS_CONTEXTS = new Set(["voucher"]);
 
-// Which transactionCategory a context routes as. Settlements inherit the category of whatever
-// they settle, so the caller passes it in; these are only the direct-entry defaults.
 const CONTEXT_CATEGORY = {
   transplant: "TRANSPLANT",
   service: "SERVICE",
@@ -53,21 +39,12 @@ const isExpenseSide = (context, categoryOverride) =>
   context === "payable-payment" ||
   categoryOverride === "EXPENSE";
 
-/**
- * `value` is a single flat object the caller owns:
- *   { amount, method, paymentId, date, branch, receiptMode, furtherMode,
- *     remarks, receipts, externalParty }
- * `onChange(patch)` receives a partial and merges it caller-side.
- *
- * `validateTransactionFields(value, context, opts)` below is exported so the caller's submit
- * handler enforces the same rules this renders — one definition, not two.
- */
 export default function TransactionFieldSet({
   context,
   value,
   onChange,
-  transactionCategory,          // settlements: the category being settled
-  branchLocked = false,         // collab settlement pins the clinic's branch
+  transactionCategory,
+  branchLocked = false,
   showAmount = true,
   showBranch = true,
   showRemarks = true,
@@ -83,9 +60,6 @@ export default function TransactionFieldSet({
 
   const set = (patch) => onChange({ ...patch });
 
-  // §1.2 — furtherMode is REQUIRED on any settlement moving real cash. A settlement with no
-  // account attribution is unusable for close-book, which is the entire reason it is recorded.
-  // NON_CASH_METHODS are the stated exception: nothing moved through an account.
   const furtherModeRequired = useMemo(
     () => isSettlement && !NON_CASH_METHODS.includes(value.method),
     [isSettlement, value.method],
@@ -144,9 +118,6 @@ export default function TransactionFieldSet({
         )}
       </div>
 
-      {/* Method + the payment-id field it implies (card last-4, UTR, loan ref…), plus the "paid
-          from" account routing — both describe how cash actually moved, which doesn't apply to a
-          voucher: it only records that an obligation now exists, before any money moves. */}
       {!hidePaymentFields && (
         <>
           <MethodField
@@ -157,8 +128,6 @@ export default function TransactionFieldSet({
             disabled={disabled}
           />
 
-          {/* Pre-filled from getBankRoutingDefaults for this branch/category/method — the same rule
-              the transplant form applies — and always editable, per §1.2. */}
           <BankRoutingFields
             costType={expenseSide ? "Expenses" : "Revenue"}
             branch={value.branch}
@@ -215,10 +184,6 @@ export default function TransactionFieldSet({
   );
 }
 
-/**
- * The submit-time counterpart of what the component renders. Exported so a caller cannot enforce
- * a different rule than the one shown on screen. Returns an error string, or null when valid.
- */
 export function validateTransactionFields(value, context, { requireAmount = true } = {}) {
   const isSettlement = SETTLEMENT_CONTEXTS.has(context);
   const hidePaymentFields = HIDE_PAYMENT_FIELDS_CONTEXTS.has(context);
@@ -231,7 +196,6 @@ export function validateTransactionFields(value, context, { requireAmount = true
 
   if (hidePaymentFields) return null;
 
-  // Mirrors furtherModeRequired above.
   if (isSettlement && !NON_CASH_METHODS.includes(value.method) && !value.furtherMode) {
     return "Select the account this money moved through — a settlement without account attribution can't be reconciled in Close Book";
   }

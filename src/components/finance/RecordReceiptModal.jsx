@@ -13,16 +13,7 @@ const PURPOSE_LABELS = {
   OTHER: "Other",
 };
 
-// Extracted from admin/receivables/page.jsx (Task 5, Step 1) — behaviour unchanged, only the
-// location moved.
-//
-// The replacement for the "Apply to Receivable" picker that used to live on the revenue forms.
-// Creates the same document — a Revenue transaction carrying receivableId — but from the side
-// where the outstanding balance is known, so the amount can be validated against it. Mirrors
-// RecordPaymentModal on the payables page, including the allowOverpayment escape hatch.
 export default function RecordReceiptModal({ receivable, onClose, onSuccess, toast }) {
-  // One flat object owned here and handed to TransactionFieldSet, rather than a state variable
-  // per field — the field set is what decides which of these are shown and required.
   const [fields, setFields] = useState({
     amount: String(receivable.pending || ""),
     date: new Date().toISOString().split("T")[0],
@@ -41,8 +32,6 @@ export default function RecordReceiptModal({ receivable, onClose, onSuccess, toa
   const overBalance = parseFloat(fields.amount || 0) > receivable.pending;
 
   const handleSubmit = async () => {
-    // Same rules the field set renders — validateTransactionFields is the single definition, so
-    // the form can't enforce something different from what it showed.
     const invalid = validateTransactionFields(fields, "receivable-receipt");
     if (invalid) {
       toast.error(invalid);
@@ -96,9 +85,6 @@ export default function RecordReceiptModal({ receivable, onClose, onSuccess, toa
           </div>
 
           <div>
-            {/* Full field parity with a directly-entered transaction — most importantly
-                receiptMode/furtherMode, whose absence here is what produced thousands of rows
-                invisible to Close Book. */}
             <TransactionFieldSet
               context="receivable-receipt"
               value={fields}

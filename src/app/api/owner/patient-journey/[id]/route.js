@@ -1,9 +1,3 @@
-// src/app/api/owner/patient-journey/[id]/route.js
-//
-// Full Patient document for the Patient Journey 360° detail view — every section of the real
-// schema (personal, counselling, medical, surgery, afterSurgery, payments, products, documents,
-// editors/createdBy), with Employee/Stock refs populated to names and the most recent 20
-// transactions populated to their summary fields.
 
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";

@@ -1,19 +1,3 @@
-// src/app/api/owner/leaks/route.js
-//
-// Leak Control Room — three rule-based checks against real data, no AI/confidence scoring:
-//   1. Leads > 24h old still status: 'new'         — needs callby's live lead-funnel data
-//   2. Patients readyForSurgery: true, no surgery.surgeryDate set  — internal Patient query
-//   3. Patients with payments.pendingAmount > 0 and no transaction in the last 30 days —
-//      internal Patient + Transactions query
-//
-// Rule 1 is the only one that depends on an external system. It uses callby's EXISTING
-// /api/leads/funnel-data endpoint (the same one src/app/api/super-admin/lead-funnel/route.js
-// already calls) — not one of Step 9's three new endpoints. If that call fails (as it currently
-// does — CALLBY_SERVICE_TOKEN is expired), rules 2 and 3 still ship normally; rule 1 comes back
-// with an explicit error instead of being silently empty or fabricated.
-//
-// Every item carries an Age (how long the issue has existed), not a confidence score — there is
-// no scoring model here, just real timestamps.
 
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
@@ -37,7 +21,7 @@ async function staleNewLeads(branch) {
         id: l.id,
         name: l.name || "Unknown",
         phone: l.phone || "",
-        branch: null, // callby leads carry no branch — same gap noted elsewhere in this step
+        branch: null,
         age: ageInDays(l.createdAt),
       })),
       error: null,
@@ -61,8 +45,6 @@ async function readyWithNoSurgeryDate(branchFilter) {
     name: p.personal?.name || "Unknown",
     phone: p.personal?.phone || "",
     branch: p.personal?.branch || "",
-    // No dedicated "marked ready at" timestamp exists on Patient — updatedAt is the closest
-    // real proxy available, not an invented value.
     age: ageInDays(p.updatedAt),
   }));
 }
@@ -87,8 +69,6 @@ async function pendingWithNoRecentActivity(branchFilter) {
 
   const stale = candidates.filter((p) => !recentlyActiveIds.has(String(p._id)));
 
-  // Last transaction date (any date, not just within 30 days) so Age reflects true staleness
-  // rather than always reading exactly "30+".
   const lastTxByPatient = new Map(
     (
       await Transactions.aggregate([

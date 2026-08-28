@@ -4,12 +4,6 @@ import { useEffect, useState } from "react";
 import { Loader2, X } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/financeUI";
 
-// Read-only "complete detail" view for one Transaction — every DrillDownTable leaf (Liabilities'
-// Payables level-4, Assets' Receivables level-4, Cash & Bank/Loans ledgers) only ever projects a
-// handful of columns (date/narration/amount/method/account), because each of those is a
-// different aggregation shaped for its own list. This fetches the real row once, on demand, via
-// the same /api/transactions/get-by-id the edit page uses, so "view everything about this one
-// transaction" doesn't need a new endpoint per section.
 export default function TransactionDetailModal({ transactionId, onClose }) {
   const [tx, setTx] = useState(null);
   const [loading, setLoading] = useState(true);

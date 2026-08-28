@@ -1,9 +1,3 @@
-// src/app/api/owner/surgery-planner/route.js
-//
-// Surgery list (from Patient.surgery, date-range + branch scoped) and "Today's OT Capacity" —
-// a real count of Patient.surgery.surgeryDate falling on today, grouped by surgery.OT. No
-// utilization percentage: we don't know each OT's actual max slots anywhere in this schema, so
-// showing anything beyond a plain count would be a fabricated denominator.
 
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";

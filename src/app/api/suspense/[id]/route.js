@@ -8,20 +8,8 @@ import Transactions from "@/models/Transactions";
 import { ACCOUNTS } from "@/constants/bankRouting";
 import { ALL_BRANCHES } from "@/lib/branches";
 
-// Resolve, reopen, cancel or annotate one suspense entry.
-//
-// RESOLVING is the important one. It requires the id of the real transaction that explains the
-// money, and that transaction must actually exist — a resolved entry stops counting toward the
-// account balance, so resolving without a real counterpart would quietly remove money from the
-// books that the bank still holds. The model enforces the link too; this checks it is real.
-//
-// Nothing is ever deleted. An entry raised in error is cancelled, which also stops it counting
-// but stays distinguishable from a genuine resolution in the audit trail.
 const ALLOWED_ROLES = ["admin", "super-admin"];
 
-// Full edit of the entry's own fields — what the manage screen's Edit form posts. Distinct from
-// PATCH, which drives the lifecycle actions (resolve/reopen/cancel). Every changed field is
-// logged individually so the trail shows what a correction actually altered.
 export async function PUT(req, { params }) {
   try {
     const session = await getServerSession(authOptions);
@@ -114,10 +102,6 @@ export async function PUT(req, { params }) {
   }
 }
 
-// Permanent removal. Cancelling is the better answer almost every time — it stops the entry
-// counting toward balances while keeping the record that the books once disagreed with the bank
-// — so the UI offers Cancel first and this second. Provided for entries created in genuine
-// error, where there is no history worth keeping.
 export async function DELETE(req, { params }) {
   try {
     const session = await getServerSession(authOptions);
@@ -138,8 +122,6 @@ export async function DELETE(req, { params }) {
 
     await SuspenseEntry.deleteOne({ _id: id });
 
-    // Returned so the caller can report exactly what left the books — an open entry was moving
-    // an account balance right up until this call.
     return NextResponse.json({
       message: "Suspense entry deleted",
       deleted: {
@@ -187,8 +169,6 @@ export async function PATCH(req, { params }) {
           { status: 400 },
         );
       }
-      // Must be a real transaction. Without this check a typo'd id would silently drop the
-      // amount out of the balance with nothing taking its place.
       const txn = await Transactions.findById(transactionId).select("amount date").lean();
       if (!txn) {
         return NextResponse.json(
@@ -204,8 +184,6 @@ export async function PATCH(req, { params }) {
       entry.log.push({
         action: "Resolved",
         newValue: String(txn._id),
-        // Flagged rather than blocked: a suspense line can legitimately be explained by a
-        // transaction of a different amount (a part payment, or a bank fee netted off).
         note:
           note ||
           (Math.abs((txn.amount || 0) - entry.amount) > 0.01

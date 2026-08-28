@@ -1,4 +1,3 @@
-// app/api/admin/reset-password/route.js - CREATE THIS FILE
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
@@ -45,9 +44,9 @@ export async function POST(req) {
 
     if (user._id.toString() === session.user.id) {
       return NextResponse.json(
-        { 
-          success: false, 
-          message: "Use change password endpoint to update your own password" 
+        {
+          success: false,
+          message: "Use change password endpoint to update your own password"
         },
         { status: 400 }
       );

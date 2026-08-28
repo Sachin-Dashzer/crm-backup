@@ -47,9 +47,7 @@ export default function SalesDashboard() {
     }
   });
 
-  // Fixed buildPayload function for consistent timezone handling
   const buildPayload = () => {
-    // Always use ISO strings and let the server handle timezone conversion
     let fromDate = new Date();
     let toDate = new Date();
 
@@ -80,25 +78,24 @@ export default function SalesDashboard() {
     };
   };
 
-  // Fixed API response handling for Vercel
   const fetchData = async () => {
     setLoading(true);
     try {
       const payload = buildPayload();
-      
+
       const res = await fetch("/api/sales/dashboard", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      
-      
+
+
       if (!res.ok) {
         throw new Error(`HTTP error! status: ${res.status}`);
       }
-      
+
       const responseData = await res.json();
-      
+
       if (responseData.success) {
         setDashboardData(responseData.data);
       } else {
@@ -106,7 +103,6 @@ export default function SalesDashboard() {
       }
     } catch (err) {
       console.error("Error fetching admin dashboard:", err);
-      // Set fallback data
       setDashboardData({
         totalLeads: 0,
         newPatients: 0,
@@ -243,7 +239,7 @@ export default function SalesDashboard() {
           setCustomDates={setCustomDates}
         />
 
-         
+
           {loading ? (
             <div className="flex justify-center items-center h-64">
               <div className="relative">
@@ -272,14 +268,6 @@ export default function SalesDashboard() {
                   trend={dashboardData?.trends?.newPatients}
                   onClick={() => handleMetricClick("newPatients")}
                 />
-                {/* <MetricCard
-                  title="Consulted"
-                  value={dashboardData?.contacted || 0}
-                  icon={Phone}
-                  color="from-purple-500 to-purple-600"
-                  trend={dashboardData?.trends?.contacted}
-                  onClick={() => handleMetricClick("contacted")}
-                /> */}
                 <MetricCard
                   title="Active Agents"
                   value={dashboardData?.activeAgents || 0}

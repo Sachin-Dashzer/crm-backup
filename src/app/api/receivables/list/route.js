@@ -46,13 +46,8 @@ export async function GET(request) {
     if (payerKind) match["payer.kind"] = payerKind;
     if (payerRefId) match["payer.refId"] = new mongoose.Types.ObjectId(payerRefId);
     if (payerLabel) match["payer.label"] = payerLabel;
-    // Exact values from src/constants/advanceTypes.js for the Advances page — mirrors
-    // expenseCategory/expenseSubType on /api/payables/list.
     if (revenueCategory) match.revenueCategory = revenueCategory;
     if (revenueSubType) match.revenueSubType = revenueSubType;
-    // Never trust a raw branch string from the client — this route consumes a plain Mongo match
-    // object, so resolveBranchFilter's result (a collab session's {$in: COLLAB_BRANCHES} shape
-    // included) spreads straight in, unlike the string-keyed accountBalances.js helpers.
     Object.assign(match, resolveBranchFilter(session, searchParams.get("branch") || ""));
     if (dateFrom || dateTo) {
       match.createdAt = {};
@@ -79,13 +74,7 @@ export async function GET(request) {
     const txCollection = Transactions.collection.name;
     const basePipeline = [{ $match: match }, ...buildReceivableAggregationStages(txCollection)];
     if (status) basePipeline.push({ $match: { status } });
-    // ageingBucket is derived inside the aggregation, so it can only be filtered after those
-    // stages have run — hence a second $match here rather than an entry in the initial one.
-    // pending > 0 matches the ageing chips' own definition (/api/receivables/summary?ageing=1) —
-    // a document that's since been fully received still carries whatever bucket its now-
-    // irrelevant dueDate computes to, so without this it could wrongly appear in the filtered list.
     if (ageingBucket) basePipeline.push({ $match: { ageingBucket, pending: { $gt: 0 } } });
-    // Worst-overdue first by default; ?sort=createdAt restores newest-first.
     basePipeline.push({ $sort: sort === "createdAt" ? { createdAt: -1 } : AGEING_SORT });
 
     const [rows, totalAgg] = await Promise.all([

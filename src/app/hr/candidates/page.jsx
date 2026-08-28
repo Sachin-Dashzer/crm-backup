@@ -12,7 +12,6 @@ import {
   SlidersHorizontal, CheckCircle, UserCog, User, QrCode, Globe,
 } from "lucide-react";
 
-/* ── Constants ──────────────────────────────────────────────────────────────── */
 const STATUSES  = ["Applied", "Interview Scheduled", "Selected", "Rejected", "On Hold"];
 const EXP_TYPES = ["Fresher", "Experienced"];
 
@@ -47,7 +46,6 @@ const EMPTY = {
   status: "Applied",
 };
 
-/* ── Helpers ─────────────────────────────────────────────────────────────────── */
 const fmt     = (n) => n ? `₹${Number(n).toLocaleString("en-IN")}` : "—";
 const fmtDate = (d) => d ? new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "—";
 const avgRating = (c) => {
@@ -56,7 +54,6 @@ const avgRating = (c) => {
   return vals.length ? (vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(1) : null;
 };
 
-/* ── Atoms ───────────────────────────────────────────────────────────────────── */
 function StatusBadge({ status }) {
   const meta = STATUS_META[status] || { color: "bg-gray-100 text-gray-600 border-gray-200", dot: "bg-gray-400" };
   return (
@@ -82,7 +79,6 @@ function RatingBar({ value }) {
   );
 }
 
-/* ── KPI Card ────────────────────────────────────────────────────────────────── */
 function KPICard({ label, value, total, icon: Icon, accent }) {
   const accents = {
     violet:  { bg: "bg-violet-50",  text: "text-violet-600",  border: "border-violet-200", iconBg: "bg-violet-100" },
@@ -109,7 +105,6 @@ function KPICard({ label, value, total, icon: Icon, accent }) {
   );
 }
 
-/* ── Field ───────────────────────────────────────────────────────────────────── */
 function Field({ label, name, value, onChange, type = "text", required, textarea, options, placeholder }) {
   const cls = "w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400/50 focus:border-violet-400 transition-all bg-white placeholder:text-gray-400";
   return (
@@ -132,7 +127,6 @@ function Field({ label, name, value, onChange, type = "text", required, textarea
   );
 }
 
-/* ── Rating Boxes ────────────────────────────────────────────────────────────── */
 function RatingBoxes({ label, name, value, onChange }) {
   const n = Number(value);
   const activeColor = n >= 7 ? "bg-emerald-500 border-emerald-500 text-white" : n >= 5 ? "bg-amber-400 border-amber-400 text-white" : "bg-red-400 border-red-400 text-white";
@@ -161,7 +155,6 @@ function RatingBoxes({ label, name, value, onChange }) {
   );
 }
 
-/* ── Status Selector ─────────────────────────────────────────────────────────── */
 function StatusSelector({ value, onChange }) {
   const opts = [
     { val: "Applied",             idle: "bg-blue-50 text-blue-600 border-blue-200",    active: "bg-blue-600 text-white border-blue-600 shadow-sm shadow-blue-200" },
@@ -186,7 +179,6 @@ function StatusSelector({ value, onChange }) {
   );
 }
 
-/* ── Section Heading ─────────────────────────────────────────────────────────── */
 function SectionHeading({ title, icon: Icon }) {
   return (
     <div className="flex items-center gap-2">
@@ -199,11 +191,9 @@ function SectionHeading({ title, icon: Icon }) {
   );
 }
 
-/* ── Candidate Modal ─────────────────────────────────────────────────────────── */
 function CandidateModal({ mode, initial, onClose, onSaved, hrEmployees }) {
   const isEdit = mode === "edit";
 
-  // Only pick known form fields — never spread _id, __v, timestamps, etc.
   const [form, setForm] = useState(() => {
     if (isEdit && initial) {
       return {
@@ -268,7 +258,6 @@ function CandidateModal({ mode, initial, onClose, onSaved, hrEmployees }) {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[94vh] flex flex-col">
 
-        {/* Gradient Header */}
         <div className="bg-linear-to-r from-violet-600 to-purple-600 rounded-t-2xl px-6 py-5 shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -290,7 +279,6 @@ function CandidateModal({ mode, initial, onClose, onSaved, hrEmployees }) {
           </div>
         </div>
 
-        {/* Scrollable Body */}
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-xl flex items-center gap-2">
@@ -299,7 +287,6 @@ function CandidateModal({ mode, initial, onClose, onSaved, hrEmployees }) {
             </div>
           )}
 
-          {/* ── Personal Info ── */}
           <SectionHeading title="Personal Info" icon={User} />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Field label="Full Name"            name="name"     value={form.name}     onChange={h} required placeholder="e.g. Priya Sharma" />
@@ -311,7 +298,6 @@ function CandidateModal({ mode, initial, onClose, onSaved, hrEmployees }) {
             </div>
           </div>
 
-          {/* ── Work History ── */}
           <SectionHeading title="Work History" icon={Briefcase} />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Field label="Experience Type"      name="experienceType"        value={form.experienceType}        onChange={h} options={EXP_TYPES} />
@@ -325,7 +311,6 @@ function CandidateModal({ mode, initial, onClose, onSaved, hrEmployees }) {
             <Field label="Final Salary (₹)"     name="finalSalary"            value={form.finalSalary}           onChange={h} type="number" placeholder="0" />
           </div>
 
-          {/* ── Interview Details ── */}
           <SectionHeading title="Interview Details" icon={CalendarDays} />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Field label="Interview Date" name="interviewDate"
@@ -333,15 +318,10 @@ function CandidateModal({ mode, initial, onClose, onSaved, hrEmployees }) {
               onChange={h} type="date" />
             <Field label="Source" name="source" value={form.source} onChange={h} placeholder="e.g. Naukri, Referral, LinkedIn" />
             <Field label="Assigned HR" name="assignedHr" value={form.assignedHr} onChange={h} options={hrOptions} />
-            {/* <div className={!isEdit ? "" : "sm:col-span-2"}>
-            <Field label="Reference" name="reference" value={form.reference || ""} onChange={h} placeholder="Referred by (if any)" />
-            </div> */}
           </div>
 
-          {/* Status visual selector */}
           <StatusSelector value={form.status} onChange={h} />
 
-          {/* ── Evaluation ── */}
           <SectionHeading title="Evaluation" icon={Star} />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <RatingBoxes label="Communication"       name="communication"      value={form.communication}      onChange={h} />
@@ -357,7 +337,6 @@ function CandidateModal({ mode, initial, onClose, onSaved, hrEmployees }) {
           </div>
         </div>
 
-        {/* Footer */}
         <div className="border-t border-gray-100 px-6 py-4 flex items-center justify-between shrink-0 bg-gray-50/80 rounded-b-2xl">
           <button type="button" onClick={onClose}
             className="px-5 py-2.5 text-sm rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-100 transition-colors font-medium">
@@ -376,7 +355,6 @@ function CandidateModal({ mode, initial, onClose, onSaved, hrEmployees }) {
   );
 }
 
-/* ── View Modal ──────────────────────────────────────────────────────────────── */
 function ViewModal({ candidate: c, onClose, onEdit, hrEmployees }) {
   const avg = avgRating(c);
   const assignedHrName = c.assignedHr?.name || hrEmployees.find((e) => e._id === c.assignedHr)?.name || null;
@@ -413,7 +391,6 @@ function ViewModal({ candidate: c, onClose, onEdit, hrEmployees }) {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xl max-h-[92vh] flex flex-col animate-scale-in">
 
-        {/* Header */}
         <div className="px-6 py-4 border-b border-gray-100 shrink-0">
           <div className="flex items-start justify-between">
             <div className="flex items-start gap-3">
@@ -495,7 +472,6 @@ function ViewModal({ candidate: c, onClose, onEdit, hrEmployees }) {
   );
 }
 
-/* ── Filter Drawer ───────────────────────────────────────────────────────────── */
 function FilterDrawer({ filters, setFilters, positions, sources, hrEmployees, onClose }) {
   const sel = "w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400/50 focus:border-violet-400 bg-white transition-all";
   const inp = "w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400/50 focus:border-violet-400 transition-all";
@@ -543,8 +519,6 @@ function FilterDrawer({ filters, setFilters, positions, sources, hrEmployees, on
           </F>
 
           <F label="Assigned HR">
-            {/* Clearing the selection is what "All HR" means, so it's the placeholder rather
-                than an option; "Unassigned" is a real filter value and stays in the list. */}
             <SearchableSelect
               options={[{ _id: "unassigned", name: "Unassigned" }, ...hrEmployees]}
               value={filters.assignedHr}
@@ -615,7 +589,6 @@ function FilterDrawer({ filters, setFilters, positions, sources, hrEmployees, on
   );
 }
 
-/* ── Page ────────────────────────────────────────────────────────────────────── */
 export default function CandidatesPage() {
   return (
     <Suspense fallback={
@@ -639,7 +612,6 @@ function CandidatesContent() {
   const [deleting, setDeleting]     = useState(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
 
-  /* search debounce */
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch]           = useState("");
   const debounceRef = useRef(null);
@@ -680,7 +652,6 @@ function CandidatesContent() {
 
   useEffect(() => { setPage(1); }, [search, activeStatus, filters]);
 
-  /* derived */
   const positions = useMemo(() => [...new Set(candidates.map((c) => c.position).filter(Boolean))].sort(byName), [candidates]);
   const sources   = useMemo(() => [...new Set(candidates.map((c) => c.source).filter(Boolean))].sort(byName), [candidates]);
 
@@ -736,7 +707,6 @@ function CandidatesContent() {
     return list;
   }, [candidates, activeStatus, search, filters]);
 
-  /* KPIs — from filtered */
   const kpi = useMemo(() => ({
     total:     filtered.length,
     selected:  filtered.filter((c) => c.status === "Selected").length,
@@ -744,7 +714,6 @@ function CandidatesContent() {
     scheduled: filtered.filter((c) => c.status === "Interview Scheduled").length,
   }), [filtered]);
 
-  /* pagination */
   const totalPages  = Math.max(1, Math.ceil(filtered.length / perPage));
   const currentPage = Math.min(page, totalPages);
   const pageStart   = (currentPage - 1) * perPage;
@@ -757,7 +726,6 @@ function CandidatesContent() {
     filters.salaryMin, filters.salaryMax, filters.minRating,
   ].filter(Boolean).length;
 
-  /* actions */
   const handleDelete = async (id) => {
     if (!confirm("Delete this candidate? This cannot be undone.")) return;
     setDeleting(id);
@@ -766,14 +734,12 @@ function CandidatesContent() {
   };
   const handleSaved = () => { setModal(null); fetchCandidates(); };
 
-  /* ─────────────────────────────────────────────────────────────────────────── */
   return (
     <div className="flex min-h-screen bg-slate-50">
       <HRSidebar />
 
       <main className="flex-1 flex flex-col min-w-0 overflow-auto">
 
-        {/* Page header */}
         <header className="bg-white border-b border-gray-100 px-6 py-4 sticky top-0 z-10 shadow-xs">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
@@ -792,7 +758,6 @@ function CandidatesContent() {
 
         <div className="p-5 lg:p-6 space-y-5 flex-1">
 
-          {/* KPI cards */}
           <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
             <KPICard label="Showing"             value={kpi.total}     total={candidates.length} icon={Users}        accent="violet" />
             <KPICard label="Selected"            value={kpi.selected}  total={kpi.total}         icon={UserCheck}    accent="emerald" />
@@ -800,7 +765,6 @@ function CandidatesContent() {
             <KPICard label="Interview Scheduled" value={kpi.scheduled} total={kpi.total}         icon={CalendarDays} accent="blue" />
           </div>
 
-          {/* Status tabs */}
           <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
             {["", ...STATUSES].map((s) => {
               const { icon: Icon, label } = TAB_META[s] || { icon: Users, label: s };
@@ -826,7 +790,6 @@ function CandidatesContent() {
             })}
           </div>
 
-          {/* Search + filter bar */}
           <div className="flex flex-col sm:flex-row gap-3">
             <div className="relative flex-1">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
@@ -862,7 +825,6 @@ function CandidatesContent() {
             </button>
           </div>
 
-          {/* Table */}
           <div
             key={`${activeStatus}-${filters.sortBy}`}
             className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden animate-tab-in"
@@ -950,9 +912,6 @@ function CandidatesContent() {
                               <span className="text-gray-400 text-xs">—</span>
                             )}
                           </td>
-                          {/* <td className="px-4 py-3 whitespace-nowrap">
-                            <span className="text-gray-600 text-xs truncate block max-w-32">{c.reference || "—"}</span>
-                          </td> */}
                           <td className="px-4 py-3 whitespace-nowrap">
                             <span className={`inline-block text-xs px-2 py-0.5 rounded-full font-semibold ${c.experienceType === "Fresher" ? "bg-sky-100 text-sky-700" : "bg-purple-100 text-purple-700"}`}>
                               {c.experienceType}
@@ -995,7 +954,6 @@ function CandidatesContent() {
               </div>
             )}
 
-            {/* Pagination */}
             {!loading && filtered.length > 0 && (
               <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-5 py-3 border-t border-gray-100 bg-gray-50/60">
                 <p className="text-xs text-gray-500">
@@ -1047,7 +1005,6 @@ function CandidatesContent() {
         </div>
       </main>
 
-      {/* Filter Drawer */}
       {drawerOpen && (
         <FilterDrawer
           filters={filters}
@@ -1059,7 +1016,6 @@ function CandidatesContent() {
         />
       )}
 
-      {/* View Modal */}
       {modal?.mode === "view" && (
         <ViewModal
           candidate={modal.data}
@@ -1069,7 +1025,6 @@ function CandidatesContent() {
         />
       )}
 
-      {/* Add / Edit Modal */}
       {(modal?.mode === "add" || modal?.mode === "edit") && (
         <CandidateModal
           mode={modal.mode}

@@ -5,17 +5,6 @@ import {
 } from "recharts";
 import { formatCurrency } from "@/lib/financeUI";
 
-/**
- * Row 4 of the admin dashboard — the three charts.
- *
- * Extracted from admin/dashboard/page.jsx purely so `recharts` can be code-split. It was a static
- * top-level import there, which meant the whole charting library had to download and parse before
- * the page rendered at all — including the nine KPI cards above, which need none of it. The page
- * now pulls this in with next/dynamic and shows a skeleton in its place until it arrives.
- *
- * Purely presentational: every figure is computed in the page and passed in, so the charts and the
- * cards above them can never disagree about the period they describe.
- */
 
 const fmtK = (n) =>
   Math.abs(n) >= 100000

@@ -7,11 +7,6 @@ import Patient from "@/models/Patient";
 import { resolveBranchFilter } from "@/lib/branches";
 import { UNSETTLED_METHODS, SETTLEMENT_EXCLUSION, NON_CASH_METHODS } from "@/constants/bankRouting";
 
-// entryType classifies a row for the transactions list WITHOUT changing any aggregation.
-// Purely derived at read time from fields already stored — never persisted, so no migration
-// and no risk of it drifting from the flags below. Priority order matters: reversalOf beats
-// isSettlement beats UNSETTLED_METHODS beats NON_CASH_METHODS — a reversed settlement is still
-// shown as a reversal first, since that's the more surprising/audit-relevant fact about the row.
 function deriveEntryType(tx) {
   if (tx.reversalOf) return "REVERSAL";
   if (tx.isSettlement) {
@@ -27,12 +22,8 @@ import "@/models/Stock";
 import "@/models/Vendor";
 import "@/models/Employee";
 
-// Regex-metacharacter-safe — several account names carry literal ( ) (see the furtherMode
-// filter below), and any dropdown value could in principle include one.
 const escapeRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
-// Sentinel for the Further Mode filter's "Untracked" option — rows with no account recorded at
-// all, never a real account name (so it can't collide with one, however accounts get renamed).
 const UNTRACKED_FURTHER_MODE = "__UNTRACKED__";
 
 export async function GET(request) {
@@ -66,7 +57,6 @@ export async function GET(request) {
 
     const branchFilter = resolveBranchFilter(session, branch);
 
-    // Build the main query
     const query = { ...branchFilter };
 
     if (payableId) {
@@ -77,7 +67,6 @@ export async function GET(request) {
       query.receivableId = receivableId;
     }
 
-    // Category filter
     if (category) {
       if (category === "TRANSPLANT") {
         query.$or = [
@@ -90,16 +79,12 @@ export async function GET(request) {
       }
     }
 
-    // Approval status — dashboards must never show unapproved money by default,
-    // so PENDING/REJECTED expenses are excluded unless explicitly requested
-    // (e.g. a dedicated "Pending Approvals" view passing ?approvalStatus=PENDING).
     if (approvalStatus === "PENDING" || approvalStatus === "REJECTED") {
       query.approvalStatus = approvalStatus;
     } else {
       query.approvalStatus = { $nin: ["PENDING", "REJECTED"] };
     }
 
-    // Date range
     if (dateFrom || dateTo) {
       query.date = {};
       if (dateFrom) {
@@ -114,30 +99,20 @@ export async function GET(request) {
       }
     }
 
-    // Payment method
     if (paymentMethod) {
       query.method = { $regex: new RegExp(`^${escapeRegex(paymentMethod)}$`, "i") };
     }
 
-    // Procedure
     if (procedure) {
       query.procedure = { $regex: new RegExp(`^${escapeRegex(procedure)}$`, "i") };
     }
 
-    // Further Mode — destination/source account (revenue "Received In" / expense "Paid From").
-    // Several account names carry literal parentheses (e.g. "Cash ( backend )", "Paytm ( Delhi
-    // T44P )") — unescaped, those are regex grouping syntax, not literal characters, so the
-    // filter would silently match nothing for them. escapeRegex is what makes this literal.
     if (furtherMode === UNTRACKED_FURTHER_MODE) {
-      // Missing is equivalent to null for Mongo equality, so this also catches rows where the
-      // field was never set at all, not just ones explicitly stored as "" or null.
       query.furtherMode = { $in: ["", null] };
     } else if (furtherMode) {
       query.furtherMode = { $regex: new RegExp(`^${escapeRegex(furtherMode)}$`, "i") };
     }
 
-    // Expense Category / Type — EXPENSE transactions only. `expense` holds the top-level
-    // category (see src/models/Transactions.js); expenseType the sub-category under it.
     if (expenseCategory) {
       query.expense = { $regex: new RegExp(`^${escapeRegex(expenseCategory)}$`, "i") };
     }
@@ -145,12 +120,9 @@ export async function GET(request) {
       query.expenseType = { $regex: new RegExp(`^${escapeRegex(expenseType)}$`, "i") };
     }
 
-    // Text search: look up matching Patient IDs first, then OR with direct fields
     if (search) {
       const searchRegex = { $regex: search, $options: "i" };
 
-      // Find patients whose name or phone matches — covers old transactions
-      // that only store a Patient reference (no denormalized patientPhone)
       const matchingPatients = await Patient.find(
         { $or: [{ "personal.name": searchRegex }, { "personal.phone": searchRegex }] },
         { _id: 1 }
@@ -170,7 +142,6 @@ export async function GET(request) {
         ...(patientIds.length ? [{ patient: { $in: patientIds } }] : []),
       ];
 
-      // Merge with existing $or (e.g. from TRANSPLANT category filter) using $and
       if (query.$or) {
         query.$and = [{ $or: query.$or }, { $or: searchClause }];
         delete query.$or;
@@ -179,11 +150,6 @@ export async function GET(request) {
       }
     }
 
-    // Entry Type filter (Task 1b) — narrows the LIST only. Pushed into `query`, never
-    // `statsQuery`: the category-tab totals below must keep excluding settlements/unsettled
-    // methods regardless of what the list is filtered to, or the two would silently disagree.
-    // Appends to `query.$and` rather than assigning, since the search block above may already
-    // have set one — assigning here would silently drop that search $and.
     if (entryType === "REGULAR") {
       query.isSettlement = { $ne: true };
       query.reversalOf = null;
@@ -195,14 +161,7 @@ export async function GET(request) {
     } else if (entryType === "REVERSAL") {
       query.reversalOf = { $ne: null };
     }
-    // Default (no entryType, or an unrecognised value): no additional filter — "All".
 
-    // Stats aggregation query: same filters except category (to show totals for all categories).
-    // Always excludes PENDING/REJECTED regardless of the approvalStatus param — dashboard
-    // totals must reflect approved money only, even when viewing a Pending Approvals list.
-    // Category-tab chips are TOTALS, so settlements are excluded here (§2.3) — the row LIST
-    // below deliberately still shows them, badged, which is why this exclusion is on the stats
-    // query only and never on `query`.
     const statsQuery = {
       ...branchFilter,
       ...SETTLEMENT_EXCLUSION,
@@ -213,9 +172,6 @@ export async function GET(request) {
     if (query.furtherMode) statsQuery.furtherMode = query.furtherMode;
     if (query.expense)     statsQuery.expense = query.expense;
     if (query.expenseType) statsQuery.expenseType = query.expenseType;
-    // These are TOTALS (the category tab chips), not a list — paid_to_external/paid_by_other
-    // rows must never count here even though they still show in the list below. Combined with
-    // an explicit paymentMethod filter via $and, since both constrain the same `method` field.
     statsQuery.$and = [
       { method: { $nin: UNSETTLED_METHODS } },
       ...(query.method ? [{ method: query.method }] : []),

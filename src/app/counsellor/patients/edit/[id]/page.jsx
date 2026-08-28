@@ -49,7 +49,6 @@ const BenefitsManager = ({ benefits, onChange, onAdd, onRemove }) => {
         Additional Benefits *
       </label>
 
-      {/* Predefined Benefits as Radio-style Checkboxes */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
         {predefinedBenefits.map((benefit) => (
           <label
@@ -67,7 +66,6 @@ const BenefitsManager = ({ benefits, onChange, onAdd, onRemove }) => {
         ))}
       </div>
 
-      {/* Custom Benefits Input */}
       <div className="mb-4">
         <label className="block text-sm font-medium text-gray-700 mb-2">
           Add Custom Benefit
@@ -98,7 +96,6 @@ const BenefitsManager = ({ benefits, onChange, onAdd, onRemove }) => {
         </div>
       </div>
 
-      {/* Selected Benefits Display */}
       {benefits.length > 0 && (
         <div className="mt-4">
           <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -184,7 +181,6 @@ export default function PatientEditDetails() {
   const router = useRouter();
   const toast = useToast();
 
-  // Fetch employees on component mount
   useEffect(() => {
     const fetchEmployees = async () => {
       try {
@@ -324,17 +320,14 @@ export default function PatientEditDetails() {
     }));
   };
 
-  // Clean empty ObjectId fields before sending to API
   const cleanObjectIdFields = (data) => {
-    const cleaned = JSON.parse(JSON.stringify(data)); // Deep clone
+    const cleaned = JSON.parse(JSON.stringify(data));
 
-    // List of ObjectId reference fields
     const objectIdFields = {
       personal: ["reference"],
       counselling: ["counsellor"],
     };
 
-    // Convert empty strings to null for ObjectId fields
     Object.keys(objectIdFields).forEach((section) => {
       if (cleaned[section]) {
         objectIdFields[section].forEach((field) => {
@@ -348,7 +341,6 @@ export default function PatientEditDetails() {
       }
     });
 
-    // Also clean empty number fields
     const numberFields = {
       personal: ["age", "packageQuoted"],
       counselling: ["finlpackage", "graftsSuggested"],
@@ -375,7 +367,6 @@ export default function PatientEditDetails() {
     setUpdateStatus(null);
 
     try {
-      // Clean the form data before sending
       const cleanedData = cleanObjectIdFields(formData);
 
       const updateData = {
@@ -700,7 +691,6 @@ export default function PatientEditDetails() {
                     placeholder="Number of grafts"
                   />
 
-                  {/* Hair Loss Type - Radio Buttons */}
                   <div className="space-y-3 my-3">
                     <label className="block mb-4 text-md underline font-bold text-gray-700">
                       Hair Loss Type *
@@ -756,7 +746,6 @@ export default function PatientEditDetails() {
                     </div>
                   </div>
 
-                  {/* Area of Concern - Radio Buttons */}
                   <div className="space-y-3 my-3">
                     <label className="block mb-4 text-md underline font-bold text-gray-700">
                       Area of Concern *
@@ -797,7 +786,6 @@ export default function PatientEditDetails() {
                     </div>
                   </div>
 
-                  {/* Hair Loss Reason - Radio Buttons */}
                   <div className="space-y-3">
                     <label className="block mb-4 text-lg underline font-bold text-gray-700">
                       Hair Loss Reason *
@@ -846,7 +834,6 @@ export default function PatientEditDetails() {
                     </div>
                   </div>
 
-                  {/* Hair Loss Duration - Radio Buttons */}
                   <div className="space-y-3">
                     <label className="block mb-4 text-md underline font-bold text-gray-700">
                       Hair Loss Duration *
@@ -899,7 +886,6 @@ export default function PatientEditDetails() {
                     </div>
                   </div>
 
-                  {/* Updated Benefits Manager */}
                   <BenefitsManager
                     benefits={formData.counselling.additionalbenefits}
                     onChange={(value, index) =>

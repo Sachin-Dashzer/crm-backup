@@ -3,12 +3,6 @@
 import Link from "next/link";
 import { HandCoins } from "lucide-react";
 
-// A borrowing lives in the Borrowing collection, not Transactions — same reasoning as
-// ContraRowActions/SuspenseRowActions: no /admin/transactions/edit/[id] route resolves its _id,
-// and unlike contra/suspense it has NO manager tab on /admin/transactions either (borrowings are
-// deliberately never surfaced there — see that page's own note). Its actual actions (Record
-// Repayment / Add Tranche) live on the Liabilities page's own Borrowings section instead, so
-// this just links there rather than opening anything itself.
 export default function BorrowingRowActions() {
   return (
     <Link

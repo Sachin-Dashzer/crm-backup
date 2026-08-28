@@ -14,15 +14,6 @@ import { resolveBranchFilter } from "@/lib/branches";
 const ALLOWED_ROLES = ["admin", "super-admin"];
 const CATEGORY = ADVANCE_REVENUE_CATEGORY;
 
-// Grouped advances for the Assets page's "Advances" section (DrillDownTable, mode: "documents")
-// — exact mirror of /api/borrowings/grouped, restricted to the one revenueCategory this feature
-// ever creates:
-//   level=1  -> a single "Advances" bucket
-//   level=2  -> one row per revenueSubType (Advance Salary / Advance Rent / …) within it
-//   level=3  -> one row per advance (Receivable) DOCUMENT, live received/pending — reuses
-//               buildReceivableAggregationStages, which already folds in Advance IN rows.
-//   level=4  -> the actual Advance rows (OUT + IN) against ONE document (?documentId=), with a
-//               running balance-owed.
 export async function GET(request) {
   try {
     const session = await getServerSession(authOptions);
@@ -96,8 +87,6 @@ export async function GET(request) {
             $setWindowFields: {
               sortBy: { date: 1, _id: 1 },
               output: {
-                // OUT raises what's owed to us, IN recovers it — the running balance is the
-                // claim's own outstanding total at each point, not a cash balance.
                 runningBalance: {
                   $sum: { $cond: [{ $eq: ["$direction", "IN"] }, { $multiply: ["$amount", -1] }, "$amount"] },
                   window: { documents: ["unbounded", "current"] },
@@ -135,7 +124,6 @@ export async function GET(request) {
       return NextResponse.json({ success: true, rows: rowsWithLock, total, page, limit });
     }
 
-    // level 3 — one row per advance (Receivable) document, live-aggregated.
     const match = { revenueCategory: CATEGORY };
     if (subType) match.revenueSubType = subType;
     match.isCancelled = status === "Cancelled" ? true : { $ne: true };

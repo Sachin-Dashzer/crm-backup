@@ -4,10 +4,6 @@ import { useEffect, useState, useCallback, useMemo } from "react";
 import OwnerSidebar from "@/components/Sidebars/OwnerSidebar";
 import { OwnerTopbar, Card, DataTable, Badge, Modal, KpiRow } from "@/components/owner";
 
-// Field accessors match the real callby response shape (confirmed against
-// backend/routes/workforceSummary.js and backend/routes/agentDetail.js — CALLBY_SERVICE_TOKEN
-// is expired so this couldn't be confirmed against a live payload, but the route source is
-// unambiguous). See src/app/api/owner/workforce-summary/route.js for the full shape comment.
 function fmtSeconds(s) {
   if (!s) return "0m";
   const m = Math.round(s / 60);

@@ -1,23 +1,21 @@
 import { NextResponse } from "next/server";
 import { withDB } from "@/lib/withDB";
 import Patient from "@/models/Patient";
-import { 
-  getISTStartOfDay, 
-  getISTEndOfDay, 
+import {
+  getISTStartOfDay,
+  getISTEndOfDay,
   formatISTDate,
-  getDateRangeFromFilter 
+  getDateRangeFromFilter
 } from "@/lib/dateHelpers.js";
 
 const VALID_BRANCHES = ["All", "Delhi", "Mumbai", "Hyderabad", "Noida"];
 
 const handler = async (req) => {
   try {
-    // Get parameters from URL search params for GET request
     const { searchParams } = new URL(req.url);
     const branch = searchParams.get("branch") || "All";
     const dateRange = searchParams.get("dateRange") || "Today";
 
-    // Validate branch
     if (!VALID_BRANCHES.includes(branch)) {
       return NextResponse.json(
         { error: "Invalid branch specified" },
@@ -25,12 +23,10 @@ const handler = async (req) => {
       );
     }
 
-    // Get date range based on filter
     const { start: fromDate, end: toDate } = getDateRangeFromFilter(dateRange);
 
-    // Calculate comparison period
     const daysDifference = Math.ceil((toDate - fromDate) / (1000 * 60 * 60 * 24)) + 1;
-    
+
     const yesterdayEnd = new Date(fromDate);
     yesterdayEnd.setDate(yesterdayEnd.getDate() - 1);
     yesterdayEnd.setHours(23, 59, 59, 999);
@@ -39,10 +35,8 @@ const handler = async (req) => {
     yesterdayStart.setDate(yesterdayStart.getDate() - (daysDifference - 1));
     yesterdayStart.setHours(0, 0, 0, 0);
 
-    // Branch filter
     const branchFilter = branch === "All" ? {} : { "personal.branch": branch };
 
-    // Get surgery statistics
     const getSurgeryStats = async () => {
       const result = await Patient.aggregate([
         {
@@ -57,7 +51,6 @@ const handler = async (req) => {
         },
         {
           $facet: {
-            // Current period - Scheduled (surgeries with date but without doctor assigned)
             currentScheduled: [
               {
                 $match: {
@@ -70,7 +63,6 @@ const handler = async (req) => {
               },
               { $count: "count" },
             ],
-            // Current period - Completed (surgeries with doctor assigned)
             currentCompleted: [
               {
                 $match: {
@@ -80,7 +72,6 @@ const handler = async (req) => {
               },
               { $count: "count" },
             ],
-            // Pending surgeries (ready but no date scheduled)
             currentPending: [
               {
                 $match: {
@@ -93,7 +84,6 @@ const handler = async (req) => {
               },
               { $count: "count" },
             ],
-            // Ready for surgery (ready and scheduled)
             readyForSurgery: [
               {
                 $match: {
@@ -107,7 +97,6 @@ const handler = async (req) => {
               },
               { $count: "count" },
             ],
-            // Total grafts for current period
             currentGrafts: [
               {
                 $match: {
@@ -123,7 +112,6 @@ const handler = async (req) => {
                 }
               }
             ],
-            // Comparison period
             comparisonScheduled: [
               {
                 $match: {
@@ -180,11 +168,10 @@ const handler = async (req) => {
       };
     };
 
-    // Get today's upcoming surgeries (scheduled but not completed)
     const getUpcomingSurgeries = async () => {
       const todayStart = getISTStartOfDay();
       const todayEnd = getISTEndOfDay();
-      
+
       const surgeries = await Patient.find({
         ...branchFilter,
         "surgery.surgeryDate": { $gte: todayStart, $lte: todayEnd },
@@ -200,11 +187,10 @@ const handler = async (req) => {
       return surgeries;
     };
 
-    // Get today's performed surgeries (completed)
     const getPerformedSurgeries = async () => {
       const todayStart = getISTStartOfDay();
       const todayEnd = getISTEndOfDay();
-      
+
       const surgeries = await Patient.find({
         ...branchFilter,
         "surgery.surgeryDate": { $gte: todayStart, $lte: todayEnd },
@@ -218,7 +204,6 @@ const handler = async (req) => {
       return surgeries;
     };
 
-    // Get surgery techniques distribution
     const getTechniqueDistribution = async () => {
       const distribution = await Patient.aggregate([
         {
@@ -239,7 +224,6 @@ const handler = async (req) => {
         }
       ]);
 
-      // Convert to object format
       const techniqueBreakdown = {};
       distribution.forEach(item => {
         techniqueBreakdown[item._id] = item.count;
@@ -248,7 +232,6 @@ const handler = async (req) => {
       return techniqueBreakdown;
     };
 
-    // Get location breakdown
     const getLocationDistribution = async () => {
       const distribution = await Patient.aggregate([
         {
@@ -269,7 +252,6 @@ const handler = async (req) => {
         }
       ]);
 
-      // Convert to object format
       const locationBreakdown = {};
       distribution.forEach(item => {
         locationBreakdown[item._id] = item.count;
@@ -278,10 +260,9 @@ const handler = async (req) => {
       return locationBreakdown;
     };
 
-    // Execute all queries in parallel
     const [
-      surgeryStats, 
-      upcomingSurgeries, 
+      surgeryStats,
+      upcomingSurgeries,
       performedSurgeries,
       techniqueBreakdown,
       locationBreakdown
@@ -293,14 +274,12 @@ const handler = async (req) => {
       getLocationDistribution()
     ]);
 
-    // Calculate growth percentages
     const calculateGrowth = (current, comparison) => {
       if (comparison === 0 && current > 0) return 100;
       if (comparison === 0 && current === 0) return 0;
       return Math.round(((current - comparison) / comparison) * 100);
     };
 
-    // Prepare response in the format expected by frontend
     const response = {
       metrics: {
         scheduledSurgeries: surgeryStats.current.scheduled,
@@ -347,5 +326,4 @@ const handler = async (req) => {
   }
 };
 
-// Export GET handler instead of POST
 export const GET = withDB(handler);

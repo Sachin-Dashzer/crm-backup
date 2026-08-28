@@ -14,7 +14,6 @@ const BRANCH_LOGO = {
   Noida:     LogoDelhi.src,
 };
 
-/* ──────────── Design Tokens ──────────── */
 const T = {
   navy:   "#0d1f3c",
   navyM:  "#1a3558",
@@ -37,7 +36,6 @@ const T = {
 const fmt = (d) =>
   d ? new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "";
 
-/* ── Square checkbox ── */
 const Chk = ({ checked = false, label }) => (
   <span style={{ display: "inline-flex", alignItems: "center", gap: 7, marginRight: 18 }}>
     <span style={{
@@ -56,7 +54,6 @@ const Chk = ({ checked = false, label }) => (
   </span>
 );
 
-/* ── Field: label above underline ── */
 const F = ({ label, value = "" }) => (
   <div style={{ marginBottom: 14 }}>
     <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: 0.9, color: T.muted, textTransform: "uppercase", marginBottom: 4 }}>
@@ -74,14 +71,12 @@ const F = ({ label, value = "" }) => (
   </div>
 );
 
-/* ── Two-column row ── */
 const Row = ({ children, gap = 16 }) => (
   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", columnGap: gap }}>
     {children}
   </div>
 );
 
-/* ── Section header ── */
 const Sec = ({ title, note, accent }) => (
   <div style={{ margin: "22px 0 14px" }}>
     <div style={{ height: 1, background: `linear-gradient(90deg, ${accent} 0%, ${T.border} 100%)`, marginBottom: 10 }} />
@@ -94,7 +89,6 @@ const Sec = ({ title, note, accent }) => (
   </div>
 );
 
-/* ── Info strip field (in the header band) ── */
 const StripField = ({ label, value, accent }) => (
   <div style={{ display: "flex", alignItems: "flex-end", gap: 8 }}>
     <div style={{ width: 4, height: 34, background: accent, borderRadius: 2, flexShrink: 0, marginBottom: 3 }} />
@@ -114,7 +108,6 @@ const StripField = ({ label, value, accent }) => (
   </div>
 );
 
-/* ── Checkbox group label ── */
 const ChkLabel = ({ label }) => (
   <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: 0.9, color: T.muted, textTransform: "uppercase", marginBottom: 8 }}>
     {label}
@@ -131,9 +124,6 @@ const DURATION_MAP = {
   recent_accelerated: "Recent accelerated loss",
 };
 
-/* ═══════════════════════════════════════════
-   Main Page
-═══════════════════════════════════════════ */
 export default function ConsultationFormPage() {
   const { id } = useParams();
   const [patient, setPatient] = useState(null);
@@ -166,7 +156,6 @@ export default function ConsultationFormPage() {
   const area     = c.areaofConcern  || "";
   const duration = DURATION_MAP[c.hairlossduration] || c.hairlossduration || "";
 
-  /* Exact A4 */
   const page = {
     width: "210mm", height: "297mm",
     margin: "0 auto 28px",
@@ -203,7 +192,6 @@ export default function ConsultationFormPage() {
         }
       `}</style>
 
-      {/* ── Screen toolbar ── */}
       <div className="np" style={{ position: "sticky", top: 0, zIndex: 30, background: T.navy, padding: "11px 24px", display: "flex", alignItems: "center", gap: 16, boxShadow: "0 2px 10px rgba(0,0,0,.35)" }}>
         <Link href={`/collab/patients/${id}`} style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "rgba(255,255,255,.75)", fontSize: 13, textDecoration: "none", fontFamily: "sans-serif" }}>
           <ArrowLeft size={16} /> Back
@@ -215,10 +203,8 @@ export default function ConsultationFormPage() {
         </button>
       </div>
 
-      {/* ════════════════════ PAGE 1 ════════════════════ */}
       <div style={page} className="pw">
 
-        {/* ── HEADER BAND ── */}
         <div className="dark-hdr" style={{
           background: "#202020",
           padding: "8px 7mm",
@@ -243,16 +229,13 @@ export default function ConsultationFormPage() {
           </div>
         </div>
 
-        {/* ── DATE / LOCATION BAND ── */}
         <div className="dark-hdr" style={{background: "#202020", padding: "12px 18mm", display: "flex", gap: 48, alignItems: "center", borderBottom: `3px solid white`,borderTop: `1px solid white`, flexShrink: 0 }}>
           <StripField label="Date of Consultation" value={date}   accent={T.teal} />
           <StripField label="Clinic Location"       value={branch} accent="#e8a020" />
         </div>
 
-        {/* ── BODY ── */}
         <div style={{ padding: "0 18mm", flex: 1, paddingBottom: "12mm" }}>
 
-          {/* ① Patient Personal Details */}
           <Sec title="Patient Personal Details" accent={T.teal} />
 
           <F label="Full Name" value={p.name} />
@@ -283,7 +266,6 @@ export default function ConsultationFormPage() {
             <F label="WhatsApp Number (if different)" value="" />
           </Row>
 
-          {/* ② Medical History */}
           <Sec title="Medical History" accent={T.red} />
 
           <F label="Any Existing Medical Conditions (BP, Diabetes, Thyroid, etc.)" />
@@ -301,7 +283,6 @@ export default function ConsultationFormPage() {
           </Row>
           <F label="If Yes, How Frequently" />
 
-          {/* ③ Hair Loss Details */}
           <Sec title="Hair Loss Details" accent={T.purple} />
 
           <Row>
@@ -310,7 +291,6 @@ export default function ConsultationFormPage() {
           </Row>
 
           <Row gap={20}>
-            {/* Type of Hair Loss */}
             <div style={{ marginBottom: 14 }}>
               <ChkLabel label="Type of Hair Loss" />
               <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
@@ -324,7 +304,6 @@ export default function ConsultationFormPage() {
               </div>
             </div>
 
-            {/* Areas of Concern */}
             <div style={{ marginBottom: 14 }}>
               <ChkLabel label="Areas of Concern" />
               <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
@@ -339,17 +318,14 @@ export default function ConsultationFormPage() {
 
         </div>
 
-        {/* ── PAGE 1 FOOTER ── */}
         <div style={{ flexShrink: 0, borderTop: `1px solid ${T.border}`, padding: "7px 18mm", background: T.bg, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <span style={{ fontSize: 9, color: T.muted, letterSpacing: 0.2 }}>Ryan Clinic · Confidential Patient Record · Not for Distribution</span>
           <span style={{ fontSize: 9, color: T.muted }}>Page 1 of 2</span>
         </div>
       </div>
 
-      {/* ════════════════════ PAGE 2 ════════════════════ */}
       <div style={page} className="pw p2">
 
-        {/* ── PAGE 2 HEADER ── */}
         <div className="dark-hdr" style={{ background: "#202020", padding: "12px 18mm", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: `3px solid ${T.teal}`, flexShrink: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
             <div style={{ width: 36, height: 36, borderRadius: "50%", border: "1.5px solid rgba(255,255,255,.3)", background: "rgba(255,255,255,.1)", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -367,10 +343,8 @@ export default function ConsultationFormPage() {
           </div>
         </div>
 
-        {/* ── BODY PAGE 2 ── */}
         <div style={{ padding: "0 18mm", flex: 1, paddingBottom: "12mm" }}>
 
-          {/* Previous Treatments (continuation) */}
           <div style={{ marginTop: 18, marginBottom: 14 }}>
             <ChkLabel label="Any Previous Treatments Tried" />
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "10px 0" }}>
@@ -397,7 +371,6 @@ export default function ConsultationFormPage() {
             <F label="If Yes, Relationship" />
           </Row>
 
-          {/* ④ Scalp Examination */}
           <Sec title="Scalp Examination" note="To be filled by the examining Doctor" accent={T.blue} />
 
           <div style={{ background: T.blueLt, border: `1px solid #b3d4e8`, borderLeft: `4px solid ${T.blue}`, borderRadius: 5, padding: "12px 14px 2px", marginBottom: 6 }}>
@@ -418,7 +391,6 @@ export default function ConsultationFormPage() {
             <F label="Hairline Design Notes" />
           </div>
 
-          {/* ⑤ Cost Estimate & Plan */}
           <Sec title="Cost Estimate & Plan" accent={T.gold} />
 
           <Row>
@@ -453,7 +425,6 @@ export default function ConsultationFormPage() {
             </div>
           </Row>
 
-          {/* ⑥ Patient Declaration */}
           <Sec title="Patient Declaration" accent={T.green} />
 
           <div style={{ background: T.greenLt, border: `1px solid #a9dfbf`, borderLeft: `4px solid ${T.green}`, borderRadius: 5, padding: "12px 16px", marginBottom: 22, fontSize: 12, lineHeight: 1.75, color: "#1a472a" }}>
@@ -462,7 +433,6 @@ export default function ConsultationFormPage() {
             agree to proceed with the consultation and next steps as advised by the doctor.
           </div>
 
-          {/* Signature blocks */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "32px 48px" }}>
             {["Patient Signature", "Date", "Doctor's Signature", "Consultant Name"].map((lbl) => (
               <div key={lbl}>
@@ -474,7 +444,6 @@ export default function ConsultationFormPage() {
 
         </div>
 
-        {/* ── PAGE 2 FOOTER ── */}
         <div style={{ flexShrink: 0, borderTop: `1px solid ${T.border}`, padding: "7px 18mm", background: T.bg, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <span style={{ fontSize: 9, color: T.muted, letterSpacing: 0.2 }}>Ryan Clinic · Confidential Patient Record · Not for Distribution</span>
           <span style={{ fontSize: 9, color: T.muted }}>Page 2 of 2</span>

@@ -37,7 +37,7 @@ export default function SurgeryDashboard() {
     try {
       const response = await fetch(`/api/surgery/dashboard?branch=${branch}&dateRange=${dateRange}`);
       const data = await response.json();
-      
+
       setDashboardData(data.metrics || {
         scheduledSurgeries: 6,
         completedSurgeries: 4,
@@ -54,12 +54,11 @@ export default function SurgeryDashboard() {
           Hyderabad: 1,
         }
       });
-      
+
       setUpcomingSurgeries(data.upcomingSurgeries || []);
       setPerformedSurgeries(data.performedSurgeries || []);
     } catch (error) {
       console.error("Error:", error);
-      // Mock data for development
       setDashboardData({
         scheduledSurgeries: 6,
         completedSurgeries: 4,
@@ -76,41 +75,39 @@ export default function SurgeryDashboard() {
           Hyderabad: 1,
         }
       });
-      
-      // Mock upcoming surgeries
+
       setUpcomingSurgeries([
         {
           _id: "1",
           personal: { name: "John Doe", phone: "9876543210", branch: "Delhi" },
-          surgery: { 
-            surgeryDate: new Date().toISOString(), 
-            technique: "FUE", 
+          surgery: {
+            surgeryDate: new Date().toISOString(),
+            technique: "FUE",
             location: "Delhi",
-            graftsneed: 2500 
+            graftsneed: 2500
           },
           counselling: { techniqueSuggested: "FUE" }
         },
         {
           _id: "2",
           personal: { name: "Jane Smith", phone: "9876543211", branch: "Mumbai" },
-          surgery: { 
-            surgeryDate: new Date().toISOString(), 
-            technique: "DHI", 
+          surgery: {
+            surgeryDate: new Date().toISOString(),
+            technique: "DHI",
             location: "Mumbai",
-            graftsneed: 3000 
+            graftsneed: 3000
           },
           counselling: { techniqueSuggested: "DHI" }
         }
       ]);
-      
-      // Mock performed surgeries
+
       setPerformedSurgeries([
         {
           _id: "3",
           personal: { name: "Mike Johnson", phone: "9876543212", branch: "Delhi" },
-          surgery: { 
-            surgeryDate: new Date().toISOString(), 
-            technique: "HYBRID", 
+          surgery: {
+            surgeryDate: new Date().toISOString(),
+            technique: "HYBRID",
             location: "Delhi",
             graftsImplanted: 2800,
             graftsneed: 3000
@@ -123,29 +120,29 @@ export default function SurgeryDashboard() {
   };
 
   const metrics = [
-    { 
-      title: "Scheduled Today", 
-      value: dashboardData?.scheduledSurgeries || 0, 
-      icon: Calendar, 
-      color: "from-blue-500 to-blue-600" 
+    {
+      title: "Scheduled Today",
+      value: dashboardData?.scheduledSurgeries || 0,
+      icon: Calendar,
+      color: "from-blue-500 to-blue-600"
     },
-    { 
-      title: "Completed Today", 
-      value: dashboardData?.completedSurgeries || 0, 
-      icon: CheckCircle, 
-      color: "from-green-500 to-green-600" 
+    {
+      title: "Completed Today",
+      value: dashboardData?.completedSurgeries || 0,
+      icon: CheckCircle,
+      color: "from-green-500 to-green-600"
     },
-    { 
-      title: "Pending", 
-      value: dashboardData?.pendingSurgeries || 0, 
-      icon: Clock, 
-      color: "from-amber-500 to-amber-600" 
+    {
+      title: "Pending",
+      value: dashboardData?.pendingSurgeries || 0,
+      icon: Clock,
+      color: "from-amber-500 to-amber-600"
     },
-    { 
-      title: "Ready for Surgery", 
-      value: dashboardData?.readyForSurgery || 0, 
-      icon: Stethoscope, 
-      color: "from-indigo-500 to-indigo-600" 
+    {
+      title: "Ready for Surgery",
+      value: dashboardData?.readyForSurgery || 0,
+      icon: Stethoscope,
+      color: "from-indigo-500 to-indigo-600"
     },
   ];
 
@@ -165,7 +162,7 @@ export default function SurgeryDashboard() {
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar role="surgery" />
       <main className="flex-1 p-4 lg:p-8">
-        <Topbar 
+        <Topbar
           title="Surgery Dashboard"
           role="surgery"
           timeRange={dateRange}
@@ -173,23 +170,20 @@ export default function SurgeryDashboard() {
           branch={branch}
           setBranch={setBranch}
         />
-        
+
         {loading ? (
           <div className="flex justify-center items-center h-64">
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
           </div>
         ) : (
           <div className="space-y-6">
-            {/* Metrics Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {metrics.map((card, idx) => (
                 <MetricCard key={idx} {...card} />
               ))}
             </div>
 
-            {/* Technique and Location Breakdown */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Technique Breakdown */}
               <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
                 <div className="flex items-center gap-2 mb-4">
                   <Activity className="w-5 h-5 text-indigo-600" />
@@ -207,7 +201,6 @@ export default function SurgeryDashboard() {
                 </div>
               </div>
 
-              {/* Location Breakdown */}
               <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
                 <div className="flex items-center gap-2 mb-4">
                   <MapPin className="w-5 h-5 text-green-600" />
@@ -227,7 +220,6 @@ export default function SurgeryDashboard() {
               </div>
             </div>
 
-            {/* Upcoming Surgeries Today */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-100">
               <div className="p-6 border-b border-gray-100">
                 <div className="flex items-center justify-between">
@@ -235,7 +227,7 @@ export default function SurgeryDashboard() {
                     <Calendar className="w-5 h-5 text-blue-600" />
                     <h3 className="text-lg font-semibold text-gray-900">Today's Upcoming Surgeries</h3>
                   </div>
-                  <Link 
+                  <Link
                     href="/surgery/patients?filter=upcoming"
                     className="text-sm font-medium text-blue-600 hover:text-blue-700"
                   >
@@ -284,7 +276,7 @@ export default function SurgeryDashboard() {
                               {patient.surgery?.graftsneed || patient.counselling?.graftsSuggested || 'N/A'}
                             </td>
                             <td className="py-3 px-4 text-right">
-                              <Link 
+                              <Link
                                 href={`/surgery/patients/${patient._id}`}
                                 className="text-sm font-medium text-blue-600 hover:text-blue-700"
                               >
@@ -300,7 +292,6 @@ export default function SurgeryDashboard() {
               </div>
             </div>
 
-            {/* Performed Surgeries Today */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-100">
               <div className="p-6 border-b border-gray-100">
                 <div className="flex items-center justify-between">
@@ -308,7 +299,7 @@ export default function SurgeryDashboard() {
                     <CheckCircle className="w-5 h-5 text-green-600" />
                     <h3 className="text-lg font-semibold text-gray-900">Completed Surgeries Today</h3>
                   </div>
-                  <Link 
+                  <Link
                     href="/surgery/patients?filter=performed"
                     className="text-sm font-medium text-green-600 hover:text-green-700"
                   >
@@ -358,14 +349,14 @@ export default function SurgeryDashboard() {
                                 {patient.surgery?.graftsImplanted || 0} / {patient.surgery?.graftsneed || 0}
                               </div>
                               <div className="w-full bg-gray-200 rounded-full h-1.5 mt-1">
-                                <div 
-                                  className="bg-green-600 h-1.5 rounded-full" 
+                                <div
+                                  className="bg-green-600 h-1.5 rounded-full"
                                   style={{ width: `${Math.min((patient.surgery?.graftsImplanted / patient.surgery?.graftsneed) * 100, 100)}%` }}
                                 ></div>
                               </div>
                             </td>
                             <td className="py-3 px-4 text-right">
-                              <Link 
+                              <Link
                                 href={`/surgery/patients/${patient._id}`}
                                 className="text-sm font-medium text-green-600 hover:text-green-700"
                               >

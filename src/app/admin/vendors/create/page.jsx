@@ -17,9 +17,6 @@ const CATEGORY_SUGGESTIONS = [
   "Cosmetics",
 ];
 
-// Mirrors the validation the stocks vendor form applies, so a vendor created from either
-// side of the app is the same shape. Only `name` is required — the rest is optional but
-// validated when present, since a half-typed GST is worse than a blank one.
 const validators = {
   contact: (v) => /^\d{10}$/.test(v.replace(/\D/g, "")),
   email: (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v),
@@ -71,7 +68,6 @@ export default function AdminCreateVendorPage() {
         body: JSON.stringify({
           ...form,
           name: form.name.trim(),
-          // The Vendor model types contact as a Number; an empty string would cast-fail.
           contact: form.contact ? Number(form.contact.replace(/\D/g, "")) : undefined,
         }),
       });

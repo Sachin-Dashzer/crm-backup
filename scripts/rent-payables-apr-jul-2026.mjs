@@ -7,15 +7,11 @@ import {
 import { ALL_BRANCHES } from "../src/lib/branches.js";
 import { computeTaxBreakdown } from "../src/lib/taxMath.js";
 
-// --- env ---------------------------------------------------------------------
-// Only .env exists in this repo (no .env.local) — check both rather than hardcoding one.
-// Node 20.6+ ships loadEnvFile natively, no dotenv dependency needed.
 for (const f of [".env.local", ".env"]) {
   if (fs.existsSync(f)) {
     try {
       process.loadEnvFile(f);
     } catch {
-      /* already loaded / unsupported — fall through to the MONGODB_URI check below */
     }
   }
 }
@@ -1459,15 +1455,10 @@ const PAYLOAD = {
   ],
 };
 
-// Only rows with a positive base amount are importable — PAYLOAD.entries already excludes them
-// (see meta.flags.excluded), so this filter is a no-op guard, not a real filter.
 const ALL_ENTRIES = PAYLOAD.entries.filter((e) => e.baseAmount > 0);
 
-// TDS rate above this is unusual enough to warrant a human look before writing — s.194-I (rent)
-// statutory TDS is 10%; meaningfully above that is flagged, not blocked.
 const FLAG_TDS_RATE_ABOVE = 15;
 
-// --- args ----------------------------------------------------------------------
 const args = process.argv.slice(2);
 const arg = (name) =>
   args.find((a) => a.startsWith(`--${name}=`))?.split("=")[1];
@@ -1494,22 +1485,9 @@ const inr = (n) =>
   "Rs " + Number(n).toLocaleString("en-IN", { maximumFractionDigits: 2 });
 const r2 = (n) => Math.round((Number(n) || 0) * 100) / 100;
 
-// --- landlord -> vendor resolution -------------------------------------------
-// Case-insensitive dedup only — deliberately does NOT try to merge spelling variants of the
-// same person (e.g. "Bajinder kaur Bhasinr" vs "Bajinder kaur Baseer" both appear in this
-// payload for what is almost certainly the same landlord). Silently guessing which spelling is
-// canonical is a data-quality call for a human, not something this script should decide; each
-// distinct string becomes its own vendor, and the report below lists every resolution so a
-// human can spot and merge the duplicates afterward if that's confirmed.
 const normalizeLandlord = (name) => String(name || "").trim().replace(/\s+/g, " ");
 const escapeRegExp = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
-// Explicit landlord -> vendor overrides, confirmed against the real database (see the dry run
-// that surfaced these as "would create a new vendor" and the follow-up that gave these exact
-// IDs). Takes priority over the name-search below — most importantly, this is what merges
-// "Bajinder kaur Bhasinr" (April) and "Bajinder kaur Baseer" (May onward) into the SAME vendor
-// (Bajinder Kaur Bhasin) instead of the name-search creating two separate ones for what is
-// confirmed to be one landlord with two spellings in the source data.
 const LANDLORD_VENDOR_OVERRIDES = {
   "Bajinder kaur Bhasinr": "6a881e55ce0a9a374d6d55f0",
   "VENKATA ROA YALAMANCHI": "6a882241ec4354da4e5eca13",
@@ -1519,7 +1497,6 @@ const LANDLORD_VENDOR_OVERRIDES = {
   "Pramod": "6a8823dbec4354da4e5eca18",
 };
 
-// --- job 1: dump the JSON and stop ---------------------------------------------
 if (DUMP_JSON) {
   const out = "rent-payables-payload.json";
   fs.writeFileSync(out, JSON.stringify(PAYLOAD, null, 2));
@@ -1534,10 +1511,6 @@ if (!MONGODB_URI) {
   process.exit(1);
 }
 
-// ---------------------------------------------------------------------------
-// VALIDATE — recomputes every tax figure from the shared function and checks it against what's
-// embedded. A mismatch means PAYLOAD was hand-edited incorrectly after generation.
-// ---------------------------------------------------------------------------
 function validate() {
   const errors = [];
   for (const e of ENTRIES) {
@@ -1597,10 +1570,6 @@ function validate() {
   return errors;
 }
 
-// ---------------------------------------------------------------------------
-// FLAG RULES — same gate mechanism as april-rent-payables.mjs: not a validation failure, just
-// something worth a second look before real money's obligation is recorded.
-// ---------------------------------------------------------------------------
 function flagRows() {
   const flags = [];
   for (const e of ENTRIES) {
@@ -1626,9 +1595,6 @@ function flagRows() {
   return flags;
 }
 
-// ---------------------------------------------------------------------------
-// DOCUMENT BUILDERS — mirror src/app/api/payables/create/route.js exactly.
-// ---------------------------------------------------------------------------
 const taxNote = (e) =>
   e.includeGST || e.tdsAmount > 0
     ? `Base ${e.baseAmount} + GST ${e.gstAmount} = invoice ${e.invoiceTotal}; TDS ${e.tdsAmount} on base`
@@ -1640,23 +1606,10 @@ const commonFields = (e) => ({
   branch: e.branch,
   remarks: e.remarks || "",
   isCancelled: false,
-  // Recognised on the 1st of the rent period, not whatever day this script is actually run —
-  // the Liabilities page's date filters and opening/closing rollups key off createdAt (see
-  // buildPayableGroupedStages' raisedInRange/raisedBeforeRange), so an import run later in the
-  // year would otherwise land every one of these months under whatever day that happened to be.
-  // Same fix already applied to april-rent-payables.mjs and rent-opening-payables-march-2026.mjs
-  // earlier this session — this script has the identical gap (a bare `{ strict: false }` schema
-  // with no `timestamps: true`, so without this createdAt would be left unset entirely).
   createdAt: new Date(Date.UTC(e.period.year, e.period.month - 1, 1)),
   createdBy: { ...IMPORT_IDENTITY, branch: e.branch, date: new Date() },
 });
 
-// vendor: the resolved Vendor doc for e.landlord (see resolveLandlordVendors) — refId points at
-// the real vendor so the payable is actually connected to it, but label stays unit-specific
-// ("<vendor name> — <sub-type>") rather than just the vendor name, because the SAME landlord can
-// own multiple units in the same month (e.g. Satpal Singh: Backend Basement + upper ground floor,
-// both April 2026) and Payable's unique index is on (payee.kind, payee.refId, payee.label,
-// purpose, period) — same refId + same label would collide as a duplicate for those rows.
 function buildRentPayable(e, vendor) {
   const note = taxNote(e);
   const hasTds = e.tdsAmount > 0;
@@ -1694,13 +1647,6 @@ function buildRentPayable(e, vendor) {
   };
 }
 
-// label is qualified with the source rent unit, not just the bare tdsCategory — several rent
-// units share the same TDS category in the same month (e.g. Backend Basement and Backend upper
-// ground floor both withhold under "TDS on Rent Ryan Medihub" in April), and the model's unique
-// index is on (payee.kind, payee.refId, payee.label, purpose, period) — an unqualified label
-// would make every sibling row's TDS split collide with whichever one was created first. This is
-// why only 24 of the 50 rows in this payload ever successfully imported before this fix — every
-// row after the first per (category, month) pair was silently failing on this exact collision.
 function buildTdsPayable(e, parentId) {
   return {
     ...commonFields(e),
@@ -1728,7 +1674,6 @@ function buildTdsPayable(e, parentId) {
   };
 }
 
-// ---------------------------------------------------------------------------
 async function run() {
   const withTds = ENTRIES.filter((e) => e.tdsAmount > 0);
   const invoiceTotal = ENTRIES.reduce((s, e) => s + e.invoiceTotal, 0);
@@ -1843,9 +1788,8 @@ async function run() {
       new mongoose.Schema({}, { strict: false, collection: "vendors" }),
     );
 
-  // --- resolve each unique landlord name to a Vendor, creating one if none exists ---
   console.log("Resolving landlords against the vendor database...");
-  const uniqueLandlords = new Map(); // normalized-lowercase -> first-seen display name
+  const uniqueLandlords = new Map();
   for (const e of ENTRIES) {
     const label = normalizeLandlord(e.landlord);
     if (!label) continue;
@@ -1853,7 +1797,7 @@ async function run() {
     if (!uniqueLandlords.has(key)) uniqueLandlords.set(key, label);
   }
 
-  const vendorByKey = new Map(); // normalized-lowercase -> { _id, name } | null (not yet created, dry run only)
+  const vendorByKey = new Map();
   const overridden = [];
   const matchedVendors = [];
   const vendorsToCreate = [];
@@ -1885,7 +1829,7 @@ async function run() {
       vendorByKey.set(key, { _id: created._id, name: created.name });
       vendorsToCreate.push({ landlord: label, vendorId: String(created._id) });
     } else {
-      vendorByKey.set(key, null); // resolved at --apply time
+      vendorByKey.set(key, null);
       vendorsToCreate.push({ landlord: label, vendorId: null });
     }
   }
@@ -1909,8 +1853,6 @@ async function run() {
   const dupes = [];
   for (const e of ENTRIES) {
     const vendor = vendorFor(e);
-    // A brand-new vendor (dry run only — nothing was actually created yet) can't possibly have
-    // an existing payable, so there's nothing to check for those rows.
     if (APPLY === false && vendor === null && normalizeLandlord(e.landlord)) continue;
     const query = vendor
       ? { "payee.kind": "VENDOR", "payee.refId": vendor._id, "payee.label": `${vendor.name} — ${e.expenseSubType}` }

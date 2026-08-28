@@ -7,15 +7,6 @@ import SuspenseEntry from "@/models/SuspenseEntry";
 import { ACCOUNTS } from "@/constants/bankRouting";
 import { ALL_BRANCHES, resolveBranchFilter } from "@/lib/branches";
 
-// Suspense entries — unexplained bank movement. See src/models/SuspenseEntry.js for why these
-// live in their own collection and never touch a revenue or expense total.
-//
-// GET  ?status=open|resolved|all &account= &branch= &from= &to= &page= &limit=
-// POST create
-//
-// Admin-only: a suspense entry moves a company account balance, same class of write as a contra
-// entry. The gate is here, not only in the UI — a UI-only restriction is bypassed by calling
-// the endpoint directly.
 const ALLOWED_ROLES = ["admin", "super-admin"];
 
 export async function GET(request) {
@@ -31,9 +22,6 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url);
     const status = searchParams.get("status") || "open";
     const account = searchParams.get("account") || "";
-    // Never trust a raw branch string from the client — same resolver every branch-scoped route
-    // uses; extracted back to a plain string since every match below keys on a single branch
-    // NAME, not a Mongo filter shape.
     const branchFilterObj = resolveBranchFilter(session, searchParams.get("branch") || "");
     const branch = typeof branchFilterObj.branch === "string" ? branchFilterObj.branch : "";
     const from = searchParams.get("from") || "";
@@ -43,17 +31,9 @@ export async function GET(request) {
     const groupBy = searchParams.get("groupBy") || "";
     const accountsParam = searchParams.get("accounts") || "";
 
-    // Level-1 rollup for the Liabilities drill-down (DrillDownTable, levels=2): one row per
-    // account, reshaped into the { key, label, opening, movement, settled, closing } contract
-    // every DrillDownTable section shares. Suspense has no "opening" concept of its own (an
-    // entry either exists or doesn't — nothing carries forward), so opening is always 0 and
-    // closing is simply movement (IN) minus settled (OUT).
     if (groupBy === "account") {
       const groupMatch = { isCancelled: { $ne: true }, isResolved: { $ne: true } };
       if (branch) groupMatch.branch = branch;
-      // Task C4 (dashboard) — an explicit account selection narrows server-side, matching
-      // close-book/accounts' identical `accounts=` support, instead of the caller filtering the
-      // full result set in JS afterward.
       if (accountsParam) groupMatch.account = { $in: accountsParam.split(",") };
       if (from || to) {
         groupMatch.date = {};
@@ -103,8 +83,6 @@ export async function GET(request) {
         .populate("resolvedTransactionId", "amount date transactionCategory procedure patientName")
         .lean(),
       SuspenseEntry.countDocuments(match),
-      // Headline figure: how much unexplained money is still sitting in the books. This is the
-      // number that should be driven to zero, so it is returned regardless of the current filter.
       SuspenseEntry.aggregate([
         { $match: { isResolved: { $ne: true }, isCancelled: { $ne: true } } },
         {
@@ -152,7 +130,6 @@ export async function POST(req) {
     const { account, direction, amount, date, branch, reference, remarks, receipts } =
       await req.json();
 
-    // Reject rather than normalise — each of these is a data-entry mistake worth seeing.
     if (!ACCOUNTS.includes(account)) {
       return NextResponse.json(
         { error: `account must be one of: ${ACCOUNTS.join(", ")}` },
@@ -166,8 +143,6 @@ export async function POST(req) {
     if (!(parsedAmount > 0)) {
       return NextResponse.json({ error: "Amount must be greater than zero" }, { status: 400 });
     }
-    // A branch from ALL_BRANCHES, not an account — the two lists share some naming but mean
-    // different things. Blank leaves the entry company-level.
     if (branch && !ALL_BRANCHES.includes(branch)) {
       return NextResponse.json(
         { error: `branch must be one of: ${ALL_BRANCHES.join(", ")}` },

@@ -9,11 +9,6 @@ import { BranchDateRemarks } from "@/components/RevenueSection";
 import { EXPENSE_CATEGORIES, getExpenseTypes } from "@/constants/expenseCategories";
 import { Wallet, Save, Loader2 } from "lucide-react";
 
-// The flat vendor/manual expense form — reception, stocks, and (new) sales all logged an
-// identical version of this before the refactor: vendor-or-manual payee, category, type,
-// amount, method. No payables workflow, no GST/TDS (that stays admin-only, where the
-// payables it would create actually get managed). Restructured into WHAT / MONEY / HOW with
-// the summary panel; behaviour and stored fields are unchanged.
 export default function DirectExpenseSection({
   data, onChange, vendors, branches, onSave, saving = false, saveLabel = "Save Expense",
   methodOptions,
@@ -26,7 +21,6 @@ export default function DirectExpenseSection({
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <div className="lg:col-span-2 space-y-6">
-        {/* ── WHAT ── */}
         <TransactionSectionCard title="Vendor Information">
           <div className="mb-4">
             <label className="flex items-center gap-2">
@@ -82,9 +76,6 @@ export default function DirectExpenseSection({
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg"
               >
                 <option value="">Select Category</option>
-                {/* A category already saved on this transaction but since removed from the
-                    constant must still display as itself, not silently disappear from the
-                    dropdown — editing an old row shouldn't force a category change. */}
                 {data.expenseCategory && !EXPENSE_CATEGORIES.includes(data.expenseCategory) && (
                   <option value={data.expenseCategory}>{data.expenseCategory} (existing)</option>
                 )}
@@ -113,7 +104,6 @@ export default function DirectExpenseSection({
               </select>
             </div>
 
-            {/* ── MONEY ── */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Amount (₹) <span className="text-red-500">*</span>
@@ -130,7 +120,6 @@ export default function DirectExpenseSection({
           </div>
         </TransactionSectionCard>
 
-        {/* ── HOW ── */}
         <TransactionSectionCard title="Transaction Details" icon={Wallet}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <MethodField
@@ -149,7 +138,6 @@ export default function DirectExpenseSection({
         </TransactionSectionCard>
 
         <TransactionSectionCard title="Receipts / Documents">
-          {/* `receipts`, not `value` — see the note in RevenueSection. */}
           <ReceiptUpload
             receipts={data.receipts || []}
             onChange={(receipts) => set({ receipts })}

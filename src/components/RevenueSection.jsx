@@ -20,39 +20,22 @@ const CATEGORY_META = {
   MEDICINE: { icon: Pill, label: "Medicine Sale" },
 };
 
-// The single shared implementation of the Transplant / Service / Medicine tabs — identical
-// fields, identical components, across every panel that sells to a patient. TRANSPLANT is
-// single-procedure-and-amount; SERVICE and MEDICINE are LineItemsEditor-driven, with the
-// transaction amount computed from items minus discount. Restructured into the WHAT / MONEY
-// / HOW grouping: patient+procedure (WHAT), amount+discount (MONEY), method and everything
-// it reveals (HOW) — with TransactionSummaryPanel sticky alongside on desktop.
-//
-// `data` / `onChange` carry the full per-tab state object the parent page already owns
-// (patient, procedure, paymentType, amount, discount, method, paymentId, branch, date,
-// remarks, receiptMode, furtherMode, externalParty, receipts, receivableId, isWalkIn,
-// patientName, patientPhone) — this component does not introduce a new state shape, so the
-// existing create/update payload builders in each page keep working unchanged.
 export default function RevenueSection({
-  category, // "TRANSPLANT" | "SERVICE" | "MEDICINE"
+  category,
   data,
   onChange,
   picker,
-  items, // SERVICE/MEDICINE only: [{...}]
+  items,
   onItemsChange,
-  medicines, // MEDICINE only
-  patientLabel, // resolved display name for the summary panel
+  medicines,
+  patientLabel,
   onSave,
   saving = false,
   saveLabel = "Save Transaction",
-  methodOptions, // full override; prefer forEdit — see MethodField
-  forEdit = false, // edit forms drop the create-only methods (paid_to_external etc.)
-  // Edit forms operate on ONE saved Transaction document, which corresponds to exactly one
-  // line item — a batch of N line items became N separate documents at create time, linked
-  // by batchId, and editing acts on a single one of them. Create forms build a fresh batch,
-  // so they use LineItemsEditor; edit forms carry the item's fields (procedure/quantity/rate
-  // or medicineId/quantity/rate) directly on `data`, same as TRANSPLANT always has.
+  methodOptions,
+  forEdit = false,
   singleItem = false,
-  branches, // override for roles restricted to a subset (e.g. main-branch-only, collab-only)
+  branches,
 }) {
   const meta = CATEGORY_META[category];
   const isLineItems = (category === "SERVICE" || category === "MEDICINE") && !singleItem;
@@ -69,7 +52,6 @@ export default function RevenueSection({
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <div className="lg:col-span-2 space-y-6">
-        {/* ── WHAT ── */}
         <TransactionSectionCard title="Patient Information" icon={meta.icon}>
           <PatientPicker
             picker={picker}
@@ -178,7 +160,6 @@ export default function RevenueSection({
           </TransactionSectionCard>
         )}
 
-        {/* ── MONEY ── */}
         <TransactionSectionCard title="Transaction Details" icon={Wallet}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {category === "TRANSPLANT" && (
@@ -207,7 +188,6 @@ export default function RevenueSection({
               />
             </div>
 
-            {/* ── HOW ── */}
             <MethodField
               category={category}
               branch={data.branch}
@@ -216,12 +196,6 @@ export default function RevenueSection({
               methodOptions={methodOptions}
               forEdit={forEdit}
             />
-            {/* Money received from this patient auto-allocates against their oldest open
-                receivable(s) server-side by default (see the three revenue create routes and
-                src/lib/receivableAllocation.js) — no picker required for the common case. This
-                field only previews that default and lets it be overridden. Create-only: the
-                auto-allocator only runs on creation, so edit forms (forEdit) keep using the
-                existing plain receivableId field on `data` instead — see the update routes. */}
             {!forEdit && !data.isWalkIn && data.patient && (
               <ReceivableLinkField
                 patientId={data.patient}
@@ -239,10 +213,6 @@ export default function RevenueSection({
         </TransactionSectionCard>
 
         <TransactionSectionCard title="Receipts / Documents">
-          {/* The prop is `receipts`, not `value`. Passing `value` silently fell back to the
-              component's `receipts = []` default: previously-uploaded files were invisible when
-              editing, and adding a new one replaced the array instead of appending to it.
-              `section`/`patientId` drive the upload folder in /api/upload. */}
           <ReceiptUpload
             receipts={data.receipts || []}
             onChange={(receipts) => set({ receipts })}
@@ -252,7 +222,6 @@ export default function RevenueSection({
         </TransactionSectionCard>
       </div>
 
-      {/* Sticky on desktop; caller wraps this column in the mobile-collapsible bar. */}
       <div className="lg:col-span-1">
         <div className="lg:sticky lg:top-6">
           <TransactionSummaryPanel
@@ -285,9 +254,6 @@ export default function RevenueSection({
   );
 }
 
-// Branch / Date / Remarks — identical three fields across every category and role, just
-// with a different branch list depending on whether the caller is a main-branch or
-// collab-branch context (passed via `branches`).
 export function BranchDateRemarks({ data, onChange, branches }) {
   const list = branches || ALL_BRANCHES;
   return (

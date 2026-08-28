@@ -9,10 +9,6 @@ import { buildCashFlowGroupedStages, buildCashFlowLeafMatch } from "@/lib/cashFl
 
 const ALLOWED_ROLES = ["admin", "super-admin"];
 
-// Cash-basis Payments drill-down — mirror of /api/receipts/grouped for costType: "Expenses".
-//   level=1 -> one row per Expense Category head (EXPENSE_CATEGORY_TREE's top-level keys)
-//   level=2 -> one row per expenseType sub-type within ?head=
-//   level=3 -> the actual transactions for a selected head (+ sub), with a running balance
 export async function GET(request) {
   try {
     const session = await getServerSession(authOptions);
@@ -25,8 +21,6 @@ export async function GET(request) {
 
     const { searchParams } = new URL(request.url);
     const level = Math.min(3, Math.max(1, parseInt(searchParams.get("level") || "1")));
-    // Param names match the shared DrillDownTable "grouped" fetch pattern (category/subType),
-    // the same names /api/payables/grouped and /api/receivables/grouped already use.
     const head = searchParams.get("category") || "";
     const sub = searchParams.get("subType") || "";
     const branch = searchParams.get("branch") || "";

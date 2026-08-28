@@ -1,8 +1,3 @@
-// src/app/api/super-admin/lead-funnel/filters/route.js
-//
-// GET — returns { agents: [{id, name, team}], teams: [string] } for the
-// filter bar's multiselects. Proxied live from Callby on every load — no
-// caching, so a newly added agent shows up immediately.
 
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";

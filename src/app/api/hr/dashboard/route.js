@@ -25,7 +25,6 @@ export async function POST(req) {
     const dateFilter = { createdAt: { $gte: fromDate, $lte: toDate } };
 
     const [statsAgg, positionAgg, recentCandidates, byHrAgg] = await Promise.all([
-      // Overall counts by status
       Interviewer.aggregate([
         { $match: dateFilter },
         {
@@ -67,7 +66,6 @@ export async function POST(req) {
         },
       ]),
 
-      // Positions applied for
       Interviewer.aggregate([
         { $match: dateFilter },
         { $group: { _id: "$position", count: { $sum: 1 } } },
@@ -75,13 +73,11 @@ export async function POST(req) {
         { $limit: 10 },
       ]),
 
-      // Recent 5 candidates
       Interviewer.find(dateFilter)
         .sort({ createdAt: -1 })
         .limit(5)
         .select("name position status interviewDate createdAt"),
 
-      // Interviews by HR name
       Interviewer.aggregate([
         { $match: dateFilter },
         {
@@ -114,7 +110,6 @@ export async function POST(req) {
 
     const s = statsAgg[0] || {};
 
-    // Fill per-day gaps
     const dayMs = 86400000;
     const perDayMap = {};
     (s.perDay || []).forEach(({ _id, count, visited, applied }) => {

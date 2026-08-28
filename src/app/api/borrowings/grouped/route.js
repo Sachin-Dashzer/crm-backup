@@ -13,19 +13,6 @@ import { resolveBranchFilter } from "@/lib/branches";
 const ALLOWED_ROLES = ["admin", "super-admin"];
 const CATEGORY = "Borrowings";
 
-// Grouped borrowings for the Liabilities page's "Borrowings" section (DrillDownTable, mode:
-// "documents") — same 4-level shape as /api/payables/grouped, restricted to the one
-// expenseCategory this feature ever creates:
-//   level=1  -> a single "Borrowings" bucket (so the section's own drill path matches every
-//               other DrillDownTable section rather than starting at a different level)
-//   level=2  -> one row per expenseSubType (Deposit Received / Loan from Party / Advance
-//               Received) within it
-//   level=3  -> one row per loan (Payable) DOCUMENT, live paid/pending — reuses
-//               buildPayableAggregationStages, which already folds in Borrowing OUT rows
-//               (see payableAggregation.js), so "paid" here means the same thing as everywhere
-//               else a Payable is shown.
-//   level=4  -> the actual Borrowing rows (IN + OUT) against ONE document (?documentId=), with
-//               a running balance-owed.
 export async function GET(request) {
   try {
     const session = await getServerSession(authOptions);
@@ -92,8 +79,6 @@ export async function GET(request) {
             $setWindowFields: {
               sortBy: { date: 1, _id: 1 },
               output: {
-                // IN raises what's owed, OUT pays it down — the running balance is the
-                // liability's own outstanding total at each point in time, not a cash balance.
                 runningBalance: {
                   $sum: { $cond: [{ $eq: ["$direction", "OUT"] }, { $multiply: ["$amount", -1] }, "$amount"] },
                   window: { documents: ["unbounded", "current"] },
@@ -131,7 +116,6 @@ export async function GET(request) {
       return NextResponse.json({ success: true, rows: rowsWithLock, total, page, limit });
     }
 
-    // level 3 — one row per loan (Payable) document, live-aggregated.
     if (!subType && !CATEGORY) {
       return NextResponse.json({ error: "subType is required at level 3" }, { status: 400 });
     }

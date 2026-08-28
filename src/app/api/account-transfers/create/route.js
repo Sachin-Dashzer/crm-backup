@@ -12,8 +12,6 @@ import { checkPeriodLock } from "@/lib/periodLock";
 
 const TRANSFER_KINDS = ["MANUAL", "LOAN_SETTLEMENT", "LOAN_CANCELLATION"];
 
-// Contra entries move money between company-level accounts, so they are admin-only. The gate
-// lives here, not only in the UI — a UI-only restriction is bypassed by calling the endpoint.
 const ALLOWED_ROLES = ["admin", "super-admin"];
 
 export async function POST(req) {
@@ -43,8 +41,6 @@ export async function POST(req) {
       allowOverSettlement,
     } = await req.json();
 
-    // Reject rather than silently correct — each of these is a data-entry mistake the user
-    // needs to see, not something to normalise away.
     if (!fromAccount || !toAccount) {
       return NextResponse.json({ error: "Both accounts are required" }, { status: 400 });
     }
@@ -61,9 +57,6 @@ export async function POST(req) {
     if (!(parsedAmount > 0)) {
       return NextResponse.json({ error: "Amount must be greater than zero" }, { status: 400 });
     }
-    // Optional. Note this is a BRANCH, not an account — "Cash ( backend )" is an account and is
-    // rejected here even though a transfer can move money into it. Left null, the transfer is
-    // company-level and shows only in unfiltered views.
     if (branch && !ALL_BRANCHES.includes(branch)) {
       return NextResponse.json(
         { error: `branch must be one of: ${ALL_BRANCHES.join(", ")}` },
@@ -71,18 +64,11 @@ export async function POST(req) {
       );
     }
 
-    // Optional — set only by LoanSettlementModal, so a later loan cancellation can find this
-    // exact transfer instead of guessing by amount and date.
     if (sourceTransactionId && !mongoose.Types.ObjectId.isValid(sourceTransactionId)) {
       return NextResponse.json({ error: "Invalid sourceTransactionId" }, { status: 400 });
     }
     const kind = transferKind && TRANSFER_KINDS.includes(transferKind) ? transferKind : "MANUAL";
 
-    // This IS "the settlement path" — LoanSettlementModal is just one caller of this endpoint —
-    // so both fixes below close the gap for every contra entry, not only loans.
-    //
-    // Period lock: a contra entry writes a dated financial fact on BOTH accounts, so either side
-    // being closed must refuse the write, exactly like an ordinary transaction would.
     const transferDate = date ? new Date(date) : new Date();
     const fromLock = await checkPeriodLock({ furtherMode: fromAccount, date: transferDate });
     if (fromLock) {
@@ -93,9 +79,6 @@ export async function POST(req) {
       return NextResponse.json({ error: toLock, periodLocked: true }, { status: 423 });
     }
 
-    // Over-settlement guard — scoped to LOAN_SETTLEMENT transfers only. A plain MANUAL transfer
-    // between two accounts has no "budget" to exceed; a loan settlement does, because it's
-    // standing in for money owed against a specific transaction of a known amount.
     if (kind === "LOAN_SETTLEMENT" && sourceTransactionId) {
       const sourceTx = await Transactions.findById(sourceTransactionId).lean();
       if (!sourceTx) {
@@ -154,9 +137,6 @@ export async function POST(req) {
 
     await transfer.save();
 
-    // Warn, never block. The user may legitimately be entering transactions out of order, and
-    // refusing the write would force them to fabricate a date to get the real one in. Computed
-    // AFTER the save so the figure reflects the balance they actually left behind.
     let warning = null;
     try {
       const balance = await getAccountBalance(fromAccount, transfer.date);
@@ -164,13 +144,11 @@ export async function POST(req) {
         warning = `${fromAccount} is now negative (${balance.toFixed(2)}) as of this date. The entry was saved — check whether an earlier deposit is still missing.`;
       }
     } catch (balanceError) {
-      // A balance-check failure must not fail the write that already succeeded.
       console.error("Contra entry saved but balance check failed:", balanceError);
     }
 
     return NextResponse.json({ message: "Contra entry created", transfer, warning }, { status: 201 });
   } catch (error) {
-    // Surface the model's own validation messages rather than a generic 500.
     if (error?.name === "ValidationError" || error?.message?.includes("contra entry")) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }

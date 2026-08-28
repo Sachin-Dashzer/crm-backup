@@ -27,7 +27,6 @@ export default function NotVisitedPatients() {
       setPatients(data.patients || []);
     } catch (error) {
       console.error("Error:", error);
-      // Mock data
       setPatients([
         {
           _id: "1",
@@ -147,7 +146,7 @@ export default function NotVisitedPatients() {
                   {filteredPatients.length} Pending Patients
                 </h3>
               </div>
-              
+
               {filteredPatients.length === 0 ? (
                 <div className="text-center py-12">
                   <Clock className="w-16 h-16 mx-auto mb-4 text-gray-300" />
@@ -158,14 +157,14 @@ export default function NotVisitedPatients() {
                   {filteredPatients.map((patient) => {
                     const daysSinceVisit = getDaysSinceVisit(patient.personal?.visitDate);
                     const isUrgent = daysSinceVisit > 30;
-                    
+
                     return (
                       <Link
                         key={patient._id}
                         href={`/surgery/patients/${patient._id}`}
                         className={`block p-4 border rounded-lg hover:shadow-md transition-all ${
-                          isUrgent 
-                            ? 'border-red-300 bg-red-50 hover:border-red-500' 
+                          isUrgent
+                            ? 'border-red-300 bg-red-50 hover:border-red-500'
                             : 'border-gray-200 hover:border-amber-500'
                         }`}
                       >
@@ -181,7 +180,7 @@ export default function NotVisitedPatients() {
                             <AlertCircle className="w-5 h-5 text-red-500" />
                           )}
                         </div>
-                        
+
                         <div className="space-y-2 text-sm">
                           <div className="flex items-center gap-2 text-gray-600">
                             <MapPin className="w-3 h-3" />

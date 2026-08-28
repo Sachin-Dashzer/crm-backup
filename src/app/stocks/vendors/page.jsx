@@ -237,7 +237,6 @@ export default function VendorsPage() {
       <Sidebar />
 
       <main className="flex-1 flex flex-col min-h-screen">
-        {/* Sticky Header */}
         <div className="bg-white border-b border-gray-100 shadow-sm px-6 py-4 sticky top-0 z-10">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="flex items-center gap-3">
@@ -282,9 +281,7 @@ export default function VendorsPage() {
         </div>
 
         <div className="flex-1 px-6 py-6">
-          {/* Stats Row */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-            {/* Total Vendors */}
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
               <div className="h-1 bg-emerald-500" />
               <div className="px-5 py-4 flex items-center gap-4">
@@ -297,7 +294,6 @@ export default function VendorsPage() {
                 </div>
               </div>
             </div>
-            {/* Categories */}
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
               <div className="h-1 bg-teal-500" />
               <div className="px-5 py-4 flex items-center gap-4">
@@ -310,7 +306,6 @@ export default function VendorsPage() {
                 </div>
               </div>
             </div>
-            {/* Added This Week */}
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
               <div className="h-1 bg-amber-400" />
               <div className="px-5 py-4 flex items-center gap-4">
@@ -325,7 +320,6 @@ export default function VendorsPage() {
             </div>
           </div>
 
-          {/* Search & Filters Card */}
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm mb-5">
             <div className="p-4">
               <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-3">
@@ -412,7 +406,6 @@ export default function VendorsPage() {
             </div>
           </div>
 
-          {/* Table Card */}
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full">

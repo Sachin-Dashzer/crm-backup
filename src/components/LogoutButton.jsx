@@ -1,4 +1,3 @@
-// components/LogoutButton.jsx - CREATE THIS FILE
 "use client";
 
 import { signOut } from "next-auth/react";

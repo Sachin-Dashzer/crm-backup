@@ -7,9 +7,6 @@ import { getAccountBalance } from "@/lib/accountBalances";
 
 const ALLOWED_ROLES = ["admin", "super-admin"];
 
-// Live balances for every account as of a date. Backs the contra form's "show both
-// accounts' current balances as the user picks them" (§5.5) — seeing the source balance
-// before saving is what makes a wrong-direction entry obvious while it can still be fixed.
 export async function GET(request) {
   try {
     const session = await getServerSession(authOptions);

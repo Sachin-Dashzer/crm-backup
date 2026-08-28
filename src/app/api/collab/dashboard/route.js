@@ -7,10 +7,8 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { COLLAB_BRANCHES } from "@/lib/branches";
 import { UNSETTLED_METHODS, SETTLEMENT_EXCLUSION } from "@/constants/bankRouting";
 
-
 const VALID_BRANCHES = ["All", ...COLLAB_BRANCHES];
 
-// Improved date helpers that work consistently across timezones
 const getISTStartOfDay = (date = null) => {
   const d = date ? new Date(date) : new Date();
   const istDate = new Date(d.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
@@ -18,20 +16,17 @@ const getISTStartOfDay = (date = null) => {
   const month = istDate.getMonth();
   const day = istDate.getDate();
 
-  // Return as UTC date that represents IST start of day
   return new Date(Date.UTC(year, month, day, 0, 0, 0, 0));
 };
 
 const getISTEndOfDay = (date = null) => {
   const d = date ? new Date(date) : new Date();
 
-  // Create date in IST timezone (UTC+5:30)
   const istDate = new Date(d.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
   const year = istDate.getFullYear();
   const month = istDate.getMonth();
   const day = istDate.getDate();
 
-  // Return as UTC date that represents IST end of day
   return new Date(Date.UTC(year, month, day, 23, 59, 59, 999));
 };
 
@@ -54,8 +49,6 @@ const handler = async (req) => {
     const { branch: requestedBranch = "All" } = data;
     const { from, to } = data;
 
-    // Collab users always see the 8 collab-city set (shared panel), optionally
-    // narrowed to one specific city via the branch selector.
     const branch = requestedBranch !== "All" && COLLAB_BRANCHES.includes(requestedBranch)
       ? requestedBranch
       : "All";
@@ -67,12 +60,9 @@ const handler = async (req) => {
       );
     }
 
-    // Use consistent IST timezone for date calculations
     const fromDate = from ? getISTStartOfDay(from) : getISTStartOfDay();
     const toDate = to ? getISTEndOfDay(to) : getISTEndOfDay();
 
-
-    // Validate dates
     if (isNaN(fromDate.getTime()) || isNaN(toDate.getTime())) {
       return NextResponse.json(
         { error: "Invalid date provided" },
@@ -87,7 +77,6 @@ const handler = async (req) => {
       );
     }
 
-    // Calculate comparison period (previous period for trends)
     const daysDifference = Math.ceil((toDate - fromDate) / (1000 * 60 * 60 * 24)) + 1;
 
     const comparisonEnd = new Date(fromDate);
@@ -98,8 +87,6 @@ const handler = async (req) => {
     comparisonStart.setDate(comparisonStart.getDate() - (daysDifference - 1));
     comparisonStart.setHours(0, 0, 0, 0);
 
-
-    // Branch filter — "All" here means "all 8 collab cities"
     const branchFilter = branch === "All"
       ? { "personal.branch": { $in: COLLAB_BRANCHES } }
       : { "personal.branch": branch };
@@ -107,7 +94,6 @@ const handler = async (req) => {
       ? { branch: { $in: COLLAB_BRANCHES } }
       : { branch };
 
-    // Get patient statistics
     const getPatientStats = async () => {
       try {
 
@@ -173,7 +159,6 @@ const handler = async (req) => {
       }
     };
 
-    // Get revenue statistics
     const getRevenueStats = async () => {
       try {
 
@@ -210,7 +195,6 @@ const handler = async (req) => {
       }
     };
 
-    // Get recent patients - Safe approach for Vercel
     const getRecentPatients = async () => {
       try {
         const patients = await Patient.aggregate([
@@ -252,12 +236,10 @@ const handler = async (req) => {
       }
     };
 
-    // Get upcoming appointments
     const getUpcomingAppointments = async () => {
       try {
-        const now = new Date(); // Current server time (UTC)
+        const now = new Date();
         const endOfDay = getISTEndOfDay();
-
 
         const appointments = await Patient.aggregate([
           {
@@ -300,7 +282,6 @@ const handler = async (req) => {
       }
     };
 
-    // Get converted patients — visited in the period AND have at least one transaction
     const getConvertedStats = async () => {
       try {
         const result = await Patient.aggregate([
@@ -334,7 +315,6 @@ const handler = async (req) => {
       }
     };
 
-    // Execute all queries in parallel with error handling
     const [patientStats, revenueStats, recentPatients, upcomingAppointments, convertedStats] = await Promise.allSettled([
       getPatientStats(),
       getRevenueStats(),
@@ -343,14 +323,12 @@ const handler = async (req) => {
       getConvertedStats(),
     ]);
 
-    // Handle promise results with safe defaults
     const patientStatsResult = patientStats.status === 'fulfilled' ? patientStats.value : {};
     const revenueStatsResult = revenueStats.status === 'fulfilled' ? revenueStats.value : {};
     const recentPatientsResult = recentPatients.status === 'fulfilled' ? recentPatients.value : [];
     const upcomingAppointmentsResult = upcomingAppointments.status === 'fulfilled' ? upcomingAppointments.value : [];
     const convertedStatsResult = convertedStats.status === 'fulfilled' ? convertedStats.value : {};
 
-    // Process stats with safe defaults
     const currentAppointments = patientStatsResult.currentAppointments?.[0]?.count || 0;
     const currentVisited = patientStatsResult.currentVisited?.[0]?.count || 0;
     const currentPending = patientStatsResult.currentPending?.[0]?.count || 0;
@@ -361,7 +339,6 @@ const handler = async (req) => {
     const currentConverted = convertedStatsResult.current?.[0]?.count || 0;
     const comparisonConverted = convertedStatsResult.comparison?.[0]?.count || 0;
 
-    // Calculate growth percentages
     const calculateGrowth = (current, comparison) => {
       if (comparison === 0 && current > 0) return 100;
       if (comparison === 0 && current === 0) return 0;
@@ -373,7 +350,6 @@ const handler = async (req) => {
     const revenueGrowth = calculateGrowth(currentRevenue, comparisonRevenue);
     const convertedGrowth = calculateGrowth(currentConverted, comparisonConverted);
 
-    // Prepare final response
     const response = {
       success: true,
       data: {

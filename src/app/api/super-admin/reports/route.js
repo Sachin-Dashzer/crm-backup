@@ -38,7 +38,6 @@ export async function GET(request) {
 
     let data = [];
 
-    // Build date filter
     const dateFilter = {};
     if (from && to) {
       dateFilter.createdAt = {
@@ -72,7 +71,6 @@ export async function GET(request) {
     }
 
     switch (type) {
-      // ── PATIENT REPORTS ────────────────────────────────────────────
       case "patients-comprehensive":
         data = await generateComprehensivePatientReport({
           visitDateFilter,
@@ -126,7 +124,6 @@ export async function GET(request) {
         });
         break;
 
-      // ── STAFF REPORTS ──────────────────────────────────────────────
       case "employees-all":
         data = await generateEmployeesReport({ branch });
         break;
@@ -172,7 +169,6 @@ export async function GET(request) {
         });
         break;
 
-      // ── FINANCIAL REPORTS ──────────────────────────────────────────
       case "revenue":
         data = await generateRevenueReport({
           txDateFilter,
@@ -218,7 +214,6 @@ export async function GET(request) {
         });
         break;
 
-      // ── INVENTORY REPORTS ──────────────────────────────────────────
       case "stocks-all":
         data = await generateStocksReport();
         break;
@@ -227,12 +222,10 @@ export async function GET(request) {
         data = await generateVendorsReport();
         break;
 
-      // ── LEADS REPORTS ──────────────────────────────────────────────
       case "leads-all":
         data = await generateLeadsReport({ dateFilter });
         break;
 
-      // ── HR REPORTS ─────────────────────────────────────────────────
       case "hr-interviews-all":
         data = await generateHRAllCandidates({ dateFilter, hrStatus });
         break;
@@ -273,10 +266,6 @@ export async function GET(request) {
     );
   }
 }
-
-// ────────────────────────────────────────────────────────────────────────────
-// PATIENT REPORTS
-// ────────────────────────────────────────────────────────────────────────────
 
 async function generateComprehensivePatientReport({
   visitDateFilter,
@@ -442,9 +431,6 @@ async function generateSurgeryScheduleReport({
     .sort({ "surgery.surgeryDate": -1 })
     .lean();
 
-  // doctor/seniorTech/implanterRight/implanterLeft/graftingPerson/helper are
-  // all arrays on the schema (a surgery can have more than one of each) —
-  // join every populated name rather than reading .name off the array itself.
   const namesOf = (arr) => (arr || []).map((e) => e?.name).filter(Boolean).join(", ");
 
   let filtered = patients;
@@ -629,10 +615,6 @@ async function generateGraftsAnalysisReport({
       : "N/A",
   }));
 }
-
-// ────────────────────────────────────────────────────────────────────────────
-// STAFF REPORTS
-// ────────────────────────────────────────────────────────────────────────────
 
 async function generateEmployeesReport({ branch }) {
   const query = {};
@@ -971,10 +953,6 @@ async function generateTechniqueReport({ visitDateFilter, branch, techniqueFilte
   return Object.values(techniques);
 }
 
-// ────────────────────────────────────────────────────────────────────────────
-// FINANCIAL REPORTS
-// ────────────────────────────────────────────────────────────────────────────
-
 async function generateRevenueReport({
   txDateFilter,
   branch,
@@ -1155,10 +1133,6 @@ async function generateBranchComparisonReport({ visitDateFilter, txDateFilter })
   return result;
 }
 
-// ────────────────────────────────────────────────────────────────────────────
-// INVENTORY REPORTS
-// ────────────────────────────────────────────────────────────────────────────
-
 async function generateStocksReport() {
   const stocks = await Stock.find({}).lean();
 
@@ -1193,10 +1167,6 @@ async function generateVendorsReport() {
     "Created At": v.createdAt ? new Date(v.createdAt).toLocaleDateString("en-IN") : "",
   }));
 }
-
-// ────────────────────────────────────────────────────────────────────────────
-// LEADS REPORTS
-// ────────────────────────────────────────────────────────────────────────────
 
 async function generateLeadsReport({ dateFilter }) {
   const query = { ...dateFilter };
@@ -1250,10 +1220,6 @@ async function generateInterviewsReport({ dateFilter }) {
       : "",
   }));
 }
-
-// ────────────────────────────────────────────────────────────────────────────
-// HR REPORTS
-// ────────────────────────────────────────────────────────────────────────────
 
 async function generateHRAllCandidates({ dateFilter, hrStatus }) {
   const query = { ...dateFilter };

@@ -1,94 +1,23 @@
-// scripts/import-direct-expenses-aug-2026.mjs
-//
-// Imports the expense entries from EXP_13_TO_24_AUG.xlsx (13-24 Aug 2026) as EXPENSE
-// transactions. Companion to scripts/delete-direct-expense-transactions.mjs — that script
-// removes the direct-payment-category expenses in this window; this one puts the corrected set
-// back.
-//
-// ─── READ THIS BEFORE RUNNING: the sheet is NOT all "direct" expenses ────────────────────────
-//
-// The file holds 454 rows, but only 298 of them are in DIRECT_PAYMENT_CATEGORIES (the eleven
-// categories src/constants/expenseCategories.js documents as "paid in full when logged, no
-// payable"). The other 156 belong to PAYABLE-BACKED categories:
-//
-//     Incentive 87 · Software Rental Expenses 30 · Medical Consumables 19 · Commision 6 ·
-//     Rent 6 · Professional Expenses 3 · Lab Expenses 3 · Interest Expenses 1 ·
-//     Hardware Rental Expenses 1                        (Rs 11,59,321.39 in total)
-//
-// **All 454 rows are now eligible for import by default, including the 156 payable-backed rows.** The delete script
-// only removed DIRECT_PAYMENT_CATEGORIES from this date range — so the payable-backed rows for
-// 13-24 Aug were never deleted and are still in the database. Importing them here would create
-// a second copy of each. Worse, several of these categories (Incentive, Commision, Rent,
-// Medical Consumables) are normally raised as Payables and settled through their own flows, so
-// a loose expense transaction with no payableId would double-count against any Payable that
-// already exists for the same money.
-//
-// The `--include-payable-categories` flag is retained for backward compatibility and is no longer required.
-//
-// ─── DATA FIXES APPLIED (both visible in the dry run) ────────────────────────────────────────
-//
-// 1. Six rows carry head "Rent" with an "Electricity Exp-*" sub-type (rows 247, 277, 366, 398,
-//    448, 455). That pair is invalid against EXPENSE_CATEGORY_TREE — the sub-type unambiguously
-//    belongs to "Electricity Bill", so the head is corrected to that rather than importing an
-//    invalid combination. Each corrected row is flagged in the output. (All six are
-//    payable-backed, so they only import under --include-payable-categories anyway.)
-// 2. Payment method -> account routing, from the sheet's own three values:
-//        Cash              -> cash                          -> "Cash Book"
-//        Hdfc Skin 739     -> hdfc_skin_bank_transfer       -> "HDFC Skin"
-//        Icici Medihub 292 -> icici_medihub_bank_transfer   -> "ICICI Medihub"
-//    EXCEPT: the 54 rows whose Place is "Delhi Backend" and method is Cash are routed to
-//    "Cash ( backend )" instead of "Cash Book" — the same split the earlier rent-payment import
-//    data used for Delhi Backend cash. Pass `--no-backend-cash` to send every cash row to
-//    "Cash Book" instead.
-//
-// ─── OTHER NOTES ─────────────────────────────────────────────────────────────────────────────
-//
-// The sheet has no "Paid To" column; its Remarks column carries the description of what was
-// bought ("DISPOSABIL GLASS", "CAR WASHING"). That is exactly what the existing manual entries
-// in this CRM put in expenseGiver.name, so Remarks is written to BOTH `remarks` and
-// `expenseGiver: { type: "MANUAL", name }` — otherwise the "Paid To" column would be blank for
-// all of these in /admin/transactions.
-//
-// IDEMPOTENT: each transaction gets `paymentId: "BULK-DIRECT-EXP-<rowNum>"`, checked before
-// insert. Safe to re-run after a partial failure; never double-imports a row that succeeded.
-//
-// Every write checks the period lock, mirroring src/app/api/transactions/expense/create/route.js.
-//
-// Usage:
-//   node scripts/import-direct-expenses-aug-2026.mjs                             # dry run (all 454 rows)
-//   node scripts/import-direct-expenses-aug-2026.mjs --dump-json                  # entries out, no DB
-//   node scripts/import-direct-expenses-aug-2026.mjs --apply                     # import all 454
-//   node scripts/import-direct-expenses-aug-2026.mjs --apply --include-payable-categories
-//   node scripts/import-direct-expenses-aug-2026.mjs --apply --no-backend-cash
-//   node scripts/import-direct-expenses-aug-2026.mjs --branch=Hyderabad          # one branch only
 
 import mongoose from "mongoose";
 import fs from "fs";
 
-// --- env -----------------------------------------------------------------
 for (const f of [".env.local", ".env"]) {
   if (fs.existsSync(f)) {
     try {
       process.loadEnvFile(f);
     } catch {
-      /* already loaded / unsupported — falls through to the MONGODB_URI check below */
     }
   }
 }
 const MONGODB_URI = process.env.MONGODB_URI;
 
-// Mirrors ACCOUNTS in src/constants/bankRouting.js — needed for the period-lock check.
 const ACCOUNTS = [
   "Cash Book", "HDFC Skin", "HDFC Medihub", "ICICI Medihub", "Mumbai Receipts",
   "Cash ( backend )", "Paytm ( Delhi T44P )", "Paytm ( Noida CK5Y )",
   "Bajaj Loan", "Fibe Loan", "Pine Lab",
 ];
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// THE DATA — parsed directly from EXP_13_TO_24_AUG.xlsx, not hand-transcribed.
-// `isDirect` marks the 298 DIRECT_PAYMENT_CATEGORIES rows; `headCorrected` marks the six
-// Rent/Electricity fixes described above.
-// ═══════════════════════════════════════════════════════════════════════════════
 const ENTRIES = [
   {
     "rowNum": 2,
@@ -6902,12 +6831,11 @@ const ENTRIES = [
   }
 ];
 
-// --- args ------------------------------------------------------------------
 const args = process.argv.slice(2);
 const arg = (name) => args.find((a) => a.startsWith(`--${name}=`))?.split("=")[1];
 const APPLY = args.includes("--apply");
 const DUMP_JSON = args.includes("--dump-json");
-const INCLUDE_PAYABLE_CATS = args.includes("--include-payable-categories"); // kept for backward compatibility
+const INCLUDE_PAYABLE_CATS = args.includes("--include-payable-categories");
 const NO_BACKEND_CASH = args.includes("--no-backend-cash");
 const BRANCH = arg("branch") || null;
 
@@ -6915,7 +6843,6 @@ const IMPORT_IDENTITY = { name: "Bulk Import", email: "import@system", branch: "
 const inr = (n) => "Rs " + Number(n).toLocaleString("en-IN", { maximumFractionDigits: 2 });
 const r2 = (n) => Math.round((Number(n) || 0) * 100) / 100;
 
-// Delhi Backend cash came out of a physically separate float — see the header note.
 function resolveFurtherMode(e) {
   if (e.method === "cash" && e.place === "Delhi Backend" && !NO_BACKEND_CASH) {
     return "Cash ( backend )";
@@ -6954,7 +6881,7 @@ function validate() {
 }
 
 async function run() {
-  const skippedPayableCats = []; // payable-backed entries are no longer filtered out
+  const skippedPayableCats = [];
 
   console.log("=".repeat(92));
   console.log(APPLY ? "MODE: APPLY  <- will write to the database" : "MODE: DRY RUN  <- nothing will be written");
@@ -7009,7 +6936,6 @@ async function run() {
   const AccountPeriod = mongoose.models.AccountPeriod || mongoose.model("AccountPeriod", new mongoose.Schema({}, { strict: false, collection: "accountperiods" }));
   const Transactions = mongoose.models.Transactions || mongoose.model("Transactions", new mongoose.Schema({}, { strict: false, collection: "transactions" }));
 
-  // --- period lock, reimplemented (periodLock.js imports @/-aliased modules) -----------------
   const isOpeningSeed = (p) => new Date(p.periodStart).getTime() === new Date(p.periodEnd).getTime();
   async function closedPeriodsCovering(account, date) {
     const rows = await AccountPeriod.find({
@@ -7086,8 +7012,6 @@ async function run() {
         branch: e.branch,
         date: new Date(e.date),
         remarks: e.remarks,
-        // The sheet has no payee column; Remarks is the description of what was bought, which
-        // is what existing manual entries in this CRM put in expenseGiver.name. See header.
         expenseGiver: { type: "MANUAL", name: e.remarks },
         receipts: [],
         furtherMode,

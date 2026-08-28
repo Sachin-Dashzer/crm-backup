@@ -20,9 +20,6 @@ export default function MultiSelect({
     if (!triggerRef.current) return;
     const rect = triggerRef.current.getBoundingClientRect();
     const viewportHeight = window.innerHeight;
-    // Estimate: options, plus the search box (~52) and the select-all header (~34).
-    // Deliberately keyed on the FULL option count, not the filtered one, so the dropdown
-    // doesn't re-anchor itself while the user is typing.
     const dropdownHeight = Math.min(options.length * 40 + 90, 346);
     const spaceBelow = viewportHeight - rect.bottom;
     const openUpward = spaceBelow < dropdownHeight && rect.top > dropdownHeight;
@@ -51,10 +48,6 @@ export default function MultiSelect({
         setOpen(false);
       }
     };
-    // Capture phase is required: the dropdown is positioned `fixed`, so it has to close when
-    // any ancestor container scrolls out from under it, and those events don't bubble. But
-    // capture also delivers scrolls from the dropdown's OWN option list — which made reaching
-    // an option below the fold close the dropdown instead. Ignore those.
     const closeOnScroll = (e) => {
       if (dropdownRef.current?.contains(e.target)) return;
       setOpen(false);
@@ -73,14 +66,10 @@ export default function MultiSelect({
     };
   }, [open]);
 
-  // A stale search term must not survive into the next open.
   useEffect(() => {
     if (!open) setSearch("");
   }, [open]);
 
-  // Filtering only narrows what is VISIBLE. `values` is never touched here, so a selected
-  // option that the current search hides stays selected — the count and the committed
-  // filter are unaffected by what happens to be typed in this box.
   const visibleOptions = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return options;
@@ -102,7 +91,6 @@ export default function MultiSelect({
 
   return (
     <div ref={triggerRef} className={`relative ${className}`}>
-      {/* Trigger button */}
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
@@ -130,14 +118,12 @@ export default function MultiSelect({
         </div>
       </button>
 
-      {/* Dropdown — fixed positioned to escape overflow:hidden/auto parents */}
       {open && (
         <div
           ref={dropdownRef}
           style={dropdownStyle}
           className="bg-white border border-gray-200 rounded-xl shadow-2xl overflow-hidden"
         >
-          {/* Search — sticky above the scrolling list, same pattern as SearchableSelect */}
           <div className="p-2 border-b border-gray-200 bg-white">
             <div className="relative">
               <Search className="w-3.5 h-3.5 text-gray-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -153,13 +139,9 @@ export default function MultiSelect({
             </div>
           </div>
 
-          {/* Header */}
           <div className="flex items-center justify-between px-3 py-1.5 border-b border-gray-100 bg-gray-50">
             <button
               type="button"
-              // Scoped to the visible list and merged with what's already chosen, so
-              // "Select all" under an active search adds those matches without discarding
-              // selections the search happens to be hiding.
               onClick={() =>
                 onChange([...new Set([...values, ...visibleOptions.map((o) => o.value)])])
               }
@@ -178,7 +160,6 @@ export default function MultiSelect({
             )}
           </div>
 
-          {/* Options list */}
           <div className="max-h-64 overflow-y-auto">
             {options.length === 0 ? (
               <p className="px-3 py-4 text-xs text-gray-400 text-center">No options available</p>

@@ -3,19 +3,6 @@
 import { useEffect, useRef, useState } from "react";
 import SearchableSelect from "@/components/SearchableSelect";
 
-// Shared "someone else physically handled the cash" fields for both directions:
-//   RECEIVED_BY (revenue, method "paid_to_external") — who collected the sale for us
-//   PAID_BY     (expense, method "paid_by_other")    — who covered the cost for us
-// Renders as ONE grid cell spanning both columns — drop it directly inside the existing
-// `grid grid-cols-1 md:grid-cols-2 gap-4` container, right after the Payment Method field,
-// only when that field's value is "paid_to_external" / "paid_by_other".
-//
-// `value` shape: { name, method, partyKind, partyRefId }. partyKind defaults to MANUAL
-// (typed name, no backing record) — the picker links to an existing Vendor/Employee/
-// Patient instead when one of those is selected, mirroring expenseGiver's type/refId
-// convention. The parent submits this straight through as `externalParty` in the
-// create-transaction payload.
-
 const METHOD_OPTIONS = [
   { value: "cash", label: "Cash" },
   { value: "upi", label: "UPI" },
@@ -66,7 +53,6 @@ export default function ExternalPartyFields({ direction, value, onChange }) {
         setOptions(data[OPTIONS_KEY[kind]] || data.data || []);
       }
     } catch {
-      /* search failures are non-fatal — manual entry always still works */
     } finally {
       setSearching(false);
     }
@@ -75,7 +61,6 @@ export default function ExternalPartyFields({ direction, value, onChange }) {
   useEffect(() => {
     setOptions([]);
     runSearch(partyKind, "");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [partyKind]);
 
   const handleSearch = (term) => {

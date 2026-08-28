@@ -108,13 +108,11 @@ export default function HRReportsPage() {
 
       <main className="flex-1 overflow-auto">
         <div className="p-6 lg:p-8">
-          {/* Header */}
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-gray-900">Reports</h1>
             <p className="text-gray-600 mt-1">Download HR reports in CSV format</p>
           </div>
 
-          {/* Date Filters */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-8">
             <h2 className="text-sm font-semibold text-gray-700 mb-4 flex items-center gap-2">
               <Clock className="w-4 h-4" /> Date Range Filter (optional)
@@ -149,7 +147,6 @@ export default function HRReportsPage() {
             )}
           </div>
 
-          {/* Reports Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {reports.map((report, idx) => (
               <div
@@ -202,7 +199,6 @@ export default function HRReportsPage() {
             ))}
           </div>
 
-          {/* Info */}
           <div className="mt-8 bg-violet-50 border border-violet-200 rounded-xl p-5">
             <div className="flex gap-3">
               <FileText className="h-5 w-5 text-violet-600 shrink-0 mt-0.5" />

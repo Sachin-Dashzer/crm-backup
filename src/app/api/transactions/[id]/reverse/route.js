@@ -13,17 +13,6 @@ import {
   unwindClinicShareCrystallisation,
 } from "@/lib/collabDerivation";
 
-// Creates a REVERSAL: a negative-amount transaction pointing at the row it reverses.
-//
-// The five guards, the negative-row write, and the patient rollback live in
-// src/lib/reverseTransaction.js — extracted so loan cancellation
-// (api/transactions/[id]/cancel-loan) can run the exact same reversal inside its own db
-// transaction, atomically alongside reversing a loan's settlement transfer, without a second
-// reversal implementation. This route is unchanged in behavior: same checks, same order, same
-// responses — only the guard+write body moved.
-//
-// This is the ONLY writer of negative amounts. The normal entry forms never expose them.
-
 const ALLOWED_ROLES = ["admin", "super-admin"];
 
 export async function POST(request, { params }) {
@@ -59,12 +48,6 @@ export async function POST(request, { params }) {
         dbSession,
       });
 
-      // Collab awareness: reversing one of a collab case's own collection transactions can drop
-      // a previously-completed case back under its package total. Crystallisation transactions
-      // themselves are excluded — those are unwound as a unit by unwindClinicShareCrystallisation,
-      // never individually. Runs in the SAME transaction as the reversal above, so either both
-      // commit or neither does — refusing to unwind (a real settlement already paid against the
-      // clinic payable) correctly refuses the collection reversal too.
       const caseId = reversalResult.original.collabRef?.caseId;
       const isCrystallisationRow = reversalResult.original.collabRef?.crystallisation === true;
       if (caseId && !isCrystallisationRow) {
@@ -112,9 +95,6 @@ export async function POST(request, { params }) {
   }
 }
 
-// Read-only companion to the POST above: what has already been reversed against this row.
-// The dialog needs it to show the remaining balance and default its amount correctly — without
-// it a partial reversal is invisible until the server rejects the second one.
 export async function GET(request, { params }) {
   try {
     const session = await getServerSession(authOptions);
@@ -141,8 +121,6 @@ export async function GET(request, { params }) {
     const alreadyReversed = Math.abs(reversals.reduce((s, r) => s + (r.amount || 0), 0));
     const remaining = Math.round(((original.amount || 0) - alreadyReversed) * 100) / 100;
 
-    // Why the action is unavailable, in the same words the POST would use, so the dialog can
-    // explain itself rather than presenting a form that is guaranteed to fail.
     let blockedReason = null;
     if (original.reversalOf) blockedReason = "This row is itself a reversal. Reverse the original instead.";
     else if ((original.amount || 0) <= 0) blockedReason = "Only a positive-amount transaction can be reversed.";
@@ -158,8 +136,6 @@ export async function GET(request, { params }) {
       isReversed: original.isReversed === true,
       reversals,
       blockedReason,
-      // When the original sits in a closed period the reversal must be dated today — the dialog
-      // says so up front rather than letting the user pick a date the POST will refuse.
       originalPeriodLocked: !!periodLock,
       periodLockReason: periodLock || null,
     });

@@ -15,18 +15,9 @@ import {
   Receipt,
 } from "lucide-react";
 
-// Returns today's date in IST (Asia/Kolkata) as YYYY-MM-DD. Previously this file used
-// `new Date().toISOString().split("T")[0]`, which is UTC — between 00:00 and 05:30 IST every
-// new transaction silently defaulted to YESTERDAY's date. Matches admin/collab/reception,
-// which already used the IST-correct version.
 const getTodayIST = () =>
   new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
 
-// useSession() can resolve synchronously on mount if the session is already
-// cached, so falling back to "Delhi" only when branch is falsy isn't enough —
-// a Collab account's "Collab" sentinel (not a real city) would slip through
-// and fail the Transaction model's branch enum. Treat it like "All" and
-// require an explicit pick.
 const resolveInitialBranch = (branch) =>
   branch && branch !== "All" && branch !== "Collab" ? branch : "Delhi";
 
@@ -38,14 +29,10 @@ export default function AllTransactionsPage() {
   const [loading, setLoading] = useState(false);
   const [fetchLoading, setFetchLoading] = useState(true);
   const [patients, setPatients] = useState([]);
-  // Stocks fetches the FULL patient list once and filters client-side, unlike the
-  // server-side debounced search admin/collab/reception use — a real, pre-existing
-  // difference (not accidental drift), preserved exactly rather than unified away.
   const picker = { options: patients, searching: false, onSearch: () => {}, addToCache: () => {} };
   const [medicines, setMedicines] = useState([]);
   const [vendors, setVendors] = useState([]);
 
-  // TRANSPLANT DATA
   const [transplantData, setTransplantData] = useState({
     patient: "",
     procedure: "Sapphire FUE",
@@ -63,7 +50,6 @@ export default function AllTransactionsPage() {
     externalParty: { name: "", method: "", partyKind: "MANUAL", partyRefId: "" },
   });
 
-  // SERVICE DATA - Now supports multiple services
   const [serviceData, setServiceData] = useState({
     patient: "",
     patientName: "",
@@ -91,7 +77,6 @@ export default function AllTransactionsPage() {
     },
   ]);
 
-  // MEDICINE DATA - Now supports multiple medicines
   const [medicineData, setMedicineData] = useState({
     patient: "",
     patientName: "",
@@ -120,7 +105,6 @@ export default function AllTransactionsPage() {
     },
   ]);
 
-  // EXPENSE DATA
   const [expenseData, setExpenseData] = useState({
     expenseCategory: "",
     expenseType: "",
@@ -145,7 +129,6 @@ export default function AllTransactionsPage() {
   const fetchData = async () => {
     setFetchLoading(true);
     try {
-      // Fetch patients
       try {
         const patientsRes = await fetch("/api/patients/get-patient");
         if (patientsRes.ok) {
@@ -156,7 +139,6 @@ export default function AllTransactionsPage() {
         console.error("Error fetching patients:", error);
       }
 
-      // Fetch medicines (stocks)
       try {
         const medicinesRes = await fetch("/api/stocks/get");
         if (medicinesRes.ok) {
@@ -168,7 +150,6 @@ export default function AllTransactionsPage() {
         console.error("Error fetching medicines:", error);
       }
 
-      // Fetch vendors
       try {
         const vendorsRes = await fetch("/api/vendors/get");
         if (vendorsRes.ok) {
@@ -185,7 +166,6 @@ export default function AllTransactionsPage() {
     }
   };
 
-  // TRANSPLANT HANDLERS
 
   const handleSaveTransplant = async () => {
     if (!transplantData.patient) {
@@ -255,7 +235,6 @@ export default function AllTransactionsPage() {
     }
   };
 
-  // SERVICE HANDLERS
   const handleSaveService = async () => {
     if (!serviceData.isWalkIn && !serviceData.patient) {
       alert("Please select a patient");
@@ -338,7 +317,6 @@ export default function AllTransactionsPage() {
     }
   };
 
-  // MEDICINE HANDLERS
   const handleSaveMedicine = async () => {
     if (!medicineData.isWalkIn && !medicineData.patient) {
       alert("Please select a patient");
@@ -425,7 +403,6 @@ export default function AllTransactionsPage() {
     }
   };
 
-  // EXPENSE HANDLERS
   const handleSaveExpense = async () => {
     if (!expenseData.expenseCategory) {
       alert("Please select expense category");
@@ -593,7 +570,6 @@ export default function AllTransactionsPage() {
                     Medicine Sale
                   </div>
                 </button>
-                {/* {session?.user?.role === "admin" && ( */}
                 <button
                   onClick={() => setActiveTab("expense")}
                   className={`px-6 py-3 font-medium border-b-2 transition-colors ${
@@ -607,11 +583,9 @@ export default function AllTransactionsPage() {
                     Expense
                   </div>
                 </button>
-                {/* )} */}
               </div>
             </div>
 
-            {/* TRANSPLANT TAB - Keep existing code */}
             {activeTab === "transplant" && (
               <RevenueSection
                 category="TRANSPLANT"
@@ -626,7 +600,6 @@ export default function AllTransactionsPage() {
               />
             )}
 
-            {/* SERVICE TAB - UPDATED WITH MULTIPLE ITEMS */}
             {activeTab === "service" && (
               <RevenueSection
                 category="SERVICE"
@@ -647,7 +620,6 @@ export default function AllTransactionsPage() {
               />
             )}
 
-            {/* MEDICINE TAB - UPDATED WITH MULTIPLE ITEMS */}
             {activeTab === "medicine" && (
               <RevenueSection
                 category="MEDICINE"
@@ -669,7 +641,6 @@ export default function AllTransactionsPage() {
               />
             )}
 
-            {/* EXPENSE TAB */}
             {activeTab === "expense" && (
               <DirectExpenseSection
                 data={expenseData}

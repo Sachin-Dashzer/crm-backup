@@ -1,18 +1,3 @@
-// src/app/api/owner/conversion/route.js
-//
-// Conversion Intelligence: Patient.ops.status distribution (the real funnel) + Leads.tag source
-// breakdown. No callby dependency — everything here is our own DB. Deliberately excludes
-// "CONSULTED" from ops.status enum: the Patient pre-save hook (src/models/Patient.js) never
-// actually assigns it — every branch of that hook's if/else chain resolves to one of NEW /
-// NOT_VISITED / NOT_CONVERTED / BOOKING_DONE / SURGERY_BOOKED / CLOSED — so it would always
-// render as a permanent zero row.
-//
-// No "Best Contact Time Heatmap" here — that would need hour-of-day connect-rate data, which
-// doesn't exist anywhere in this system (not in Patient/Leads, not in callby's current
-// endpoints). Faking it was explicitly ruled out.
-//
-// Leads has no branch field (see src/app/api/owner/marketing-summary/route.js's identical
-// note) — the source breakdown is date-scoped but not branch-scoped, and the response says so.
 
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";

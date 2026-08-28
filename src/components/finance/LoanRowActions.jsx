@@ -6,14 +6,8 @@ import { ArrowRightLeft, Ban, CheckCircle2, Loader2 } from "lucide-react";
 import { ReversedBadge, ReversalBadge } from "./StatusBadges";
 import LockedBadge from "./LockedBadge";
 
-// Row actions for the Assets page's Loan Accounts leaf table (D5/D6). A loan-financing
-// transaction row can't decide its own actions from the ledger fields alone — whether it's
-// fully settled requires summing its AccountTransfer settlements, which the generic
-// close-book/ledger row shape doesn't carry — so this fetches that one row's settlement status
-// via the same probe LoanSettlementModal/CancelLoanModal use (GET .../cancel-loan), bounded by
-// the same page size (<=50) every other per-row lock check in this codebase already accepts.
 export default function LoanRowActions({ row, onSettle, onCancel }) {
-  const [status, setStatus] = useState(null); // { totalSettled, remaining } | null while loading
+  const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -30,17 +24,11 @@ export default function LoanRowActions({ row, onSettle, onCancel }) {
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [row._id]);
 
-  // A reversal row (negative amount, points at the original) or an original that has already
-  // been fully reversed gets a badge instead of Settle/Cancel — you can't settle or re-cancel a
-  // loan that's already been undone.
   if (row.reversalOf) return <ReversalBadge reason={row.reversalReason} />;
   if (row.isReversed) return <ReversedBadge />;
   if (row.lockReason) return <LockedBadge reason={row.lockReason} />;
-  // D5 — an unapproved row has no business being settled yet; the approval workflow, not the
-  // ledger, decides when it's real money.
   if (row.approvalStatus && row.approvalStatus !== "APPROVED") return null;
 
   if (loading) {

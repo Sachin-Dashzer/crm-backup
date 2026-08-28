@@ -16,10 +16,6 @@ const blankItem = (kind) =>
 
 const rateField = (kind) => (kind === "service" ? "perSessionCost" : "perUnitCost");
 
-// Repeating line-item table for SERVICE (procedure x quantity x per-session cost) and
-// MEDICINE (medicine search x quantity x per-unit cost) sales. Previously duplicated as a
-// full add/remove/update + <table> block per panel — one for service, one for medicine,
-// times every role. This owns both the row logic and the markup; `kind` picks which.
 export default function LineItemsEditor({ kind, items, onChange, medicines = [] }) {
   const rf = rateField(kind);
 

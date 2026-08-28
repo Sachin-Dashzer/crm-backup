@@ -25,7 +25,6 @@ import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
 import LogoutButton from "../LogoutButton";
 
-/* ── Nav item ── */
 function NavItem({ label, href, icon: Icon, active, onClick }) {
   return (
     <Link href={href} onClick={onClick} className="block">
@@ -52,7 +51,6 @@ function NavItem({ label, href, icon: Icon, active, onClick }) {
   );
 }
 
-/* ── Section label ── */
 function NavSection({ title, children }) {
   return (
     <div className="mb-1">
@@ -84,7 +82,6 @@ export default function SuperAdminSidebar() {
 
   return (
     <>
-      {/* Mobile toggle */}
       <button
         onClick={() => setOpen(true)}
         className="lg:hidden fixed top-4 left-4 z-40 p-2 bg-white rounded-lg shadow-lg hover:shadow-xl transition-shadow"
@@ -92,7 +89,6 @@ export default function SuperAdminSidebar() {
         <Menu className="w-5 h-5 text-gray-700" />
       </button>
 
-      {/* Mobile overlay */}
       {open && (
         <div
           className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 lg:hidden"
@@ -100,13 +96,11 @@ export default function SuperAdminSidebar() {
         />
       )}
 
-      {/* Sidebar */}
       <aside
         className={`fixed left-0 top-0 lg:sticky w-64 h-screen bg-white border-r border-gray-200 shadow-sm flex flex-col z-50 transition-transform duration-300 ${
           open ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         }`}
       >
-        {/* ── Brand ── */}
         <div className="px-5 py-5 flex items-center justify-between shrink-0">
           <Link
             href="/super-admin/dashboard"
@@ -135,7 +129,6 @@ export default function SuperAdminSidebar() {
 
         <div className="mx-4 border-t border-gray-100" />
 
-        {/* ── Navigation ── */}
         <nav className="flex-1 overflow-y-auto px-3 pb-4 mt-4 scrollbar-hide">
           <NavSection title="">
             <NavItem
@@ -188,7 +181,7 @@ export default function SuperAdminSidebar() {
             />
           </NavSection>
 
-         
+
           <NavSection title="Financial">
             <NavItem
               label="Transactions"
@@ -231,17 +224,9 @@ export default function SuperAdminSidebar() {
               active={isActive("/super-admin/manage-users")}
               onClick={close}
             />
-            {/* <NavItem
-              label="Deleted Log"
-              href="/super-admin/deleted-data"
-              icon={Archive}
-              active={isActive("/super-admin/deleted-data")}
-              onClick={close}
-            /> */}
           </NavSection>
         </nav>
 
-        {/* ── User profile + Logout ── */}
         <div className="shrink-0 border-t border-gray-100 p-4 space-y-3">
           <div className="flex items-center gap-3 px-1">
             <div className="w-9 h-9 rounded-full bg-linear-to-br from-amber-500 via-orange-500 to-red-500 flex items-center justify-center text-white font-bold text-sm shrink-0 shadow-md">

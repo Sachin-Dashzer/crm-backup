@@ -1,12 +1,3 @@
-// scripts/diagnose-duplicate-employees.mjs
-//
-// READ-ONLY — makes no changes. Pulls up every piece of activity tied to each of the 6
-// employee _ids in the 3 duplicate-name pairs that scripts/employee-salary-payables-import.mjs
-// keeps reporting as "ambiguous", so the decision of which one to KEEP isn't a guess — it's
-// based on which one actually has real history (payables, transactions, join date).
-//
-// Usage:
-//   node scripts/diagnose-duplicate-employees.mjs
 
 import mongoose from "mongoose";
 import fs from "fs";

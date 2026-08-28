@@ -19,8 +19,6 @@ async function loadOr404(id) {
   return { borrowing };
 }
 
-// Single read — used by the document-level "Add Tranche"/"Record Repayment" UI to show the
-// row's own detail without duplicating field names.
 export async function GET(req, { params }) {
   try {
     const session = await getServerSession(authOptions);
@@ -39,13 +37,6 @@ export async function GET(req, { params }) {
   }
 }
 
-// Re-sums every non-cancelled IN row against a loan and writes that figure onto the Payable's
-// totalAmount — the single place that keeps "what's raised" in step with "what IN rows actually
-// exist", used by cancel/reinstate/PUT below so none of them can drift from the others.
-//
-// MUST run inside the caller's session, and MUST run AFTER the row whose isCancelled/amount just
-// changed has itself been saved on that same session — this reads the Borrowing collection
-// fresh, so it only sees a row's new state once that row's own write has landed.
 async function resyncPayableTotal({ payableId, session, performedBy, note }) {
   const payable = await Payable.findById(payableId).session(session);
   if (!payable) return null;
@@ -67,7 +58,6 @@ async function resyncPayableTotal({ payableId, session, performedBy, note }) {
     performedAt: new Date(),
   });
   payable.totalAmount = newTotal;
-  // Nothing left owed on this loan at all — close the liability out too.
   if (newTotal <= 0 && !payable.isCancelled) {
     payable.isCancelled = true;
     payable.log.push({
@@ -79,7 +69,6 @@ async function resyncPayableTotal({ payableId, session, performedBy, note }) {
       performedAt: new Date(),
     });
   } else if (newTotal > 0 && payable.isCancelled) {
-    // A row was reinstated / re-added onto a loan that had been auto-closed — reopen it.
     payable.isCancelled = false;
     payable.log.push({
       action: "Cancelled",
@@ -94,20 +83,6 @@ async function resyncPayableTotal({ payableId, session, performedBy, note }) {
   return payable;
 }
 
-// Cancel / reinstate / settle / unsettle — never hard-deleted (see DELETE below for when a
-// genuine removal is safe), same convention as AccountTransfer/SuspenseEntry. A cancelled row
-// stops counting toward both the account balance (accountBalances.js) and the linked Payable's
-// paid/pending (payableAggregation.js).
-//
-// Cancelling an IN row is refused while any OUT row exists against the same Payable — that
-// money has already been (at least partly) repaid against the liability this IN created, and
-// erasing the IN out from under it would strand those repayments with nothing to point at.
-//
-// §4.3 — settle/unsettle link this row (the loan's own creating IN row only — the same one the
-// aggregation's settlesReceivableId $lookup filters on, see receivableAggregation.js) to an
-// UNRELATED, pre-existing Receivable for the same party, so this borrowing nets against what
-// that party separately owes us. Never mutates the target Receivable's totalAmount — only its
-// live received/pending aggregation changes, the moment this field is set.
 export async function PATCH(req, { params }) {
   try {
     const session = await getServerSession(authOptions);
@@ -174,7 +149,6 @@ export async function PATCH(req, { params }) {
         return NextResponse.json({ message: "Settlement unlinked", borrowing });
       }
 
-      // action === "settle"
       if (borrowing.settlesReceivableId) {
         return NextResponse.json(
           { error: "Already settling a receivable — unsettle it first" },
@@ -192,8 +166,6 @@ export async function PATCH(req, { params }) {
       if (target.isCancelled) {
         return NextResponse.json({ error: "This receivable has been cancelled" }, { status: 400 });
       }
-      // §4.3 — same-party restriction: cross-party settlement is almost always a data-entry
-      // error. A party with no refId (kind "OTHER") can never be matched this way.
       if (!borrowing.party.refId || !target.payer?.refId || String(borrowing.party.refId) !== String(target.payer.refId)) {
         return NextResponse.json(
           { error: "This receivable belongs to a different party than this borrowing — settlement is restricted to the same party" },
@@ -265,9 +237,6 @@ export async function PATCH(req, { params }) {
           performedBy,
           performedAt: new Date(),
         });
-        // Saved BEFORE the resync below — resyncPayableTotal re-aggregates the Borrowing
-        // collection by isCancelled, on this same session, so it must see this row's own new
-        // isCancelled value or it will count (or fail to count) itself.
         await borrowing.save({ session: dbSession });
 
         if (borrowing.direction === "IN") {
@@ -293,13 +262,6 @@ export async function PATCH(req, { params }) {
   }
 }
 
-// Edits the row's own fields — amount, date, account, branch, reference, remarks, receipts.
-// direction and payableId are structural and never change here (moving a row between loans, or
-// flipping IN/OUT, would invalidate every guard above — create a new row instead).
-//
-// An amount change on an IN row re-syncs the Payable's totalAmount to match (same helper the
-// cancel/reinstate path uses); on an OUT row it re-checks the new amount against pending (which
-// is otherwise always computed live, never stored) unless allowOverpayment is passed.
 export async function PUT(req, { params }) {
   try {
     const session = await getServerSession(authOptions);
@@ -386,8 +348,6 @@ export async function PUT(req, { params }) {
           });
         }
 
-        // Saved BEFORE the resync below — same reason as PATCH above: resyncPayableTotal
-        // re-aggregates this row's own new amount off the collection, on this same session.
         await borrowing.save({ session: dbSession });
 
         if (amountChanged && borrowing.direction === "IN") {
@@ -410,12 +370,6 @@ export async function PUT(req, { params }) {
   }
 }
 
-// Hard delete — refused unless the row is ALREADY cancelled. Cancelling first means every
-// financial side effect (the linked Payable's totalAmount, the account balance) has already been
-// unwound by the guarded PATCH above, so removing the record afterward has no further effect on
-// anything computed from it. This is stricter than Payable's own DELETE (which only checks that
-// nothing has been paid yet) because a Borrowing row's IN side is folded directly into the
-// Payable's stored totalAmount rather than only ever being read live.
 export async function DELETE(req, { params }) {
   try {
     const session = await getServerSession(authOptions);

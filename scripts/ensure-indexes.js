@@ -1,22 +1,3 @@
-/**
- * ensure-indexes.js — create the indexes the admin panel's hot queries need.
- *
- *   node scripts/ensure-indexes.js            # dry run: report what's missing, change nothing
- *   node scripts/ensure-indexes.js --apply    # actually create them
- *
- * Run this ONCE against each environment (and again whenever this file gains an entry). It is
- * deliberately a standalone script rather than schema-level `schema.index(...)` declarations so
- * index builds never happen during a request — on Vercel a cold start would otherwise issue
- * createIndexes on the critical path.
- *
- * Everything here is created with `background: true`, so it does not block reads or writes.
- * Re-running is safe: MongoDB ignores a createIndex for an index that already exists identically.
- *
- * WHY THESE: derived from an audit of the routes behind /admin. Stock, Vendor and Audit declared
- * NO indexes at all despite being fully scanned on every call; Payable/Receivable had no
- * `createdAt` index despite every date filter keying on it; and the receivables aggregation joins
- * Transactions on an allocation field that was never indexed.
- */
 
 import mongoose from "mongoose";
 import fs from "fs";
@@ -38,8 +19,6 @@ function readMongoUri() {
 
 const APPLY = process.argv.slice(2).includes("--apply");
 
-// collection → [{ keys, options, why }]
-// Collection names are the real Mongo names (Mongoose lowercases + pluralises the model name).
 const INDEXES = {
   stocks: [
     { keys: { name: 1 }, options: { name: "name_1" },

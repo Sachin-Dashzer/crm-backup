@@ -1,15 +1,10 @@
-/**
- * Utility functions for transaction management
- */
 import { getExpenseTypes } from '@/constants/expenseCategories';
 
-// Format currency
 export const formatCurrency = (amount) => {
   if (!amount && amount !== 0) return '₹0';
   return `₹${Number(amount).toLocaleString('en-IN')}`;
 };
 
-// Format date
 export const formatDate = (date) => {
   if (!date) return '';
   return new Date(date).toLocaleDateString('en-IN', {
@@ -19,7 +14,6 @@ export const formatDate = (date) => {
   });
 };
 
-// Format datetime
 export const formatDateTime = (date) => {
   if (!date) return '';
   return new Date(date).toLocaleString('en-IN', {
@@ -31,7 +25,6 @@ export const formatDateTime = (date) => {
   });
 };
 
-// Get transaction category display name
 export const getTransactionCategoryName = (category) => {
   const names = {
     TRANSPLANT: 'Hair Transplant',
@@ -42,7 +35,6 @@ export const getTransactionCategoryName = (category) => {
   return names[category] || category;
 };
 
-// Get transaction category color
 export const getTransactionCategoryColor = (category) => {
   const colors = {
     TRANSPLANT: 'bg-blue-100 text-blue-800',
@@ -53,7 +45,6 @@ export const getTransactionCategoryColor = (category) => {
   return colors[category] || 'bg-gray-100 text-gray-800';
 };
 
-// Get payment method display name
 export const getPaymentMethodName = (method) => {
   const names = {
     upi: 'UPI',
@@ -70,7 +61,6 @@ export const getPaymentMethodName = (method) => {
   return names[method] || method;
 };
 
-// Generate invoice number
 export const generateInvoiceNumber = (category, branch, count) => {
   const prefixes = {
     TRANSPLANT: 'TR',
@@ -78,16 +68,15 @@ export const generateInvoiceNumber = (category, branch, count) => {
     MEDICINE: 'MED',
     EXPENSE: 'EXP',
   };
-  
+
   const prefix = prefixes[category] || 'TXN';
   const branchCode = branch?.substring(0, 3).toUpperCase() || 'XXX';
   const year = new Date().getFullYear();
   const number = String(count).padStart(4, '0');
-  
+
   return `${prefix}-${branchCode}-${year}-${number}`;
 };
 
-// Validate transplant transaction data
 export const validateTransplantTransaction = (data) => {
   const errors = {};
 
@@ -117,7 +106,6 @@ export const validateTransplantTransaction = (data) => {
   };
 };
 
-// Validate service transaction data
 export const validateServiceTransaction = (data) => {
   const errors = {};
 
@@ -147,7 +135,6 @@ export const validateServiceTransaction = (data) => {
   };
 };
 
-// Validate medicine transaction data
 export const validateMedicineTransaction = (data) => {
   const errors = {};
 
@@ -173,7 +160,6 @@ export const validateMedicineTransaction = (data) => {
   };
 };
 
-// Validate expense transaction data
 export const validateExpenseTransaction = (data) => {
   const errors = {};
 
@@ -209,27 +195,23 @@ export const validateExpenseTransaction = (data) => {
   };
 };
 
-// Calculate total amount for service transaction
 export const calculateServiceTotal = (quantity, perSessionCost, discount = 0) => {
   if (!quantity || !perSessionCost) return 0;
   return (quantity * perSessionCost) - discount;
 };
 
-// Calculate total amount for medicine transaction
 export const calculateMedicineTotal = (quantity, perUnitCost, discount = 0) => {
   if (!quantity || !perUnitCost) return 0;
   return (quantity * perUnitCost) - discount;
 };
 
-// Export transaction data to CSV
 export const exportTransactionsToCSV = (transactions, category) => {
   if (!transactions || transactions.length === 0) {
     return '';
   }
 
   let headers = ['Date', 'Branch', 'Amount', 'Discount', 'Payment Method', 'Transaction ID', 'Remarks'];
-  
-  // Add category-specific headers
+
   switch (category) {
     case 'TRANSPLANT':
       headers = ['Date', 'Patient Name', 'Phone', 'Procedure', 'Payment Type', 'Amount', 'Discount', 'Method', 'Branch', ...headers.slice(7)];
@@ -249,7 +231,7 @@ export const exportTransactionsToCSV = (transactions, category) => {
 
   transactions.forEach(txn => {
     let row = [];
-    
+
     switch (category) {
       case 'TRANSPLANT':
         row = [
@@ -319,16 +301,15 @@ export const exportTransactionsToCSV = (transactions, category) => {
   return csvRows.join('\n');
 };
 
-// Download CSV file
 export const downloadCSV = (csvContent, filename) => {
   const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
   const link = document.createElement('a');
   const url = URL.createObjectURL(blob);
-  
+
   link.setAttribute('href', url);
   link.setAttribute('download', filename);
   link.style.visibility = 'hidden';
-  
+
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);

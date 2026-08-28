@@ -26,9 +26,6 @@ const employeeSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
-  // Only applies to newly-saved documents — every Employee that existed before this field was
-  // added has no `branch` in the database and needs a one-off backfill (see
-  // scripts/backfill-employee-branch.mjs) rather than relying on this default at read time.
   branch: {
     type: String,
     enum: ALL_BRANCHES,
@@ -37,24 +34,16 @@ const employeeSchema = new mongoose.Schema({
   patient: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: "Patient"  }],
-  // Current base-pay info, used to pre-fill the expense form's Salary section.
-  // NOT where individual salary payments/history live — see Payable + Transactions.
   salaryStructure: {
     baseSalary: { type: Number, default: 0, min: 0 },
     salaryType: { type: String, enum: ["Monthly", "Daily", "Hourly"], default: "Monthly" },
     effectiveFrom: { type: Date, default: Date.now }
   },
-  // Usual per-patient incentive amount, used to pre-fill the Incentive
-  // sub-tab's amount field — overridable per entry.
   incentiveRate: { type: Number, default: 0, min: 0 }
 }, {
   timestamps: true
 });
 
-// No indexes existed on this collection at all until now — role/branch/isactive is the exact
-// filter shape src/app/api/sales/dashboard/route.js's getAgentPerformance() and the Owner
-// staff-360 route use (e.g. Employee.find({ role: "Agent", isactive: true, branch })), and every
-// such query was a full collection scan.
 employeeSchema.index({ role: 1, isactive: 1, branch: 1 });
 employeeSchema.index({ branch: 1 });
 

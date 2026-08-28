@@ -9,12 +9,6 @@ import { buildCashFlowGroupedStages, buildCashFlowLeafMatch } from "@/lib/cashFl
 
 const ALLOWED_ROLES = ["admin", "super-admin"];
 
-// Cash-basis Receipts drill-down (mirrors /api/payables/grouped's shape so DrillDownTable can
-// reuse its existing "grouped" mode unmodified — see src/lib/cashFlowAggregation.js for the
-// inclusion rule and the head/sub bucketing this route is a thin wrapper over):
-//   level=1 -> one row per Receipt Head (Transplant/Services/Medicine/Receivable Settlement/Other)
-//   level=2 -> one row per Account (furtherMode) or Receipt Mode (receiptMode), via ?groupBy=
-//   level=3 -> the actual transactions for a selected head (+ sub), with a running balance
 export async function GET(request) {
   try {
     const session = await getServerSession(authOptions);
@@ -27,8 +21,6 @@ export async function GET(request) {
 
     const { searchParams } = new URL(request.url);
     const level = Math.min(3, Math.max(1, parseInt(searchParams.get("level") || "1")));
-    // Param names match the shared DrillDownTable "grouped" fetch pattern (category/subType),
-    // the same names /api/payables/grouped and /api/receivables/grouped already use.
     const head = searchParams.get("category") || "";
     const sub = searchParams.get("subType") || "";
     const groupBy = searchParams.get("groupBy") === "mode" ? "mode" : "account";
@@ -86,8 +78,6 @@ export async function GET(request) {
       Transactions.countDocuments(match),
     ]);
 
-    // Same lock-badge treatment the payables/receivables leaf already gets — bounded by
-    // `limit` (<=200), so one lock check per row per page is cheap.
     const rowsWithLock = await Promise.all(
       rows.map(async (r) => ({
         ...r,

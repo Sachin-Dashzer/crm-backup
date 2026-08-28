@@ -1,74 +1,17 @@
-// scripts/delete-manual-vendor-payments.mjs
-//
-// Deletes the 109 plain "Regular"/MANUAL expense transactions Dashzer listed — the vendor
-// payments staff entered by hand before they were linked to a Payable, superseded by
-// scripts/vendor-bill-payments-import.mjs's properly payableId-linked versions.
-//
-// WHY THE MATCH CRITERIA CHANGED: the first version of this script matched on every given field,
-// including vendor (via expenseGiver.vendorId) and the exact "Paid To" text — and matched ZERO
-// of 108 groups. Root cause: every one of these rows has Payee Type "MANUAL", and per the
-// Transactions model, expenseGiver.vendorId is only ever set when expenseGiver.type is "VENDOR"
-// — for a MANUAL entry the vendor exists only as free text in expenseGiver.name, never as a
-// vendorId reference. Querying by vendorId against a MANUAL-type row can never match, which is
-// exactly why it zeroed out uniformly rather than partially.
-//
-// So, per Dashzer's explicit instruction, matching now uses ONLY: date, amount, payment method,
-// and category — interpreted as Expense Category AND Expense Type together (both were called
-// "category" loosely; dropping Expense Type would make the match far too coarse — e.g. every
-// "Medicine Procurement" HDFC Skin payment on a given day would collide regardless of sub-type).
-// If that interpretation is wrong, expenseType is the one extra field this version checks beyond
-// the literal four named — everything else (branch, furtherMode, vendor, exact wording) is gone.
-//
-// THIS REMAINS NARROW, NOT "delete all expenses in this date range" — the uploaded
-// expenses_2026-04-01_to_2026-08-19.xlsx export covers 6,377 transactions company-wide; this
-// script only ever considers the 109 rows given.
-//
-// SAFETY, UNCHANGED FROM THE FIRST VERSION (these are not part of what got loosened):
-//   - Looser matching now makes real collisions between DIFFERENT rows in the candidate list
-//     possible (3 pairs of rows now share date+amount+method+category+type — e.g. two separate
-//     Rs 50,000 ICICI Medicine Procurement payments on 05 Jul, one meant for Shri Ji Pharma and
-//     one for Helpsure, indistinguishable once vendor is dropped from the match). Candidates are
-//     grouped by the full match signature, and the database must hold EXACTLY that many eligible
-//     matches for the group to be actioned — not more, not fewer. A count that doesn't match
-//     exactly is flagged and the whole group is skipped rather than guessed at. Since vendor is
-//     no longer a filter, "expenseGiver.name" and "vendorName" from the sheet are printed next to
-//     every match found, purely so you can eyeball that they look plausible before applying.
-//   - payableId set, or paymentId starting "BULK-", or remarks containing "[BULK-" — excluded
-//     from matches, same as before. This script will never touch a transaction already linked to
-//     a Payable, or anything created by any bulk-import script in this repo.
-//   - Period-lock and cascade-integrity checks, reimplemented against AccountPeriod/Payable/
-//     Receivable exactly as src/lib/periodLock.js and src/lib/cascadeIntegrity.js do (those files
-//     import Next.js path-aliased modules that don't resolve outside the app, so the logic is
-//     mirrored here rather than imported) — a transaction in a closed period, or one that would
-//     strand a settlement, is refused exactly as the real delete route refuses it.
-//   - A full backup of every matched document is written BEFORE any delete — the only way to
-//     restore one, since plain Transactions have no soft-delete and DeleteLog only records that a
-//     deletion happened, not the full document.
-//
-// Usage:
-//   node scripts/delete-manual-vendor-payments.mjs                        # dry run
-//   node scripts/delete-manual-vendor-payments.mjs --dump-json             # write candidates out, no DB
-//   node scripts/delete-manual-vendor-payments.mjs --apply                # delete
 
 import mongoose from "mongoose";
 import fs from "fs";
 
-// --- env -----------------------------------------------------------------
 for (const f of [".env.local", ".env"]) {
   if (fs.existsSync(f)) {
     try {
       process.loadEnvFile(f);
     } catch {
-      /* already loaded / unsupported — fall through to the MONGODB_URI check below */
     }
   }
 }
 const MONGODB_URI = process.env.MONGODB_URI;
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// THE CANDIDATES — same 109 rows as before. vendorName/paidTo/branch/furtherMode are kept in
-// each entry for DISPLAY ONLY now — see the header note on what actually filters a match.
-// ═══════════════════════════════════════════════════════════════════════════════
 const CANDIDATES = [
   {
     "rowNum": 1,
@@ -1380,7 +1323,6 @@ const CANDIDATES = [
   }
 ];
 
-// --- args ------------------------------------------------------------------
 const args = process.argv.slice(2);
 const APPLY = args.includes("--apply");
 const DUMP_JSON = args.includes("--dump-json");
@@ -1399,8 +1341,6 @@ if (!MONGODB_URI) {
   process.exit(1);
 }
 
-// Signature is ONLY date + amount + method + expense + expenseType now — see header note.
-// branch/furtherMode/vendorName/paidTo are carried on each entry for display, not matching.
 function signatureKey(e) {
   return [e.date, e.amount, e.method, e.expense, e.expenseType].join("||");
 }
@@ -1472,10 +1412,6 @@ async function run() {
     return null;
   }
 
-  // ---------------------------------------------------------------------------
-  // PASS 1 — match every group against the live database on date+amount+method+category+type
-  // only. No writes.
-  // ---------------------------------------------------------------------------
   console.log("Matching each row against live transactions (date + amount + method + category + type only)...\n");
 
   const okGroups = [];
@@ -1530,8 +1466,6 @@ async function run() {
     return;
   }
 
-  // Show what would be deleted, WITH the sheet's vendor/paidTo alongside the db's
-  // expenseGiver.name, so a mismatch between them is visible before anything is applied.
   console.log("\n--- MATCHED GROUPS (eligible) ---");
   for (const { rows, matches } of okGroups) {
     const s = rows[0];
@@ -1545,9 +1479,6 @@ async function run() {
     });
   }
 
-  // ---------------------------------------------------------------------------
-  // PASS 2 — period-lock and cascade checks.
-  // ---------------------------------------------------------------------------
   console.log("\n\nChecking period lock and cascade integrity on every match...");
   const deletable = [];
   const blocked = [];

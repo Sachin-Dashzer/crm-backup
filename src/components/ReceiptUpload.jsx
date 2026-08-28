@@ -6,9 +6,6 @@ import { FileText, Image as ImageIcon, Loader2, Trash2, Upload } from "lucide-re
 import { useToast } from "@/components/Toast";
 import { prepareFileForUpload, formatBytes } from "@/utils/compressImage";
 
-// Shared receipt upload for transaction forms (Transplant/Services/Medicine/Expense). Optional
-// everywhere — an array since a single payment can legitimately have more than one document.
-// `patientId` is omitted for expense transactions; /api/upload falls back to a non-patient folder.
 export default function ReceiptUpload({ receipts = [], onChange, section, patientId }) {
   const { data: authSession } = useSession();
   const toast = useToast();

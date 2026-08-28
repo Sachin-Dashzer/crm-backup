@@ -76,14 +76,12 @@ export default function CreateStockPage() {
   const userBranch = session?.user?.branch;
   const branchRestricted = !isAdmin && userBranch;
 
-  /* ── Live calculations ── */
   const mrp      = parseFloat(formData.mrp)         || 0;
   const buyPrice = parseFloat(formData.purchaseAmt) || 0;
   const sellPrice= parseFloat(formData.soldAmt)     || 0;
   const margin   = sellPrice - buyPrice;
   const marginPct= buyPrice > 0 ? ((margin / buyPrice) * 100).toFixed(1) : null;
 
-  /* ── Form completion ── */
   const required = ["name", "mrp", "purchaseAmt", "soldAmt"];
   const optional = ["location", "unit", "gstNo", "weight", "expiry"];
   const filledRequired = required.filter(k => formData[k]).length;
@@ -165,7 +163,6 @@ export default function CreateStockPage() {
 
       <main className="flex-1 flex flex-col min-w-0 overflow-auto">
 
-        {/* ── Sticky Header ── */}
         <div className="bg-white border-b border-gray-200 px-6 py-4 sticky top-0 z-10 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -186,7 +183,6 @@ export default function CreateStockPage() {
               </div>
             </div>
 
-            {/* Completion pill */}
             <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-full">
               <div className="w-20 h-1.5 bg-gray-200 rounded-full overflow-hidden">
                 <div className="h-full bg-linear-to-r from-emerald-500 to-teal-500 rounded-full transition-all duration-500"
@@ -197,15 +193,12 @@ export default function CreateStockPage() {
           </div>
         </div>
 
-        {/* ── Body ── */}
         <div className="flex-1 p-6">
           <form onSubmit={handleSubmit}>
             <div className="max-w-6xl mx-auto grid grid-cols-1 xl:grid-cols-3 gap-6">
 
-              {/* ── LEFT: Form ── */}
               <div className="xl:col-span-2 space-y-5">
 
-                {/* Section 1 — Identity */}
                 <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
                   <SectionHeader icon={Package} title="Product Identity" subtitle="Name and branch location" color="emerald" />
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -248,7 +241,6 @@ export default function CreateStockPage() {
                   </div>
                 </div>
 
-                {/* Section 2 — Pricing */}
                 <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
                   <SectionHeader icon={IndianRupee} title="Pricing" subtitle="MRP, cost price and selling price" color="indigo" />
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -266,7 +258,6 @@ export default function CreateStockPage() {
                     </div>
                   </div>
 
-                  {/* Margin strip */}
                   {(buyPrice > 0 || sellPrice > 0) && (
                     <div className={`mt-4 rounded-xl px-4 py-3 flex items-center justify-between ${
                       margin > 0 ? "bg-emerald-50 border border-emerald-100" :
@@ -297,11 +288,9 @@ export default function CreateStockPage() {
                   )}
                 </div>
 
-                {/* Section 3 — Physical Details */}
                 <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
                   <SectionHeader icon={Weight} title="Physical Details" subtitle="Unit, weight and tax info" color="violet" />
 
-                  {/* Unit pill selector */}
                   <div className="mb-4">
                     <label className={labelCls}>Unit</label>
                     <div className="flex flex-wrap gap-2">
@@ -348,7 +337,6 @@ export default function CreateStockPage() {
                   </div>
                 </div>
 
-                {/* Error */}
                 {error && (
                   <div className="flex items-center gap-2 px-4 py-3 bg-red-50 border border-red-100 rounded-xl text-sm text-red-600">
                     <AlertCircle className="w-4 h-4 shrink-0" />
@@ -356,7 +344,6 @@ export default function CreateStockPage() {
                   </div>
                 )}
 
-                {/* Actions */}
                 <div className="flex gap-3 pb-6">
                   <button type="submit" disabled={loading}
                     className="flex items-center gap-2 px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-xl shadow-sm disabled:opacity-50 transition-all">
@@ -376,11 +363,9 @@ export default function CreateStockPage() {
                 </div>
               </div>
 
-              {/* ── RIGHT: Live Preview ── */}
               <div className="xl:col-span-1">
                 <div className="sticky top-24 space-y-4">
 
-                  {/* Preview card */}
                   <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
                     <div className="h-1 bg-linear-to-r from-emerald-500 to-teal-500" />
                     <div className="p-5">
@@ -389,7 +374,6 @@ export default function CreateStockPage() {
                         <span className="text-xs font-bold text-gray-500 uppercase tracking-wide">Live Preview</span>
                       </div>
 
-                      {/* Product avatar */}
                       <div className="flex items-center gap-3 mb-4">
                         <div className="w-12 h-12 rounded-xl bg-linear-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white font-bold text-lg shadow-sm">
                           {formData.name ? formData.name.charAt(0).toUpperCase() : <Package className="w-6 h-6 opacity-60" />}
@@ -405,7 +389,6 @@ export default function CreateStockPage() {
                         </div>
                       </div>
 
-                      {/* Price grid */}
                       <div className="space-y-2.5">
                         {[
                           { label: "MRP",            value: mrp,      color: "text-indigo-600" },
@@ -436,7 +419,6 @@ export default function CreateStockPage() {
                         )}
                       </div>
 
-                      {/* Expiry warning */}
                       {formData.expiry && (
                         <div className={`mt-4 rounded-lg px-3 py-2 text-xs font-medium flex items-center gap-1.5 ${
                           isExpired      ? "bg-red-50 text-red-600 border border-red-100" :
@@ -452,7 +434,6 @@ export default function CreateStockPage() {
                     </div>
                   </div>
 
-                  {/* Checklist */}
                   <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
                     <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-3">Required Fields</p>
                     <div className="space-y-2">

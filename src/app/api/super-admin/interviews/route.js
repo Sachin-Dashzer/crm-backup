@@ -14,7 +14,7 @@ export async function GET(req) {
     await connectDB();
 
     const { searchParams } = new URL(req.url);
-    const source   = searchParams.get("source");   // "qr" | "direct" | null (all)
+    const source   = searchParams.get("source");
     const status   = searchParams.get("status");
     const from     = searchParams.get("from");
     const to       = searchParams.get("to");
@@ -48,7 +48,6 @@ export async function GET(req) {
 
       Interviewer.countDocuments(query),
 
-      // Stats for current filter (excluding pagination)
       Interviewer.aggregate([
         { $match: query },
         { $group: {

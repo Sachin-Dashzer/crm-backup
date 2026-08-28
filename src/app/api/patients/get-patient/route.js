@@ -9,10 +9,6 @@ import { resolveDateRange, toDateQuery } from "@/lib/dateHelpers";
 
 const split = (v) => (v || "").split(",").filter(Boolean);
 
-// Only the fields the list UI actually reads — the table cells and the CSV export in
-// src/components/PatientTable.jsx. Patient documents carry large nested sub-documents
-// (medical history, consultation forms, editor audit trails) that were being pulled over the
-// wire for every row and then thrown away. Add a field here if a column starts rendering "—".
 const LIST_PROJECTION = [
   "personal.name",
   "personal.phone",
@@ -44,14 +40,12 @@ const handler = async (req) => {
 
     const { searchParams } = new URL(req.url);
 
-    /* ── Pagination & Sort ── */
     const page    = Math.max(1, parseInt(searchParams.get("page"))  || 1);
     const limit   = Math.min(500, parseInt(searchParams.get("limit")) || 50);
     const skip    = (page - 1) * limit;
     const sortKey = searchParams.get("sortKey") || "personal.visitDate";
     const sortDir = searchParams.get("sortDir") === "asc" ? 1 : -1;
 
-    /* ── Filter params (all multi-value via comma-separated) ── */
     const search          = searchParams.get("search") || "";
     const statuses        = split(searchParams.get("status"));
     const branches        = split(searchParams.get("branch"));
@@ -66,11 +60,9 @@ const handler = async (req) => {
     const visited          = searchParams.get("visited")          === "true";
     const readyForSurgery  = searchParams.get("readyForSurgery")  === "true";
 
-    /* ── Build query ── */
     const query = {};
     const andClauses = [];
 
-    // Branch: session-level restriction takes priority
     const userBranch = session.user.branch;
     if (userBranch === "Collab") {
       const requested = branches.filter((b) => COLLAB_BRANCHES.includes(b));
@@ -84,17 +76,12 @@ const handler = async (req) => {
     if (statuses.length)   query["ops.status"] = statuses.length === 1 ? statuses[0] : { $in: statuses };
     if (readyForSurgery)   query["counselling.readyForSurgery"] = true;
 
-    // Visit date range. With no explicit dateFrom/dateTo this defaults to the current calendar
-    // month rather than scanning all history; `?all=1` opts out entirely (the UI's "All time").
-    // Boundaries are IST-correct — the previous inline `setHours` ran in server-local time, which
-    // is UTC on Vercel, so month/day edges were off by 5h30m.
     const dateRange = resolveDateRange(searchParams);
     const visitDateQuery = toDateQuery(dateRange);
     if (visitDateQuery) query["personal.visitDate"] = visitDateQuery;
 
     if (surgeryLocations.length) query["surgery.location"] = { $in: surgeryLocations };
 
-    // Surgery date (exact day)
     if (surgeryDate) {
       const sd = new Date(surgeryDate);
       const start = new Date(sd); start.setHours(0, 0, 0, 0);
@@ -102,7 +89,6 @@ const handler = async (req) => {
       query["surgery.surgeryDate"] = { $gte: start, $lte: end };
     }
 
-    // Full-text search
     if (search) {
       andClauses.push({
         $or: [
@@ -113,7 +99,6 @@ const handler = async (req) => {
       });
     }
 
-    // Technique (stored across 3 fields)
     if (techniques.length) {
       const techMatch = techniques.length === 1 ? techniques[0] : { $in: techniques };
       andClauses.push({
@@ -127,7 +112,6 @@ const handler = async (req) => {
 
     if (andClauses.length) query.$and = andClauses;
 
-    /* ── Resolve employee names → ObjectIds in parallel ── */
     const [counsellorDocs, agentDocs, doctorDocs, seniorTechDocs, implanterDocs] = await Promise.all([
       counsellorNames.length ? Employee.find({ name: { $in: counsellorNames } }, "_id").lean() : [],
       agentNames.length      ? Employee.find({ name: { $in: agentNames } },      "_id").lean() : [],
@@ -165,11 +149,6 @@ const handler = async (req) => {
       query["surgery.implanterRight"] = ids.length === 1 ? ids[0] : { $in: ids };
     }
 
-    /* ── Run DB operations in parallel ── */
-    // Only `personal.reference` and `counselling.counsellor` are populated: those are the two
-    // names the list actually renders. The doctor/seniorTech/implanter populates were four extra
-    // round trips per request feeding columns this list doesn't have — they're filter inputs,
-    // already resolved to ObjectIds above.
     const [patients, total] = await Promise.all([
       Patient.find(query)
         .select(LIST_PROJECTION)
@@ -184,8 +163,6 @@ const handler = async (req) => {
 
     return NextResponse.json({
       patients, total, page, limit, success: true,
-      // Echoed back so the client can show an honest "This Month" chip when it didn't ask for a
-      // window itself. surgeryLocations now comes from /api/patients/filter-options.
       dateWindow: {
         from: dateRange.start ? dateRange.start.toISOString() : null,
         to: dateRange.end ? dateRange.end.toISOString() : null,

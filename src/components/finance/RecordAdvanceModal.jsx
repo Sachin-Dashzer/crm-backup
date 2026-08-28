@@ -9,15 +9,6 @@ import { ACCOUNTS } from "@/constants/bankRouting";
 import { ALL_BRANCHES } from "@/lib/branches";
 import { ADVANCE_TYPES } from "@/constants/advanceTypes";
 
-// Exact mirror of RecordBorrowingModal.jsx, with the directions and the linked document flipped:
-//
-// mode: "OUT" + receivable: null      -> a brand-new advance (creates the Receivable AND the
-//                                         first Advance row, atomically — /api/advances/create).
-// mode: "OUT" + receivable: {...}     -> a further advance on an existing running account. Party
-//                                         is fixed (hidden), sub-type is fixed (already set on
-//                                         the receivable).
-// mode: "IN"  + receivable: {...}     -> a recovery. Party fixed; shows Outstanding and guards
-//                                         against over-recovery the same way a repayment does.
 const SUBTYPES = ADVANCE_TYPES;
 const PARTY_KINDS = [
   { value: "EMPLOYEE", label: "Employee" },
@@ -70,7 +61,6 @@ export default function RecordAdvanceModal({ open, onClose, onSuccess, mode, rec
         setOptions(data.data || data.vendors || data.employees || data.patients || []);
       }
     } catch {
-      // An empty picker is recoverable — the user can still type a label under "Other".
     } finally {
       setSearching(false);
     }
@@ -78,7 +68,6 @@ export default function RecordAdvanceModal({ open, onClose, onSuccess, mode, rec
 
   useEffect(() => {
     if (!partyLocked) fetchOptions("");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [partyKind]);
 
   const handlePartySearch = (term) => {

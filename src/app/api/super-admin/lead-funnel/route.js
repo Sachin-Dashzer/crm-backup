@@ -1,14 +1,3 @@
-// src/app/api/super-admin/lead-funnel/route.js
-//
-// POST body: { agentIds?: string[], teams?: string[], dateFrom?, dateTo?, leadNumber? }
-//
-// Flow:
-//   1. Fetch matching leads live from the Callby backend (call-tracking CRM).
-//   2. Fetch matching Patient docs from our own DB by phone.
-//   3. Merge + bucket into the funnel tree, per-node with count + amount + lead list.
-//
-// Nothing here is cached or written to a DB collection — every request is a
-// fresh live pull from both systems, per requirement.
 
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
@@ -16,8 +5,8 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import connectDB from "@/lib/db";
 import Patient from "@/models/Patient";
 
-const CALLBY_API_URL = process.env.CALLBY_API_URL; // e.g. https://api.learcrm.com
-const CALLBY_SERVICE_TOKEN = process.env.CALLBY_SERVICE_TOKEN; // manager-role JWT, see setup notes
+const CALLBY_API_URL = process.env.CALLBY_API_URL;
+const CALLBY_SERVICE_TOKEN = process.env.CALLBY_SERVICE_TOKEN;
 
 function normalizePhone(raw) {
   if (!raw) return null;
@@ -45,7 +34,6 @@ async function fetchCallbyLeads({ agentIds, teams, dateFrom, dateTo, leadNumber 
   return json.data || [];
 }
 
-// Patient.ops.status: NEW | NOT_VISITED | NOT_CONVERTED | CONSULTED | SURGERY_BOOKED | BOOKING_DONE | CLOSED
 const VISITED_STATUSES = ["CONSULTED", "NOT_CONVERTED", "SURGERY_BOOKED", "BOOKING_DONE", "CLOSED"];
 const CONVERTED_STATUSES = ["SURGERY_BOOKED", "BOOKING_DONE", "CLOSED"];
 
@@ -70,9 +58,6 @@ export async function POST(req) {
 
     const leads = await fetchCallbyLeads({ agentIds, teams, dateFrom, dateTo, leadNumber });
 
-    // Only leads that ever got connected AND weren't marked not-interested/lost
-    // are worth checking against the clinic's patient records — no point
-    // hitting the Patient collection for leads that were never even reached.
     const pursuableStatuses = ["interested", "follow_up", "booking_done", "converted"];
     const phonesToCheck = leads
       .filter((l) => pursuableStatuses.includes(l.status))
@@ -117,13 +102,8 @@ function buildFunnelTree(leads, patientByPhone) {
   const interested = connected.filter((l) => l.status === "interested");
   const notInterested = connected.filter((l) => l.status === "not_interested");
   const followUp = connected.filter((l) => l.status === "follow_up");
-  // Callby has no distinct "callback" status today — leads that connected but
-  // haven't been dispositioned yet (still "contacted") land here. Rename the
-  // status enum on the Callby side if a real separate bucket is wanted later.
   const callback = connected.filter((l) => l.status === "contacted");
 
-  // Anyone who progressed past initial interest — this is the pool checked
-  // against Patient records for visit/conversion.
   const pursuable = connected.filter((l) =>
     ["interested", "follow_up", "booking_done", "converted"].includes(l.status)
   );
@@ -169,10 +149,6 @@ function buildFunnelTree(leads, patientByPhone) {
               { ...bucket(notInterested, "Not Interested") },
               { ...bucket(followUp, "Follow Up") },
               { ...bucket(callback, "Callback / Pending Disposition") },
-              // Visit/conversion drill-down sits alongside the 4 status
-              // buckets as its own branch — a lead's visit status is
-              // independent of which status bucket it's currently in, so
-              // it's pooled from `pursuable` rather than nested under just one.
               {
                 label: "Checked Against Clinic Records",
                 count: pursuable.length,

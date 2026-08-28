@@ -1,83 +1,17 @@
-// scripts/import-contra-entries-aug-2026.mjs
-//
-// Imports the 143 contra entries from contra_entry_13_Aug_to_24_Aug.xlsx (13-24 Aug 2026) as
-// AccountTransfer documents — money moved between our own accounts, never income or expense.
-//
-// ─── ACCOUNT NAME NORMALISATION (the thing most likely to have silently failed) ──────────────
-//
-// The sheet's account names do not match the ACCOUNTS enum in src/constants/bankRouting.js
-// character-for-character, and AccountTransfer's schema enforces that enum on both
-// `fromAccount` and `toAccount` — so a raw import would have been rejected outright, or worse,
-// partially succeeded. Every name is normalised (case-folded, whitespace around parentheses
-// collapsed) and mapped to the canonical value:
-//
-//     "Fibe loan"            -> "Fibe Loan"
-//     "Bajaj loan"           -> "Bajaj Loan"
-//     "Paytm ( Delhi T44P)"  -> "Paytm ( Delhi T44P )"     (missing space before the bracket)
-//     "Paytm (Noida CK5Y)"   -> "Paytm ( Noida CK5Y )"     (missing spaces inside the brackets)
-//     "Cash (backend)"       -> "Cash ( backend )"         (same)
-//     "HDFC Skin" / "ICICI Medihub" / "HDFC Medihub"       (already exact)
-//
-// All 143 rows resolved cleanly against the enum when this script was prepared, and none has
-// fromAccount === toAccount (which the create route rejects). The script re-checks both anyway
-// and refuses to write if anything fails — a name that stops resolving means the ACCOUNTS enum
-// changed, and that must be looked at rather than skipped.
-//
-// ─── WHAT A CONTRA ENTRY DOES, AND WHY THE TOTAL IS NOT A "TOTAL" ───────────────────────────
-//
-// The Rs 71,63,174.32 across these 143 rows is NOT revenue, expense, or any kind of net figure.
-// Each row moves money out of one of our accounts and into another, so the company-wide balance
-// is unchanged by every single one of them — that invariant is what the dry run's per-account
-// net table below is for. If those nets don't look right, stop before applying.
-//
-// The mix here is what you'd expect: Paytm settling into HDFC Skin (69 rows), Bajaj/Fibe loan
-// disbursals landing in HDFC Skin (31), inter-bank transfers between HDFC Skin and ICICI
-// Medihub (26), and cash withdrawals into "Cash ( backend )" (17).
-//
-// ─── BRANCH ─────────────────────────────────────────────────────────────────────────────────
-//
-// Every row is Branch "Delhi", which is a valid ALL_BRANCHES value, so it is written as-is.
-// Note the model's own warning: a branch-filtered close-book view HIDES untagged transfers, so
-// tagging these "Delhi" (rather than leaving them company-level null) is what makes them
-// visible in a Delhi-filtered Assets page. That matches how the sheet recorded them.
-//
-// ─── OTHER NOTES ────────────────────────────────────────────────────────────────────────────
-//
-// - Every row's Status is "Active" and "Moves balances" is "Yes", so none is imported cancelled.
-// - The Reference column is blank on all 143 rows; the sheet's Remarks column carries the real
-//   description ("Paytm Settlement", "Bajaj Finance", "ATW-...-cash withdrawl") and is written
-//   to `remarks`.
-// - `transferKind` is left at its "MANUAL" default. These are ordinary contra entries, NOT loan
-//   settlements — even the Bajaj/Fibe rows, which are disbursals INTO our account, not the
-//   settlement of a specific loan-financed sale. Marking them LOAN_SETTLEMENT would make
-//   cancel-loan try to reverse them.
-// - PERIOD LOCK is checked on BOTH accounts, exactly as
-//   src/app/api/account-transfers/create/route.js does.
-// - IDEMPOTENT: each transfer's remarks is prefixed "[BULK-CONTRA-<rowNum>]" and checked before
-//   insert. Safe to re-run after a partial failure; never double-imports a row that succeeded.
-//
-// Usage:
-//   node scripts/import-contra-entries-aug-2026.mjs                  # dry run
-//   node scripts/import-contra-entries-aug-2026.mjs --dump-json       # entries out, no DB
-//   node scripts/import-contra-entries-aug-2026.mjs --apply          # import
-//   node scripts/import-contra-entries-aug-2026.mjs --from=2026-08-15 --to=2026-08-20
 
 import mongoose from "mongoose";
 import fs from "fs";
 
-// --- env -----------------------------------------------------------------
 for (const f of [".env.local", ".env"]) {
   if (fs.existsSync(f)) {
     try {
       process.loadEnvFile(f);
     } catch {
-      /* already loaded / unsupported — falls through to the MONGODB_URI check below */
     }
   }
 }
 const MONGODB_URI = process.env.MONGODB_URI;
 
-// Mirrors ACCOUNTS in src/constants/bankRouting.js (a script can't import the @/-aliased module).
 const ACCOUNTS = [
   "Cash Book", "HDFC Skin", "HDFC Medihub", "ICICI Medihub", "Mumbai Receipts",
   "Cash ( backend )", "Paytm ( Delhi T44P )", "Paytm ( Noida CK5Y )",
@@ -89,11 +23,6 @@ const ALL_BRANCHES = [
   "Chennai", "Jammu", "Kashmir", "Ranchi", "Prayagraj", "Chandigarh", "Jalandhar",
 ];
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// THE DATA — parsed directly from contra_entry_13_Aug_to_24_Aug.xlsx. `fromRaw`/`toRaw` keep
-// the sheet's original spelling next to the resolved enum value, so any future mismatch is
-// visible rather than buried.
-// ═══════════════════════════════════════════════════════════════════════════════
 const ENTRIES = [
   {
     "rowNum": 2,
@@ -1956,7 +1885,6 @@ const ENTRIES = [
   }
 ];
 
-// --- args ------------------------------------------------------------------
 const args = process.argv.slice(2);
 const arg = (name) => args.find((a) => a.startsWith(`--${name}=`))?.split("=")[1];
 const APPLY = args.includes("--apply");
@@ -2016,7 +1944,6 @@ async function run() {
   }
   console.log("Validation passed — every account name resolves to the ACCOUNTS enum, no self-transfers.\n");
 
-  // --- the invariant that matters for a contra entry ----------------------------------------
   const net = {};
   SELECTED.forEach((e) => {
     net[e.fromAccount] = (net[e.fromAccount] || 0) - e.amount;
@@ -2051,7 +1978,6 @@ async function run() {
   const AccountPeriod = mongoose.models.AccountPeriod || mongoose.model("AccountPeriod", new mongoose.Schema({}, { strict: false, collection: "accountperiods" }));
   const AccountTransfer = mongoose.models.AccountTransfer || mongoose.model("AccountTransfer", new mongoose.Schema({}, { strict: false, collection: "accounttransfers" }));
 
-  // --- period lock, reimplemented (periodLock.js imports @/-aliased modules) -----------------
   const isOpeningSeed = (p) => new Date(p.periodStart).getTime() === new Date(p.periodEnd).getTime();
   async function closedPeriodsCovering(account, date) {
     const rows = await AccountPeriod.find({
@@ -2122,8 +2048,6 @@ async function run() {
         reference: e.reference || "",
         remarks: `${tag} ${e.remarks}`.trim(),
         receipts: [],
-        // Ordinary contra entries — NOT loan settlements. See the header note on why the
-        // Bajaj/Fibe rows are MANUAL too.
         transferKind: "MANUAL",
         sourceTransactionId: null,
         isCancelled: false,

@@ -31,7 +31,6 @@ import {
   History,
 } from "lucide-react";
 
-/* ─── Constants ─────────────────────────────────────────────────────────────── */
 const BRANCHES = ["All", ...ALL_BRANCHES];
 
 const DATE_PRESETS = [
@@ -62,7 +61,6 @@ const PATIENT_STATUSES = [
   "SURGERY_BOOKED", "BOOKING_DONE", "CLOSED",
 ];
 
-/* ─── Color map ─────────────────────────────────────────────────────────────── */
 const COLOR_MAP = {
   amber:  { accent: "bg-amber-500",   soft: "bg-amber-50",   text: "text-amber-700",  border: "border-amber-200",  badge: "bg-amber-100 text-amber-700" },
   orange: { accent: "bg-orange-500",  soft: "bg-orange-50",  text: "text-orange-700", border: "border-orange-200", badge: "bg-orange-100 text-orange-700" },
@@ -75,9 +73,7 @@ const COLOR_MAP = {
   pink:   { accent: "bg-pink-500",    soft: "bg-pink-50",    text: "text-pink-700",   border: "border-pink-200",   badge: "bg-pink-100 text-pink-700" },
 };
 
-/* ─── Report definitions ─────────────────────────────────────────────────── */
 const REPORTS = [
-  // Patient Reports
   {
     id: 1, type: "patients-comprehensive", category: "Patient Reports",
     name: "Comprehensive Patient Report",
@@ -128,13 +124,11 @@ const REPORTS = [
     filters: ["branch", "technique"],
   },
 
-  // Staff Reports
   {
     id: 8, type: "employees-all", category: "Staff Reports",
     name: "All Employees Report",
     description: "Every employee (active & inactive) — role, contact, status, salary, incentive rate, and total patients",
     icon: Users, color: "blue",
-    // Employees aren't branch-scoped in this schema — no branch filter to offer here.
     filters: [],
   },
   {
@@ -173,7 +167,6 @@ const REPORTS = [
     filters: ["branch", "staff"],
   },
 
-  // Financial Reports
   {
     id: 14, type: "revenue", category: "Financial Reports",
     name: "Revenue Report",
@@ -231,7 +224,6 @@ const REPORTS = [
     filters: ["branch"],
   },
 
-  // Inventory Reports
   {
     id: 20, type: "stocks-all", category: "Inventory Reports",
     name: "Stock Inventory Report",
@@ -247,7 +239,6 @@ const REPORTS = [
     filters: [],
   },
 
-  // Audit Log Reports
   {
     id: 23, type: "transaction-changes-log", category: "Audit Logs",
     name: "Transaction Changes Log",
@@ -276,7 +267,6 @@ const REPORTS = [
 
 const CATEGORIES = ["All", ...new Set(REPORTS.map((r) => r.category))];
 
-/* ─── Helpers ─────────────────────────────────────────────────────────────── */
 function buildDateRange(preset, custom) {
   const now = new Date();
 
@@ -316,13 +306,11 @@ function buildDateRange(preset, custom) {
     to.setHours(23, 59, 59, 999);
     return { from: from.toISOString(), to: to.toISOString() };
   }
-  // "allTime" or unrecognized — no date filter
   return { from: null, to: null };
 }
 
 function PieChartIcon(props) { return <BarChart2 {...props} />; }
 
-/* ─── Report Card ─────────────────────────────────────────────────────────── */
 function ReportCard({ report, filters, loadingId, favorites, onDownload, onToggleFavorite }) {
   const c = COLOR_MAP[report.color] || COLOR_MAP.blue;
   const Icon = report.icon;
@@ -420,7 +408,6 @@ function ReportCard({ report, filters, loadingId, favorites, onDownload, onToggl
   );
 }
 
-/* ─── Toast ───────────────────────────────────────────────────────────────── */
 function Toast({ toast, onDismiss }) {
   if (!toast) return null;
   const isError = toast.type === "error";
@@ -453,7 +440,6 @@ function Toast({ toast, onDismiss }) {
   );
 }
 
-/* ─── Main Page ───────────────────────────────────────────────────────────── */
 export default function AdminReportsPage() {
   const [loadingId, setLoadingId] = useState(null);
   const [toast, setToast] = useState(null);
@@ -543,7 +529,6 @@ export default function AdminReportsPage() {
 
       const params = new URLSearchParams({ type: report.type });
 
-      // Always send dates — strict filtering for all report types
       if (from) params.append("from", from);
       if (to) params.append("to", to);
 
@@ -624,7 +609,6 @@ export default function AdminReportsPage() {
         <div className="p-4 sm:p-6 lg:p-8">
           <div className="max-w-7xl mx-auto space-y-6">
 
-            {/* ── Page Header ── */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
                 <div className="flex items-center gap-3 mb-1">
@@ -655,7 +639,6 @@ export default function AdminReportsPage() {
               </div>
             </div>
 
-            {/* ── Filter Panel ── */}
             <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
               <div className="px-5 py-4 flex items-center justify-between border-b border-gray-100">
                 <div className="flex items-center gap-2.5">
@@ -677,9 +660,7 @@ export default function AdminReportsPage() {
               </div>
 
               <div className="p-5 space-y-5">
-                {/* Row 1: Date + Branch + Search */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {/* Date preset */}
                   <div>
                     <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">
                       Date Range
@@ -711,7 +692,6 @@ export default function AdminReportsPage() {
                     </div>
                   </div>
 
-                  {/* Branch */}
                   <div>
                     <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">
                       Branch
@@ -733,7 +713,6 @@ export default function AdminReportsPage() {
                     </div>
                   </div>
 
-                  {/* Search */}
                   <div>
                     <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">
                       Search Reports
@@ -759,7 +738,6 @@ export default function AdminReportsPage() {
                   </div>
                 </div>
 
-                {/* Custom date picker */}
                 {datePreset === "custom" && (
                   <div className="flex flex-wrap items-end gap-3 p-4 bg-amber-50 rounded-xl border border-amber-200">
                     <Calendar className="w-4 h-4 text-amber-600 self-center" />
@@ -797,10 +775,8 @@ export default function AdminReportsPage() {
                   </div>
                 )}
 
-                {/* Advanced filters (collapsible) */}
                 {showFilters && (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-1 border-t border-gray-100">
-                    {/* Status */}
                     <div>
                       <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">
                         Patient Status
@@ -817,7 +793,6 @@ export default function AdminReportsPage() {
                       </select>
                     </div>
 
-                    {/* Technique */}
                     <div>
                       <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">
                         Technique
@@ -834,7 +809,6 @@ export default function AdminReportsPage() {
                       </select>
                     </div>
 
-                    {/* Procedure */}
                     <div>
                       <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">
                         Procedure
@@ -851,7 +825,6 @@ export default function AdminReportsPage() {
                       </select>
                     </div>
 
-                    {/* Payment Type */}
                     <div>
                       <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">
                         Payment Type
@@ -872,7 +845,6 @@ export default function AdminReportsPage() {
               </div>
             </div>
 
-            {/* ── Category Tabs ── */}
             <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide">
               {CATEGORIES.map((cat) => (
                 <button
@@ -898,7 +870,6 @@ export default function AdminReportsPage() {
               ))}
             </div>
 
-            {/* ── Reports Grid ── */}
             {visibleReports.length === 0 ? (
               <div className="bg-white rounded-2xl border border-gray-200 p-16 text-center">
                 <Search className="w-12 h-12 text-gray-300 mx-auto mb-4" />
@@ -941,7 +912,6 @@ export default function AdminReportsPage() {
               </>
             )}
 
-            {/* ── Quick Reference ── */}
             <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
               <h3 className="text-sm font-bold text-gray-900 mb-3">
                 Quick Reference — Report Coverage

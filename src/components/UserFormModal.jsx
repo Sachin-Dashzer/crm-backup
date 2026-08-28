@@ -1,4 +1,3 @@
-// components/UserFormModal.jsx - CREATE THIS FILE
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -8,7 +7,7 @@ const BRANCHES = ['Delhi', 'Mumbai', 'Hyderabad', 'Noida', 'All'];
 
 export default function UserFormModal({ isOpen, onClose, user = null, onSuccess }) {
   const isEditMode = !!user;
-  
+
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -16,22 +15,20 @@ export default function UserFormModal({ isOpen, onClose, user = null, onSuccess 
     role: 'sales',
     branch: 'All',
   });
-  
+
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Populate form when editing
   useEffect(() => {
     if (user) {
       setFormData({
         name: user.name || '',
         email: user.email || '',
-        password: '', // Always empty for security
+        password: '',
         role: user.role || 'sales',
         branch: user.branch || 'All',
       });
     } else {
-      // Reset form for create mode
       setFormData({
         name: '',
         email: '',
@@ -57,8 +54,8 @@ export default function UserFormModal({ isOpen, onClose, user = null, onSuccess 
     setError('');
 
     try {
-      const endpoint = isEditMode 
-        ? '/api/admin/users/update-user' 
+      const endpoint = isEditMode
+        ? '/api/admin/users/update-user'
         : '/api/admin/users/create-user';
 
       const payload = isEditMode
@@ -68,7 +65,7 @@ export default function UserFormModal({ isOpen, onClose, user = null, onSuccess 
             email: formData.email,
             role: formData.role,
             branch: formData.branch,
-            ...(formData.password && { password: formData.password }), // Only include if provided
+            ...(formData.password && { password: formData.password }),
           }
         : {
             name: formData.name,
@@ -94,13 +91,12 @@ export default function UserFormModal({ isOpen, onClose, user = null, onSuccess 
         return;
       }
 
-      // Success
       if (onSuccess) {
         onSuccess(data.message);
       }
-      
+
       onClose();
-      
+
     } catch (error) {
       console.error('Form submission error:', error);
       setError('An unexpected error occurred');
@@ -113,7 +109,6 @@ export default function UserFormModal({ isOpen, onClose, user = null, onSuccess 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <h2 className="text-2xl font-bold text-gray-900">
             {isEditMode ? 'Edit User' : 'Create New User'}
@@ -128,7 +123,6 @@ export default function UserFormModal({ isOpen, onClose, user = null, onSuccess 
           </button>
         </div>
 
-        {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           {error && (
             <div className="p-4 bg-red-50 border border-red-200 rounded">
@@ -139,13 +133,12 @@ export default function UserFormModal({ isOpen, onClose, user = null, onSuccess 
           {isEditMode && (
             <div className="p-4 bg-blue-50 border border-blue-200 rounded">
               <p className="text-sm text-blue-800">
-                ℹ️ Leave password field empty to keep current password. 
+                ℹ️ Leave password field empty to keep current password.
                 Changing password will log user out from all devices.
               </p>
             </div>
           )}
 
-          {/* Name */}
           <div>
             <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
               Full Name *
@@ -163,7 +156,6 @@ export default function UserFormModal({ isOpen, onClose, user = null, onSuccess 
             />
           </div>
 
-          {/* Email */}
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
               Email Address *
@@ -181,7 +173,6 @@ export default function UserFormModal({ isOpen, onClose, user = null, onSuccess 
             />
           </div>
 
-          {/* Password */}
           <div>
             <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
               Password {isEditMode ? '(leave empty to keep current)' : '*'}
@@ -201,7 +192,6 @@ export default function UserFormModal({ isOpen, onClose, user = null, onSuccess 
             <p className="text-xs text-gray-500 mt-1">Minimum 6 characters</p>
           </div>
 
-          {/* Role */}
           <div>
             <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-2">
               Role *
@@ -223,7 +213,6 @@ export default function UserFormModal({ isOpen, onClose, user = null, onSuccess 
             </select>
           </div>
 
-          {/* Branch */}
           <div>
             <label htmlFor="branch" className="block text-sm font-medium text-gray-700 mb-2">
               Branch *
@@ -245,7 +234,6 @@ export default function UserFormModal({ isOpen, onClose, user = null, onSuccess 
             </select>
           </div>
 
-          {/* Actions */}
           <div className="flex items-center justify-end space-x-4 pt-6 border-t border-gray-200">
             <button
               type="button"

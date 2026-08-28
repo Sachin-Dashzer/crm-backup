@@ -1,32 +1,3 @@
-// src/app/api/owner/marketing-summary/route.js
-//
-// Marketing profitability: joins AdSpend (real, branch-scoped) against Leads.tag and the
-// matching Patient's conversion outcome, to compute CPL / converted count / revenue / CAC / ROAS
-// per platform (and per campaignName, where spend entries have one).
-//
-// ── Why "branch" only scopes Spend, not Leads/Converted/Revenue ──────────────────────────────
-// AdSpend has a real `branch` field. Leads does not (see src/models/Leads.js) — it was never
-// given one, so there is no honest way to say "these 40 leads belong to Delhi." Rather than
-// fabricate an attribution (e.g. guessing branch from a converted lead's matched Patient, which
-// would silently undercount every lead that never converted), this route scopes AdSpend by the
-// requested branch but always computes Leads/CPL/Converted/Revenue/CAC/ROAS across ALL branches.
-// When a specific branch is requested, the response carries `note` explaining this so the UI
-// can surface it instead of presenting a branch-specific number that isn't one.
-//
-// ── Phone matching ────────────────────────────────────────────────────────────────────────────
-// Uses the same normalizePhone() from src/lib/phone.js that Patient's own pre-save hook uses to
-// maintain personal.phoneNormalized — normalizing each Lead's phone in JS and matching against
-// that already-indexed field, rather than a second normalization implementation.
-//
-// ── Campaign attribution gap ──────────────────────────────────────────────────────────────────
-// Leads carries a `tag` (platform-level: "Meta Leads" / "Google Leads"), not a campaign
-// identifier — there is no field connecting a lead to a specific named campaign. So when a
-// platform has more than one distinct campaignName in AdSpend, each campaign gets its own row
-// with a real Spend figure but null Leads/CPL/Converted/Revenue/CAC/ROAS (not attributable at
-// that granularity), and a separate isPlatformTotal row carries the real, fully-attributed
-// numbers for the platform as a whole. When a platform has exactly one campaign group (including
-// the common case of every entry having no campaignName), that single row already IS the
-// platform total, so no separate total row is added.
 
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
@@ -39,7 +10,6 @@ import { normalizePhone } from "@/lib/phone";
 
 const PLATFORMS = ["Meta", "Google"];
 const TAG_BY_PLATFORM = { Meta: "Meta Leads", Google: "Google Leads" };
-// Same converted-status set src/app/api/super-admin/lead-funnel/route.js already uses.
 const CONVERTED_STATUSES = ["SURGERY_BOOKED", "BOOKING_DONE", "CLOSED"];
 
 export async function POST(req) {
@@ -58,7 +28,6 @@ export async function POST(req) {
     const fromDate = new Date(from);
     const toDate = new Date(to);
 
-    // ── Spend: real branch scoping ──────────────────────────────────────────────
     const branchFilter = branch === "All" ? {} : { branch };
     const spendRows = await AdSpend.aggregate([
       {
@@ -81,7 +50,6 @@ export async function POST(req) {
       spendByPlatform[r._id.platform].push({ campaignName: r._id.campaignName || "", spend: r.spend });
     });
 
-    // ── Leads: global (see note above), bucketed by platform via tag ───────────────
     const leadsInRange = await Leads.find({
       tag: { $in: Object.values(TAG_BY_PLATFORM) },
       createdAt: { $gte: fromDate, $lte: toDate },
@@ -120,7 +88,7 @@ export async function POST(req) {
         const patient = patientByPhone.get(phone);
         if (!patient || !CONVERTED_STATUSES.includes(patient.ops?.status)) continue;
         const pid = String(patient._id);
-        if (countedPatientIds.has(pid)) continue; // multiple leads resolving to the same patient
+        if (countedPatientIds.has(pid)) continue;
         countedPatientIds.add(pid);
         converted += 1;
         revenue += patient.payments?.totalAmount || 0;
@@ -128,11 +96,10 @@ export async function POST(req) {
       return { converted, revenue };
     }
 
-    // ── Assemble rows ────────────────────────────────────────────────────────────
     const rows = [];
     for (const platform of PLATFORMS) {
       const campaigns = spendByPlatform[platform];
-      if (campaigns.length === 0) continue; // nothing spent here for this branch/date range
+      if (campaigns.length === 0) continue;
 
       const leadsCount = platformLeadCount[platform];
       const { converted, revenue } = conversionFor(platform);

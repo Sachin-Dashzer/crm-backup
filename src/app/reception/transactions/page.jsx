@@ -33,7 +33,6 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
-// ========== UTILITY FUNCTIONS ==========
 const calculateNetAmount = (transaction) => {
   if (!transaction) return 0;
   const amount = parseFloat(transaction.amount) || 0;
@@ -65,7 +64,6 @@ const formatCurrency = (amount) => {
   }).format(num);
 };
 
-// const BRANCHES = tenantBranches;
 const PAYMENT_METHODS = ["upi", "cash", "card", "banking", "bajaj_loan", "fibe_loan", "hdfc_skin_bank_transfer", "hdfc_ryan_medihub_bank_transfer", "icici_medihub_bank_transfer", "other"];
 const TRANSPLANT_PROCEDURES = [
   "Sapphire FUE",
@@ -96,7 +94,6 @@ const getCategoryGradientClass = (categoryValue, isActive) => {
   return gradients[categoryValue] || "bg-gray-50 text-gray-600";
 };
 
-// ========== APPROVAL BADGE COMPONENT ==========
 function ApprovalBadge({ status }) {
   if (status === "PENDING") {
     return (
@@ -117,7 +114,6 @@ function ApprovalBadge({ status }) {
   return null;
 }
 
-// ========== STAT CARD COMPONENT ==========
 function StatCard({
   title,
   value,
@@ -154,7 +150,6 @@ function StatCard({
   );
 }
 
-// ========== DELETE CONFIRM MODAL COMPONENT ==========
 function DeleteConfirmModal({ transaction, onClose, onConfirm }) {
   const [deleting, setDeleting] = useState(false);
 
@@ -241,7 +236,6 @@ function DeleteConfirmModal({ transaction, onClose, onConfirm }) {
   );
 }
 
-// ========== HELPER COMPONENTS ==========
 function Input({
   label,
   type = "text",
@@ -309,7 +303,6 @@ function Select({ label, value, onChange, options, required, icon: Icon }) {
   );
 }
 
-// ========== DATA TABLE COMPONENT ==========
 function DataTable({
   category,
   rows,
@@ -545,7 +538,6 @@ function DataTable({
 
   return (
     <div className="flex flex-col h-full bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
-      {/* Desktop Header */}
       <div
         className="hidden md:grid items-center bg-linear-to-r from-slate-50 to-slate-100 border-b border-slate-200 min-h-13 px-2"
         style={{ gridTemplateColumns }}
@@ -568,7 +560,6 @@ function DataTable({
         ))}
       </div>
 
-      {/* Mobile Header */}
       <div className="md:hidden bg-linear-to-r from-slate-50 to-slate-100 border-b border-slate-200 px-4 py-3">
         <div className="flex items-center justify-between">
           <div>
@@ -612,7 +603,6 @@ function DataTable({
               return (
                 <div key={row._id || i}>
                   <div className="group transition-all duration-200 hover:bg-indigo-50/30">
-                    {/* Desktop View */}
                     <div
                       className="hidden md:grid items-center min-h-16 px-2"
                       style={{ gridTemplateColumns }}
@@ -895,7 +885,6 @@ function DataTable({
                         </>
                       )}
 
-                      {/* Actions Column */}
                       <div className="px-2 py-3">
                         <div className="flex items-center gap-2">
                           <button
@@ -916,7 +905,6 @@ function DataTable({
                       </div>
                     </div>
 
-                    {/* Mobile View - Similar changes for rowCategory */}
                     <div className="md:hidden p-4">
                       <div className="space-y-4">
                         <div className="flex items-start justify-between">
@@ -1126,7 +1114,6 @@ function DataTable({
         )}
       </div>
 
-      {/* Pagination */}
       <div className="border-t border-slate-200 bg-white">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 sm:px-6 py-4">
           <div className="text-sm text-slate-600">
@@ -1234,7 +1221,6 @@ function DataTable({
   );
 }
 
-// ========== MAIN COMPONENT ==========
 export default function AllTransactionsPage() {
   const tenantBranches = ["Delhi", "Mumbai", "Hyderabad", "Noida"];
 

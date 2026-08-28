@@ -2,14 +2,6 @@
 
 import { formatCurrency, formatDate } from "@/lib/financeUI";
 
-// Generalised from admin/payables/page.jsx's PayableHistory and admin/receivables/page.jsx's
-// ReceivableHistory (Task 5, Step 1) — the two were already near-identical (a log[] timeline
-// beside a linked-transactions list), differing only in vocabulary. `kind` supplies that
-// vocabulary; the layout itself is now written once instead of twice.
-//
-// `doc`: the Payable or Receivable document. `transactions`: the linked Transactions (payments
-// for a payable, revenue receipts for a receivable) — fetched by the caller via
-// /api/transactions/get-all?payableId=/receivableId=, never re-derived here.
 export default function DocumentHistory({ doc, kind, transactions = [], loading = false }) {
   const log = doc.log || [];
   const isPayable = kind === "payable";

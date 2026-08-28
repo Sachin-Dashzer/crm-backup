@@ -7,9 +7,6 @@ import { resolveBranchFilter } from "@/lib/branches";
 
 const ALLOWED_ROLES = ["admin", "super-admin"];
 
-// Flat, filterable list of Borrowing rows — mirrors /api/suspense's GET shape. Mainly for
-// export/audit; the Liabilities page's drill-down uses /api/borrowings/grouped instead, which
-// rolls these up per document.
 export async function GET(request) {
   try {
     const session = await getServerSession(authOptions);

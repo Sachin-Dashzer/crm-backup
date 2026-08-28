@@ -4,12 +4,6 @@ import { HandCoins, History, Plus } from "lucide-react";
 import { StatusBadge } from "@/lib/financeUI";
 import LockedBadge from "./LockedBadge";
 
-// Level-3 (document) row actions for the Assets page's "Advances" section — exact mirror of
-// BorrowingDocumentActions. A document here is a real Receivable, but its lifecycle is Record
-// Recovery / Further Advance, not the generic Record Receipt/Revise/Cancel every other
-// Receivable gets (see DrillDownTable's renderDocumentActions override). No Cancel action here
-// for the same reason BorrowingDocumentActions omits one — see /api/advances/[id]'s PATCH for
-// that guarded per-row capability instead.
 export default function AdvanceDocumentActions({ row, onRecover, onFurther, onHistory }) {
   const pending = row.pending ?? Math.max((row.totalAmount || 0) - (row.received || 0), 0);
 

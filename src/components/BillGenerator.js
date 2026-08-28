@@ -50,8 +50,6 @@ const CLINIC_BRANCHES = {
     website: "https://clinicryan.com",
     gstin: "",
   },
-  // Placeholder entries for the new collab-panel cities — real clinic address/GSTIN
-  // per city still needs to be filled in for legally correct invoices.
   ...Object.fromEntries(
     COLLAB_BRANCHES.map((city) => [
       city,
@@ -87,7 +85,7 @@ const formatDateTime = (date) => {
     year: "numeric",
     timeZone: "Asia/Kolkata",
   });
-}; 
+};
 
 
 const formatCurrency = (amount) => {
@@ -100,7 +98,6 @@ const formatCurrency = (amount) => {
   }).format(num);
 };
 
-// ─── Shared inline styles ───────────────────────────────────────────────────
 const s = {
   page: {
     maxWidth: "800px",
@@ -177,7 +174,6 @@ const s = {
   red: { color: "#dc2626", fontWeight: "bold" },
 };
 
-// ========== SERVICE INVOICE ==========
 function ServiceInvoice({ transaction, patient, consultant, branch }) {
   const clinic = CLINIC_BRANCHES[branch] || CLINIC_BRANCHES.Delhi;
   const grossAmount = parseFloat(transaction.amount) || 0;
@@ -187,7 +183,6 @@ function ServiceInvoice({ transaction, patient, consultant, branch }) {
 
   return (
     <div style={s.page}>
-      {/* Header */}
       <div style={s.header}>
         <div>
           <h1 style={s.clinicName}>{clinic.name}</h1>
@@ -202,7 +197,6 @@ function ServiceInvoice({ transaction, patient, consultant, branch }) {
         </div>
       </div>
 
-      {/* Customer & Invoice Details */}
       <div style={s.twoCol}>
         <div>
           <h2 style={s.patientName}>{patient.name}</h2>
@@ -217,7 +211,6 @@ function ServiceInvoice({ transaction, patient, consultant, branch }) {
 
       <h3 style={s.sectionTitle}>Invoice</h3>
 
-      {/* Services Table */}
       <table style={s.table}>
         <thead>
           <tr>
@@ -261,7 +254,6 @@ function ServiceInvoice({ transaction, patient, consultant, branch }) {
         </tbody>
       </table>
 
-      {/* Footer */}
       <div style={s.footer}>
         <div>
           <p style={{ ...s.footerRow, fontWeight: "bold" }}>Authorized Signatory</p>
@@ -278,7 +270,6 @@ function ServiceInvoice({ transaction, patient, consultant, branch }) {
   );
 }
 
-// ========== MEDICINE INVOICE ==========
 function MedicineInvoice({ transactions, patient, consultant, branch }) {
   const clinic = CLINIC_BRANCHES[branch] || CLINIC_BRANCHES.Delhi;
   const firstTransaction = transactions[0];
@@ -289,7 +280,6 @@ function MedicineInvoice({ transactions, patient, consultant, branch }) {
 
   return (
     <div style={s.page}>
-      {/* Header */}
       <div style={s.header}>
         <div>
           <h1 style={s.clinicName}>{clinic.name}</h1>
@@ -304,7 +294,6 @@ function MedicineInvoice({ transactions, patient, consultant, branch }) {
         </div>
       </div>
 
-      {/* Customer & Invoice Details */}
       <div style={s.twoCol}>
         <div>
           <h2 style={s.patientName}>{patient.name}</h2>
@@ -319,7 +308,6 @@ function MedicineInvoice({ transactions, patient, consultant, branch }) {
 
       <h3 style={s.sectionTitle}>Invoice</h3>
 
-      {/* Products Table */}
       <table style={s.table}>
         <thead>
           <tr>
@@ -370,7 +358,6 @@ function MedicineInvoice({ transactions, patient, consultant, branch }) {
         </tbody>
       </table>
 
-      {/* Footer */}
       <div style={s.footer}>
         <div>
           <p style={{ ...s.footerRow, fontWeight: "bold" }}>Authorized Signatory</p>
@@ -387,7 +374,6 @@ function MedicineInvoice({ transactions, patient, consultant, branch }) {
   );
 }
 
-// ========== TRANSPLANT INVOICE ==========
 function TransplantInvoice({ transactions, patient, consultant, branch, packageAmount, packageDiscount }) {
   const clinic = CLINIC_BRANCHES[branch] || CLINIC_BRANCHES.Delhi;
   const firstTransaction = transactions[0] || {};
@@ -401,7 +387,6 @@ function TransplantInvoice({ transactions, patient, consultant, branch, packageA
 
   return (
     <div style={s.page}>
-      {/* Header */}
       <div style={s.header}>
         <div>
           <h1 style={s.clinicName}>{clinic.name}</h1>
@@ -416,7 +401,6 @@ function TransplantInvoice({ transactions, patient, consultant, branch, packageA
         </div>
       </div>
 
-      {/* Customer & Invoice Details */}
       <div style={s.twoCol}>
         <div>
           <h2 style={s.patientName}>{patient.name}</h2>
@@ -432,7 +416,6 @@ function TransplantInvoice({ transactions, patient, consultant, branch, packageA
 
       <h3 style={s.sectionTitle}>Invoice</h3>
 
-      {/* Package Table */}
       <table style={s.table}>
         <thead>
           <tr>
@@ -458,7 +441,6 @@ function TransplantInvoice({ transactions, patient, consultant, branch, packageA
         </tbody>
       </table>
 
-      {/* Additional Benefits */}
       {patient.additionalbenefits?.length > 0 && (
         <div style={{ marginBottom: "24px" }}>
           <h4 style={s.subTitle}>Package Includes:</h4>
@@ -492,7 +474,6 @@ function TransplantInvoice({ transactions, patient, consultant, branch, packageA
         </tbody>
       </table>
 
-      {/* Footer */}
       <div style={s.footer}>
         <div>
           <p style={{ ...s.footerRow, fontWeight: "bold" }}>Authorized Signatory</p>
@@ -508,7 +489,6 @@ function TransplantInvoice({ transactions, patient, consultant, branch, packageA
   );
 }
 
-// ========== MAIN BILL GENERATOR COMPONENT ==========
 export default function BillGenerator({ transactionId, onClose }) {
   const [generating, setGenerating] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -542,7 +522,6 @@ export default function BillGenerator({ transactionId, onClose }) {
       setGenerating(true);
       const element = document.getElementById("bill-content");
 
-      // Expand scroll container so full height is captured
       const scrollContainer = element.parentElement;
       const prevMaxH = scrollContainer.style.maxHeight;
       const prevOverflow = scrollContainer.style.overflow;
@@ -559,8 +538,6 @@ export default function BillGenerator({ transactionId, onClose }) {
           allowTaint: true,
           logging: false,
           onclone: (clonedDoc) => {
-            // The invoice components use only inline styles — no Tailwind classes.
-            // Stripping stylesheets is safe and eliminates the oklch() error entirely.
             clonedDoc.querySelectorAll('link[rel="stylesheet"]').forEach((el) => el.remove());
             clonedDoc.querySelectorAll("style").forEach((el) => el.remove());
           },
@@ -616,7 +593,6 @@ export default function BillGenerator({ transactionId, onClose }) {
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
       <div className="bg-white rounded-2xl shadow-2xl max-w-5xl w-full my-8">
-        {/* Header */}
         <div className="bg-linear-to-r from-indigo-600 to-purple-600 px-6 py-4 rounded-t-2xl flex items-center justify-between no-print">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
@@ -640,7 +616,6 @@ export default function BillGenerator({ transactionId, onClose }) {
           </button>
         </div>
 
-        {/* Bill Preview */}
         <div className="p-6 max-h-150 overflow-y-auto">
           <div id="bill-content" style={{ backgroundColor: "#ffffff" }}>
             {category === "TRANSPLANT" ? (
@@ -655,7 +630,6 @@ export default function BillGenerator({ transactionId, onClose }) {
           </div>
         </div>
 
-        {/* Actions */}
         <div className="px-6 py-4 bg-gray-50 rounded-b-2xl flex gap-3 no-print">
           <button onClick={handlePrint} className="flex-1 px-6 py-3 bg-linear-to-r from-indigo-500 to-purple-600 text-white rounded-xl hover:from-indigo-600 hover:to-purple-700 transition-all font-semibold flex items-center justify-center gap-2">
             <Printer className="w-5 h-5" />

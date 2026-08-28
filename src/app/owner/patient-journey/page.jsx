@@ -8,11 +8,6 @@ const rupee = (n) => new Intl.NumberFormat("en-IN", { style: "currency", currenc
 const fmtDate = (v) => (v ? new Date(v).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "—");
 const names = (arr) => (Array.isArray(arr) && arr.length ? arr.map((e) => e?.name).filter(Boolean).join(", ") : "—");
 
-// Journey strip order — the 6 real (non-dead) ops.status values, in the pipeline order the
-// Patient pre-save hook's precedence chain implies for a converting patient. NOT_VISITED and
-// NOT_CONVERTED are drop-off states, not sequential to each other, but ops.status only ever
-// holds ONE current value with no history — this shows where the record sits now among the
-// possible states, not a literal timeline of what already happened.
 const JOURNEY_STEPS = ["NEW", "NOT_VISITED", "NOT_CONVERTED", "BOOKING_DONE", "SURGERY_BOOKED", "CLOSED"];
 const STEP_LABEL = {
   NEW: "New", NOT_VISITED: "Not Visited", NOT_CONVERTED: "Not Converted",

@@ -1,4 +1,3 @@
-// app/api/transactions/service/delete/route.js
 
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/db";
@@ -41,15 +40,11 @@ export async function DELETE(req) {
       );
     }
 
-    // Closed-period guard — a delete inside a frozen period would invalidate its snapshot.
     const locked = await periodLockResponse(transaction);
     if (locked) {
       return NextResponse.json(locked.body, { status: locked.status });
     }
 
-    // §3.2 Direction A — refuse to orphan a Receivable/Payable this transaction created.
-    // Direction B (this row merely PAYS a linked document) needs no cascade: paid/pending is
-    // aggregated from transactions, so deleting it self-corrects.
     const cascade = await checkCascadeOnDelete(transaction);
     if (cascade.blocked) {
       return NextResponse.json(
@@ -76,7 +71,6 @@ export async function DELETE(req) {
       date: transaction.date,
     };
 
-    // Log the deletion
     await DeleteLog.create({
       entityType: "Transaction",
       entityId: transactionId,
@@ -97,28 +91,23 @@ export async function DELETE(req) {
       branch: transaction.branch,
     });
 
-    // Delete the transaction first
     await Transactions.findByIdAndDelete(transactionId);
 
-    // ── Reverse patient payment update (only if linked to a registered patient) ──
     let updatedPatient = null;
 
     if (transaction.patient) {
       const patient = await Patient.findById(transaction.patient);
 
       if (patient && patient.payments) {
-        // Remove this transaction's ID from the patient's transactions array
         patient.payments.transactions = patient.payments.transactions.filter(
           (id) => id.toString() !== transactionId.toString()
         );
 
-        // Subtract the deleted transaction's amount from amountReceived
         patient.payments.amountReceived = Math.max(
           0,
           patient.payments.amountReceived - (transaction.amount || 0)
         );
 
-        // Recalculate discount from remaining revenue transactions
         const remainingTransactions = await Transactions.find({
           _id: { $in: patient.payments.transactions },
           costType: "Revenue",
@@ -128,7 +117,6 @@ export async function DELETE(req) {
           0
         );
 
-        // Recalculate pending amount
         const adjustedTotal = Math.max(
           0,
           patient.payments.totalAmount - patient.payments.discount
@@ -138,7 +126,6 @@ export async function DELETE(req) {
           adjustedTotal - patient.payments.amountReceived
         );
 
-        // Audit trail
         patient.editors = patient.editors || [];
         patient.editors.push({
           name: session.user.name,
@@ -155,7 +142,6 @@ export async function DELETE(req) {
         };
       }
     }
-    // ─────────────────────────────────────────────────────────────────────────────
 
     return NextResponse.json({
       success: true,

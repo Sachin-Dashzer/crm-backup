@@ -6,21 +6,6 @@ import { Search } from "lucide-react";
 import { STATUS_STYLES } from "@/lib/financeUI";
 import { ALL_BRANCHES } from "@/lib/branches";
 
-// Generic accounting list table shared by every drill-down/leaf view in the accounting UI
-// (currently DrillDownTable's transaction level). Deliberately knows nothing about payables vs
-// receivables vs anything else — every business-specific word ("paid", "raised", "owed") stays
-// in the caller's `columns`/`filterConfig` labels, never hardcoded here.
-//
-// Filter state syncs to the URL (useSearchParams + router.replace, shallow) so reloading the page
-// preserves the filter, the same pattern admin/payables and admin/receivables already use.
-//
-// columns: [{ key, label, numeric?, render?(row) }]
-// filterConfig: { showSearch, searchPlaceholder, showStatus, statusOptions, showCategory,
-//                 categoryLabel, categoryOptions: [{value,label}], showBranch, showDateRange }
-// filters: current filter VALUES { search, status, category, branch, dateFrom, dateTo }
-// onFilterChange(nextFilters): called whenever a filter is applied/cleared
-// pagination: { page, limit, total }
-// onPageChange(nextPage)
 export default function AccountingTable({
   columns,
   rows = [],
@@ -49,7 +34,6 @@ export default function AccountingTable({
     dateTo: filters.dateTo || "",
   });
 
-  // Reload preserves the filter: read the URL once on mount and hand it up to the caller.
   useEffect(() => {
     if (!urlSync) return;
     const fromUrl = {
@@ -65,8 +49,6 @@ export default function AccountingTable({
       setDraft(fromUrl);
       onFilterChange?.(fromUrl);
     }
-    // Only ever read the URL on first mount — after that, this component is the source of truth.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const writeUrl = useCallback(
@@ -92,14 +74,11 @@ export default function AccountingTable({
     onFilterChange?.(next);
   };
 
-  // Live search is debounced; every other filter applies immediately on change, matching the
-  // pattern already used across the accounting pages.
   useEffect(() => {
     const handle = setTimeout(() => {
       if (draft.search !== (filters.search || "")) apply({ search: draft.search });
     }, 400);
     return () => clearTimeout(handle);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [draft.search]);
 
   const {
@@ -118,7 +97,6 @@ export default function AccountingTable({
 
   return (
     <div className="space-y-3">
-      {/* ── Filters: search, status, head/category, branch, date range — left to right ── */}
       <div className="flex flex-wrap items-center gap-2">
         {showSearch && (
           <div className="relative flex-1 min-w-[180px]">
@@ -186,7 +164,6 @@ export default function AccountingTable({
         )}
       </div>
 
-      {/* ── Desktop table ── */}
       <div className="hidden sm:block bg-white border border-gray-200 rounded-xl overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
@@ -246,7 +223,6 @@ export default function AccountingTable({
         </table>
       </div>
 
-      {/* ── Mobile stacked cards ── */}
       <div className="sm:hidden space-y-2">
         {loading ? (
           [...Array(4)].map((_, i) => (
@@ -284,7 +260,6 @@ export default function AccountingTable({
         )}
       </div>
 
-      {/* ── Pagination ── */}
       {pagination && pagination.total > pagination.limit && (
         <div className="flex items-center justify-between text-sm text-gray-500 px-1">
           <span>

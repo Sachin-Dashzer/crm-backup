@@ -15,7 +15,6 @@ const handler = async (req) => {
       );
     }
 
-    // Try to find as Patient first (for TRANSPLANT invoices)
     let patient = await Patient.findById(newId)
       .select("personal counselling payments")
       .populate({
@@ -29,12 +28,10 @@ const handler = async (req) => {
       });
 
     if (patient) {
-      // TRANSPLANT invoice - return patient with all payment history
       const transplantPayments = patient.payments?.transactions?.filter(
         (t) => t && (t.transactionCategory === "TRANSPLANT" || !t.transactionCategory)
       ) || [];
 
-      // Get branch from first transaction or default
       const branch = transplantPayments[0]?.branch || patient.personal?.branch || "Delhi";
 
       return NextResponse.json({
@@ -68,7 +65,6 @@ const handler = async (req) => {
       });
     }
 
-    // Try to find as Transaction (for SERVICE/MEDICINE/EXPENSE)
     const transaction = await Transactions.findById(newId)
       .populate({
         path: "patient",
@@ -93,7 +89,6 @@ const handler = async (req) => {
     const category = transaction.transactionCategory || "GENERAL";
     const isBatch = !!transaction.batchId;
 
-    // For batch transactions, fetch all transactions in the same batch
     let transactions = [transaction];
     if (isBatch && category === "MEDICINE") {
       transactions = await Transactions.find({
@@ -104,7 +99,6 @@ const handler = async (req) => {
       });
     }
 
-    // Get patient details
     let patientDetails = {
       name: "Walk-in Customer",
       phone: "N/A",

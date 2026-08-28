@@ -12,7 +12,6 @@ const handler = async (req) => {
     const data = await req.json();
     const { branch = "All", from, to } = data;
 
-    // ✅ Validate branch
     if (!VALID_BRANCHES.includes(branch)) {
       return NextResponse.json(
         { error: "Invalid branch specified" },
@@ -20,7 +19,6 @@ const handler = async (req) => {
       );
     }
 
-    // ✅ Parse dates from ISO strings (already include proper time boundaries)
     const fromDate = new Date(from);
     const toDate = new Date(to);
 
@@ -38,11 +36,9 @@ const handler = async (req) => {
       );
     }
 
-    // ✅ Calculate the number of days in the selected range
     const daysDifference =
       Math.ceil((toDate - fromDate) / (1000 * 60 * 60 * 24)) + 1;
 
-    // ✅ Calculate comparison period (previous period of same duration)
     const yesterdayEnd = new Date(fromDate);
     yesterdayEnd.setDate(yesterdayEnd.getDate() - 1);
     yesterdayEnd.setHours(23, 59, 59, 999);
@@ -51,7 +47,6 @@ const handler = async (req) => {
     yesterdayStart.setDate(yesterdayStart.getDate() - (daysDifference - 1));
     yesterdayStart.setHours(0, 0, 0, 0);
 
-    // ✅ Last 7 and 30 days (always relative to actual today)
     const actualToday = new Date();
     actualToday.setHours(23, 59, 59, 999);
 
@@ -65,11 +60,9 @@ const handler = async (req) => {
 
     const thisMonthStart = new Date(actualToday.getFullYear(), actualToday.getMonth(), 1, 0, 0, 0, 0);
 
-    // ✅ Centralized filter objects
     const branchFilter = branch === "All" ? {} : { "personal.branch": branch };
     const branchFilterTx = branch === "All" ? {} : { branch: branch };
 
-    // ✅ OPTIMIZED: Single aggregation for all patient counts (current period & comparison period)
     const getPatientStats = async () => {
       const result = await Patient.aggregate([
         {
@@ -95,7 +88,6 @@ const handler = async (req) => {
         },
         {
           $facet: {
-            // Current period counts
             currentAppointments: [
               {
                 $match: {
@@ -139,7 +131,6 @@ const handler = async (req) => {
               },
               { $count: "count" },
             ],
-            // Comparison period counts (previous period of same duration)
             comparisonAppointments: [
               {
                 $match: {
@@ -206,7 +197,6 @@ const handler = async (req) => {
       };
     };
 
-    // ✅ OPTIMIZED: Single aggregation for all revenue data
     const getRevenueStats = async () => {
       const result = await Transactions.aggregate([
         {
@@ -223,12 +213,7 @@ const handler = async (req) => {
           },
         },
         {
-          // Every branch below excludes UNSETTLED_METHODS *and* settlements — they are totals — EXCEPT the
-          // *ByMethod ones, which stay unfiltered on purpose: grouping by method is exactly
-          // where the paid_to_external/paid_by_other bucket should still be visible (see the
-          // §2.4 report — totals hide it, breakdowns-by-method show it).
           $facet: {
-            // Current period revenue
             currentTotal: [
               { $match: { date: { $gte: fromDate, $lte: toDate }, method: { $nin: UNSETTLED_METHODS }, ...SETTLEMENT_EXCLUSION } },
               { $group: { _id: null, total: { $sum: "$amount" } } },
@@ -243,14 +228,12 @@ const handler = async (req) => {
                 },
               },
             ],
-            // Comparison period revenue
             comparisonTotal: [
               {
                 $match: { date: { $gte: yesterdayStart, $lte: yesterdayEnd }, method: { $nin: UNSETTLED_METHODS }, ...SETTLEMENT_EXCLUSION },
               },
               { $group: { _id: null, total: { $sum: "$amount" } } },
             ],
-            // Last 7 days
             last7DaysTotal: [
               { $match: { date: { $gte: last7DaysStart, $lte: actualToday }, method: { $nin: UNSETTLED_METHODS }, ...SETTLEMENT_EXCLUSION } },
               { $group: { _id: null, total: { $sum: "$amount" } } },
@@ -275,7 +258,6 @@ const handler = async (req) => {
               },
               { $sort: { _id: 1 } },
             ],
-            // Last 30 days
             last30DaysTotal: [
               {
                 $match: { date: { $gte: last30DaysStart, $lte: actualToday }, method: { $nin: UNSETTLED_METHODS }, ...SETTLEMENT_EXCLUSION },
@@ -306,7 +288,6 @@ const handler = async (req) => {
               },
               { $sort: { _id: 1 } },
             ],
-            // This month
             thisMonthTotal: [
               { $match: { date: { $gte: thisMonthStart, $lte: actualToday }, method: { $nin: UNSETTLED_METHODS }, ...SETTLEMENT_EXCLUSION } },
               { $group: { _id: null, total: { $sum: "$amount" } } },
@@ -331,7 +312,6 @@ const handler = async (req) => {
               },
               { $sort: { _id: 1 } },
             ],
-            // PRP & GFC stats for the selected period
             prpStats: [
               {
                 $match: {
@@ -355,19 +335,16 @@ const handler = async (req) => {
       return result[0];
     };
 
-    // ✅ Execute both aggregations in parallel
     const [patientStats, revenueStats] = await Promise.all([
       getPatientStats(),
       getRevenueStats(),
     ]);
 
-    // ✅ Calculate growth percentage
     const calculateGrowth = (current, comparison) => {
       if (comparison === 0) return current > 0 ? 100 : 0;
       return Number((((current - comparison) / comparison) * 100).toFixed(2));
     };
 
-    // ✅ Helper formatters
     const formatRevenueData = (data) =>
       data.map((item) => ({
         method: item._id || "Unknown",
@@ -381,11 +358,9 @@ const handler = async (req) => {
         total: item.total || 0,
       }));
 
-    // ✅ Extract revenue values
     const currentRevenue = revenueStats.currentTotal[0]?.total || 0;
     const comparisonRevenue = revenueStats.comparisonTotal[0]?.total || 0;
 
-    // ✅ Prepare final response
     return NextResponse.json({
       dateRange: {
         from: fromDate.toISOString(),
@@ -397,7 +372,6 @@ const handler = async (req) => {
       },
       branch,
 
-      // Patient stats with growth percentage
       appointment: {
         count: patientStats.current.appointments,
         growth: calculateGrowth(
@@ -427,35 +401,30 @@ const handler = async (req) => {
         ),
       },
 
-      // Revenue with growth percentage
       amountReceived: {
         total: currentRevenue,
         growth: calculateGrowth(currentRevenue, comparisonRevenue),
       },
       amountByTechnique: formatRevenueData(revenueStats.currentByTechnique),
 
-      // Last 7 days
       last7Days: {
         total: revenueStats.last7DaysTotal[0]?.total || 0,
         amountByMethod: formatRevenueData(revenueStats.last7DaysByMethod),
         perDay: formatDailyRevenue(revenueStats.last7DaysPerDay),
       },
 
-      // Last 30 days
       last30Days: {
         total: revenueStats.last30DaysTotal[0]?.total || 0,
         amountByMethod: formatRevenueData(revenueStats.last30DaysByMethod),
         perDay: formatDailyRevenue(revenueStats.last30DaysPerDay),
       },
 
-      // This month
       thisMonth: {
         total: revenueStats.thisMonthTotal[0]?.total || 0,
         amountByMethod: formatRevenueData(revenueStats.thisMonthByMethod),
         perDay: formatDailyRevenue(revenueStats.thisMonthPerDay),
       },
 
-      // PRP & GFC
       prp: (() => {
         const prpRow = revenueStats.prpStats?.find((r) => r._id === "PRP");
         const gfcRow = revenueStats.prpStats?.find((r) => r._id === "GFC");

@@ -36,14 +36,12 @@ export default function AgentDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showFilters, setShowFilters] = useState(false);
-  
-  // Additional filters
+
   const [minRevenue, setMinRevenue] = useState("");
   const [minPatients, setMinPatients] = useState("");
   const [minConversion, setMinConversion] = useState("");
   const [selectedTechnique, setSelectedTechnique] = useState("all");
 
-  // Fetch agents data
   useEffect(() => {
     const fetchAgents = async () => {
       try {
@@ -67,7 +65,6 @@ export default function AgentDashboard() {
     fetchAgents();
   }, [timeFilter]);
 
-  // Get all unique techniques for filter dropdown
   const allTechniques = Array.from(
     new Set(
       agentsData.flatMap((agent) =>
@@ -76,25 +73,24 @@ export default function AgentDashboard() {
     )
   ).sort(byName);
 
-  // Filter + sort agents
   const filteredAgents = agentsData
     .filter((agent) => {
       const matchesSearch = agent.name
         ?.toLowerCase()
         .includes(searchQuery.toLowerCase());
-      
+
       const matchesRevenue = minRevenue
         ? agent.totalRevenue >= parseFloat(minRevenue)
         : true;
-      
+
       const matchesPatients = minPatients
         ? agent.totalPatients >= parseInt(minPatients)
         : true;
-      
+
       const matchesConversion = minConversion
         ? agent.conversionRate >= parseFloat(minConversion)
         : true;
-      
+
       const matchesTechnique =
         selectedTechnique === "all" || !selectedTechnique
           ? true
@@ -134,7 +130,6 @@ export default function AgentDashboard() {
       return sortOrder === "asc" ? compareValue : -compareValue;
     });
 
-  // Calculate summary statistics
   const totalRevenue = filteredAgents.reduce(
     (sum, agent) => sum + agent.totalRevenue,
     0
@@ -151,11 +146,10 @@ export default function AgentDashboard() {
     (sum, agent) => sum + agent.readyForSurgery,
     0
   );
-  const avgConversionRate = filteredAgents.length > 0 
-    ? filteredAgents.reduce((sum, agent) => sum + agent.conversionRate, 0) / filteredAgents.length 
+  const avgConversionRate = filteredAgents.length > 0
+    ? filteredAgents.reduce((sum, agent) => sum + agent.conversionRate, 0) / filteredAgents.length
     : 0;
 
-  // Format INR currency
   const formatCurrency = (amount = 0) =>
     new Intl.NumberFormat("en-IN", {
       style: "currency",
@@ -195,7 +189,6 @@ export default function AgentDashboard() {
       />
 
       <main className="flex-1 p-4 my-5 lg:p-6">
-        {/* Header */}
         <div className="mb-6">
           <div className="flex justify-between items-center mb-4">
             <div>
@@ -206,24 +199,8 @@ export default function AgentDashboard() {
                 Track all agent performance and sales metrics
               </p>
             </div>
-            {/* <div className="flex gap-2">
-              {["day", "week", "month", "all"].map((filter) => (
-                <button
-                  key={filter}
-                  className={`px-4 py-2 rounded-lg transition-colors ${
-                    timeFilter === filter
-                      ? "bg-indigo-600 text-white"
-                      : "bg-white text-gray-700 hover:bg-gray-100 border"
-                  }`}
-                  onClick={() => setTimeFilter(filter)}
-                >
-                  {filter.charAt(0).toUpperCase() + filter.slice(1)}
-                </button>
-              ))}
-            </div> */}
           </div>
 
-          {/* Summary Cards */}
           {!loading && !error && (
             <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
               <div className="bg-white rounded-xl shadow-sm p-4 border-l-4 border-indigo-500">
@@ -282,17 +259,14 @@ export default function AgentDashboard() {
                       {totalReadyForSurgery}
                     </p>
                   </div>
-                  {/* <Scalpel className="h-8 w-8 text-orange-500" /> */}
                 </div>
               </div>
             </div>
           )}
         </div>
 
-        {/* Search and Sort Bar */}
         <div className="bg-white rounded-xl shadow-sm p-4 mb-4">
           <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
-            {/* Search */}
             <div className="relative flex-1 max-w-md">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
               <input
@@ -304,7 +278,6 @@ export default function AgentDashboard() {
               />
             </div>
 
-            {/* Sort By */}
             <select
               className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
               value={sortBy}
@@ -318,7 +291,6 @@ export default function AgentDashboard() {
               <option value="avgRevenue">Sort by Avg Revenue</option>
             </select>
 
-            {/* Sort Order */}
             <button
               className="p-2 rounded-lg border border-gray-300 hover:bg-gray-100 transition-colors"
               onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
@@ -331,7 +303,6 @@ export default function AgentDashboard() {
               )}
             </button>
 
-            {/* Advanced Filters Toggle */}
             <button
               className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-colors ${
                 showFilters
@@ -345,7 +316,6 @@ export default function AgentDashboard() {
             </button>
           </div>
 
-          {/* Advanced Filters */}
           <AnimatePresence>
             {showFilters && (
               <motion.div
@@ -426,7 +396,6 @@ export default function AgentDashboard() {
           </AnimatePresence>
         </div>
 
-        {/* Loader / Error / No Data */}
         {loading ? (
           <div className="flex justify-center items-center h-64">
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-indigo-500"></div>
@@ -453,14 +422,11 @@ export default function AgentDashboard() {
           </div>
         ) : (
           <>
-            {/* Results Count */}
             <div className="mb-4 text-sm text-gray-600">
               Showing {filteredAgents.length} of {agentsData.length} agents
             </div>
 
-            {/* Agents List Table */}
             <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-              {/* Table Header */}
               <div className="grid grid-cols-12 gap-4 p-4 bg-gray-50 border-b font-semibold text-gray-700 text-sm">
                 <div className="col-span-3">Agent</div>
                 <div className="col-span-1 text-center">Patients</div>
@@ -471,13 +437,10 @@ export default function AgentDashboard() {
                 <div className="col-span-2 text-center">Actions</div>
               </div>
 
-              {/* Agents List */}
               <div className="divide-y">
                 {filteredAgents.map((agent, idx) => (
                   <div key={agent._id || idx} className="bg-white">
-                    {/* Agent Row */}
                     <div className="grid grid-cols-12 gap-4 p-4 items-center hover:bg-gray-50 transition-colors">
-                      {/* Agent Info */}
                       <div className="col-span-3">
                         <div className="flex items-center gap-3">
                           <div className="h-10 w-10 bg-indigo-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
@@ -492,7 +455,7 @@ export default function AgentDashboard() {
                               {agent.name}
                             </h3>
                             <div className="flex items-center gap-2 text-xs text-gray-500 mt-1">
-                              
+
                               {agent.phone && (
                                 <div className="flex items-center gap-1">
                                   <Phone className="h-3 w-3" />
@@ -504,7 +467,6 @@ export default function AgentDashboard() {
                         </div>
                       </div>
 
-                      {/* Patients Count */}
                       <div className="col-span-1 text-center">
                         <div className="flex flex-col items-center">
                           <span className="text-lg font-bold text-gray-900">
@@ -523,7 +485,6 @@ export default function AgentDashboard() {
                         </div>
                       </div>
 
-                      {/* Ready for Surgery */}
                       <div className="col-span-1 text-center">
                         <div className="flex flex-col items-center">
                           <span className="text-lg font-bold text-blue-600">
@@ -533,7 +494,6 @@ export default function AgentDashboard() {
                         </div>
                       </div>
 
-                      {/* Conversion Rate */}
                       <div className="col-span-2 text-center">
                         <div className="flex flex-col items-center">
                           <span className={`text-lg font-bold px-2 py-1 rounded-full ${getPerformanceColor(agent.conversionRate)}`}>
@@ -543,7 +503,6 @@ export default function AgentDashboard() {
                         </div>
                       </div>
 
-                      {/* Revenue */}
                       <div className="col-span-2 text-center">
                         <div className="flex flex-col items-center">
                           <span className="text-lg font-bold text-gray-900">
@@ -555,7 +514,6 @@ export default function AgentDashboard() {
                         </div>
                       </div>
 
-                      {/* Actions */}
                       <div className="col-span-2 text-center">
                         <button
                           onClick={() => toggleAgentDetails(agent._id || idx)}
@@ -576,7 +534,6 @@ export default function AgentDashboard() {
                       </div>
                     </div>
 
-                    {/* Expanded Details */}
                     <AnimatePresence>
                       {expandedAgent === (agent._id || idx) && (
                         <motion.div
@@ -614,7 +571,6 @@ export default function AgentDashboard() {
 
                               <div className="bg-white p-4 rounded-lg shadow-sm">
                                 <div className="flex items-center gap-3">
-                                  {/* <Scalpel className="h-8 w-8 text-orange-500" /> */}
                                   <div>
                                     <p className="text-sm text-gray-600">Surgery Ready</p>
                                     <p className="text-xl font-bold text-gray-900">
@@ -637,7 +593,6 @@ export default function AgentDashboard() {
                               </div>
                             </div>
 
-                            {/* Techniques */}
                             {agent.techniques && Object.keys(agent.techniques).length > 0 && (
                               <div className="bg-white p-4 rounded-lg shadow-sm">
                                 <h4 className="font-semibold text-gray-900 mb-3">Techniques Sold</h4>

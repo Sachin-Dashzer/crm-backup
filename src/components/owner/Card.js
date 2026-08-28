@@ -1,5 +1,3 @@
-// .card + .card-title wrapper. `actions` renders on the right of the title row
-// (typically a .link-btn button).
 export default function Card({ title, subtitle, actions, className = "", children }) {
   return (
     <div className={`card${className ? ` ${className}` : ""}`}>

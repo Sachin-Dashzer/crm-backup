@@ -1,21 +1,3 @@
-// One-time backfill: sets excludeFromPnl on every FINANCING obligation — a borrowing's Payable
-// (expenseCategory "Borrowings") and an advance's Receivable (revenueCategory "Advances").
-//
-// Why: /api/close-book/pnl computes
-//     Income  = direct revenue transactions + EVERY non-cancelled Receivable's totalAmount raised
-//     Expense = direct expense transactions + EVERY non-cancelled Payable's  totalAmount raised
-// with no category filter of its own. A borrowing is not a cost and an advance is not a sale —
-// money borrowed must be repaid and money lent will be recovered, so neither belongs in P&L at
-// all. Both create routes now set excludeFromPnl: true at creation, but any document created
-// before that flag existed still needs it, or the P&L overstates expense (borrowings) and income
-// (advances) by the full principal.
-//
-// Safe to re-run: only touches documents that don't already carry the flag.
-//
-// Dry run by default. Re-run with --apply to write.
-//
-//   node scripts/backfill-financing-exclude-from-pnl.mjs
-//   node scripts/backfill-financing-exclude-from-pnl.mjs --apply
 
 import mongoose from "mongoose";
 import fs from "fs";

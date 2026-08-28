@@ -1,57 +1,3 @@
-/**
- * import-expenses-august.js
- *
- * Self-contained import of the August expense sheet into the Transactions collection.
- * Data is embedded below - no Excel or JSON file needed at runtime.
- *
- * DRY RUN by default. Nothing is written until you pass --apply.
- *
- *   node scripts/import-expenses-august.js            # preview
- *   node scripts/import-expenses-august.js --apply    # write
- *
- * Source: August_ExP.xlsx
- *   614 rows, Rs 53,11,000.54, 1-12 August 2026.
- *
- * NORMALISATION APPLIED TO THE RAW SHEET
- *
- * 1. Payment method -> CRM method / account
- *      "Cash"              -> cash                        / Cash Book (or Cash ( backend ), see 2)
- *      "Hdfc Skin 739"     -> hdfc_skin_bank_transfer     / HDFC Skin
- *      "Icici Medihub 292" -> icici_medihub_bank_transfer / ICICI Medihub
- *
- * 2. Backend cash account - this sheet has only a plain "Cash" method, with no separate
- *    "Cash ( Backend )" value (unlike the May-July sheet). Backend cash is therefore
- *    inferred from the Place column, same as the original April sheets: 67 rows are
- *    Place "Delhi Backend" with method Cash, and route to account "Cash ( backend )"
- *    instead of "Cash Book". Bank-transfer rows from the backend are NOT overridden -
- *    they still leave from their own bank account regardless of which office spent it.
- *
- * 3. Head correction (3 rows) - rows whose expenseType is "Electricity Exp-*" were filed
- *    under head "Rent". Those types belong to "Electricity Bill"; the head is corrected
- *    and the type left untouched. Same correction every earlier sheet needed:
- *      row 220  Electricity Exp-Staff Flat
- *      row loop Electricity Exp-Staff Flat (2nd occurrence)
- *      row loop Electricity Exp-Backend basement
- *    (exact row numbers are in the embedded data below - grep "Electricity Bill" if needed)
- *
- * 4. "Expense Type Breakdown" (column 9) is not imported - it duplicates Expense Type
- *    for every row in this sheet. The CRM has no field for it.
- *
- * All heads matched EXPENSE_CATEGORY_TREE exactly once the correction above is applied -
- * no new expense types are needed for this sheet (unlike April and May-July, which needed
- * "PATIENT TREATMENT CHARGES" and "Loan Repayment" added first).
- *
- * expenseGiver.name is taken from Remarks, as the sheet has no vendor column.
- * Place (Delhi Backend / Delhi Center / Hyderabad Clinic) is appended to remarks, since
- * the CRM has no separate place field and the distinction is worth keeping.
- *
- * EXPECTED IMPACT BY ACCOUNT (each figure REDUCES that account):
- *     HDFC Skin           29,78,408.36
- *     ICICI Medihub        9,13,545.18
- *     Cash ( backend )     7,24,922.00
- *     Cash Book            6,94,125.00
- * Reconcile these against your bank statements before applying.
- */
 
 import mongoose from "mongoose";
 import fs from "fs";
@@ -62,9 +8,6 @@ import { ACCOUNTS } from "../src/constants/bankRouting.js";
 
 dotenv.config({ path: ".env.local" });
 
-// ---------------------------------------------------------------------------
-// Embedded data - 614 rows
-// ---------------------------------------------------------------------------
 const ENTRIES = [
   { rowNum: 2, date: "2026-08-01", branch: "Delhi", place: "Delhi Center", expenseCategory: "Patient Related Expenses", expenseType: "Patient Refunds", amount: 6000, method: "cash", furtherMode: "Cash Book", remarks: "KAILESH PT REFUND DUE TO LEAVE NOT APPROVED ARMY PT" },
   { rowNum: 3, date: "2026-08-01", branch: "Delhi", place: "Delhi Center", expenseCategory: "Medical Consumables", expenseType: "Medical Consumables-Others", amount: 500, method: "cash", furtherMode: "Cash Book", remarks: "pt for cd medicines" },
@@ -682,7 +625,6 @@ const ENTRIES = [
   { rowNum: 615, date: "2026-08-10", branch: "Hyderabad", place: "Hyderabad Clinic", expenseCategory: "Rent", expenseType: "Rent-Hyderebad Clinic", amount: 199800, method: "icici_medihub_bank_transfer", furtherMode: "ICICI Medihub", remarks: "JULY RENT CLEAR/YALAMANCHI" },
 ];
 
-// ---------------------------------------------------------------------------
 const args = process.argv.slice(2);
 const APPLY = args.includes("--apply");
 const ALLOW_DUPES = args.includes("--allow-duplicates");
@@ -709,10 +651,6 @@ const Transactions =
 
 const inr = (n) => "Rs " + Number(n).toLocaleString("en-IN", { maximumFractionDigits: 2 });
 
-// ---------------------------------------------------------------------------
-// Validation - every row checked before anything is written. A partial import of
-// financial data is worse than no import, so one bad row aborts the whole run.
-// ---------------------------------------------------------------------------
 function validate(entries) {
   const errors = [];
   const missingTypes = new Set();
@@ -736,7 +674,6 @@ function validate(entries) {
   return { errors, missingTypes: [...missingTypes] };
 }
 
-// ---------------------------------------------------------------------------
 async function run() {
   const total = ENTRIES.reduce((s, e) => s + e.amount, 0);
 
@@ -763,7 +700,6 @@ async function run() {
 
   await mongoose.connect(MONGODB_URI, { serverSelectionTimeoutMS: 5000 });
 
-  // --- duplicate guard, batched by date ---
   console.log("Checking for already-imported rows...");
   const dupes = [];
   const byDate = new Map();
@@ -808,7 +744,6 @@ async function run() {
     console.log("No duplicates found.\n");
   }
 
-  // --- build documents ---
   const docs = ENTRIES.map((e) => ({
     transactionCategory: "EXPENSE",
     costType: "Expense",
@@ -825,7 +760,6 @@ async function run() {
     createdBy: { name: "Bulk Import", email: "import@system", branch: e.branch, date: new Date() },
   }));
 
-  // --- summaries ---
   const byAccount = {}, byBranch = {}, byCategory = {}, byDay = {};
   docs.forEach((d, i) => {
     byAccount[d.furtherMode] = (byAccount[d.furtherMode] || 0) + d.amount;
@@ -856,7 +790,6 @@ async function run() {
     return;
   }
 
-  // --- insert in batches ---
   console.log("\nInserting...");
   const BATCH = 200;
   const insertedIds = [];

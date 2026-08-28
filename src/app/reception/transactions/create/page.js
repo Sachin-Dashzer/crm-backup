@@ -16,15 +16,9 @@ import {
   Receipt,
 } from "lucide-react";
 
-// Returns today's date in IST (Asia/Kolkata) as YYYY-MM-DD
 const getTodayIST = () =>
   new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
 
-// useSession() can resolve synchronously on mount if the session is already
-// cached, so the initial useState() calls below can't just fall back to
-// "Delhi" only when branch is falsy — a Collab account's "Collab" sentinel
-// (not a real city) would slip through and fail the Transaction model's
-// branch enum. Treat it like the "All" case and require an explicit pick.
 const resolveInitialBranch = (branch) =>
   branch && branch !== "All" && branch !== "Collab" ? branch : "Delhi";
 
@@ -39,7 +33,6 @@ export default function AllTransactionsPage() {
   const [medicines, setMedicines] = useState([]);
   const [vendors, setVendors] = useState([]);
 
-  // TRANSPLANT DATA
   const [transplantData, setTransplantData] = useState({
     patient: "",
     procedure: "Sapphire FUE",
@@ -57,7 +50,6 @@ export default function AllTransactionsPage() {
     externalParty: { name: "", method: "", partyKind: "MANUAL", partyRefId: "" },
   });
 
-  // SERVICE DATA - Now supports multiple services
   const [serviceData, setServiceData] = useState({
     patient: "",
     patientName: "",
@@ -85,7 +77,6 @@ export default function AllTransactionsPage() {
     },
   ]);
 
-  // MEDICINE DATA - Now supports multiple medicines
   const [medicineData, setMedicineData] = useState({
     patient: "",
     patientName: "",
@@ -114,7 +105,6 @@ export default function AllTransactionsPage() {
     },
   ]);
 
-  // EXPENSE DATA
   const [expenseData, setExpenseData] = useState({
     expenseCategory: "",
     expenseType: "",
@@ -136,13 +126,6 @@ export default function AllTransactionsPage() {
     fetchData();
   }, []);
 
-  // useSession() resolves asynchronously, so session?.user?.branch is still
-  // undefined when the branch fields above are initialized, leaving every
-  // form defaulted to "Delhi" regardless of the logged-in user's actual
-  // branch. Sync it in once the session loads, unless the user already
-  // picked a branch manually.
-  // Collab accounts carry the "Collab" sentinel (not a real city), so it's
-  // excluded — it would otherwise fail the Transaction model's branch enum.
   const branchTouchedRef = useRef({
     transplant: false,
     service: false,
@@ -176,7 +159,6 @@ export default function AllTransactionsPage() {
         console.error("Error fetching medicines:", error);
       }
 
-      // Fetch vendors
       try {
         const vendorsRes = await fetch("/api/vendors/get");
         if (vendorsRes.ok) {
@@ -193,7 +175,6 @@ export default function AllTransactionsPage() {
     }
   };
 
-  // TRANSPLANT HANDLERS
 
   const handleSaveTransplant = async () => {
     if (!transplantData.patient) {
@@ -263,7 +244,6 @@ export default function AllTransactionsPage() {
     }
   };
 
-  // SERVICE HANDLERS
   const handleSaveService = async () => {
     if (!serviceData.isWalkIn && !serviceData.patient) {
       alert("Please select a patient");
@@ -346,7 +326,6 @@ export default function AllTransactionsPage() {
     }
   };
 
-  // MEDICINE HANDLERS
   const handleSaveMedicine = async () => {
     if (!medicineData.isWalkIn && !medicineData.patient) {
       alert("Please select a patient");
@@ -437,7 +416,6 @@ export default function AllTransactionsPage() {
     }
   };
 
-  // EXPENSE HANDLERS
   const handleSaveExpense = async () => {
     if (!expenseData.expenseCategory) {
       alert("Please select expense category");
@@ -605,7 +583,6 @@ export default function AllTransactionsPage() {
                     Medicine Sale
                   </div>
                 </button>
-                {/* {session?.user?.role === "admin" && ( */}
                 <button
                   onClick={() => setActiveTab("expense")}
                   className={`px-6 py-3 font-medium border-b-2 transition-colors ${
@@ -619,11 +596,9 @@ export default function AllTransactionsPage() {
                     Expense
                   </div>
                 </button>
-                {/* )} */}
               </div>
             </div>
 
-            {/* TRANSPLANT TAB - Keep existing code */}
             {activeTab === "transplant" && (
               <RevenueSection
                 category="TRANSPLANT"
@@ -638,7 +613,6 @@ export default function AllTransactionsPage() {
               />
             )}
 
-            {/* SERVICE TAB - UPDATED WITH MULTIPLE ITEMS */}
             {activeTab === "service" && (
               <RevenueSection
                 category="SERVICE"
@@ -659,7 +633,6 @@ export default function AllTransactionsPage() {
               />
             )}
 
-            {/* MEDICINE TAB - UPDATED WITH MULTIPLE ITEMS */}
             {activeTab === "medicine" && (
               <RevenueSection
                 category="MEDICINE"
@@ -681,7 +654,6 @@ export default function AllTransactionsPage() {
               />
             )}
 
-            {/* EXPENSE TAB */}
             {activeTab === "expense" && (
               <DirectExpenseSection
                 data={expenseData}

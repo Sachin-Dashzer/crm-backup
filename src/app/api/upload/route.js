@@ -1,4 +1,3 @@
-// app/api/upload/route.js
 import { v2 as cloudinary } from "cloudinary";
 import { NextResponse } from "next/server";
 
@@ -8,11 +7,9 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// Increase timeout - this is important for large files
-export const maxDuration = 300; // 5 minutes
+export const maxDuration = 300;
 export const dynamic = "force-dynamic";
 
-// Named export for POST method
 export async function POST(request) {
   try {
     const formData = await request.formData();
@@ -27,8 +24,7 @@ export async function POST(request) {
       );
     }
 
-    // Check file size (e.g., 10MB limit)
-    const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+    const MAX_FILE_SIZE = 10 * 1024 * 1024;
     if (file.size > MAX_FILE_SIZE) {
       return NextResponse.json(
         {
@@ -46,11 +42,9 @@ export async function POST(request) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    // Determine resource type
     const isPDF = file.name.toLowerCase().endsWith(".pdf");
     const resourceType = isPDF ? "raw" : "image";
 
-    // Upload with optimized settings and timeout
     const uploadPromise = new Promise((resolve, reject) => {
       const uploadStream = cloudinary.uploader.upload_stream(
         {
@@ -58,13 +52,11 @@ export async function POST(request) {
             ? `ryan-clinic/${patientId}/${section}`
             : `ryan-clinic/receipts/${section}`,
           resource_type: resourceType,
-          timeout: 120000, // 2 minute timeout per upload
-          // For images, add optimization
+          timeout: 120000,
           ...(resourceType === "image" && {
             quality: "auto:good",
             fetch_format: "auto",
           }),
-          // For PDFs, ensure they're viewable
           ...(isPDF && {
             flags: "attachment:false",
           }),
@@ -82,7 +74,6 @@ export async function POST(request) {
       uploadStream.end(buffer);
     });
 
-    // Add timeout wrapper
     const timeoutPromise = new Promise((_, reject) => {
       setTimeout(
         () => reject(new Error("Upload timeout after 2 minutes")),
@@ -92,7 +83,6 @@ export async function POST(request) {
 
     const result = await Promise.race([uploadPromise, timeoutPromise]);
 
-    // For PDFs, modify URL to ensure inline viewing
     let filePath = result.secure_url;
     if (isPDF) {
       filePath = filePath.replace("/upload/", "/upload/fl_attachment:false/");
@@ -106,7 +96,6 @@ export async function POST(request) {
   } catch (error) {
     console.error("Upload API error:", error);
 
-    // Provide specific error messages
     let errorMessage = "Failed to upload file";
 
     if (error.message?.includes("timeout")) {
@@ -130,7 +119,6 @@ export async function POST(request) {
   }
 }
 
-// Named export for DELETE method
 export async function DELETE(request) {
   try {
     const { publicId, resourceType } = await request.json();
@@ -149,14 +137,12 @@ export async function DELETE(request) {
 
     const result = await cloudinary.uploader.destroy(publicId, {
       resource_type: resourceType || "image",
-      timeout: 60000, // 1 minute timeout
-      invalidate: true, // Invalidate CDN cache
+      timeout: 60000,
+      invalidate: true,
     });
 
     console.log("Cloudinary delete result:", result);
 
-    // Cloudinary returns result: 'ok' for successful deletion
-    // result: 'not found' if file doesn't exist
     const isSuccess = result.result === "ok";
     const isNotFound = result.result === "not found";
 
@@ -166,7 +152,6 @@ export async function DELETE(request) {
         message: "File deleted successfully",
       });
     } else if (isNotFound) {
-      // File not found is OK - it's already deleted
       return NextResponse.json({
         success: true,
         message: "File not found",
@@ -181,7 +166,6 @@ export async function DELETE(request) {
   } catch (error) {
     console.error("Delete API error:", error);
 
-    // Check if it's a "not found" error
     if (error.message && error.message.includes("not found")) {
       return NextResponse.json({
         success: true,

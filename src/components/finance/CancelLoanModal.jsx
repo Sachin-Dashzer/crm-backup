@@ -5,24 +5,16 @@ import { AlertTriangle, Ban, Loader2, X } from "lucide-react";
 import { useToast } from "@/components/Toast";
 import { formatCurrency, formatDate } from "@/lib/financeUI";
 
-// Loan cancellation dialog — the same confirmation-copy style, loading state, and toast usage as
-// ReverseTransactionModal.jsx (§4), because this IS that same reversal action with one extra
-// step when the loan was already settled, not a visually distinct feature. The backend guards
-// and the negative-row write live in src/lib/reverseTransaction.js via
-// /api/transactions/[id]/cancel-loan; this only drives it.
-//
-// `transaction` needs at least: _id, amount, date, furtherMode (the loan account), patientName /
-// patient.personal.name.
 export default function CancelLoanModal({ transaction, onClose, onDone }) {
   const toast = useToast();
-  const [state, setState] = useState(null); // reverse GET state
-  const [loanState, setLoanState] = useState(null); // cancel-loan GET state
+  const [state, setState] = useState(null);
+  const [loanState, setLoanState] = useState(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const [reason, setReason] = useState("Loan cancelled");
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
-  const [done, setDone] = useState(null); // result payload once submitted
+  const [done, setDone] = useState(null);
 
   const id = transaction?._id;
   const account = transaction?.furtherMode;
@@ -51,8 +43,6 @@ export default function CancelLoanModal({ transaction, onClose, onDone }) {
     };
   }, [id]);
 
-  // D1/D2 — the probe now returns EVERY outstanding settlement, not one, since a loan can be
-  // settled more than once (e.g. a fee-adjusted partial settlement followed by a top-up).
   const settlementTransfers = loanState?.settlementTransfers || [];
   const isCaseB = settlementTransfers.length > 0;
   const totalSettled = loanState?.totalSettled || 0;
@@ -107,8 +97,6 @@ export default function CancelLoanModal({ transaction, onClose, onDone }) {
             <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">
               {done.message}
             </div>
-            {/* D7 — reversing a transplant payment can move the patient off SURGERY_BOOKED; show
-                that consequence rather than leaving it to be discovered on the patient's own page. */}
             {done.patientStatus && done.patientStatus.before !== done.patientStatus.after && (
               <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
                 Patient status changed: <b>{done.patientStatus.before || "—"}</b> →{" "}
@@ -180,7 +168,6 @@ export default function CancelLoanModal({ transaction, onClose, onDone }) {
                   </div>
                 </div>
 
-                {/* The consequence, in words, with real figures — before the button is pressed. */}
                 <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800 space-y-1.5">
                   <div className="flex items-center gap-1.5 font-semibold">
                     <AlertTriangle className="w-4 h-4" /> What this will do

@@ -1,9 +1,5 @@
 import { Fragment } from "react";
 
-// .heatmap grid from a 2D array. rows/cols are label arrays; data[r][c] is the value for that
-// cell. colorFor(value, {min,max}) returns a CSS color — defaults to a blue intensity scale.
-// The CSS's own grid-template-columns is fixed at 12 columns for the prototype's specific
-// dataset; we override it inline so the component still works for any column count.
 function defaultColorFor(value, { min, max }) {
   if (value == null) return "var(--line)";
   const range = max - min || 1;

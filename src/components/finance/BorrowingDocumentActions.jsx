@@ -4,14 +4,6 @@ import { HandCoins, History, Plus } from "lucide-react";
 import { StatusBadge } from "@/lib/financeUI";
 import LockedBadge from "./LockedBadge";
 
-// Level-3 (document) row actions for the Liabilities page's "Borrowings" section — a document
-// there is a real Payable, but its lifecycle is Record Repayment / Add Tranche, not the generic
-// Record Payment/Revise/Cancel every other Payable gets (see DrillDownTable's
-// renderDocumentActions override, and the Payable model's own note that a "Borrowings" payable
-// is never created any way other than through this flow). Deliberately no Cancel action here —
-// cancelling means cancelling a specific Borrowing row (IN or OUT), which only makes unambiguous
-// sense per-row; see /api/borrowings/[id]'s PATCH for that guarded capability, exposed for a
-// later pass rather than a document-level button that would have to guess which row is meant.
 export default function BorrowingDocumentActions({ row, onRepay, onTranche, onHistory }) {
   const pending = row.pending ?? Math.max((row.totalAmount || 0) - (row.paid || 0), 0);
 

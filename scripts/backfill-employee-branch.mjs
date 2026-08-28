@@ -1,28 +1,3 @@
-// scripts/backfill-employee-branch.mjs
-//
-// Step 6: Employee.branch was just added to src/models/Employee.js with `default: "Delhi"`.
-// Mongoose's `default` only applies when a document is newly saved — every Employee that
-// already existed in the database has no `branch` field at all, and will keep returning
-// `undefined` for it forever unless backfilled here. This is the chosen approach (a one-off
-// migration) rather than $ifNull-ing every read site: two real call sites already read/filter
-// on Employee.branch today —
-//   - src/app/api/super-admin/reports/route.js  (generateEmployeesReport)
-//   - src/app/api/sales/dashboard/route.js      (getAgentPerformance)
-// — and both have been silently broken (empty branch string / zero results on a branch filter)
-// since before this field existed, precisely because there was nothing to read. Backfilling
-// real data fixes both permanently, and every future read site for free, without requiring every
-// aggregation anywhere in the codebase to remember a defensive $ifNull.
-//
-// Sets branch: "Delhi" on every Employee with no branch field — same default the schema itself
-// now uses for new documents, so backfilled and newly-created employees behave identically.
-//
-// Uses an inline strict:false schema (not the real model) because Employee.js now imports the
-// "@/lib/branches" alias, which plain Node ESM can't resolve outside Next.js — the same pattern
-// scripts/delete-duplicate-employees.mjs already uses for this exact reason.
-//
-// Usage:
-//   node scripts/backfill-employee-branch.mjs                # dry run
-//   node scripts/backfill-employee-branch.mjs --apply         # write for real
 
 import mongoose from "mongoose";
 import fs from "fs";

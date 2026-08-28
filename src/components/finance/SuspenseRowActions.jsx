@@ -3,10 +3,6 @@
 import Link from "next/link";
 import { HelpCircle } from "lucide-react";
 
-// A suspense entry lives in the SuspenseEntry collection, not Transactions — same reasoning as
-// ContraRowActions: no edit/delete route resolves its _id, so it links into the existing
-// Suspense manager (SuspenseManager, under the Transactions page's "Suspense" tab) instead,
-// which already owns resolve/cancel for these entries.
 export default function SuspenseRowActions() {
   return (
     <Link

@@ -6,8 +6,6 @@ import { OwnerTopbar, Card, DataTable, Badge } from "@/components/owner";
 import { ALL_BRANCHES } from "@/lib/branches";
 
 const BRANCHES = ["All", ...ALL_BRANCHES];
-// Forward-looking presets — unlike the reporting pages, OT planning is primarily about what's
-// coming up, not what already happened.
 const DATE_RANGES = ["Today", "Next 7 Days", "Next 30 Days", "Custom"];
 
 function fmtDate(v) {

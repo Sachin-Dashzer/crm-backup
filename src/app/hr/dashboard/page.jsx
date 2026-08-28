@@ -14,7 +14,6 @@ import {
   ResponsiveContainer, Cell,
 } from "recharts";
 
-/* ── Date helpers ─────────────────────────────────────────────────────────── */
 function buildRange(preset, custom = {}) {
   const now = new Date();
   const end = new Date(now); end.setHours(23, 59, 59, 999);
@@ -52,7 +51,6 @@ const STATUS_BG = {
   Applied:               "bg-blue-100 text-blue-700",
 };
 
-/* ── Components ───────────────────────────────────────────────────────────── */
 function StatCard({ label, value, sub, accent, icon: Icon, href, pct, pctLabel }) {
   const styles = {
     violet: { card: "border-violet-100", bar: "bg-violet-500", icon: "bg-violet-100 text-violet-600", val: "text-violet-700" },
@@ -98,7 +96,6 @@ function MiniKpi({ label, value, color }) {
   );
 }
 
-/* ── Main ─────────────────────────────────────────────────────────────────── */
 const PRESETS = [
   { key: "today",     label: "Today"      },
   { key: "yesterday", label: "Yesterday"  },
@@ -142,7 +139,6 @@ export default function HRDashboard() {
       <HRSidebar />
       <main className="flex-1 flex flex-col min-w-0 overflow-auto">
 
-        {/* ── Sticky Header ── */}
         <header className="bg-white border-b border-gray-200 px-6 py-4 sticky top-0 z-10 shadow-sm shrink-0">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div className="flex items-center gap-3">
@@ -191,7 +187,6 @@ export default function HRDashboard() {
             </div>
           ) : (
             <>
-              {/* ── Top 3 Source Cards ── */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <StatCard
                   icon={Users} label="Total Candidates" value={data?.total ?? 0}
@@ -210,7 +205,6 @@ export default function HRDashboard() {
                 />
               </div>
 
-              {/* ── Status Mini KPIs ── */}
               <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
                 <MiniKpi label="Applied"   value={data?.applied   ?? 0} color="text-blue-600" />
                 <MiniKpi label="Scheduled" value={data?.scheduled ?? 0} color="text-indigo-600" />
@@ -219,9 +213,7 @@ export default function HRDashboard() {
                 <MiniKpi label="On Hold"   value={data?.onHold    ?? 0} color="text-amber-600" />
               </div>
 
-              {/* ── Charts Row ── */}
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-                {/* Area chart */}
                 <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
                   <div className="flex items-center gap-2 mb-4">
                     <TrendingUp className="w-4 h-4 text-violet-500" />
@@ -254,7 +246,6 @@ export default function HRDashboard() {
                   )}
                 </div>
 
-                {/* Status breakdown */}
                 <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
                   <h2 className="text-sm font-bold text-gray-800 mb-4">Status Breakdown</h2>
                   <div className="space-y-3">
@@ -281,9 +272,7 @@ export default function HRDashboard() {
                 </div>
               </div>
 
-              {/* ── Positions Bar + Recent Candidates ── */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-                {/* Positions */}
                 <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
                   <div className="flex items-center gap-2 mb-4">
                     <Briefcase className="w-4 h-4 text-violet-500" />
@@ -308,7 +297,6 @@ export default function HRDashboard() {
                   )}
                 </div>
 
-                {/* Recent candidates */}
                 <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
                   <div className="flex items-center justify-between mb-4">
                     <h2 className="text-sm font-bold text-gray-800">Recent Candidates</h2>
@@ -339,7 +327,6 @@ export default function HRDashboard() {
                 </div>
               </div>
 
-              {/* ── HR Performance Table ── */}
               {(data?.byHr?.length ?? 0) > 0 && (
                 <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
                   <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2">

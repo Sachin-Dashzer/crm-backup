@@ -9,7 +9,7 @@ export default function ChartsSection({ data }) {
     Line: null,
     Doughnut: null,
   });
-  const [activeChart, setActiveChart] = useState("weekly"); // "weekly" | "monthly" | "methods"
+  const [activeChart, setActiveChart] = useState("weekly");
 
   useEffect(() => {
     const loadCharts = async () => {
@@ -52,13 +52,11 @@ export default function ChartsSection({ data }) {
     );
   }
 
-  // Format label helper
   const formatDateLabel = (dateStr) => {
     const date = new Date(dateStr);
     return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
   };
 
-  /* ---------------- Weekly & Monthly Line Data ---------------- */
   const weeklyLineData = {
     labels: data.last7Days.perDay.map((d) => formatDateLabel(d.date)),
     datasets: [
@@ -107,7 +105,6 @@ export default function ChartsSection({ data }) {
     },
   };
 
-  /* ---------------- Method Bar Data ---------------- */
   const methodData = {
     labels: data.last7Days.amountByMethod.map((m) => m.method),
     datasets: [
@@ -141,19 +138,18 @@ export default function ChartsSection({ data }) {
     },
   };
 
-  /* ---------------- Technique Doughnut Data ---------------- */
   const doughnutData = {
     labels: data.amountByTechnique.map((t) => t.method),
     datasets: [
       {
         data: data.amountByTechnique.map((t) => t.total),
         backgroundColor: [
-          "rgba(59, 130, 246, 0.8)", // Professional blue (medical)
-          "rgba(16, 185, 129, 0.8)", // Healthcare green (growth/health)
-          "rgba(19, 92, 246, 0.8)", // Medical purple (specialty)
-          "rgba(245, 158, 11, 0.8)", // Warning amber (surgery ready)
-          "rgba(239, 68, 68, 0.8)", // Alert red (important notices)
-          "rgba(6, 182, 212, 0.8)", // Teal (clean/sterile)
+          "rgba(59, 130, 246, 0.8)",
+          "rgba(16, 185, 129, 0.8)",
+          "rgba(19, 92, 246, 0.8)",
+          "rgba(245, 158, 11, 0.8)",
+          "rgba(239, 68, 68, 0.8)",
+          "rgba(6, 182, 212, 0.8)",
         ],
         borderWidth: 0,
         hoverOffset: 12,
@@ -190,7 +186,6 @@ export default function ChartsSection({ data }) {
     cutout: "70%",
   };
 
-  // Calculate total for technique chart
   const totalTechniqueRevenue = data.amountByTechnique.reduce(
     (sum, tech) => sum + tech.total,
     0
@@ -198,7 +193,6 @@ export default function ChartsSection({ data }) {
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-      {/* Main Chart */}
       <div className="lg:col-span-2 bg-white p-6 rounded-2xl shadow">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-lg font-semibold text-gray-800">
@@ -253,7 +247,6 @@ export default function ChartsSection({ data }) {
         </div>
       </div>
 
-      {/* Technique Doughnut */}
       <div className="bg-white p-6 rounded-2xl shadow">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-lg font-semibold text-gray-800">By Technique</h2>
@@ -273,7 +266,6 @@ export default function ChartsSection({ data }) {
             <div className="text-gray-500">Loading Chart...</div>
           )}
         </div>
-        {/* Technique Summary */}
         <div className="mt-4 space-y-2">
           {data.amountByTechnique.map((tech, index) => {
             const percentage = Math.round(

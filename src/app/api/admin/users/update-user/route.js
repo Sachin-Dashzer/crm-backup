@@ -9,7 +9,6 @@ export async function POST(req) {
   try {
     const session = await getServerSession(authOptions);
 
-    // Only super-admin can manage users
     const callerRole = session?.user?.role;
     if (!session || callerRole !== 'super-admin') {
       return NextResponse.json(
@@ -22,7 +21,6 @@ export async function POST(req) {
 
     const { userId, name, email, role, branch, password } = await req.json();
 
-    // Validation
     if (!userId) {
       return NextResponse.json(
         { success: false, message: "User ID is required" },
@@ -30,7 +28,6 @@ export async function POST(req) {
       );
     }
 
-    // Find user
     const user = await User.findById(userId).select('+password +sessionVersion');
 
     if (!user) {
@@ -40,29 +37,13 @@ export async function POST(req) {
       );
     }
 
-    // Prevent updating admin accounts through this endpoint
-    // if (user.role === 'admin') {
-    //   return NextResponse.json(
-    //     { success: false, message: "Cannot update admin accounts through this interface" },
-    //     { status: 400 }
-    //   );
-    // }
 
-    // Prevent changing user to admin role
-    // if (role === 'admin') {
-    //   return NextResponse.json(
-    //     { success: false, message: "Cannot change user role to admin through this interface" },
-    //     { status: 400 }
-    //   );
-    // }
 
-    // Update fields
     if (name) {
       user.name = name;
     }
 
     if (email) {
-      // Email validation
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(email)) {
         return NextResponse.json(
@@ -71,8 +52,7 @@ export async function POST(req) {
         );
       }
 
-      // Check if email already exists (for different user)
-      const existingUser = await User.findOne({ 
+      const existingUser = await User.findOne({
         email: email.toLowerCase(),
         _id: { $ne: userId }
       });
@@ -109,7 +89,6 @@ export async function POST(req) {
       user.branch = branch;
     }
 
-    // Update password if provided
     if (password) {
       if (password.length < 6) {
         return NextResponse.json(
@@ -117,7 +96,7 @@ export async function POST(req) {
           { status: 400 }
         );
       }
-      user.password = password; // Will be hashed by pre-save hook and increment sessionVersion
+      user.password = password;
     }
 
     await user.save();

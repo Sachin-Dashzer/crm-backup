@@ -8,7 +8,6 @@ export async function GET(req) {
   try {
     const session = await getServerSession(authOptions);
 
-    // Only super-admin can access user management
     if (!session || session?.user?.role !== 'super-admin') {
       return NextResponse.json(
         { success: false, message: "Unauthorized. Super-admin access required." },
@@ -18,13 +17,11 @@ export async function GET(req) {
 
     await connectDB();
 
-    // Fetch all users
     const users = await User.find({})
       .select('name email role branch createdAt lastLogin')
       .sort({ createdAt: -1 })
       .lean();
 
-    // Convert to plain objects
     const plainUsers = users.map(user => ({
       _id: user._id.toString(),
       name: user.name,

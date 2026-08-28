@@ -5,16 +5,8 @@ import { COLLAB_BRANCHES } from "@/lib/branches";
 import { EXPENSE_METHODS } from "@/constants/paymentMethods";
 import { Loader2, TrendingDown, Wallet } from "lucide-react";
 
-// The collab panel's ONLY expense flow: settling what we owe a partner clinic.
-// Deliberately offers no expense categories and no vendor/manual payee entry —
-// a collab user cannot log arbitrary expenses. Every payment here is recorded
-// against an existing Collab Clinic payable, so paid/pending stays computed from
-// Transactions the same way every other payable works.
-
 const formatCurrency = (amount) => `₹${Number(amount || 0).toLocaleString("en-IN")}`;
 
-// Settling a collab clinic pays money OUT against a Collab Clinic payable, so this is an
-// expense form and offers exactly the expense set — imported, never restated.
 const METHOD_OPTIONS = EXPENSE_METHODS;
 
 const getTodayIST = () =>
@@ -96,7 +88,6 @@ export default function CollabSettlementPanel({ onSaved }) {
       setRemarks("");
       setAllowOverpayment(false);
       setSelectedPayableId("");
-      // Refresh the payable list so pending reflects the payment just made.
       setClinic((c) => c);
       const params = new URLSearchParams({
         purpose: "COLLAB_CLINIC",
@@ -129,7 +120,6 @@ export default function CollabSettlementPanel({ onSaved }) {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Clinic <span className="text-red-500">*</span>
               </label>
-              {/* COLLAB_BRANCHES only — never ALL_BRANCHES. */}
               <select
                 value={clinic}
                 onChange={(e) => {

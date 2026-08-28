@@ -13,18 +13,17 @@ const userSchema = new mongoose.Schema({
   },
   branch: { type: String },
   lastLogin: Date,
-  
-  sessionVersion: { 
-    type: Number, 
+
+  sessionVersion: {
+    type: Number,
     default: 0,
     select: false
   },
-  
+
   passwordChangedAt: Date,
-  
+
 }, { timestamps: true });
 
-// Hash password before saving
 userSchema.pre("save", async function () {
   if (!this.isModified("password")) return;
 
@@ -36,12 +35,10 @@ userSchema.pre("save", async function () {
   }
 });
 
-// Method to compare passwords
 userSchema.methods.correctPassword = async function (candidatePass, userPass) {
   return await bcrypt.compare(candidatePass, userPass);
 };
 
-// Method to check if password was changed after JWT was issued
 userSchema.methods.changedPasswordAfter = function(JWTTimestamp) {
   if (this.passwordChangedAt) {
     const changedTimestamp = parseInt(this.passwordChangedAt.getTime() / 1000, 10);

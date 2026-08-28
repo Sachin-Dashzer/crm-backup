@@ -5,7 +5,7 @@ import Patient from "@/models/Patient";
 export async function GET(req) {
   try {
     await connectDB();
-    
+
     const { searchParams } = new URL(req.url);
     const branch = searchParams.get("branch") || "All";
     const dateRange = searchParams.get("dateRange") || "This Month";
@@ -13,7 +13,6 @@ export async function GET(req) {
     const startDate = searchParams.get("startDate");
     const endDate = searchParams.get("endDate");
 
-    // Date filtering
     let dateFilter = {};
     if (startDate && endDate) {
       dateFilter = {
@@ -37,13 +36,11 @@ export async function GET(req) {
       dateFilter = { $gte: firstDay };
     }
 
-    // Branch filtering
     let branchFilter = {};
     if (branch !== "All") {
       branchFilter = { "personal.branch": branch };
     }
 
-    // Get all surgeries in the date range
     const surgeries = await Patient.find({
       ...branchFilter,
       "surgery.surgeryDate": dateFilter
@@ -51,18 +48,16 @@ export async function GET(req) {
       .select("personal surgery payments")
       .lean();
 
-    // Calculate summary metrics
     const totalSurgeries = surgeries.length;
     const completedSurgeries = surgeries.filter(s => s.surgery?.graftsImplanted > 0).length;
     const pendingSurgeries = totalSurgeries - completedSurgeries;
-    
+
     const totalGrafts = surgeries.reduce((sum, s) => sum + (s.surgery?.graftsImplanted || 0), 0);
     const averageGrafts = totalSurgeries > 0 ? Math.round(totalGrafts / totalSurgeries) : 0;
-    
+
     const totalRevenue = surgeries.reduce((sum, s) => sum + (s.payments?.totalAmount || 0), 0);
     const averageRevenue = totalSurgeries > 0 ? Math.round(totalRevenue / totalSurgeries) : 0;
 
-    // Technique breakdown
     const techniqueBreakdown = {};
     surgeries.forEach(s => {
       const technique = s.surgery?.technique;
@@ -73,13 +68,12 @@ export async function GET(req) {
         techniqueBreakdown[technique].count++;
       }
     });
-    
+
     Object.keys(techniqueBreakdown).forEach(technique => {
-      techniqueBreakdown[technique].percentage = 
+      techniqueBreakdown[technique].percentage =
         ((techniqueBreakdown[technique].count / totalSurgeries) * 100).toFixed(1);
     });
 
-    // Location breakdown
     const locationBreakdown = {};
     surgeries.forEach(s => {
       const location = s.surgery?.location || s.personal?.branch;
@@ -90,13 +84,12 @@ export async function GET(req) {
         locationBreakdown[location].count++;
       }
     });
-    
+
     Object.keys(locationBreakdown).forEach(location => {
-      locationBreakdown[location].percentage = 
+      locationBreakdown[location].percentage =
         ((locationBreakdown[location].count / totalSurgeries) * 100).toFixed(1);
     });
 
-    // Recent surgeries
     const recentSurgeries = surgeries
       .sort((a, b) => new Date(b.surgery?.surgeryDate) - new Date(a.surgery?.surgeryDate))
       .slice(0, 10);

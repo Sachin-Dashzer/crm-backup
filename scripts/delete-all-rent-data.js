@@ -23,7 +23,6 @@ const FORCE_LINKED = args.includes("--force-linked");
 const Transactions = mongoose.models.Transactions || mongoose.model("Transactions", new mongoose.Schema({}, { strict: false }), "transactions");
 const Payable = mongoose.models.Payable || mongoose.model("Payable", new mongoose.Schema({}, { strict: false }), "payables");
 
-// Mirrors creatorLinks() in src/lib/cascadeIntegrity.js.
 function creatorLinks(txn) {
   const links = [];
   const ep = txn.externalParty || {};
@@ -39,7 +38,6 @@ async function run() {
   console.log(APPLY ? "MODE: APPLY  <- will delete from the database" : "MODE: DRY RUN  <- nothing will be deleted");
   await mongoose.connect(readMongoUri(), { serverSelectionTimeoutMS: 5000 });
 
-  // ── Payables: every Rent payable, plus its linked TDS payable ──
   const rentPayables = await Payable.find({ expenseCategory: "Rent" }).lean();
   const rentPayableIds = rentPayables.map((p) => p._id);
   const tdsPayables = rentPayableIds.length
@@ -51,7 +49,6 @@ async function run() {
   console.log(`\nPayables: ${rentPayables.length} Rent payable(s) + ${tdsPayables.length} linked TDS payable(s) = ${allPayables.length} total.`);
   console.log(`  Total amount: ₹${allPayables.reduce((s, p) => s + (p.totalAmount || 0), 0).toLocaleString("en-IN")}`);
 
-  // ── Transactions: category-matched OR linked via payableId to one of the payables above ──
   const matches = await Transactions.find({
     $or: [
       { costType: "Expenses", expense: "Rent" },
@@ -71,7 +68,6 @@ async function run() {
   console.log(`  By branch: ${Object.entries(byBranch).map(([b, n]) => `${b}: ${n}`).join(", ")}`);
   console.log(`  Total amount: ₹${totalAmount.toLocaleString("en-IN")}`);
 
-  // ── Cascade check ──
   const safe = [];
   const linked = [];
   for (const t of matches) {

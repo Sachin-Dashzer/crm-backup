@@ -38,17 +38,10 @@ import {
   HelpCircle,
 } from "lucide-react";
 
-// Direct Payments tab shows only categories with no payable flow, minus "Patient Related
-// Expenses" (owned by the Patient tab's own Expense sub-tab) — so nothing double-enters.
 const OTHER_EXPENSE_CATEGORIES = DIRECT_PAYMENT_CATEGORIES.filter(
   (cat) => cat !== "Patient Related Expenses",
 );
 
-// PAYABLE_CATEGORY_PURPOSE / PAYABLE_CATEGORY_KIND / getPayableContext moved to
-// src/lib/entryForm/getPayableContext.js (§2.2 Phase 1 extraction) — imported above.
-//
-// Patient tab → Expense sub-tab: the 2 patient-linked sub-types under
-// "Patient Related Expenses" (Refund claims the 3rd, "Patient Refunds").
 const PATIENT_EXPENSE_SUBTYPES = ["Patient Meals", "PATIENT EMI"];
 
 const getPaymentIdConfig = (method) => {
@@ -68,15 +61,9 @@ const getPaymentIdConfig = (method) => {
 const getTodayIST = () =>
   new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
 
-// Admin users have branch="All" and Collab accounts have branch="Collab" —
-// neither is a valid transaction branch enum value.
-// Fall back to "Delhi" for initial form state; user selects the actual branch via dropdown.
 const resolveDefaultBranch = (branch) =>
   branch && branch !== "All" && branch !== "Collab" ? branch : "Delhi";
 
-// Task 4 — every "New Transaction" link (DrillDownTable's header button, the Assets/Liabilities
-// drill-down, Task 6's Receipts/Payments) needs useSearchParams to read its prefill, which Next.js
-// requires a Suspense boundary around — same pattern admin/assets/page.jsx already uses.
 export default function AdminCreateTransactionPage() {
   return (
     <Suspense fallback={null}>
@@ -85,12 +72,6 @@ export default function AdminCreateTransactionPage() {
   );
 }
 
-// Maps a Payable's expenseCategory head back to the expense tab's own sub-navigation, so a
-// prefill from DrillDownTable lands on the right sub-tab instead of the default "agent" one.
-// Best-effort: Salary/Incentive/Commision are owned by the Agent/Patient tabs' own flows (see
-// NO_GIVER_CATEGORIES in expense/create/route.js); every PAYABLE_EXPENSE_DROPDOWN_CATEGORIES
-// value goes through the generic "rent" (Payable Expenses) tab; anything else falls to "other"
-// (Direct Payment), which is the tab with no extra required fields beyond category/type.
 function resolveExpenseSection(expenseHead) {
   if (expenseHead === "Salary" || expenseHead === "Incentive") return "agent";
   if (expenseHead === "Commision") return "patient";
@@ -112,17 +93,11 @@ function AdminCreateTransactionPageInner() {
   const patientDebounceRef = useRef(null);
   const [medicines, setMedicines] = useState([]);
   const [vendors, setVendors] = useState([]);
-  // Agent tab (Salary/Incentive picker) + Patient tab Commission "Paid To" picker
   const [employees, setEmployees] = useState([]);
   const [employeeSearching, setEmployeeSearching] = useState(false);
   const [employeeCache, setEmployeeCache] = useState({});
   const employeeDebounceRef = useRef(null);
-  // Payable (owed) tracking — Agent, Patient>Commission, Rent+Electricity,
-  // Collab, and Other>Taxes sections. "Create Payable" records an amount as
-  // newly owed; "Record Payment" logs a normal expense transaction against
-  // an existing payable. Paid/pending is always computed server-side by
-  // aggregating Transactions — never stored here.
-  const [payableAction, setPayableAction] = useState("none"); // "none" | "create" | "pay"
+  const [payableAction, setPayableAction] = useState("none");
   const [selectedPayableId, setSelectedPayableId] = useState("");
   const [allowOverpayment, setAllowOverpayment] = useState(false);
   const [payableDueDate, setPayableDueDate] = useState("");
@@ -210,7 +185,6 @@ function AdminCreateTransactionPageInner() {
   ]);
 
   const [expenseData, setExpenseData] = useState({
-    // Top-level 4-way switch: "agent" | "patient" | "rent" | "other"
     expenseSection: "agent",
     expenseCategory: "",
     expenseType: "",
@@ -226,26 +200,19 @@ function AdminCreateTransactionPageInner() {
     furtherMode: "",
     externalParty: { name: "", method: "", partyKind: "MANUAL", partyRefId: "" },
 
-    // Agent tab
-    agentSubTab: "salary", // "salary" | "incentive"
+    agentSubTab: "salary",
     employeeId: "",
     salaryMonth: new Date().getMonth() + 1,
     salaryYear: new Date().getFullYear(),
 
-    // Patient tab
-    patientSubTab: "commission", // "commission" | "refund" | "expense"
+    patientSubTab: "commission",
     patientId: "",
-    receiverType: "Patient", // "Patient" | "Employee" | "MANUAL"
+    receiverType: "Patient",
     receiverId: "",
     receiverName: "",
 
-    // Payable Expenses tab — category is one of PAYABLE_EXPENSE_DROPDOWN_CATEGORIES
-    // (Rent, Electricity Bill, Medical Consumables, Medicine Procurement, Professional
-    // Expenses, Lab Expenses, Interest Expenses, Taxes, Software/Hardware Rental Expenses).
     payableCategory: "Rent",
     rentSubType: "",
-    // A distinct field from `vendorId` above (the "other"/Direct Payment tab's own vendor picker)
-    // so picking a vendor in one tab never bleeds into the other when switching between them.
     payableVendorId: "",
     includeGST: false,
     gstRate: "",
@@ -255,15 +222,10 @@ function AdminCreateTransactionPageInner() {
     tdsRate: "",
     tdsAmount: "",
 
-    // Collab tab
 
     receipts: [],
   });
 
-  // Task 4 — prefill from the query string a "New Transaction" link arrives with (DrillDownTable's
-  // header button, Task 6's Receipts/Payments pages). A ONE-TIME initial-state read on mount, not
-  // a controlled binding — every field it sets stays exactly as editable afterward as if the user
-  // had picked it themselves. Runs after every tab's useState above so their setters exist.
   useEffect(() => {
     const category = searchParams.get("category");
     const branch = searchParams.get("branch");
@@ -297,9 +259,6 @@ function AdminCreateTransactionPageInner() {
       }));
       if (!category) setActiveTab("expense");
     }
-    // Deliberately run once, on mount only — after this, the form is the source of truth and a
-    // later change to the URL (there shouldn't be one) must not silently overwrite user input.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchPatients = async (term = "") => {
@@ -337,11 +296,6 @@ function AdminCreateTransactionPageInner() {
     return [...cached, ...patients];
   }, [patients, patientCache]);
 
-  // Wraps the SAME patient search state the expense tab's own pickers use directly (below),
-  // shaped for RevenueSection/PatientPicker. Not a separate hook instance — admin's Patient
-  // and Incentive expense sub-tabs still search patients through patientOptions/
-  // handlePatientSearch/addToPatientCache directly, so this must stay backed by that exact
-  // state rather than an independent usePatientPicker() call, or the two would drift apart.
   const patientPicker = {
     options: patientOptions,
     searching: patientSearching,
@@ -349,7 +303,6 @@ function AdminCreateTransactionPageInner() {
     addToCache: addToPatientCache,
   };
 
-  // Agent tab (Salary/Incentive) + Patient tab Commission "Paid To" picker
   const fetchEmployees = async (term = "") => {
     setEmployeeSearching(true);
     try {
@@ -395,9 +348,6 @@ function AdminCreateTransactionPageInner() {
         fetchPatients("");
         fetchEmployees("");
 
-        // Stocks and vendors are independent of each other, but were awaited one after the other,
-        // so the form waited for the sum of both round trips instead of the slower one. Each still
-        // swallows its own failure, so one failing does not block the other.
         await Promise.all([
           (async () => {
             try {
@@ -425,12 +375,8 @@ function AdminCreateTransactionPageInner() {
     fetchData();
   }, []);
 
-  // getPayableContext moved to src/lib/entryForm/getPayableContext.js (§2.2 Phase 1 extraction) —
-  // same derivation, now unit-testable without mounting this page.
   const payableContext = getPayableContext({ expenseData, employees, employeeCache, patients, patientCache, vendors });
 
-  // Inline "Paid / Pending" chips + open-payables list for whichever
-  // pending-able context is currently active.
   useEffect(() => {
     if (activeTab !== "expense" || !payableContext) {
       setPayableSummary(null);
@@ -456,11 +402,6 @@ function AdminCreateTransactionPageInner() {
     });
     if (ctx.payeeRefId) listParams.set("payeeRefId", ctx.payeeRefId);
     else listParams.set("payeeLabel", ctx.payeeLabel);
-    // A vendor's bills can span more than one sub-type under the same category (e.g. Professional
-    // Expenses: Turkey Technician vs. Legal Consultant Fee) — payeeRefId alone would show every
-    // sub-type's bills together once a vendor is picked, silently widening the list past what the
-    // sub-type dropdown says. Non-vendor payeeKinds don't need this: their payeeLabel already IS
-    // the sub-type, so it's already an exact filter.
     if (ctx.payeeKind === "VENDOR" && ctx.expenseSubType) {
       summaryParams.set("expenseSubType", ctx.expenseSubType);
       listParams.set("expenseSubType", ctx.expenseSubType);
@@ -471,8 +412,6 @@ function AdminCreateTransactionPageInner() {
       fetch(`/api/payables/list?${listParams}`).then((r) => r.json()),
     ];
 
-    // Agent tab shows Salary vs Incentive side by side — fetch whichever
-    // sub-tab isn't currently active too.
     if (expenseData.expenseSection === "agent") {
       const otherPurpose = ctx.purpose === "SALARY" ? "INCENTIVE" : "SALARY";
       const otherParams = new URLSearchParams({
@@ -509,8 +448,6 @@ function AdminCreateTransactionPageInner() {
     payableRefreshKey,
   ]);
 
-  // Reset the Create/Pay action state whenever the identifying picker changes,
-  // so a stale "pay against payable X" selection can't survive a payee switch.
   useEffect(() => {
     setPayableAction("none");
     setSelectedPayableId("");
@@ -524,13 +461,8 @@ function AdminCreateTransactionPageInner() {
     expenseData.rentSubType,
   ]);
 
-  // A picked vendor is scoped to one payableCategory (or leaving the "rent" tab entirely) — NOT
-  // to rentSubType, since the same vendor can have bills under several sub-types (e.g. Modern
-  // Pharmaceuticals across multiple Medical Consumables sub-types) and switching sub-type should
-  // keep filtering to that vendor, not silently fall back to the shared bucket.
   useEffect(() => {
     setExpenseData((d) => (d.payableVendorId ? { ...d, payableVendorId: "" } : d));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [expenseData.expenseSection, expenseData.payableCategory]);
 
   const toggleExpandPayable = async (payableId) => {
@@ -655,10 +587,6 @@ function AdminCreateTransactionPageInner() {
     }
   };
 
-  // Shared "Create Payable / Record Payment" action panel + open-payables
-  // history, used by every pending-able section (Agent, Patient>Commission,
-  // Rent+Electricity, Collab, Other>Taxes). Defined as a closure so it can
-  // read the surrounding state directly instead of prop-drilling ~20 values.
   const renderPayableActions = () => {
     const ctx = payableContext;
     if (!ctx) return null;
@@ -738,8 +666,6 @@ function AdminCreateTransactionPageInner() {
               />
             </div>
 
-            {/* GST is always available; TDS is suppressed on a TAX payable (a TDS payable
-                must not itself withhold TDS). The Amount field above is the BASE amount. */}
             <TaxBreakdownFields
               tone="amber"
               allowTDS={ctx.purpose !== "TAX"}
@@ -866,12 +792,6 @@ function AdminCreateTransactionPageInner() {
     );
   };
 
-  // When session loads, sync branch across all form states (admin arrives with branch="All")
-  //
-  // Keyed on the branch STRING, not the `session` object. SessionProvider refetches every 5
-  // minutes (refetchInterval at src/components/SessionProvider.js:8) and hands back a new object
-  // identity each time — so with `[session]` this re-ran on a timer and silently reset the branch
-  // field back to the default while someone was part-way through filling the form.
   const sessionBranch = session?.user?.branch;
   useEffect(() => {
     if (!sessionBranch) return;
@@ -892,7 +812,6 @@ function AdminCreateTransactionPageInner() {
   const formatPatientOption = (patient) =>
     `${patient.personal?.name || "N/A"} - ${maskPhone(patient.personal?.phone, session?.user?.role) || "N/A"} | Package: ${formatCurrency(patient?.payments?.totalAmount)} | Received: ${formatCurrency(patient?.payments?.amountReceived)} | Pending: ${formatCurrency(patient?.payments?.pendingAmount)}`;
 
-  // TRANSPLANT
   const handleSaveTransplant = async () => {
     if (!transplantData.patient) {
       alert("Please select a patient");
@@ -958,7 +877,6 @@ function AdminCreateTransactionPageInner() {
     }
   };
 
-  // SERVICE
   const handleSaveService = async () => {
     if (!serviceData.isWalkIn && !serviceData.patient) {
       alert("Please select a patient");
@@ -1037,7 +955,6 @@ function AdminCreateTransactionPageInner() {
     }
   };
 
-  // MEDICINE
   const handleSaveMedicine = async () => {
     if (!medicineData.isWalkIn && !medicineData.patient) {
       alert("Please select a patient");
@@ -1124,9 +1041,6 @@ function AdminCreateTransactionPageInner() {
     }
   };
 
-  // buildExpensePayload / validateExpenseSection moved to src/lib/entryForm/ (§2.2 Phase 1
-  // extraction) — imported above. handleSaveExpense now makes one call to validateExpenseEntry,
-  // which composes the section rules with the payment-method rules that used to run inline here.
   const handleSaveExpense = async () => {
     const error = validateExpenseEntry({ expenseData, payableAction, selectedPayableId });
     if (error) {
@@ -1204,7 +1118,6 @@ function AdminCreateTransactionPageInner() {
               </button>
             </div>
 
-            {/* Tabs */}
             <div className="mb-6 border-b border-gray-200">
               <div className="flex gap-4 flex-wrap">
                 {[
@@ -1212,12 +1125,7 @@ function AdminCreateTransactionPageInner() {
                   { id: "service", label: "Service (PRP/GFC)", icon: Heart },
                   { id: "medicine", label: "Medicine Sale", icon: Pill },
                   { id: "expense", label: "Expense", icon: Receipt },
-                  // Contra entries move money between our own accounts — neither revenue nor
-                  // expense. Admin-only by design; the API enforces it independently.
                   { id: "contra", label: "Contra Entry", icon: ArrowLeftRight },
-                  // Bank movement with no known source. Sits alongside Contra rather than
-                  // inside the revenue tabs because, like a transfer, it has no P&L impact —
-                  // it reconciles an account balance without booking income.
                   { id: "suspense", label: "Suspense", icon: HelpCircle },
                 ].map(({ id, label, icon: Icon }) => (
                   <button
@@ -1234,7 +1142,6 @@ function AdminCreateTransactionPageInner() {
               </div>
             </div>
 
-            {/* ── TRANSPLANT ── */}
             {activeTab === "transplant" && (
               <RevenueSection
                 category="TRANSPLANT"
@@ -1248,7 +1155,6 @@ function AdminCreateTransactionPageInner() {
               />
             )}
 
-            {/* ── SERVICE ── */}
             {activeTab === "service" && (
               <RevenueSection
                 category="SERVICE"
@@ -1268,7 +1174,6 @@ function AdminCreateTransactionPageInner() {
               />
             )}
 
-            {/* ── MEDICINE ── */}
             {activeTab === "medicine" && (
               <RevenueSection
                 category="MEDICINE"
@@ -1289,18 +1194,12 @@ function AdminCreateTransactionPageInner() {
               />
             )}
 
-            {/* ── CONTRA ENTRY ── */}
             {activeTab === "contra" && <ContraEntryForm />}
 
-            {/* ── SUSPENSE ── */}
             {activeTab === "suspense" && <SuspenseEntryForm />}
 
-            {/* ── EXPENSE ── */}
             {activeTab === "expense" && (
               <div className="space-y-6">
-                {/* Top-level 4-way switch. Collab is deliberately absent: collab case
-                    entry happens only through the collab panel, with admin emergency
-                    entry via the modal on /admin/collab-settlement. */}
                 <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-2 flex flex-wrap gap-2">
                   {[
                     { id: "agent", label: "Employees", icon: Users },
@@ -1338,7 +1237,6 @@ function AdminCreateTransactionPageInner() {
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   <div className="lg:col-span-2 space-y-6">
-                    {/* ===== AGENT TAB ===== */}
                     {expenseData.expenseSection === "agent" && (
                       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                         <div className="flex gap-2 mb-4">
@@ -1569,7 +1467,6 @@ function AdminCreateTransactionPageInner() {
                       </div>
                     )}
 
-                    {/* ===== PATIENT TAB ===== */}
                     {expenseData.expenseSection === "patient" && (
                       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                         <div className="flex gap-2 mb-4">
@@ -1793,7 +1690,6 @@ function AdminCreateTransactionPageInner() {
                       </div>
                     )}
 
-                    {/* ===== RENT TAB (also covers Electricity Bill) ===== */}
                     {expenseData.expenseSection === "rent" && (
                       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                         <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1903,7 +1799,6 @@ function AdminCreateTransactionPageInner() {
                       </div>
                     )}
 
-                    {/* ===== OTHER EXPENSE TAB (existing flow) ===== */}
                     {expenseData.expenseSection === "other" && (
                       <>
                         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
@@ -2045,9 +1940,6 @@ function AdminCreateTransactionPageInner() {
                             </div>
                           </div>
 
-                          {/* Direct Payments are paid in full when logged and create no
-                              payables, so GST only — TDS necessarily creates a "Taxes"
-                              payable and therefore belongs to the Payable Expenses flow. */}
                           <div className="mt-4">
                             <TaxBreakdownFields
                               tone="plain"
@@ -2094,7 +1986,6 @@ function AdminCreateTransactionPageInner() {
                       </>
                     )}
 
-                    {/* ===== SHARED: Payment / Branch / Date / Remarks ===== */}
                     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                       <h3 className="text-lg font-semibold text-gray-900 mb-4">
                         Transaction Details

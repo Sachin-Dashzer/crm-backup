@@ -17,9 +17,6 @@ import {
   LogOut,
 } from "lucide-react";
 
-/* ─────────────────────────────────────────────
-   Constants
-───────────────────────────────────────────── */
 const STATUS_OPTIONS = [
   "NEW",
   "NOT_VISITED",
@@ -40,9 +37,6 @@ const STATUS_COLORS = {
 
 const LOCATION_OPTIONS = ["Delhi", "Mumbai", "Hyderabad", "Noida"];
 
-/* ─────────────────────────────────────────────
-   Helpers
-───────────────────────────────────────────── */
 const formatDate = (date) =>
   date
     ? new Date(date).toLocaleDateString("en-IN", {
@@ -52,16 +46,12 @@ const formatDate = (date) =>
       })
     : "N/A";
 
-/* ─────────────────────────────────────────────
-   Inner component (uses useSearchParams)
-───────────────────────────────────────────── */
 function PatientDashboardContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { data: session } = useSession();
   const userRole = session?.user?.role || "";
 
-  /* ── State ── */
   const [patients, setPatients] = useState([]);
   const [total, setTotal] = useState(0);
   const [filterOptions, setFilterOptions] = useState({
@@ -91,7 +81,6 @@ function PatientDashboardContent() {
   const [error, setError] = useState(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
 
-  // Search: separate input value vs debounced API value
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const debounceRef = useRef(null);
@@ -113,7 +102,6 @@ function PatientDashboardContent() {
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
 
-  /* ── Debounce search ── */
   const handleSearchInput = (val) => {
     setSearchInput(val);
     clearTimeout(debounceRef.current);
@@ -123,7 +111,6 @@ function PatientDashboardContent() {
     }, 400);
   };
 
-  /* ── Fetch ── */
   useEffect(() => {
     let cancelled = false;
     const fetchData = async () => {
@@ -156,7 +143,6 @@ function PatientDashboardContent() {
         setPatients(data.patients || []);
         setTotal(data.total || 0);
 
-        // Load filter options only once
         if (!optionsLoaded.current && data.filterOptions) {
           setFilterOptions(data.filterOptions);
           optionsLoaded.current = true;
@@ -171,12 +157,10 @@ function PatientDashboardContent() {
     return () => { cancelled = true; };
   }, [page, perPage, sort, search, filters]);
 
-  /* ── Pagination ── */
   const pages = Math.max(1, Math.ceil(total / perPage));
   const startIdx = (page - 1) * perPage;
   const endIdx = Math.min(startIdx + perPage, total);
 
-  /* ── Helpers ── */
   const applyFilter = (key, val) => {
     setFilters((f) => ({ ...f, [key]: val }));
     setPage(1);
@@ -207,7 +191,6 @@ function PatientDashboardContent() {
     setPage(1);
   };
 
-  /* ── Active filter chips ── */
   const activeFilterChips = [];
   if (filters.status.length)     activeFilterChips.push({ k: "status",     label: `Status: ${filters.status.map(s => s.replace(/_/g," ")).join(", ")}` });
   if (filters.branch.length)     activeFilterChips.push({ k: "branch",     label: `Branch: ${filters.branch.join(", ")}` });
@@ -226,7 +209,6 @@ function PatientDashboardContent() {
     else applyFilter(k, []);
   };
 
-  /* ── Logout ── */
   const handleLogout = async () => {
     try {
       await fetch("/api/auth/logout", { method: "POST" });
@@ -236,9 +218,6 @@ function PatientDashboardContent() {
     }
   };
 
-  /* ─────────────────────────────────────────────
-     Render
-  ───────────────────────────────────────────── */
   if (error)
     return (
       <div className="flex h-screen items-center justify-center text-red-600">
@@ -249,7 +228,6 @@ function PatientDashboardContent() {
   return (
     <div className="">
       <main className="flex-1 flex flex-col px-24">
-        {/* Header */}
         <header className="bg-white sticky top-0 z-10">
           <div className="py-3 mt-4">
             <h1 className="text-3xl underline pl-6 font-semibold">
@@ -294,7 +272,6 @@ function PatientDashboardContent() {
             </div>
           </div>
 
-          {/* Active filter chips */}
           {activeFilterChips.length > 0 && (
             <div className="px-6 pb-3 flex flex-wrap gap-2">
               {activeFilterChips.map((c) => (
@@ -321,7 +298,6 @@ function PatientDashboardContent() {
           )}
         </header>
 
-        {/* Table */}
         <section className="p-6">
           <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200">
             {loading ? (
@@ -397,7 +373,6 @@ function PatientDashboardContent() {
                             {p.personal?.packageQuoted}
                           </td>
 
-                          {/* Actions column */}
                           <td className="px-6 py-4">
                             <div className="space-x-2">
                               <Link
@@ -419,7 +394,6 @@ function PatientDashboardContent() {
               </div>
             )}
 
-            {/* Footer / Pagination */}
             <div className="flex flex-col md:flex-row items-center justify-between gap-3 px-6 py-4 border-t bg-gray-50">
               <p className="text-sm text-gray-600">
                 Showing <b>{total === 0 ? 0 : startIdx + 1}</b>–<b>{endIdx}</b>{" "}
@@ -461,7 +435,6 @@ function PatientDashboardContent() {
           </div>
         </section>
 
-        {/* Filter Drawer */}
         {drawerOpen && (
           <div className="fixed inset-0 z-50">
             <div
@@ -469,7 +442,6 @@ function PatientDashboardContent() {
               onClick={() => setDrawerOpen(false)}
             />
             <div className="absolute right-0 top-0 h-full w-full max-w-md bg-white shadow-xl flex flex-col">
-              {/* Header */}
               <div className="px-6 py-4 border-b bg-white flex items-center justify-between">
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900">
@@ -487,10 +459,8 @@ function PatientDashboardContent() {
                 </button>
               </div>
 
-              {/* Filter Content */}
               <div className="flex-1 overflow-y-auto">
                 <div className="p-6 space-y-6">
-                  {/* Basic Filters */}
                   <Section
                     title="Basic Filters"
                     icon={<Filter className="w-4 h-4" />}
@@ -538,7 +508,6 @@ function PatientDashboardContent() {
                     </div>
                   </Section>
 
-                  {/* Staff & Team */}
                   <Section
                     title="Staff & Team"
                     icon={<Users className="w-4 h-4" />}
@@ -564,7 +533,6 @@ function PatientDashboardContent() {
                     </Field>
                   </Section>
 
-                  {/* Surgery Details */}
                   <Section
                     title="Surgery Details"
                     icon={<Scissors className="w-4 h-4" />}
@@ -626,7 +594,6 @@ function PatientDashboardContent() {
                 </div>
               </div>
 
-              {/* Footer */}
               <div className="px-6 py-4 border-t bg-gray-50 flex items-center justify-between gap-3">
                 <button
                   onClick={() => { clearFilters(); setDrawerOpen(false); }}
@@ -649,9 +616,6 @@ function PatientDashboardContent() {
   );
 }
 
-/* ===================================================
-   Main Patient Dashboard Component with Suspense
-=================================================== */
 export default function PatientDashboard() {
   return (
     <Suspense
@@ -668,9 +632,6 @@ export default function PatientDashboard() {
   );
 }
 
-/* ─────────────────────────────────────────────
-   UI atoms
-───────────────────────────────────────────── */
 function Th({ label, sortKey, sort, onSort }) {
   const isSortable = !!sortKey;
   const active = isSortable && sort?.key === sortKey;
@@ -746,9 +707,6 @@ function Select({ value, onChange, options }) {
   );
 }
 
-/* ─────────────────────────────────────────────
-   Inline SVG icon components (preserved)
-───────────────────────────────────────────── */
 const Edit = ({ className }) => (
   <svg
     className={className}

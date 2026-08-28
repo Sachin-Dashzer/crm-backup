@@ -5,7 +5,7 @@ import Patient from "@/models/Patient";
 export async function GET(req) {
   try {
     await connectDB();
-    
+
     const { searchParams } = new URL(req.url);
     const branch = searchParams.get("branch") || "All";
 
@@ -14,7 +14,6 @@ export async function GET(req) {
       filter["personal.branch"] = branch;
     }
 
-    // Get patients with surgery information
     const patients = await Patient.find({
       ...filter,
       $or: [

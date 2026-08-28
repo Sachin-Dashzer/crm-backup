@@ -1,13 +1,11 @@
 import mongoose from "mongoose";
 import fs from "fs";
 
-// --- env -----------------------------------------------------------------
 for (const f of [".env.local", ".env"]) {
   if (fs.existsSync(f)) {
     try {
       process.loadEnvFile(f);
     } catch {
-      /* already loaded / unsupported — fall through to the MONGODB_URI check below */
     }
   }
 }
@@ -1877,7 +1875,6 @@ const TXN_ENTRIES = [
   }
 ];
 
-// --- args ------------------------------------------------------------------
 const args = process.argv.slice(2);
 const arg = (name) => args.find((a) => a.startsWith(`--${name}=`))?.split("=")[1];
 const APPLY = args.includes("--apply");
@@ -1904,9 +1901,6 @@ if (!MONGODB_URI) {
   process.exit(1);
 }
 
-// Basic shape validation — every row must have already-mapped method/furtherMode/dates from
-// the parse step. This is a canary (should never fire) since TXN_ENTRIES was generated, not
-// hand-edited — but a hand-edit after generation is exactly what this catches.
 function validate() {
   const errors = [];
   const VALID_METHODS = ["cash", "hdfc_skin_bank_transfer", "hdfc_ryan_medihub_bank_transfer", "icici_medihub_bank_transfer"];
@@ -1943,10 +1937,6 @@ async function run() {
   const Payable = mongoose.models.Payable || mongoose.model("Payable", new mongoose.Schema({}, { strict: false, collection: "payables" }));
   const Transactions = mongoose.models.Transactions || mongoose.model("Transactions", new mongoose.Schema({}, { strict: false, collection: "transactions" }));
 
-  // ---------------------------------------------------------------------------
-  // PASS 1 — resolve every row's Payable and classify it, WITHOUT writing anything. This is
-  // what both dry run and apply show; apply only additionally executes the "ok" rows below.
-  // ---------------------------------------------------------------------------
   console.log("Resolving payables and checking each row...\n");
   const resolved = [];
   for (const e of ENTRIES) {
@@ -1958,10 +1948,6 @@ async function run() {
       continue;
     }
 
-    // Matched on expenseSubType (a top-level Payable field set by both payable-creation
-    // scripts) rather than payee.kind/payee.label — those two scripts now link rent payables
-    // to a real Vendor (payee.kind: "VENDOR", payee.label: "<vendor> — <sub-type>"), so a
-    // payee.kind: "RENT_UNIT" match would silently find nothing once that ran.
     const payable = await Payable.findOne({
       expenseSubType: e.expenseSubType,
       purpose: "RENT",
@@ -1975,10 +1961,6 @@ async function run() {
       continue;
     }
 
-    // Live aggregation — same UNSETTLED_METHODS exclusion the API route itself uses. Prior
-    // legs already created in an EARLIER run of this script are picked up here automatically
-    // since this is a fresh query, not an in-memory running total — this is what makes
-    // multi-leg payments (and re-running after a partial failure) correct without extra logic.
     const UNSETTLED_METHODS = ["paid_to_external", "paid_by_other"];
     const [paidAgg] = await Transactions.aggregate([
       { $match: { payableId: payable._id, approvalStatus: "APPROVED", method: { $nin: UNSETTLED_METHODS } } },
@@ -2060,9 +2042,6 @@ async function run() {
         receipts: [],
         furtherMode: e.furtherMode,
         receiptMode: "",
-        // Manually-raised RENT payables never have costAlreadyRecognised — nothing books an
-        // expense when they're created, so this payment IS the expense. Mirrors the route's
-        // own rule exactly (see Payable.costAlreadyRecognised model comment).
         isSettlement: payable.costAlreadyRecognised === true,
         vendor: null,
         approvalStatus: "APPROVED",

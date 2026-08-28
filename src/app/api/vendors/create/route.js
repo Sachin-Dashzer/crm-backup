@@ -19,7 +19,6 @@ export async function POST(req) {
     const body = await req.json();
     const { name, contact, email, address, gstNumber, DealsIn } = body;
 
-    // Validation
     if (!name) {
       return NextResponse.json(
         { success: false, message: "Vendor name is required" },
@@ -27,7 +26,6 @@ export async function POST(req) {
       );
     }
 
-    // Check if vendor with same name or contact already exists
     const existingVendor = await Vendor.findOne({
       $or: [
         { name: name },
@@ -42,7 +40,6 @@ export async function POST(req) {
       );
     }
 
-    // Create new vendor
     const vendor = await Vendor.create({
       name,
       contact,

@@ -25,7 +25,6 @@ export async function GET(req) {
       );
     }
 
-    // Fetch transaction with all populated fields
     const transaction = await Transactions.findById(id)
       .populate({
         path: "patient",
@@ -52,7 +51,6 @@ export async function GET(req) {
       );
     }
 
-    // Check branch access (non-admin users can only view their branch)
     if (session.user.role !== "admin" && session.user.branch !== "All") {
       if (transaction.branch !== session.user.branch) {
         return NextResponse.json(

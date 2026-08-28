@@ -14,16 +14,10 @@ import DocumentHistory from "./DocumentHistory";
 import DocumentDetailModal from "./DocumentDetailModal";
 import TransactionDetailModal from "./TransactionDetailModal";
 
-// One vendor's payables ledger — BILLS (Payable documents, payee.refId === vendorId) ->
-// TRANSACTIONS (the settling payments for one bill). The same two leaf levels DrillDownTable's
-// documents mode offers under Liabilities, but scoped to a single vendor rather than an
-// expenseCategory/expenseSubType bucket, so it's a standalone modal instead of a 3rd mode
-// threaded through DrillDownTable's HEAD->SUB-TYPE->DOCUMENTS->TRANSACTIONS levels (which don't
-// apply here — a vendor's bills can span several categories, not one).
 export default function VendorLedgerModal({ vendor, scope, onClose }) {
   const toast = useToast();
-  const [level, setLevel] = useState(1); // 1 = bills, 2 = one bill's transactions
-  const [bill, setBill] = useState(null); // the bill row selected for level 2
+  const [level, setLevel] = useState(1);
+  const [bill, setBill] = useState(null);
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
 
@@ -218,7 +212,7 @@ export default function VendorLedgerModal({ vendor, scope, onClose }) {
               urlSync={false}
               getRowKey={(r) => r._id}
               onRowClick={(row) => {
-                if (!(row.paid > 0)) return; // nothing settled yet — no transactions to show
+                if (!(row.paid > 0)) return;
                 setBill(row);
                 setLevel(2);
               }}

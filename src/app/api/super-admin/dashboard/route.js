@@ -21,15 +21,12 @@ export async function POST(req) {
 
     const { branch = "All", from, to } = await req.json();
 
-    // Client sends IST-bounded ISO strings — trust them directly (Vercel runs UTC)
     const fromDate = new Date(from);
     const toDate   = new Date(to);
 
-    // Branch filters
     const patientBranchFilter = branch === "All" ? {} : { "personal.branch": branch };
     const txBranchFilter      = branch === "All" ? {} : { branch };
 
-    // ── 1. Patient Stats ──────────────────────────────────────────
     const patientStatsPromise = Patient.aggregate([
       { $facet: {
         appointments: [
@@ -78,7 +75,6 @@ export async function POST(req) {
       }},
     ]);
 
-    // ── 2. Revenue Stats ──────────────────────────────────────────
     const revenueStatsPromise = Transactions.aggregate([
       {
         $match: {
@@ -88,9 +84,6 @@ export async function POST(req) {
         },
       },
       {
-        // Every branch below excludes UNSETTLED_METHODS — it's a total — EXCEPT byMethod,
-        // which stays unfiltered on purpose (see the §2.4 report: totals hide the
-        // paid_to_external/paid_by_other bucket, a breakdown BY method shows it).
         $facet: {
           totalAmount: [
             { $match: { method: { $nin: UNSETTLED_METHODS }, ...SETTLEMENT_EXCLUSION } },
@@ -147,7 +140,6 @@ export async function POST(req) {
       },
     ]);
 
-    // ── 3. Staff Stats ────────────────────────────────────────────
     const staffStatsPromise = Employee.aggregate([
       { $match: { isactive: true } },
       {
@@ -158,7 +150,6 @@ export async function POST(req) {
       },
     ]);
 
-    // ── 4. Stock Stats ────────────────────────────────────────────
     const stockQuery = branch === "All" ? {} : { location: branch };
     const stockStatsPromise = Stock.aggregate([
       { $match: stockQuery },
@@ -172,12 +163,10 @@ export async function POST(req) {
       },
     ]);
 
-    // ── 5. Total Leads (filtered by date range) ──────────────────
     const totalLeadsPromise = Leads.countDocuments({
       createdAt: { $gte: fromDate, $lte: toDate },
     });
 
-    // ── 6. Interview Stats ────────────────────────────────────────
     const interviewStatsPromise = Interviewer.aggregate([
       { $match: { createdAt: { $gte: fromDate, $lte: toDate } } },
       {
@@ -190,7 +179,6 @@ export async function POST(req) {
       },
     ]);
 
-    // ── Run all in parallel ───────────────────────────────────────
     const [patientAgg, revenueAgg, staffAgg, stockAgg, totalLeads, interviewAgg] =
       await Promise.all([
         patientStatsPromise,
@@ -205,15 +193,12 @@ export async function POST(req) {
     const rv  = revenueAgg[0]   || {};
     const iv  = interviewAgg[0] || {};
 
-    // Shape staff
     const staffBreakdown = {};
     staffAgg.forEach(({ _id, count }) => {
       if (_id) staffBreakdown[_id] = count;
     });
     const totalStaff = Object.values(staffBreakdown).reduce((a, b) => a + b, 0);
 
-    // Fill per-day graph — include all days in range even if 0 revenue
-    // Use IST date keys to match the $dateToString timezone: "Asia/Kolkata" output
     const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;
     const toISTDateKey = (utcDate) =>
       new Date(utcDate.getTime() + IST_OFFSET_MS).toISOString().slice(0, 10);
@@ -229,14 +214,12 @@ export async function POST(req) {
 
     return NextResponse.json({
       success: true,
-      // Leads & Patients
       totalLeads,
       appointments:  p.appointments?.[0]?.count  ?? 0,
       visited:       p.visited?.[0]?.count        ?? 0,
       converted:     p.converted?.[0]?.count      ?? 0,
       notConverted:  p.notConverted?.[0]?.count   ?? 0,
       surgeries:     p.surgeries?.[0]?.count      ?? 0,
-      // Revenue
       totalAmount:   rv.totalAmount?.[0]?.total    ?? 0,
       medicineAmount: rv.medicineAmount?.[0]?.total ?? 0,
       techniqueWise: (rv.techniqueWise || []).map(({ _id, total, count }) => ({
@@ -250,19 +233,15 @@ export async function POST(req) {
         count,
       })),
       perDay: perDayFilled,
-      // Stock
       totalStockItems: stockAgg[0]?.totalItems ?? 0,
       totalStockValue: stockAgg[0]?.stockValue  ?? 0,
       totalStockQty:   stockAgg[0]?.totalQty    ?? 0,
-      // Staff
       totalStaff,
       staffBreakdown,
-      // Interviews
       totalInterviews:     iv.total?.[0]?.count     ?? 0,
       selectedInterviews:  iv.selected?.[0]?.count  ?? 0,
       rejectedInterviews:  iv.rejected?.[0]?.count  ?? 0,
       scheduledInterviews: iv.scheduled?.[0]?.count ?? 0,
-      // PRP & GFC
       prp: (() => {
         const prpStats = rv.prpStats || [];
         const prpRow   = prpStats.find((r) => r._id === "PRP");

@@ -4,9 +4,6 @@ import { useState } from "react";
 import { X, Loader2, Ban, Trash2 } from "lucide-react";
 import { formatCurrency } from "@/lib/financeUI";
 
-// Extracted from admin/receivables/page.jsx's ReviseModal (Task 5, Step 1) — behaviour
-// unchanged, only the location and name moved (ReviseModal -> ReviseReceivableModal, to sit
-// alongside its Payable mirror without a naming collision).
 export default function ReviseReceivableModal({ receivable, onClose, onSuccess, toast }) {
   const [totalAmount, setTotalAmount] = useState(String(receivable.totalAmount));
   const [dueDate, setDueDate] = useState(receivable.dueDate ? receivable.dueDate.split("T")[0] : "");
@@ -138,9 +135,6 @@ export default function ReviseReceivableModal({ receivable, onClose, onSuccess, 
             <Ban className="w-4 h-4" />
             {receivable.isCancelled ? "Reinstate Receivable" : "Cancel Receivable"}
           </button>
-          {/* Offered under Cancel, not beside it: cancelling keeps the record and is reversible,
-              so it should stay the obvious choice. The API refuses outright if any receipt has
-              already been logged against this receivable. */}
           <button
             onClick={remove}
             disabled={submitting}

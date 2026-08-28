@@ -54,7 +54,6 @@ export default function NotVisited() {
   const filterPatients = () => {
     let filtered = [...patients];
 
-    // Search filter
     if (searchQuery.trim()) {
       filtered = filtered.filter(
         (patient) =>
@@ -65,7 +64,6 @@ export default function NotVisited() {
       );
     }
 
-    // Branch filter
     if (branchFilter !== "all") {
       filtered = filtered.filter(
         (patient) => patient.personal?.branch === branchFilter
@@ -95,7 +93,6 @@ export default function NotVisited() {
       <CollabSidebar />
 
       <main className="flex-1 p-4 lg:p-8">
-        {/* Header */}
         <div className="mb-6">
           <div className=" mb-2">
             <h1 className="text-2xl font-bold text-gray-900">Not Visited Patients</h1>
@@ -105,7 +102,6 @@ export default function NotVisited() {
           </p>
         </div>
 
-        {/* Filters */}
         <div className="rounded-xl mb-6">
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1 relative">
@@ -161,7 +157,6 @@ export default function NotVisited() {
           </div>
         </div>
 
-        {/* Patients Grid */}
         {filteredPatients.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredPatients.map((patient) => (

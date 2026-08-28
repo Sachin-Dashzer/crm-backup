@@ -1,4 +1,3 @@
-// app/api/auth/change-password/route.js - CREATE THIS FILE
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";

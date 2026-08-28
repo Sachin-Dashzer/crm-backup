@@ -26,7 +26,6 @@ import ReceptionSidebar from "@/components/Sidebars/ReceptionSidebar";
 import Topbar from "@/components/Topbar";
 import { useToast } from "@/components/Toast";
 
-// ── Currency formatter ──────────────────────────────────────────────────────
 const fmt = (n) =>
   new Intl.NumberFormat("en-IN", {
     style: "currency",
@@ -35,7 +34,6 @@ const fmt = (n) =>
     maximumFractionDigits: 0,
   }).format(n || 0);
 
-// ── Status badge config ────────────────────────────────────────────────────
 const STATUS_META = {
   NEW: { label: "New", color: "bg-blue-100 text-blue-700 border-blue-200" },
   NOT_VISITED: { label: "Not Visited", color: "bg-amber-100 text-amber-700 border-amber-200" },
@@ -45,7 +43,6 @@ const STATUS_META = {
   CLOSED: { label: "Closed", color: "bg-gray-100 text-gray-600 border-gray-200" },
 };
 
-// ── StatCard ────────────────────────────────────────────────────────────────
 function StatCard({ title, value, icon: Icon, gradient, trend, onClick, subtitle }) {
   const trendZero = trend === 0 || trend === undefined || trend === null;
   const trendPositive = trend > 0;
@@ -81,7 +78,6 @@ function StatCard({ title, value, icon: Icon, gradient, trend, onClick, subtitle
   );
 }
 
-// ── FunnelBar ───────────────────────────────────────────────────────────────
 function FunnelBar({ label, value, max, color }) {
   const pct = max > 0 ? Math.round((value / max) * 100) : 0;
   return (
@@ -100,7 +96,6 @@ function FunnelBar({ label, value, max, color }) {
   );
 }
 
-// ── Main ────────────────────────────────────────────────────────────────────
 export default function ReceptionDashboard() {
   const router = useRouter();
   const toast = useToast();
@@ -122,7 +117,6 @@ export default function ReceptionDashboard() {
     trends: { appointments: 0, visits: 0, revenue: 0 },
   });
 
-  // Build date-range payload (no branch — server enforces from session)
   const buildPayload = useCallback(() => {
     let from = new Date();
     let to = new Date();
@@ -184,14 +178,12 @@ export default function ReceptionDashboard() {
     fetchData();
   }, [fetchData]);
 
-  // Navigate to sub-pages with current date range
   const navTo = useCallback((path) => {
     const { from, to } = buildPayload();
     const params = new URLSearchParams({ dateFrom: from, dateTo: to });
     router.push(`${path}?${params.toString()}`);
   }, [buildPayload, router]);
 
-  // ── Loading state ───────────────────────────────────────────────────────
   if (loading) {
     return (
       <div className="flex min-h-screen bg-gray-50">
@@ -219,7 +211,6 @@ export default function ReceptionDashboard() {
       <ReceptionSidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
 
       <main className="flex-1 flex flex-col lg:p-5 min-w-0">
-        {/* Topbar — no branch props, reception is branch-locked by session */}
         <Topbar
           title="Reception Dashboard"
           setSidebarOpen={setSidebarOpen}
@@ -231,7 +222,6 @@ export default function ReceptionDashboard() {
 
         <div className="flex-1 space-y-6">
 
-          {/* ── KPI cards ─────────────────────────────────────────────── */}
           <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
             <StatCard
               title="Total Appointments"
@@ -279,10 +269,8 @@ export default function ReceptionDashboard() {
             />
           </div>
 
-          {/* ── Patient flow + Quick actions ───────────────────────────── */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
 
-            {/* Patient flow funnel */}
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
               <div className="flex items-center gap-2 mb-5">
                 <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center">
@@ -305,7 +293,6 @@ export default function ReceptionDashboard() {
               </div>
             </div>
 
-            {/* Quick actions */}
             <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
               <div className="flex items-center gap-2 mb-5">
                 <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
@@ -374,7 +361,6 @@ export default function ReceptionDashboard() {
             </div>
           </div>
 
-          {/* ── Recent Patients (full width) ───────────────────────────── */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
             <div className="flex items-center justify-between p-5 border-b border-gray-100">
               <div className="flex items-center gap-2">

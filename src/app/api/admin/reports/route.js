@@ -15,8 +15,6 @@ import { ALL_BRANCHES, COLLAB_BRANCHES } from "@/lib/branches";
 import { UNSETTLED_METHODS, SETTLEMENT_EXCLUSION } from "@/constants/bankRouting";
 import { getISTStartOfDay, getISTEndOfDay } from "@/lib/dateHelpers";
 
-// Whether `branchName` (a plain branch string) is covered by `branchFilter`, which may be
-// undefined/empty (no restriction), a plain string (exact match), or a Mongo `{ $in: [...] }`.
 function branchAllowed(branchFilter, branchName) {
   if (!branchFilter) return true;
   if (typeof branchFilter === "string") return branchFilter === branchName;
@@ -39,10 +37,6 @@ export async function GET(request) {
     const to = searchParams.get("to");
     const requestedBranch = searchParams.get("branch");
 
-    // Scope the branch filter to what this role/session is allowed to see.
-    // admin/super-admin: unrestricted (whatever was requested, or none).
-    // collab: always limited to the 8 collab-city set.
-    // reception (and any other single-branch role): pinned to their own branch.
     let branch = requestedBranch || undefined;
     const role = session.user.role;
     const userBranch = session.user.branch;
@@ -74,17 +68,9 @@ export async function GET(request) {
       technicians: allEmployees.filter(e => e.role === "Technician"),
     };
 
-    // Build separate date filters for patient vs transaction collections.
-    // Patients are filtered by personal.visitDate; transactions by their date field.
     const patientDateFilter = {};
     const transactionDateFilter = {};
-    // Payable/Receivable have no "transaction date" of their own — createdAt is when the
-    // obligation was RAISED, the same field the Liabilities/Assets pages filter and roll up by.
     const obligationDateFilter = {};
-    // Each bound is applied independently. This used to be `if (from && to)`, so passing only one
-    // of the two silently dropped BOTH and scanned all history — the opposite of what a user
-    // narrowing by a single bound expects. Bounds are IST-correct; `new Date(from)` alone parses a
-    // bare YYYY-MM-DD as UTC midnight, which is 05:30 IST and clips half a day off the range.
     const fromDate = from ? getISTStartOfDay(from) : null;
     const toDate = to ? getISTEndOfDay(to) : null;
     if (fromDate || toDate) {
@@ -97,7 +83,6 @@ export async function GET(request) {
     }
 
     switch (type) {
-      // ==================== PATIENT REPORTS ====================
       case "patients-comprehensive":
         data = await generateComprehensivePatientReport({
           dateFilter: patientDateFilter,
@@ -144,7 +129,6 @@ export async function GET(request) {
         });
         break;
 
-      // ==================== STAFF REPORTS ====================
       case "employees-all":
         data = await generateEmployeesAllReport();
         break;
@@ -190,7 +174,6 @@ export async function GET(request) {
         });
         break;
 
-      // ==================== MEDICAL REPORTS ====================
       case "techniques":
         data = await generateTechniqueReport({
           dateFilter: patientDateFilter,
@@ -215,7 +198,6 @@ export async function GET(request) {
         });
         break;
 
-      // ==================== FINANCIAL REPORTS ====================
       case "revenue":
         data = await generateRevenueReport({
           dateFilter: transactionDateFilter,
@@ -263,7 +245,6 @@ export async function GET(request) {
         data = await generateReceivablesAllReport({ dateFilter: obligationDateFilter, branch });
         break;
 
-      // ==================== BRANCH REPORTS ====================
       case "branch-comparison":
         data = await generateBranchComparisonReport({ patientDateFilter, transactionDateFilter, branch });
         break;
@@ -276,7 +257,6 @@ export async function GET(request) {
         data = await generateBranchPatientsReport({ dateFilter: patientDateFilter, branch });
         break;
 
-      // ==================== INVENTORY REPORTS ====================
       case "stocks-all":
         data = await generateStocksAllReport();
         break;
@@ -311,7 +291,6 @@ export async function GET(request) {
   }
 }
 
-// ==================== REPORT GENERATION FUNCTIONS ====================
 
 async function generateComprehensivePatientReport(filters) {
   const query = { ...filters.dateFilter };
@@ -719,7 +698,7 @@ async function generateImplanterReport(filters) {
       [rightId, leftId].forEach((id) => {
         if (id && implanterStats[id]) {
           implanterStats[id]["Total Procedures"]++;
-          implanterStats[id]["Total Grafts Implanted"] += grafts / 2; // Split grafts between both
+          implanterStats[id]["Total Grafts Implanted"] += grafts / 2;
         }
       });
     }
@@ -774,7 +753,7 @@ async function generateTechnicianReport(filters) {
     if (p.surgery?.surgeryDate) {
       const seniorId = p.surgery?.seniorTech?._id?.toString();
       const graftingId = p.surgery?.graftingPerson?._id?.toString();
-      const helpers = p.surgery?.helpers || []; // ✅ Get helpers array
+      const helpers = p.surgery?.helpers || [];
 
       if (seniorId && techStats[seniorId]) {
         techStats[seniorId]["Total Procedures"]++;
@@ -785,7 +764,6 @@ async function generateTechnicianReport(filters) {
         techStats[graftingId]["As Grafting Person"]++;
       }
 
-      // ✅ Loop through ALL helpers
       helpers.forEach((helper) => {
         const helperId = helper?._id?.toString();
         if (helperId && techStats[helperId]) {
@@ -1147,7 +1125,6 @@ async function generatePaymentCollectionReport(filters) {
   const query = {
     ...filters.dateFilter,
     costType: "Revenue",
-    // "Total Collections" is a total — paid_to_external money isn't collected yet.
     method: { $nin: UNSETTLED_METHODS }, ...SETTLEMENT_EXCLUSION,
   };
   if (filters.branch) query.branch = filters.branch;
@@ -1246,9 +1223,6 @@ async function generateProcedureRevenueReport(filters) {
   return Object.values(procedureData);
 }
 
-// paid/pending/status are computed live from linked Transactions (buildPayableAggregationStages
-// — same aggregation the Liabilities page uses), never stored on the Payable itself. Cancelled
-// payables are excluded, matching every other financial report on this page.
 async function generatePayablesAllReport(filters) {
   const match = { isCancelled: { $ne: true }, ...filters.dateFilter };
   if (filters.branch) match.branch = filters.branch;
@@ -1274,9 +1248,6 @@ async function generatePayablesAllReport(filters) {
     Pending: p.pending || 0,
     Status: p.status || "",
     "Due Date": p.dueDate ? new Date(p.dueDate).toLocaleDateString() : "",
-    // Blank once fully paid — an ageing bucket/day-count on a cleared obligation is stale
-    // information carried over from its now-irrelevant due date, the same bug already fixed on
-    // the Liabilities page's own ageing display.
     "Ageing Bucket": p.pending > 0 ? p.ageingBucket || "" : "",
     "Days Overdue": p.pending > 0 ? (p.daysOverdue ?? "") : "",
     Remarks: p.remarks || "",
@@ -1284,8 +1255,6 @@ async function generatePayablesAllReport(filters) {
   }));
 }
 
-// Mirror of generatePayablesAllReport — see its comment. Uses buildReceivableAggregationStages,
-// which keys "received" off linked Revenue transactions instead of Expense ones.
 async function generateReceivablesAllReport(filters) {
   const match = { isCancelled: { $ne: true }, ...filters.dateFilter };
   if (filters.branch) match.branch = filters.branch;
@@ -1317,10 +1286,6 @@ async function generateReceivablesAllReport(filters) {
   }));
 }
 
-// Was 4 sequential DB round trips PER branch (2 countDocuments + 2 aggregates), run one branch
-// at a time — up to 72 sequential round trips for 18 branches. Now: 1 Patient facet + 1
-// Transactions facet per branch (covering revenue AND expenses in one pipeline), and all
-// branches run concurrently via Promise.all instead of a for-loop. Same output shape.
 async function generateBranchComparisonReport(filters) {
   const patientQuery = { ...filters.patientDateFilter };
   const txQuery = { ...filters.transactionDateFilter };
@@ -1432,9 +1397,6 @@ async function generateBranchRevenueReport(filters) {
   return Object.values(branchData);
 }
 
-// Was 6 sequential countDocuments PER branch (one for each ops.status value, run one branch at
-// a time — up to 108 sequential round trips for 18 branches. Now: one $group aggregation per
-// branch (all statuses counted together), branches run concurrently via Promise.all.
 async function generateBranchPatientsReport(filters) {
   const query = { ...filters.dateFilter };
 
@@ -1475,22 +1437,6 @@ async function generateBranchPatientsReport(filters) {
   return branchData;
 }
 
-// Independent fetch, deliberately not reusing the route's shared `allEmployees` — that one is
-// pre-filtered to isactive:true and pre-projected to 4 fields for the OTHER staff reports
-// (Counsellor/Agent/Doctor/etc. performance, which only need name/role/email/phone). "All
-// Employees Report" means all of them — active AND inactive, every real field on the document.
-//
-// Two real bugs this replaces:
-//   - e.branch / e.isactive were read from a query that never selected either field, so every
-//     row showed a blank Branch and "Inactive" (even for active staff) regardless of reality —
-//     and since e.branch was always undefined, the branch filter's `!e.branch || ...` was
-//     always true, silently showing every branch no matter what was selected.
-//   - "Patient Count" was a Patient aggregation keyed on counselling.counsellor ONLY, so every
-//     non-Counsellor role (Doctor/Technician/Implanter/Agent/HR) always showed 0 regardless of
-//     how many patients they actually handled.
-// Employee.branch now exists (see src/models/Employee.js, added + backfilled in Step 6) — but
-// this report still deliberately doesn't filter or select it: "All Employees Report" means
-// every employee across every branch, so a branch scope has no reason to apply here.
 async function generateEmployeesAllReport() {
   const employees = await Employee.find({})
     .select("name role email phone isactive salaryStructure incentiveRate patient createdAt updatedAt")
@@ -1504,9 +1450,6 @@ async function generateEmployeesAllReport() {
     Email: e.email || "",
     Phone: e.phone || "",
     Status: e.isactive ? "Active" : "Inactive",
-    // Employee.patient[] is kept in sync by the patient create/update/delete routes — the same
-    // field src/app/api/employees/get-patients/route.js already treats as authoritative,
-    // covering every role (not just counsellors).
     "Total Patients": Array.isArray(e.patient) ? e.patient.length : 0,
     "Base Salary": e.salaryStructure?.baseSalary ?? "",
     "Salary Type": e.salaryStructure?.salaryType || "",

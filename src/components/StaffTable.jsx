@@ -7,7 +7,6 @@ import {
   Search, TrendingUp, Edit, Users, IndianRupee, Activity, Trash2, Calendar, Stethoscope, Eye,
 } from "lucide-react";
 
-/* ─── Constants ──────────────────────────────────────────────── */
 const CATEGORY_OPTIONS = ["Doctor", "Agent", "Counsellor", "Technician", "Implanter", "Others", "Hr"];
 
 const TECHNIQUES = [
@@ -25,7 +24,6 @@ const CATEGORY_COLORS = {
   Hr:         "bg-pink-100 text-pink-800 border-pink-200",
 };
 
-/* ─── Helpers ────────────────────────────────────────────────── */
 const fmtCurrency = (n) =>
   new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(n || 0);
 
@@ -39,18 +37,6 @@ const EMPTY_FILTERS = {
   dateFrom: "", dateTo: "", technique: "",
 };
 
-/* ═══════════════════════════════════════════════════════════════
-   StaffTable — config-driven shared component
-   config: {
-     SidebarComponent,       // React component for sidebar
-     addEmployeePath,        // string | null — hides Add button if null
-     editBasePath,           // e.g. "/admin/employees/update"
-     canDelete,              // boolean — shows delete button in HR
-     viewBasePath,           // string | null — e.g. "/admin/employees"; adds a "View" link per
-                              // row (§3.4's employee detail / incentives-earned page) when set.
-                              // null by default — only the admin config opts in.
-   }
-═══════════════════════════════════════════════════════════════ */
 export default function StaffTable({ config = {} }) {
   const {
     SidebarComponent,
@@ -60,7 +46,6 @@ export default function StaffTable({ config = {} }) {
     viewBasePath    = null,
   } = config;
 
-  /* ── State ── */
   const [data,     setData]     = useState({});
   const [filters,  setFilters]  = useState(EMPTY_FILTERS);
   const [drawerOpen, setDrawer] = useState(false);
@@ -71,7 +56,6 @@ export default function StaffTable({ config = {} }) {
   const [perPage,  setPerPage]  = useState(10);
   const [selectedCategory, setSelectedCategory] = useState("Doctor");
 
-  /* ── Fetch (re-runs when server-side filters change) ── */
   useEffect(() => {
     (async () => {
       try {
@@ -96,7 +80,6 @@ export default function StaffTable({ config = {} }) {
     })();
   }, [filters.dateFrom, filters.dateTo, filters.technique]);
 
-  /* ── Derived ── */
   const currentCategory = filters.category || selectedCategory;
   const hasGrafts          = ["Doctor", "Technician", "Implanter", "Others"].includes(currentCategory);
   const hasReadyForSurgery = ["Agent", "Counsellor"].includes(currentCategory);
@@ -134,7 +117,6 @@ export default function StaffTable({ config = {} }) {
     }), { totalPatient: 0, graftsImplanted: 0, amountReceived: 0, readyForSurgery: 0, totalCandidates: 0, selected: 0, rejected: 0, scheduled: 0 }),
   [filtered]);
 
-  /* ── Pagination ── */
   const total   = filtered.length;
   const pages   = Math.max(1, Math.ceil(total / perPage));
   const current = Math.min(page, pages);
@@ -142,7 +124,6 @@ export default function StaffTable({ config = {} }) {
   const rows    = filtered.slice(start, Math.min(start + perPage, total));
   useEffect(() => setPage(1), [filters, perPage, selectedCategory]);
 
-  /* ── Actions ── */
   const clearFilters = () => setFilters(EMPTY_FILTERS);
   const toggleSort   = (key) => setSort((s) => s.key === key ? { key, dir: s.dir === "asc" ? "desc" : "asc" } : { key, dir: "desc" });
   const setFilter    = (k, v) => setFilters((f) => ({ ...f, [k]: v }));
@@ -181,7 +162,6 @@ export default function StaffTable({ config = {} }) {
     return chips;
   }, [filters]);
 
-  /* ── Loading ── */
   if (loading)
     return (
       <div className="flex min-h-screen bg-gray-50">
@@ -192,13 +172,11 @@ export default function StaffTable({ config = {} }) {
       </div>
     );
 
-  /* ── Render ── */
   return (
     <div className="flex min-h-screen bg-gray-50">
       {SidebarComponent && <SidebarComponent />}
 
       <main className="flex-1 flex flex-col">
-        {/* ── Header ── */}
         <header className="bg-white shadow-sm sticky top-0 z-10">
           <div className="px-6 py-4 flex items-center justify-between">
             <div>
@@ -243,7 +221,6 @@ export default function StaffTable({ config = {} }) {
           )}
         </header>
 
-        {/* ── Category Tabs ── */}
         <div className="px-6 pt-6">
           <div className="flex gap-2 overflow-x-auto pb-2">
             {CATEGORY_OPTIONS.map((cat) => (
@@ -263,7 +240,6 @@ export default function StaffTable({ config = {} }) {
           </div>
         </div>
 
-        {/* ── Summary Cards ── */}
         <div className="px-6 pt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <SummaryCard title="Total Staff"   value={filtered.length}                    icon={<Users className="w-5 h-5" />}       color="blue" />
           {isHr ? (
@@ -282,7 +258,6 @@ export default function StaffTable({ config = {} }) {
           )}
         </div>
 
-        {/* ── Search ── */}
         <div className="px-6 pt-6">
           <div className="relative max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
@@ -296,7 +271,6 @@ export default function StaffTable({ config = {} }) {
           </div>
         </div>
 
-        {/* ── Table ── */}
         <section className="p-6">
           <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200">
             <div className="overflow-x-auto">
@@ -434,7 +408,6 @@ export default function StaffTable({ config = {} }) {
               </table>
             </div>
 
-            {/* ── Pagination footer ── */}
             <div className="flex flex-col md:flex-row items-center justify-between gap-3 px-6 py-4 border-t bg-gray-50">
               <p className="text-sm text-gray-600">
                 Showing <b>{start + 1}</b>–<b>{Math.min(start + perPage, total)}</b> of <b>{total}</b> staff
@@ -464,7 +437,6 @@ export default function StaffTable({ config = {} }) {
         </section>
       </main>
 
-      {/* ── Filter Drawer ── */}
       {drawerOpen && (
         <div className="fixed inset-0 z-50">
           <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setDrawer(false)} />
@@ -546,7 +518,6 @@ export default function StaffTable({ config = {} }) {
   );
 }
 
-/* ── Atoms ─────────────────────────────────────────────────── */
 function Th({ label, sortKey, sort, onSort }) {
   const active = sortKey && sort?.key === sortKey;
   return (

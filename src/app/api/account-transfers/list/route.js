@@ -39,8 +39,6 @@ export async function GET(request) {
       }
       match.branch = branch;
     }
-    // An account filter matches EITHER side — a transfer belongs to both its accounts, so
-    // filtering by "Cash Book" must return money leaving it and money arriving in it.
     if (account) {
       if (!ACCOUNTS.includes(account)) {
         return NextResponse.json({ error: "Invalid account" }, { status: 400 });

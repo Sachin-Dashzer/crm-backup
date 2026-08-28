@@ -15,8 +15,6 @@ const fmt = (n) => (n == null ? "—" : new Intl.NumberFormat("en-IN").format(n)
 
 const roasFmt = (n) => (n == null ? "—" : `${n.toFixed(2)}×`);
 
-// Same helper as owner/dashboard/page.jsx — kept per-page rather than shared, matching how
-// super-admin/dashboard/page.jsx's copy was already duplicated for the owner Command Center.
 function buildDateRange(range, custom) {
   const now = new Date();
   let from = new Date(), to = new Date();
@@ -39,9 +37,6 @@ function buildDateRange(range, custom) {
   return { from: from.toISOString(), to: to.toISOString() };
 }
 
-// Avoids double-counting: a platform with multiple named campaigns contributes its
-// isPlatformTotal row only; a platform with a single (possibly unnamed) campaign contributes
-// that one row directly — see the route's own comment for why this split exists.
 function summarize(rows) {
   const byPlatform = {};
   rows.forEach((r) => {

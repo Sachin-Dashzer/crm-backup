@@ -9,10 +9,6 @@ import { buildReceivableAggregationStages } from "@/lib/receivableAggregation";
 
 const ALLOWED_ROLES = ["admin", "super-admin", "owner"];
 
-// Grouped pending totals, mirroring /api/payables/summary.
-//   ?purpose=PATIENT_DUE                               -> org-wide totals for that purpose
-//   ?purpose=PATIENT_DUE&payerKind=PATIENT&payerRefId=X -> + that patient's totals
-//   ?branch=Delhi                                       -> totals grouped by purpose
 export async function GET(request) {
   try {
     const session = await getServerSession(authOptions);
@@ -35,8 +31,6 @@ export async function GET(request) {
 
     const txCollection = Transactions.collection.name;
 
-    // Ageing-bucketed pending totals, mirroring /api/payables/summary?ageing=1 — reused by the
-    // dashboard's receivables/payables ageing chart instead of a separate pipeline.
     if (ageing) {
       const byBucket = await Receivable.aggregate([
         { $match: { isCancelled: false, ...(branch ? { branch } : {}) } },
@@ -92,9 +86,6 @@ export async function GET(request) {
           }
         : emptyTotals;
 
-    // NOTE ON DATE FILTERING: no from/to here on purpose. `pending` is an OUTSTANDING BALANCE,
-    // not a period flow — scoping it to a month would drop everything raised earlier and still
-    // uncollected. See the identical note in payables/summary/route.js.
 
     let overall;
     let byPurpose = null;
@@ -106,8 +97,6 @@ export async function GET(request) {
         { $group: { _id: null, ...TOTALS_GROUP } },
       ]))[0]);
     } else {
-      // `overall` and `byPurpose` share an identical $match here, so they previously ran the same
-      // whole-collection pipeline — including its $lookup into Transactions — twice per request.
       const [facet] = await Receivable.aggregate([
         { $match: baseMatch },
         ...buildReceivableAggregationStages(txCollection),

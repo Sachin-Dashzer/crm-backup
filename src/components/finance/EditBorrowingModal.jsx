@@ -7,14 +7,6 @@ import { formatCurrency } from "@/lib/financeUI";
 import { ACCOUNTS } from "@/constants/bankRouting";
 import { ALL_BRANCHES } from "@/lib/branches";
 
-// Edits ONE Borrowing row (IN or OUT) in place — amount, date, account, branch, reference,
-// remarks. direction and payableId are structural and never editable here (see
-// /api/borrowings/[id]'s PUT handler); moving money between loans or flipping IN/OUT is a new
-// row, not an edit of this one.
-//
-// Also offers Cancel/Reinstate (mirrors RevisePayableModal) and, once cancelled, a genuine
-// Delete — /api/borrowings/[id]'s DELETE refuses unless the row is already cancelled, so the
-// button is only ever shown then.
 export default function EditBorrowingModal({ borrowing, onClose, onSuccess, toast }) {
   const [amount, setAmount] = useState(String(borrowing.amount));
   const [date, setDate] = useState(new Date(borrowing.date).toISOString().split("T")[0]);

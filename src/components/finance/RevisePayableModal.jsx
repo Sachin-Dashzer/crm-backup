@@ -4,9 +4,6 @@ import { useState } from "react";
 import { X, Loader2, Ban, Trash2 } from "lucide-react";
 import { formatCurrency } from "@/lib/financeUI";
 
-// Extracted from admin/payables/page.jsx's ReviseModal (Task 5, Step 1) — behaviour unchanged,
-// only the location and name moved (ReviseModal -> RevisePayableModal, to sit alongside its
-// Receivable mirror without a naming collision).
 export default function RevisePayableModal({ payable, onClose, onSuccess, toast }) {
   const [totalAmount, setTotalAmount] = useState(String(payable.totalAmount));
   const [dueDate, setDueDate] = useState(payable.dueDate ? payable.dueDate.split("T")[0] : "");
@@ -31,8 +28,6 @@ export default function RevisePayableModal({ payable, onClose, onSuccess, toast 
         toast.success("Payable updated");
         onSuccess();
       } else if (data.requiresCascadeConfirmation) {
-        // Never silently orphan the linked TDS payable — the server refuses until we say
-        // explicitly what should happen to it, so surface that choice rather than the error.
         const alsoCancelTds = window.confirm(
           "This payable has a linked TDS payable.\n\n" +
             "OK — cancel BOTH this payable and its linked TDS payable.\n" +
@@ -150,9 +145,6 @@ export default function RevisePayableModal({ payable, onClose, onSuccess, toast 
             <Ban className="w-4 h-4" />
             {payable.isCancelled ? "Reinstate Payable" : "Cancel Payable"}
           </button>
-          {/* Offered under Cancel, not beside it: cancelling keeps the record and is reversible,
-              so it should stay the obvious choice. The API refuses outright if any payment has
-              already been logged against this payable. */}
           <button
             onClick={remove}
             disabled={submitting}

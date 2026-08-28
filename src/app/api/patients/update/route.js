@@ -9,7 +9,6 @@ import { authOptions } from "../../auth/[...nextauth]/route";
 
 const handler = async (req) => {
   try {
-    // Authentication check
     const session = await getServerSession(authOptions);
     if (!session?.user?.name || !session?.user?.email || !session?.user?.branch) {
       return NextResponse.json(
@@ -38,10 +37,6 @@ const handler = async (req) => {
 
     const data = await req.json();
 
-    // Check for duplicate phone number on the normalized form. Excluding self is
-    // required here and wasn't before: a raw edit from "+919876543210" to
-    // "9876543210" changes the raw string but normalizes to the same value, so the
-    // patient would otherwise collide with itself.
     if (data.personal?.phone && data.personal.phone !== patient.personal?.phone) {
       const phoneNormalized = normalizePhone(data.personal.phone);
 
@@ -60,7 +55,6 @@ const handler = async (req) => {
       }
     }
 
-    // Helper to extract IDs from array
     const extractIds = (data) => {
       if (!Array.isArray(data)) return [];
       return data
@@ -74,7 +68,6 @@ const handler = async (req) => {
         .filter(Boolean);
     };
 
-    // Store original employee references
     const originalRefs = {
       reference: patient.personal?.reference?.toString(),
       counsellor: patient.counselling?.counsellor?.toString(),
@@ -86,7 +79,6 @@ const handler = async (req) => {
       helper: extractIds(patient.surgery?.helper),
     };
 
-    // Update patient fields
     const updateFields = (target, source) => {
       Object.keys(source).forEach((key) => {
         if (source[key] !== undefined && source[key] !== null) {
@@ -106,13 +98,10 @@ const handler = async (req) => {
 
     updateFields(patient, data);
 
-    // Always re-derive from the stored phone — never trust a phoneNormalized the
-    // client may have sent through updateFields.
     if (patient.isModified("personal.phone")) {
       patient.personal.phoneNormalized = normalizePhone(patient.personal?.phone);
     }
 
-    // Add editor entry
     patient.editors = patient.editors || [];
     patient.editors.push({
       name: session.user.name,
@@ -121,10 +110,8 @@ const handler = async (req) => {
       date: new Date(),
     });
 
-    // Save patient
     const updatedPatient = await patient.save();
 
-    // Populate the patient
     const populatedPatient = await Patient.findById(updatedPatient._id)
       .populate("personal.reference")
       .populate("counselling.counsellor")
@@ -136,10 +123,9 @@ const handler = async (req) => {
       .populate("surgery.helper")
       .populate("payments.transactions");
 
-    // Update employee references
     const updateEmployee = async (employeeId, operation) => {
       if (!employeeId || !mongoose.Types.ObjectId.isValid(employeeId)) return;
-      
+
       try {
         await Employee.findByIdAndUpdate(
           employeeId,
@@ -152,16 +138,14 @@ const handler = async (req) => {
       }
     };
 
-    // Handle array field changes
     const updateArrayRefs = (oldIds, newIds) => {
       const removed = oldIds.filter((id) => !newIds.includes(id));
       const added = newIds.filter((id) => !oldIds.includes(id));
-      
+
       removed.forEach((id) => updateEmployee(id, "remove"));
       added.forEach((id) => updateEmployee(id, "add"));
     };
 
-    // Update single reference fields
     if (data.personal?.reference !== originalRefs.reference) {
       if (originalRefs.reference) {
         await updateEmployee(originalRefs.reference, "remove");
@@ -180,7 +164,6 @@ const handler = async (req) => {
       }
     }
 
-    // Update array reference fields
     const arrayFields = [
       "doctor",
       "seniorTech",

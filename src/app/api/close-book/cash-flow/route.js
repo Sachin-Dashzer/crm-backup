@@ -8,25 +8,6 @@ import { buildBalanceMatch } from "@/lib/accountBalances";
 
 const ALLOWED_ROLES = ["admin", "super-admin", "owner"];
 
-// Cash-basis Receipts / Payments for the dashboard's Row 3 strip, for the selected period.
-//
-// Built on buildBalanceMatch — the exact same account-ledger filter the balance sheet, the
-// per-account ledger, and the Assets/Liabilities pages all use — rather than a bespoke match, so
-// this always agrees with the rest of Close Book:
-//   - furtherMode must be one of the (optionally Further-Mode-filtered) accounts — "registered in
-//     my bank and other further mode accounts".
-//   - NON_CASH_METHODS (offset_settlement, including-package) are excluded — no cash moved.
-//   - approvalStatus excludes only PENDING/REJECTED (not a strict "APPROVED" equality), because a
-//     large share of historical rows predate the approvalStatus field and carry null.
-//   - Contra transfers (AccountTransfer) are a SEPARATE collection, never queried here, so they
-//     never enter this figure at all — "minus contra entries" is true by construction, not a
-//     filter that has to remember to exclude them.
-//
-//   receipts = "receivable received amount" + "direct revenue payments" (no receivableId)
-//   payments = "payable paid amount"        + "direct expense payments" (no payableId)
-// Those two parts always sum to "every account-attributed, cash-moving Revenue/Expense
-// transaction" (a transaction is always exactly one or the other), so one aggregation per side is
-// enough — there's no need to compute the linked and direct portions separately.
 export async function GET(request) {
   try {
     const session = await getServerSession(authOptions);

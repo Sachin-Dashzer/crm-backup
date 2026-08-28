@@ -5,9 +5,6 @@ import { X, Loader2 } from "lucide-react";
 import SearchableSelect from "@/components/SearchableSelect";
 import { ALL_BRANCHES, COLLAB_BRANCHES } from "@/lib/branches";
 
-// Extracted from admin/receivables/page.jsx (Task 5, Step 1) — behaviour unchanged, only the
-// location moved.
-
 const PURPOSES = ["PATIENT_DUE", "COLLAB_SETTLEMENT", "REFUND_DUE", "ADVANCE_RECOVERY", "OTHER"];
 
 const PURPOSE_LABELS = {
@@ -18,8 +15,6 @@ const PURPOSE_LABELS = {
   OTHER: "Other",
 };
 
-// purpose -> the payer.kind it always maps to. REFUND_DUE and ADVANCE_RECOVERY are the two
-// purposes without a single fixed kind — this modal shows a kind picker for those.
 const PURPOSE_TO_FIXED_KIND = {
   PATIENT_DUE: "PATIENT",
   COLLAB_SETTLEMENT: "COLLAB_CLINIC",
@@ -30,7 +25,7 @@ const REVENUE_CATEGORIES = ["Transplant", "Services", "Medicine"];
 
 export default function NewReceivableModal({ onClose, onSuccess, toast }) {
   const [purpose, setPurpose] = useState("");
-  const [kind, setKind] = useState(""); // only shown/used for REFUND_DUE / ADVANCE_RECOVERY
+  const [kind, setKind] = useState("");
   const [totalAmount, setTotalAmount] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [branch, setBranch] = useState("");
@@ -99,8 +94,6 @@ export default function NewReceivableModal({ onClose, onSuccess, toast }) {
   };
   const formatEmployeeOption = (e) => `${e.name} — ${e.role}`;
 
-  // The vendor list is small and has no search endpoint, so it is fetched once and filtered
-  // inside SearchableSelect rather than per keystroke like patients and employees.
   const fetchVendors = async () => {
     try {
       const res = await fetch("/api/vendors/get");
@@ -109,8 +102,6 @@ export default function NewReceivableModal({ onClose, onSuccess, toast }) {
         setVendors(data.data || data.vendors || []);
       }
     } catch {
-      // A vendor list that fails to load leaves the picker empty; the toast on submit is
-      // enough signal, and blocking the whole modal over it would be worse.
     }
   };
   const formatVendorOption = (v) => (v.DealsIn ? `${v.name} — ${v.DealsIn}` : v.name);
@@ -137,8 +128,6 @@ export default function NewReceivableModal({ onClose, onSuccess, toast }) {
     if (effectiveKind === "COLLAB_CLINIC") {
       return { kind: "COLLAB_CLINIC", refId: null, label: collabBranch };
     }
-    // refId links the receivable to the actual Vendor record. It used to be a free-text name
-    // with refId null, which left vendor receivables unjoinable to the vendor they belong to.
     if (effectiveKind === "VENDOR") {
       return { kind: "VENDOR", refId: vendorId || null, label: vendorName };
     }

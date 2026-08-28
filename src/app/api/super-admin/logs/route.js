@@ -12,7 +12,6 @@ function fmtDate(d) {
   return new Date(d).toLocaleString("en-IN", { timeZone: "Asia/Kolkata" });
 }
 
-// Strict date range check — null dates are excluded when a range is active
 function inRange(date, dateFrom, dateTo) {
   if (!dateFrom || !dateTo) return true;
   if (!date) return false;
@@ -44,7 +43,6 @@ export async function GET(request) {
     let data = [];
 
     switch (type) {
-      // ── PATIENT CHANGES LOG ──────────────────────────────────────────
       case "patient-changes-log": {
         const query = branch ? { "personal.branch": branch } : {};
 
@@ -57,7 +55,6 @@ export async function GET(request) {
           const phone = patient.personal?.phone || "";
           const patientBranch = patient.personal?.branch || "";
 
-          // Fallback to Mongoose createdAt when createdBy.date is missing
           const createdAt = patient.createdBy?.date
             ? new Date(patient.createdBy.date)
             : patient.createdAt
@@ -107,7 +104,6 @@ export async function GET(request) {
         break;
       }
 
-      // ── TRANSACTION CHANGES LOG ──────────────────────────────────────
       case "transaction-changes-log": {
         const txQuery = branch ? { branch } : {};
 
@@ -184,7 +180,6 @@ export async function GET(request) {
         break;
       }
 
-      // ── STOCK CHANGES LOG ────────────────────────────────────────────
       case "stock-changes-log": {
         const stockQuery = branch ? { location: branch } : {};
 
@@ -248,7 +243,6 @@ export async function GET(request) {
         break;
       }
 
-      // ── DELETE LOG ───────────────────────────────────────────────────
       case "delete-log": {
         const deleteQuery = {};
         if (branch) deleteQuery.branch = branch;

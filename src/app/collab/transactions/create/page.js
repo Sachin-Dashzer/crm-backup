@@ -17,7 +17,6 @@ import {
   Building2,
 } from "lucide-react";
 
-// Returns today's date in IST (Asia/Kolkata) as YYYY-MM-DD
 const getTodayIST = () =>
   new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
 
@@ -31,7 +30,6 @@ export default function AllTransactionsPage() {
   const picker = usePatientPicker();
   const [medicines, setMedicines] = useState([]);
 
-  // TRANSPLANT DATA
   const [transplantData, setTransplantData] = useState({
     patient: "",
     procedure: "Sapphire FUE",
@@ -49,7 +47,6 @@ export default function AllTransactionsPage() {
     externalParty: { name: "", method: "", partyKind: "MANUAL", partyRefId: "" },
   });
 
-  // SERVICE DATA - Now supports multiple services
   const [serviceData, setServiceData] = useState({
     patient: "",
     patientName: "",
@@ -77,7 +74,6 @@ export default function AllTransactionsPage() {
     },
   ]);
 
-  // MEDICINE DATA - Now supports multiple medicines
   const [medicineData, setMedicineData] = useState({
     patient: "",
     patientName: "",
@@ -110,11 +106,6 @@ export default function AllTransactionsPage() {
     fetchData();
   }, []);
 
-  // useSession() resolves asynchronously, so session?.user?.branch is still
-  // undefined when the branch fields above are initialized. Sync it in once
-  // the session loads, unless the user already picked a branch manually.
-  // Collab accounts carry the "Collab" sentinel (not a real city), so it's
-  // excluded — the collab receptionist must always pick the specific city.
   const branchTouchedRef = useRef({
     transplant: false,
     service: false,
@@ -130,9 +121,6 @@ export default function AllTransactionsPage() {
     if (!touched.medicine) setMedicineData((d) => ({ ...d, branch: userBranch }));
   }, [session?.user?.branch]);
 
-  // Wraps each tab's setter so a user-driven branch change (via RevenueSection's
-  // BranchDateRemarks) still marks branchTouchedRef, exactly as the inline <select>
-  // onChange used to before this tab was converted to the shared component.
   const handleTransplantChange = (newData) => {
     if (newData.branch !== transplantData.branch) branchTouchedRef.current.transplant = true;
     setTransplantData(newData);
@@ -166,7 +154,6 @@ export default function AllTransactionsPage() {
     }
   };
 
-  // TRANSPLANT HANDLERS
   const handleSaveTransplant = async () => {
     if (!transplantData.patient) {
       alert("Please select a patient");
@@ -228,7 +215,6 @@ export default function AllTransactionsPage() {
     }
   };
 
-  // SERVICE HANDLERS (Multiple Items)
   const handleSaveService = async () => {
     if (!serviceData.isWalkIn && !serviceData.patient) {
       alert("Please select a patient");
@@ -304,7 +290,6 @@ export default function AllTransactionsPage() {
     }
   };
 
-  // MEDICINE HANDLERS (Multiple Items)
   const handleSaveMedicine = async () => {
     if (!medicineData.isWalkIn && !medicineData.patient) {
       alert("Please select a patient");
@@ -549,7 +534,6 @@ export default function AllTransactionsPage() {
               />
             )}
 
-            {/* COLLAB CASE TAB — the only place a collab case is entered. */}
             {activeTab === "collabCase" && (
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 max-w-4xl">
                 <h3 className="text-lg font-semibold text-gray-900 mb-1">New Collab Case</h3>
@@ -572,8 +556,6 @@ export default function AllTransactionsPage() {
               </div>
             )}
 
-            {/* EXPENSE TAB — settlement only. A collab user cannot log arbitrary
-                expenses: no categories, no vendor/manual payee entry. */}
             {activeTab === "expense" && (
               <CollabSettlementPanel onSaved={() => router.push("/collab/transactions")} />
             )}

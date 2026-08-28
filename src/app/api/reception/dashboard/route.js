@@ -9,28 +9,24 @@ import { UNSETTLED_METHODS, SETTLEMENT_EXCLUSION } from "@/constants/bankRouting
 
 const VALID_BRANCHES = ["All", "Delhi", "Mumbai", "Hyderabad", "Noida"];
 
-// Improved date helpers that work consistently across timezones
 const getISTStartOfDay = (date = null) => {
   const d = date ? new Date(date) : new Date();
   const istDate = new Date(d.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
   const year = istDate.getFullYear();
   const month = istDate.getMonth();
   const day = istDate.getDate();
-  
-  // Return as UTC date that represents IST start of day
+
   return new Date(Date.UTC(year, month, day, 0, 0, 0, 0));
 };
 
 const getISTEndOfDay = (date = null) => {
   const d = date ? new Date(date) : new Date();
-  
-  // Create date in IST timezone (UTC+5:30)
+
   const istDate = new Date(d.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
   const year = istDate.getFullYear();
   const month = istDate.getMonth();
   const day = istDate.getDate();
-  
-  // Return as UTC date that represents IST end of day
+
   return new Date(Date.UTC(year, month, day, 23, 59, 59, 999));
 };
 
@@ -64,21 +60,17 @@ const handler = async (req) => {
     const userBranch = session.user.branch;
     const isAdmin = userBranch === "All";
 
-    
+
     const data = await req.json();
     const { branch: requestedBranch = "All", from, to } = data;
 
-    // ✅ SECURITY CHECK: Only admin can filter by different branches
     let branch;
     if (isAdmin) {
-      // Admin can use any branch filter
       branch = requestedBranch;
     } else {
-      // Non-admin users are restricted to their own branch (city)
       branch = userBranch;
     }
 
-    // Validate branch
     if (!VALID_BRANCHES.includes(branch)) {
       return NextResponse.json(
         { error: "Invalid branch specified" },
@@ -86,12 +78,10 @@ const handler = async (req) => {
       );
     }
 
-    // Use consistent IST timezone for date calculations
     const fromDate = from ? getISTStartOfDay(from) : getISTStartOfDay();
     const toDate = to ? getISTEndOfDay(to) : getISTEndOfDay();
 
-    
-    // Validate dates
+
     if (isNaN(fromDate.getTime()) || isNaN(toDate.getTime())) {
       return NextResponse.json(
         { error: "Invalid date provided" },
@@ -106,9 +96,8 @@ const handler = async (req) => {
       );
     }
 
-    // Calculate comparison period (previous period for trends)
     const daysDifference = Math.ceil((toDate - fromDate) / (1000 * 60 * 60 * 24)) + 1;
-    
+
     const comparisonEnd = new Date(fromDate);
     comparisonEnd.setDate(comparisonEnd.getDate() - 1);
     comparisonEnd.setHours(23, 59, 59, 999);
@@ -117,14 +106,12 @@ const handler = async (req) => {
     comparisonStart.setDate(comparisonStart.getDate() - (daysDifference - 1));
     comparisonStart.setHours(0, 0, 0, 0);
 
-    
-    // Branch filter (using the enforced branch)
+
     const branchFilter = branch === "All" ? {} : { "personal.branch": branch };
 
-    // Get patient statistics
     const getPatientStats = async () => {
       try {
-       
+
         const result = await Patient.aggregate([
           {
             $match: {
@@ -187,10 +174,9 @@ const handler = async (req) => {
       }
     };
 
-    // Get revenue statistics
     const getRevenueStats = async () => {
       try {
-       
+
 
         const result = await Transactions.aggregate([
           {
@@ -225,7 +211,6 @@ const handler = async (req) => {
       }
     };
 
-    // Get recent patients - Safe approach for Vercel
     const getRecentPatients = async () => {
       try {
         const patients = await Patient.aggregate([
@@ -267,13 +252,12 @@ const handler = async (req) => {
       }
     };
 
-    // Get upcoming appointments
     const getUpcomingAppointments = async () => {
       try {
-        const now = new Date(); // Current server time (UTC)
+        const now = new Date();
         const endOfDay = getISTEndOfDay();
-        
-        
+
+
         const appointments = await Patient.aggregate([
           {
             $match: {
@@ -315,7 +299,6 @@ const handler = async (req) => {
       }
     };
 
-    // Get converted patients — visited in the period AND have at least one transaction
     const getConvertedStats = async () => {
       try {
         const result = await Patient.aggregate([
@@ -349,7 +332,6 @@ const handler = async (req) => {
       }
     };
 
-    // Execute all queries in parallel with error handling
     const [patientStats, revenueStats, recentPatients, upcomingAppointments, convertedStats] = await Promise.allSettled([
       getPatientStats(),
       getRevenueStats(),
@@ -358,14 +340,12 @@ const handler = async (req) => {
       getConvertedStats(),
     ]);
 
-    // Handle promise results with safe defaults
     const patientStatsResult = patientStats.status === 'fulfilled' ? patientStats.value : {};
     const revenueStatsResult = revenueStats.status === 'fulfilled' ? revenueStats.value : {};
     const recentPatientsResult = recentPatients.status === 'fulfilled' ? recentPatients.value : [];
     const upcomingAppointmentsResult = upcomingAppointments.status === 'fulfilled' ? upcomingAppointments.value : [];
     const convertedStatsResult = convertedStats.status === 'fulfilled' ? convertedStats.value : {};
 
-    // Process stats with safe defaults
     const currentAppointments = patientStatsResult.currentAppointments?.[0]?.count || 0;
     const currentVisited = patientStatsResult.currentVisited?.[0]?.count || 0;
     const currentPending = patientStatsResult.currentPending?.[0]?.count || 0;
@@ -376,7 +356,6 @@ const handler = async (req) => {
     const currentConverted = convertedStatsResult.current?.[0]?.count || 0;
     const comparisonConverted = convertedStatsResult.comparison?.[0]?.count || 0;
 
-    // Calculate growth percentages
     const calculateGrowth = (current, comparison) => {
       if (comparison === 0 && current > 0) return 100;
       if (comparison === 0 && current === 0) return 0;
@@ -388,7 +367,6 @@ const handler = async (req) => {
     const revenueGrowth = calculateGrowth(currentRevenue, comparisonRevenue);
     const convertedGrowth = calculateGrowth(currentConverted, comparisonConverted);
 
-    // Prepare final response
     const response = {
       success: true,
       data: {
@@ -406,10 +384,8 @@ const handler = async (req) => {
           revenue: revenueGrowth,
           converted: convertedGrowth,
         },
-        // ✅ Return the actual branch being used and admin status
         activeBranch: branch,
         isAdmin: isAdmin,
-        // Include debug info for Vercel
         _debug: process.env.NODE_ENV === 'development' ? {
           dateRanges: {
             current: { from: fromDate.toISOString(), to: toDate.toISOString() },
@@ -436,9 +412,9 @@ const handler = async (req) => {
   } catch (error) {
     console.error("Reception Dashboard API error on Vercel:", error);
     return NextResponse.json(
-      { 
+      {
         success: false,
-        error: "Internal server error", 
+        error: "Internal server error",
         details: error.message
       },
       { status: 500 }

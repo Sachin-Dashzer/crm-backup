@@ -46,22 +46,10 @@ export async function GET(request) {
     if (payeeKind) match["payee.kind"] = payeeKind;
     if (payeeRefId) match["payee.refId"] = new mongoose.Types.ObjectId(payeeRefId);
     if (payeeLabel) match["payee.label"] = payeeLabel;
-    // Never trust a raw branch string from the client — this route consumes a plain Mongo match
-    // object, so resolveBranchFilter's result spreads straight in.
-    //
-    // Exception: a query already scoped to one specific vendor's own payables (payeeKind VENDOR +
-    // payeeRefId) skips the branch filter. Vendor bills (medicine/consumables/professional-service
-    // invoices) are deliberately branch-agnostic — a wholesaler isn't tied to one clinic — so they're
-    // created with branch unset, and a branch-specific admin's session would otherwise force
-    // {branch: "Delhi"} against a document with no branch at all, matching nothing. This can't leak
-    // another branch's data: the query is already narrowed to one named vendor's own documents, not
-    // a category-wide listing.
     const skipBranchFilter = payeeKind === "VENDOR" && !!payeeRefId;
     if (!skipBranchFilter) {
       Object.assign(match, resolveBranchFilter(session, searchParams.get("branch") || ""));
     }
-    // Exact values from src/constants/expenseCategories.js — the same tree the create form
-    // writes from, so a filter value always matches what is stored.
     if (expenseCategory) match.expenseCategory = expenseCategory;
     if (expenseSubType) match.expenseSubType = expenseSubType;
     if (dateFrom || dateTo) {
@@ -90,13 +78,7 @@ export async function GET(request) {
     const txCollection = Transactions.collection.name;
     const basePipeline = [{ $match: match }, ...buildPayableAggregationStages(txCollection)];
     if (status) basePipeline.push({ $match: { status } });
-    // ageingBucket is derived inside the aggregation, so it can only be filtered after those
-    // stages have run — hence a second $match here rather than an entry in the initial one.
-    // pending > 0 matches the ageing chips' own definition (/api/payables/summary?ageing=1) — a
-    // document that's since been paid off still carries whatever bucket its now-irrelevant
-    // dueDate computes to, so without this it could wrongly appear in an ageing-filtered list.
     if (ageingBucket) basePipeline.push({ $match: { ageingBucket, pending: { $gt: 0 } } });
-    // Worst-overdue first by default; ?sort=createdAt restores newest-first.
     basePipeline.push({ $sort: sort === "createdAt" ? { createdAt: -1 } : AGEING_SORT });
 
     const [rows, totalAgg] = await Promise.all([

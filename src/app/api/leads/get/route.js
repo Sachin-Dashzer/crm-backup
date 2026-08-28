@@ -8,7 +8,6 @@ export async function GET(req) {
   try {
     const session = await getServerSession(authOptions);
 
-    // Only super-admin can access leads
     if (!session || !["super-admin", "owner"].includes(session?.user?.role)) {
       return NextResponse.json(
         { success: false, message: "Unauthorized. Super-admin access required." },
@@ -33,7 +32,6 @@ export async function GET(req) {
     const limit        = Math.min(200, Math.max(1, parseInt(searchParams.get("limit")) || 25));
     const skip         = (page - 1) * limit;
 
-    // Base query (used for tag-count aggregation without tag filter)
     const baseQuery = {};
 
     if (search) {
@@ -45,7 +43,6 @@ export async function GET(req) {
     }
     if (city) baseQuery.city = { $regex: city, $options: "i" };
 
-    // Created At range (supports datetime-local ISO strings)
     if (createdFrom || createdTo) {
       baseQuery.createdAt = {};
       if (createdFrom) baseQuery.createdAt.$gte = new Date(createdFrom);
@@ -56,7 +53,6 @@ export async function GET(req) {
       }
     }
 
-    // Visit Date range
     if (visitFrom || visitTo) {
       baseQuery.visitDate = {};
       if (visitFrom) baseQuery.visitDate.$gte = new Date(visitFrom);
@@ -67,7 +63,6 @@ export async function GET(req) {
       }
     }
 
-    // Has Email / Has Remarks toggles (frontend sends "true"/"false")
     if (hasEmail === "true")  baseQuery.email = { $exists: true, $nin: ["", null] };
     if (hasEmail === "false") {
       baseQuery.$and = [...(baseQuery.$and || []), {
@@ -77,7 +72,6 @@ export async function GET(req) {
     if (hasRemarks === "true")  baseQuery.remarks = { $exists: true, $nin: ["", null] };
     if (hasRemarks === "false") baseQuery.remarks = { $in: ["", null] };
 
-    // Full query includes tag filter for paginated results
     const query = tag ? { ...baseQuery, tag } : baseQuery;
 
     if (exportAll) {

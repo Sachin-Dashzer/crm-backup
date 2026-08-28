@@ -18,8 +18,6 @@ function round2(n) {
   return Math.round((Number(n) || 0) * 100) / 100;
 }
 
-// Revises packageAmount / clinicShare, or cancels a case. Every change
-// appends to log[]; existing log entries are never edited or removed.
 export async function PATCH(req, { params }) {
   try {
     const session = await getServerSession(authOptions);
@@ -67,10 +65,6 @@ export async function PATCH(req, { params }) {
     }
 
     if (isCancelled === true && collabCase.status !== "CANCELLED") {
-      // §2.4 — refuse outright if a real settlement has already been allocated against this
-      // case (mirrors DELETE's own guard below): a WE_PAID/THEY_PAID settlement moved real cash
-      // against this case's Payable/Receivable, and blindly reversing everything underneath it
-      // would strand that settlement pointing at nothing.
       const settledAgainst = await CollabSettlement.countDocuments({
         "coveredCases.case": collabCase._id,
       });
@@ -92,12 +86,6 @@ export async function PATCH(req, { params }) {
       let reversedCount = 0;
       try {
         await dbSession.withTransaction(async () => {
-          // Every transaction this case's own money-collection path generated — both
-          // createCollabCaseAtomic (at creation) and recordCollabCollectionAtomic (every later
-          // instalment): the gross-package booking never happens any more, so this is the case's
-          // complete revenue/expense trail. The settlementId filter is defence in depth — the
-          // upfront count above already refuses before any settlement-linked transaction could
-          // reach here.
           const linkedTx = await Transactions.find({
             "collabRef.caseId": collabCase._id,
             "collabRef.settlementId": { $exists: false },
@@ -115,14 +103,6 @@ export async function PATCH(req, { params }) {
             });
             reversedCount += 1;
 
-            // reverseTransaction unconditionally unwinds Patient.payments.amountReceived for any
-            // Revenue transaction that carries a patient — correct for a collectedBy:"US" row
-            // (createCollectionTransaction advances it exactly like a direct payment), but a
-            // collectedBy:"CLINIC" row (method: paid_to_external) never touched Patient.payments
-            // in the first place — see collabDerivation.js's §2.1 split, collab money only
-            // reaches the patient's own record via the US branch. Undo the wrongly-applied
-            // decrement so a clinic-collected reversal doesn't understate a patient who never
-            // actually received that money from us.
             if (tx.method === "paid_to_external" && tx.costType === "Revenue" && tx.patient) {
               const patient = await Patient.findById(tx.patient).session(dbSession);
               if (patient) {
@@ -140,11 +120,6 @@ export async function PATCH(req, { params }) {
             }
           }
 
-          // The clinic's fixed fee (and, if the clinic over-collected, its Receivable) no longer
-          // means anything once the case is cancelled — soft-cancel both, same as
-          // cascadeIntegrity.js does for every other flow (never hard-delete: the audit trail is
-          // the point). Safe unconditionally here — the settledAgainst check above already
-          // refused if either had a real settlement against it.
           if (collabCase.clinicSharePayable) {
             const payable = await Payable.findById(collabCase.clinicSharePayable).session(dbSession);
             if (payable && !payable.isCancelled) {
@@ -179,8 +154,6 @@ export async function PATCH(req, { params }) {
           }
 
           collabCase.status = "CANCELLED";
-          // Nothing recognises the clinic-share crystallisation any more — every linked
-          // transaction was just reversed above, and both documents were just soft-cancelled.
           collabCase.clinicShareSettledAt = null;
           collabCase.log.push({
             action: "Cancelled",
@@ -209,8 +182,6 @@ export async function PATCH(req, { params }) {
     }
 
     if (isCancelled === false && collabCase.status === "CANCELLED") {
-      // Reinstating only flips status back — it does NOT recreate whatever was reversed above.
-      // Any money still owed has to be recorded fresh as a new collection.
       collabCase.status = "OPEN";
       collabCase.log.push({
         action: "Note Added",
@@ -238,14 +209,6 @@ export async function PATCH(req, { params }) {
   }
 }
 
-// Hard-deletes a collab case along with everything createCollabCaseAtomic generated for it:
-// the gross revenue transaction, the clinic-share expense, and the Payable/Receivable that
-// carries the clinic balance. Those exist only to represent this case — leaving any of them
-// behind would keep revenue or a clinic balance on the books with no case explaining it.
-//
-// REFUSES when a settlement has already been allocated against this case: the settlement is a
-// real money movement with its own transactions, and deleting the case underneath it would
-// leave that settlement pointing at nothing. Delete the settlement first.
 export async function DELETE(req, { params }) {
   try {
     const session = await getServerSession(authOptions);
@@ -281,21 +244,10 @@ export async function DELETE(req, { params }) {
       );
     }
 
-    // Everything this case spawned, found by its own back-reference rather than by re-deriving
-    // the amounts — collabRef.caseId is set on both transactions at creation time.
     const linkedTx = await Transactions.find({ "collabRef.caseId": collabCase._id })
       .select("transactionCategory costType amount date method receivableId collabRef")
       .lean();
 
-    // Money collected DIRECTLY BY US advances the patient's own payment record at creation/
-    // collection time (see createCollectionTransaction's collectedBy:"US" branch) — deleting the
-    // case that recorded it must reverse that too, or the patient permanently shows money
-    // "received" with no transaction left to back it up. Two kinds of Revenue row are excluded
-    // here, neither of which ever touched Patient.payments: a collectedBy:"CLINIC" row
-    // (method: "paid_to_external") and crystalliseClinicShare's own offset_settlement transaction
-    // against the collab Receivable (receivableId set — see collabDerivation.js). collabSplit is no
-    // longer set on any transaction under the current write path, so this can no longer be read
-    // off collabSplit.ourReceived the way it was before that fix.
     const ourReceivedTotal = linkedTx.reduce(
       (sum, t) =>
         sum +
@@ -309,9 +261,6 @@ export async function DELETE(req, { params }) {
       collabCase.clinicSharePayable,
       ...linkedTx.map((t) => t.collabRef?.payableId).filter(Boolean),
     ].filter(Boolean);
-    // Read off the case itself, not off any transaction's collabRef.receivableId — no
-    // transaction claims to "own" this receivable any more (see collabDerivation.js: it's one
-    // shared, resizable document fed by potentially many collections, not a 1:1 creator link).
     const receivableIds = [collabCase.clinicShareReceivable].filter(Boolean);
 
     await DeleteLog.create({
@@ -350,8 +299,6 @@ export async function DELETE(req, { params }) {
       branch: collabCase.clinic,
     });
 
-    // Session-wrapped for the same reason createCollabCaseAtomic writes them together: a case
-    // must never be removed while the revenue, expense or clinic balance it created survives.
     const dbSession = await mongoose.startSession();
     try {
       await dbSession.withTransaction(async () => {

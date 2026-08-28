@@ -2,13 +2,11 @@
 import mongoose from "mongoose";
 import fs from "fs";
 
-// --- env -----------------------------------------------------------------
 for (const f of [".env.local", ".env"]) {
   if (fs.existsSync(f)) {
     try {
       process.loadEnvFile(f);
     } catch {
-      /* already loaded / unsupported — fall through to the MONGODB_URI check below */
     }
   }
 }
@@ -16,10 +14,6 @@ const MONGODB_URI = process.env.MONGODB_URI;
 
 const VALID_ROLES = ["Agent", "Counsellor", "Doctor", "Technician", "Implanter", "Others", "Hr"];
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// THE DATA — parsed directly from emp_1.txt (one JSON object per line, trailing commas
-// stripped), not hand-transcribed.
-// ═══════════════════════════════════════════════════════════════════════════════
 const EMPLOYEES = [
   {
     "name": "(Gudiya)Anjali",
@@ -3442,7 +3436,6 @@ const EMPLOYEES = [
   }
 ];
 
-// --- args ------------------------------------------------------------------
 const args = process.argv.slice(2);
 const APPLY = args.includes("--apply");
 const CONFIRM_RISKY = args.includes("--confirm-contact-only-updates");
@@ -3487,15 +3480,6 @@ function nameSimilarity(a, b) {
 }
 const NAME_SIMILARITY_THRESHOLD = 0.5;
 
-// A plain word-overlap ratio has a real false-positive mode on this data: "Nishi Afterservice"
-// vs "Ritu Afterservice" scores 50% purely from sharing "Afterservice" (a team/role tag, not a
-// personal name component) despite being two different people — confirmed live in this file's
-// own duplicate-phone group. A shared surname-like suffix isn't identity; the given (first) name
-// is what actually distinguishes two people here. So a match only counts as safe when EITHER the
-// first word matches, OR overall similarity clears a much higher bar (75%) — this correctly
-// keeps Sunil Bhairwa/Sunil Kumar Bairwa and Dr,/Dr. Ashalata Roy safe while pushing
-// Nishi/Ritu Afterservice into the reviewed bucket, verified against every duplicate found in
-// this file before this script was finalised.
 function isSafeNameMatch(a, b) {
   const wa = normWords(a);
   const wb = normWords(b);
@@ -3515,7 +3499,6 @@ function diffFields(entry, existing) {
     const newStr = String(newVal).trim();
     if (oldStr !== newStr) changes.push({ field, from: oldVal ?? null, to: newVal });
   }
-  // salaryStructure / incentiveRate diffed separately — nested + numeric, not a simple string compare.
   const ss = entry.salaryStructure || {};
   const existingSs = existing.salaryStructure || {};
   if (ss.baseSalary !== undefined && Number(existingSs.baseSalary || 0) !== Number(ss.baseSalary))
@@ -3546,9 +3529,6 @@ async function run() {
   }
   console.log("Validation passed.\n");
 
-  // Surface within-file duplicate phones up front, purely as visibility — they are still
-  // processed in file order below, so the later occurrence's values are simply what ends up
-  // applied (a second update call overwriting the first's), not specially merged.
   const phoneCounts = {};
   EMPLOYEES.forEach((e) => { if (e.phone) phoneCounts[e.phone] = (phoneCounts[e.phone] || 0) + 1; });
   const repeatedPhones = Object.entries(phoneCounts).filter(([, c]) => c > 1);
@@ -3566,10 +3546,6 @@ async function run() {
     mongoose.models.Employee ||
     mongoose.model("Employee", new mongoose.Schema({}, { strict: false, collection: "employees" }));
 
-  // ---------------------------------------------------------------------------
-  // PASS 1 — classify every row: blank phone / placeholder phone / not found / safe update /
-  // risky (name-mismatch) update. No writes yet.
-  // ---------------------------------------------------------------------------
   console.log("Matching against existing employees by phone...\n");
   const blankPhone = [];
   const placeholderPhone = [];
@@ -3648,9 +3624,6 @@ async function run() {
     return;
   }
 
-  // ---------------------------------------------------------------------------
-  // PASS 2 — write.
-  // ---------------------------------------------------------------------------
   console.log("\nApplying safe updates...");
   const updated = [];
   const failed = [];

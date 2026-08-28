@@ -22,19 +22,15 @@ export async function POST(req) {
     await connectDB();
 
     const {
-      payer, // { kind, refId, label }
+      payer,
       purpose,
       revenueCategory,
-      period, // { month, year }
+      period,
       relatedPatient,
       totalAmount,
       dueDate,
       branch,
       remarks,
-      // Task 4 — whether the revenue this receivable represents has already been booked by
-      // another transaction. Drives isSettlement on the eventual receipt; see the model comment
-      // on Receivable.costAlreadyRecognised. Defaults false, matching every pre-existing caller
-      // (the old NewReceivableModal never sent this).
       costAlreadyRecognised,
       receipts,
     } = await req.json();
@@ -48,10 +44,6 @@ export async function POST(req) {
     if (!RECEIVABLE_PURPOSE_VALUES.includes(purpose)) {
       return NextResponse.json({ error: "Invalid purpose" }, { status: 400 });
     }
-    // Only these three kinds are ever backed by an actual record — COLLAB_CLINIC/OTHER
-    // legitimately carry refId: null by design (see the model comment on Receivable.payer). An
-    // allowlist, not "anything but OTHER", or this would wrongly reject every collab-settlement
-    // receivable, which has never had a refId.
     const REFID_REQUIRED_KINDS = ["PATIENT", "EMPLOYEE", "VENDOR"];
     if (REFID_REQUIRED_KINDS.includes(payer.kind) && !payer.refId) {
       return NextResponse.json(
@@ -68,9 +60,6 @@ export async function POST(req) {
     if (branch && !ALL_BRANCHES.includes(branch)) {
       return NextResponse.json({ error: "Invalid branch" }, { status: 400 });
     }
-    // A voucher has no account yet (that only exists once it's settled), so this exercises
-    // periodLock.js's "every account closed" fallback — the right semantics for an accrual with
-    // no cash side. Checked against the due date, or today when none is given.
     const lockReason = await checkPeriodLock({ furtherMode: null, date: dueDate || new Date() });
     if (lockReason) {
       return NextResponse.json({ error: lockReason, periodLocked: true }, { status: 423 });

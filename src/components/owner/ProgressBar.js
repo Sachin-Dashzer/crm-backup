@@ -1,4 +1,3 @@
-// .progress[.good/.bad/.warn] — pass kind to color the fill; omit for the default cyan→blue.
 export default function ProgressBar({ value = 0, kind }) {
   const pct = Math.min(100, Math.max(0, value));
   return (

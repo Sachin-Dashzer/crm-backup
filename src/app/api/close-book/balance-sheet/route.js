@@ -15,12 +15,6 @@ import {
 
 const ALLOWED_ROLES = ["admin", "super-admin", "owner"];
 
-// Balance sheet: every account side by side for one period — opening, in, out, closing
-// per account, plus a grand total row.
-//
-// ONE aggregation covering all accounts (grouped by furtherMode), not one query per account.
-// Accounts with no movement still appear, at their opening balance, so a zero row is
-// visibly zero rather than missing.
 export async function GET(request) {
   try {
     const session = await getServerSession(authOptions);
@@ -43,17 +37,9 @@ export async function GET(request) {
 
     const started = Date.now();
 
-    // Transactions and contra entries are summed in ONE pipeline: the transaction rows are
-    // projected into a neutral { account, in, out } shape, contra rows are unioned in already
-    // in that shape (one transfer contributing an out row and an in row), then a single $group
-    // totals both. Contra entries therefore net to zero across all accounts by
-    // construction rather than by a separate reconciliation step.
     const contraStage = buildContraUnionStage({ from, to, branch });
-    // Unexplained bank movement, so the closing balance matches the statement. Open entries
-    // only — a resolved one is represented by its real transaction, already counted above.
     const suspenseStage = buildSuspenseUnionStage({ from, to, branch });
     const [openings, movementRows] = await Promise.all([
-      // Branch-filtered views open from that branch's own seeds, not the company figures.
       getOpeningBalances(ACCOUNTS, from, branch || null),
       Transactions.aggregate([
         { $match: buildBalanceMatch({ accounts: ACCOUNTS, from, to, branch }) },
@@ -105,9 +91,6 @@ export async function GET(request) {
       { openingBalance: 0, totalIn: 0, totalOut: 0, closingBalance: 0, transactionCount: 0 },
     );
 
-    // Rows that move real cash but carry no account attribution would otherwise be
-    // invisible. Surfaced as a known gap rather than silently dropped — every historical
-    // row is in this bucket, since none of them carry furtherMode.
     const [unattributed] = await Transactions.aggregate([
       {
         $match: {

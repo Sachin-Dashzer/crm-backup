@@ -5,9 +5,6 @@ import connectDB from "@/lib/db";
 import Employee from "@/models/Employee";
 import { NAME_COLLATION } from "@/lib/sortOptions";
 
-// Lightweight search/list endpoint — distinct from /api/employees/get/[id]
-// (single employee by id) and /api/employees/get-id (all employees grouped
-// by role, no filters). Used by the admin expense form's employee picker.
 export async function GET(request) {
   try {
     const session = await getServerSession(authOptions);

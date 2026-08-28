@@ -174,7 +174,6 @@ export default function EditVendorPage() {
       <Sidebar />
 
       <div className="flex-1 flex flex-col min-h-screen">
-        {/* Sticky Header */}
         <header className="bg-white border-b border-gray-100 shadow-[0_1px_3px_rgba(0,0,0,0.04)] px-6 py-4 sticky top-0 z-10">
           <div className="max-w-3xl mx-auto flex items-center gap-4">
             <button
@@ -209,11 +208,8 @@ export default function EditVendorPage() {
           </div>
         </header>
 
-        {/* Main Content */}
         <main className="flex-1 px-4 py-6 lg:px-8">
-          {/* Form Card */}
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden max-w-3xl mx-auto mt-6">
-            {/* Section Header */}
             <div className="px-6 py-5 border-b border-gray-50">
               <div className="border-l-4 border-emerald-500 pl-4">
                 <h2 className="text-sm font-bold text-gray-900">
@@ -226,11 +222,9 @@ export default function EditVendorPage() {
               </div>
             </div>
 
-            {/* Form Body */}
             <form onSubmit={handleSubmit}>
               <div className="p-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  {/* Vendor Name */}
                   <div>
                     <label className={labelClass}>
                       Vendor Name{" "}
@@ -251,7 +245,6 @@ export default function EditVendorPage() {
                     )}
                   </div>
 
-                  {/* Contact Number */}
                   <div>
                     <label className={labelClass}>Contact Number</label>
                     <input
@@ -269,7 +262,6 @@ export default function EditVendorPage() {
                     )}
                   </div>
 
-                  {/* Email */}
                   <div>
                     <label className={labelClass}>Email</label>
                     <input
@@ -287,7 +279,6 @@ export default function EditVendorPage() {
                     )}
                   </div>
 
-                  {/* GST Number */}
                   <div>
                     <label className={labelClass}>GST Number</label>
                     <input
@@ -306,7 +297,6 @@ export default function EditVendorPage() {
                     )}
                   </div>
 
-                  {/* Deals In */}
                   <div>
                     <label className={labelClass}>Deals In</label>
                     <input
@@ -319,7 +309,6 @@ export default function EditVendorPage() {
                     />
                   </div>
 
-                  {/* Address — full width */}
                   <div className="md:col-span-2">
                     <label className={labelClass}>Address</label>
                     <textarea
@@ -334,7 +323,6 @@ export default function EditVendorPage() {
                 </div>
               </div>
 
-              {/* Card Footer */}
               <div className="px-6 py-4 border-t border-gray-50 bg-gray-50/40 flex gap-3">
                 <button
                   type="submit"

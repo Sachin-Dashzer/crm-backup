@@ -6,7 +6,6 @@ import Transactions from "@/models/Transactions";
 
 const handler = async (req) => {
     try {
-        // Fetch patients with only necessary fields for sales dashboard
         const patients = await Patient.find({})
             .select('personal ops counselling payments surgery.surgeryDate surgery.technique surgery.doctor createdAt updatedAt')
             .populate({
@@ -31,7 +30,6 @@ const handler = async (req) => {
             })
             .sort({ createdAt: -1 });
 
-        // Calculate payment summaries
         const patientsWithSummary = patients.map(patient => {
             const totalAmount = patient.payments?.totalAmount || 0;
             const amountReceived = patient.payments?.amountReceived || 0;
@@ -50,18 +48,18 @@ const handler = async (req) => {
 
 
 
-        return NextResponse.json({ 
-            patients: patientsWithSummary, 
+        return NextResponse.json({
+            patients: patientsWithSummary,
             success: true,
-            count: patientsWithSummary.length 
+            count: patientsWithSummary.length
         }, { status: 200 });
 
     } catch (error) {
         console.error("Error fetching sales patients:", error);
         return NextResponse.json(
-            { 
-                success: false, 
-                error: "Failed to fetch patients" 
+            {
+                success: false,
+                error: "Failed to fetch patients"
             },
             { status: 500 }
         );

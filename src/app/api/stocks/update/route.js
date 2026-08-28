@@ -19,7 +19,6 @@ export async function PUT(req) {
     const body = await req.json();
     const { id, name, location, gstNo, weight, unit, mrp, expiry, purchaseAmt , soldAmt , updatedFields } = body;
 
-    // Validation
     if (!id) {
       return NextResponse.json(
         { success: false, message: "Stock ID is required" },
@@ -34,7 +33,6 @@ export async function PUT(req) {
       );
     }
 
-    // Find existing stock
     const existingStock = await Stock.findById(id);
     if (!existingStock) {
       return NextResponse.json(
@@ -43,7 +41,6 @@ export async function PUT(req) {
       );
     }
 
-    // Non-admin users can only edit stock belonging to their branch
     const isAdmin = ["admin", "super-admin"].includes(session.user.role);
     const userBranch = session.user.branch;
     if (!isAdmin && userBranch && existingStock.location !== userBranch) {
@@ -53,10 +50,8 @@ export async function PUT(req) {
       );
     }
 
-    // Non-admin users cannot change the location
     const effectiveLocation = !isAdmin && userBranch ? userBranch : location;
 
-    // Prepare update data
     const updateData = {
       name,
       location: effectiveLocation,
@@ -69,7 +64,6 @@ export async function PUT(req) {
       purchaseAmt
     };
 
-    // Add editor entry with tracked changes
     const editorEntry = {
       name: session.user.name,
       email: session.user.email,
@@ -78,7 +72,6 @@ export async function PUT(req) {
       updatedFields: updatedFields || [],
     };
 
-    // Update the stock item
     const updatedStock = await Stock.findByIdAndUpdate(
       id,
       {

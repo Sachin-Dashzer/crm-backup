@@ -20,23 +20,7 @@ import {
   X,
 } from "lucide-react";
 
-// Close-book / balance sheet, plus the actual locking.
-//
-// Closing an account for a period freezes its figures and blocks edits to any transaction
-// dated inside it — enforced at the API level, not here. This UI only asks; the guard in
-// src/lib/periodLock.js is what actually refuses, so calling the endpoint directly is
-// refused identically. Reopening is super-admin only, needs a reason, and immediately
-// recomputes every later period for that account.
 
-// ── Excel export ──────────────────────────────────────────────────────────────
-//
-// Money In and Money Out are exported as SEPARATE COLUMNS, not the single signed "Movement"
-// the on-screen ledger shows. A spreadsheet gets summed, filtered and pivoted, and a signed
-// column makes every one of those need a formula first — two columns total correctly with a
-// plain SUM. Both are written as numbers, never pre-formatted strings, so Excel can add them.
-//
-// xlsx is imported dynamically: it is a large dependency and nothing needs it until someone
-// actually clicks Download.
 async function writeSheet({ filename, sheets }) {
   const { utils, writeFile } = await import("xlsx");
   const wb = utils.book_new();
@@ -50,8 +34,6 @@ async function writeSheet({ filename, sheets }) {
 
 const stamp = () => new Date().toISOString().slice(0, 10);
 
-// A ledger row's description, matching what the table renders so the export and the screen
-// can't tell different stories about the same row.
 function describeRow(r, account) {
   if (r.isSuspense) {
     const dir = r.direction === "OUT" ? "Unexplained debit" : "Unexplained credit";
@@ -68,14 +50,6 @@ function describeRow(r, account) {
   return [head, r.remarks].filter(Boolean).join(" · ");
 }
 
-// Every ledger row is built from this template so all three kinds — opening, movement and
-// closing — carry the same keys in the same order. json_to_sheet derives its header from the
-// keys in order of first appearance, so rows built ad hoc would order columns by whichever
-// row happened to come first and no longer line up with LEDGER_COL_WIDTHS.
-//
-// Description stays alongside the broken-out columns rather than being replaced by them: it is
-// the one-liner the on-screen table shows, and dropping it would let the sheet and the screen
-// describe the same row differently. The structured columns are what you filter and pivot on.
 const LEDGER_COLUMNS = {
   Date: "",
   "Transaction ID": "",
@@ -101,10 +75,6 @@ const ledgerRow = (values) => ({ ...LEDGER_COLUMNS, ...values });
 const LEDGER_COL_WIDTHS = [13, 18, 10, 14, 22, 15, 26, 18, 18, 18, 46, 16, 12, 20, 30, 14, 14, 15, 26];
 
 const CATEGORIES = ["TRANSPLANT", "SERVICE", "MEDICINE", "EXPENSE"];
-// Every value a stored row can carry (src/constants/paymentMethods.js), not just what entry
-// forms currently offer — a non-cash method (offset_settlement, paid_to_external, etc.)
-// deterministically returns zero rows here via buildBalanceMatch, which is correct: it never
-// moved an account balance, so "filtered to it, saw nothing" is the accurate answer.
 const METHODS = Object.keys(METHOD_LABELS);
 
 const monthStart = () => {
@@ -181,7 +151,6 @@ export default function CloseBookPage() {
   );
 }
 
-// ══════════════════════════ ACCOUNT LEDGER ══════════════════════════
 function AccountLedger({ toast }) {
   const [account, setAccount] = useState(ACCOUNTS[0]);
   const [from, setFrom] = useState(monthStart());
@@ -215,8 +184,6 @@ function AccountLedger({ toast }) {
     load();
   }, [load]);
 
-  // Any filter change resets to page 1 — otherwise a narrower filter can land on a page
-  // that no longer exists and look empty.
   const onFilter = (setter) => (v) => {
     setter(v);
     setPage(1);
@@ -227,8 +194,6 @@ function AccountLedger({ toast }) {
   const exportLedger = async () => {
     setExporting(true);
     try {
-      // The screen shows one page; an export that only wrote those 50 rows would look complete
-      // and be wrong. Walk every page (the route caps limit at 200) and export the lot.
       const base = { account, from, to, limit: "200" };
       if (category) base.transactionCategory = category;
       if (method) base.method = method;
@@ -258,15 +223,10 @@ function AccountLedger({ toast }) {
         }),
         ...all.map((r) => {
           const signed = r.signedAmount || 0;
-          // A transfer and a suspense entry are not transactions — neither carries a payment
-          // instrument, a category or a payment id, so those columns stay blank rather than
-          // borrowing a transaction's shape.
           const isSpecial = r.isContra || r.isSuspense;
           return ledgerRow({
             Date: formatDate(r.date),
             "Transaction ID": isSpecial ? "" : r.paymentId || "",
-            // Contra and Suspense are called out explicitly — neither is revenue or expense,
-            // and a reader summing the sheet by Type needs to see why they belong to neither.
             Type: r.isSuspense
               ? "Suspense"
               : r.isContra
@@ -276,8 +236,6 @@ function AccountLedger({ toast }) {
                   : "Expense",
             Category: isSpecial ? "" : r.transactionCategory || "",
             Patient: r.patientName || "",
-            // Written as text, not a number — Excel would strip the leading zero off an
-            // 0XXXXXXXXX landline and render a 10-digit number in scientific notation.
             "Patient Phone": r.patientPhone ? String(r.patientPhone) : "",
             "Patient ID": r.patient ? String(r.patient) : "",
             Procedure: r.procedure || "",
@@ -291,8 +249,6 @@ function AccountLedger({ toast }) {
             "Money In": signed > 0 ? signed : null,
             "Money Out": signed < 0 ? Math.abs(signed) : null,
             Balance: r.runningBalance ?? null,
-            // The Mongo _id, not the payment id — paymentId is optional and often blank, so
-            // this is the only handle guaranteed to find the exact row again in the CRM.
             "Record ID": String(r._id || ""),
           });
         }),
@@ -322,8 +278,6 @@ function AccountLedger({ toast }) {
             colWidths: LEDGER_COL_WIDTHS,
           },
           {
-            // The filters that produced these numbers travel with the file — a bare ledger
-            // export is unreadable a month later when nobody remembers how it was scoped.
             name: "Report Info",
             rows: scope.map((s) => {
               const [k, ...v] = s.split(": ");
@@ -394,8 +348,6 @@ function AccountLedger({ toast }) {
 
       {data && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          {/* "not set" only when there is genuinely nothing behind the figure. Once movement has
-              carried forward, the number is real even without a manually entered anchor. */}
           <Stat
             label="Opening Balance"
             value={data.openingBalance}
@@ -413,9 +365,6 @@ function AccountLedger({ toast }) {
         </div>
       )}
 
-      {/* A transfer has no category and no method, so either filter suppresses it entirely. A
-          BRANCH filter no longer does — tagged transfers show in their own branch's view. Driven
-          by the API's own flag rather than re-deriving the rule here. */}
       {data?.contraExcludedByFilter && (
         <Notice>
           This category/method filter excludes internal transfers between accounts — a transfer
@@ -492,8 +441,6 @@ function AccountLedger({ toast }) {
                             <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-violet-100 text-violet-700 border border-violet-200">
                               Contra
                             </span>
-                            {/* Named from this account's point of view, so the row reads as
-                                what happened to THIS account rather than as a raw record. */}
                             <span>
                               {r.toAccount === account
                                 ? `Transfer in from ${r.fromAccount}`
@@ -511,8 +458,6 @@ function AccountLedger({ toast }) {
                           </>
                         )}
                       </td>
-                      {/* Name over phone rather than two columns — the ledger is already wide,
-                          and the phone is only ever read to confirm which patient this is. */}
                       <td className="px-4 py-2 text-gray-700">
                         {r.patientName ? (
                           <div className="leading-tight">
@@ -534,7 +479,6 @@ function AccountLedger({ toast }) {
                           <span className="text-gray-300">—</span>
                         )}
                       </td>
-                      {/* Neither a transfer nor a suspense entry has a payment instrument. */}
                       <td className="px-4 py-2 text-gray-600">
                         {r.isContra || r.isSuspense ? "—" : (r.method || "").replace(/_/g, " ")}
                       </td>
@@ -603,14 +547,13 @@ function AccountLedger({ toast }) {
   );
 }
 
-// ══════════════════════════ BALANCE SHEET ══════════════════════════
 function BalanceSheet({ toast }) {
   const [from, setFrom] = useState(monthStart());
   const [to, setTo] = useState(today());
   const [branch, setBranch] = useState("");
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [closeTarget, setCloseTarget] = useState(null); // null | "ALL" | account name
+  const [closeTarget, setCloseTarget] = useState(null);
   const [closedPeriods, setClosedPeriods] = useState([]);
   const [reopenTarget, setReopenTarget] = useState(null);
 
@@ -619,7 +562,7 @@ function BalanceSheet({ toast }) {
       const res = await fetch("/api/close-book/reopen?limit=100");
       const d = await res.json();
       if (res.ok) setClosedPeriods(d.periods || []);
-    } catch { /* non-fatal */ }
+    } catch {  }
   }, []);
 
   useEffect(() => { loadClosed(); }, [loadClosed]);
@@ -682,8 +625,6 @@ function BalanceSheet({ toast }) {
         { Field: "Closing Balance", Value: data.grandTotal.closingBalance },
         { Field: "Generated", Value: new Date().toLocaleString("en-IN") },
       ];
-      // Money with no account attribution is reported, not hidden — otherwise the sheet looks
-      // like the complete picture when it is only the attributed part of it.
       if (data.unattributed?.count) {
         info.push({
           Field: "Unattributed (excluded)",
@@ -736,10 +677,6 @@ function BalanceSheet({ toast }) {
         </div>
       </div>
 
-      {/* A contra entry moves money between company-level accounts and carries no branch, so a
-          branch-filtered view drops them entirely (see BRANCH FILTER in lib/accountBalances.js).
-          That is correct, but it makes these totals disagree with the unfiltered view — say so
-          rather than leaving the user to wonder why the numbers don't reconcile. */}
       {branch && (
         <Notice>
           Branch view excludes internal transfers between accounts. Contra entries move money
@@ -870,7 +807,6 @@ function BalanceSheet({ toast }) {
   );
 }
 
-// Is this exact account+period already closed?
 function closedFor(periods, account, from, to) {
   const s = new Date(from).getTime();
   const e = new Date(to).getTime();
@@ -882,9 +818,6 @@ function closedFor(periods, account, from, to) {
   );
 }
 
-// ══════════════════════════ CLOSE CONFIRMATION ══════════════════════════
-// Shows exactly what will be frozen — period, accounts, and the closing figures — computed
-// by the server the same way the write will compute them, so nobody confirms blind.
 function ClosePeriodModal({ toast, from, to, accounts, onClose, onDone }) {
   const [preview, setPreview] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -1013,7 +946,6 @@ function ClosePeriodModal({ toast, from, to, accounts, onClose, onDone }) {
   );
 }
 
-// ══════════════════════════ REOPEN ══════════════════════════
 function ClosedPeriodsPanel({ periods, onReopen }) {
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
@@ -1131,15 +1063,12 @@ function Modal({ title, onClose, children }) {
   );
 }
 
-// ══════════════════════════ OPENING BALANCES ══════════════════════════
 function OpeningBalancesModal({ toast, onClose }) {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState("");
   const [asOf, setAsOf] = useState(monthStart());
   const [drafts, setDrafts] = useState({});
-  // "" = All branches, a READ-ONLY total of the branch figures. Balances are entered per branch;
-  // the company position is whatever they add up to.
   const [branch, setBranch] = useState("");
   const isAll = !branch;
 
@@ -1157,8 +1086,6 @@ function OpeningBalancesModal({ toast, onClose }) {
 
   useEffect(() => { load(); }, [load]);
 
-  // Switching scope must clear the drafts — otherwise a figure typed for Delhi would still be
-  // sitting in the box after switching to Noida and could be saved against the wrong branch.
   useEffect(() => { setDrafts({}); }, [branch]);
 
   const save = async (account) => {
@@ -1255,8 +1182,6 @@ function OpeningBalancesModal({ toast, onClose }) {
                     </div>
 
                     {isAll ? (
-                      // Derived — no input. Showing an editable box here would invite a company
-                      // figure that silently disagrees with the branches it is supposed to total.
                       <span className="text-sm font-semibold text-gray-900 tabular-nums">
                         {r.set ? formatCurrency(r.openingBalance) : "—"}
                       </span>
@@ -1280,8 +1205,6 @@ function OpeningBalancesModal({ toast, onClose }) {
                     )}
                   </div>
 
-                  {/* The per-branch split behind the figure, shown in every scope so you can see
-                      what the total is made of while entering the next branch. */}
                   {r.branches?.length > 0 && (
                     <div className="mt-2 pt-2 border-t border-gray-100 flex flex-wrap gap-x-2 gap-y-1">
                       {r.branches.map((b) => (
@@ -1303,19 +1226,14 @@ function OpeningBalancesModal({ toast, onClose }) {
             </div>
           )}
 
-          {/* No reconciliation warning is needed any more: the company figure IS the sum of the
-              branches, so the two cannot disagree by construction. */}
         </div>
       </div>
     </div>
   );
 }
 
-// ══════════════════════════ small shared bits ══════════════════════════
 const inputCls = "w-full px-3 py-2 border border-gray-300 rounded-lg text-sm";
 
-// Shows the row/account count next to the label so it is obvious what is about to be
-// downloaded — in the ledger's case that is every page, not just the one on screen.
 function ExportButton({ onClick, busy, label, hint }) {
   return (
     <button

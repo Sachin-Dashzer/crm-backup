@@ -4,24 +4,16 @@ import fs from "fs";
 import { EXPENSE_CATEGORY_TREE } from "../src/constants/expenseCategories.js";
 import { ALL_BRANCHES } from "../src/lib/branches.js";
 
-// --- env -----------------------------------------------------------------
 for (const f of [".env.local", ".env"]) {
   if (fs.existsSync(f)) {
     try {
       process.loadEnvFile(f);
     } catch {
-      /* already loaded / unsupported — fall through to the MONGODB_URI check below */
     }
   }
 }
 const MONGODB_URI = process.env.MONGODB_URI;
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// THE DATA — opening (pre-April) Rent payables for period 3/2026. No GST/TDS: these are plain
-// opening balances, not fresh invoices, and the source gives a single net figure per sub-type.
-// dueDate 2026-03-31 matches the "Payable Due Date" column transactions.xlsx itself carries for
-// every 3/2026-period row.
-// ═══════════════════════════════════════════════════════════════════════════════
 const PAYLOAD = {
   meta: {
     source: "Dashzer-provided opening balance image, cross-checked against transactions.xlsx",
@@ -38,11 +30,6 @@ const PAYLOAD = {
   ],
 };
 
-// Landlord names above are spelled to match rent-payables-apr-jul-2026.mjs exactly (same
-// physical units, same landlords, before April's rent changes) so both scripts resolve to the
-// identical vendor record rather than creating near-duplicate vendors for typo'd spellings.
-
-// --- args ------------------------------------------------------------------
 const args = process.argv.slice(2);
 const APPLY = args.includes("--apply");
 const ALLOW_DUPES = args.includes("--allow-duplicates");
@@ -52,10 +39,6 @@ const IMPORT_IDENTITY = { name: "Bulk Import", email: "import@system", branch: "
 const inr = (n) => "Rs " + Number(n).toLocaleString("en-IN", { maximumFractionDigits: 2 });
 const r2 = (n) => Math.round((Number(n) || 0) * 100) / 100;
 
-// --- landlord -> vendor resolution ------------------------------------------
-// Same mechanism as rent-payables-apr-jul-2026.mjs: explicit overrides checked first
-// (confirmed against the real vendor DB), otherwise a case-insensitive exact-name match,
-// otherwise (on --apply) a new vendor is created.
 const normalizeLandlord = (name) => String(name || "").trim().replace(/\s+/g, " ");
 const escapeRegExp = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
@@ -117,9 +100,8 @@ async function run() {
   const Payable = mongoose.models.Payable || mongoose.model("Payable", new mongoose.Schema({}, { strict: false, collection: "payables" }));
   const Vendor = mongoose.models.Vendor || mongoose.model("Vendor", new mongoose.Schema({}, { strict: false, collection: "vendors" }));
 
-  // --- resolve each unique landlord name to a Vendor, creating one if none exists ---
   console.log("Resolving landlords against the vendor database...");
-  const uniqueLandlords = new Map(); // normalized-lowercase -> first-seen display name
+  const uniqueLandlords = new Map();
   for (const e of PAYLOAD.entries) {
     const label = normalizeLandlord(e.landlord);
     if (!label) continue;
@@ -127,7 +109,7 @@ async function run() {
     if (!uniqueLandlords.has(key)) uniqueLandlords.set(key, label);
   }
 
-  const vendorByKey = new Map(); // normalized-lowercase -> { _id, name } | null (not yet created, dry run only)
+  const vendorByKey = new Map();
   const overridden = [];
   const matchedVendors = [];
   const vendorsToCreate = [];
@@ -159,7 +141,7 @@ async function run() {
       vendorByKey.set(key, { _id: created._id, name: created.name });
       vendorsToCreate.push({ landlord: label, vendorId: String(created._id) });
     } else {
-      vendorByKey.set(key, null); // resolved at --apply time
+      vendorByKey.set(key, null);
       vendorsToCreate.push({ landlord: label, vendorId: null });
     }
   }
@@ -243,9 +225,6 @@ async function run() {
         remarks: "Opening payable (pre-April 2026) — bulk import",
         isCancelled: false,
         costAlreadyRecognised: false,
-        // Anchored to the 1st of the opening period, not whatever day this script runs — the
-        // Liabilities page's opening/closing rollups key off createdAt (buildPayableGroupedStages),
-        // and a bare `{ strict: false }` schema with no timestamps:true leaves it unset otherwise.
         createdAt: new Date(Date.UTC(PAYLOAD.meta.period.year, PAYLOAD.meta.period.month - 1, 1)),
         createdBy: { ...IMPORT_IDENTITY, branch: e.branch, date: new Date() },
         log: [

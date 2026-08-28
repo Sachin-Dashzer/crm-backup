@@ -1,88 +1,17 @@
-// scripts/backfill-revenue-routing.mjs
-//
-// Fills in `furtherMode` (the account the money landed in) on REVENUE transactions, using the
-// exact rules already encoded in src/constants/bankRouting.js — BANK_ROUTING_MAP, keyed by
-// branch -> transactionCategory -> method. Optionally fixes `receiptMode` too.
-//
-// The map is duplicated verbatim below because a standalone script can't import the @/-aliased
-// module. IF YOU CHANGE THE RULES IN THE APP, CHANGE THEM HERE TOO — or this script will
-// silently write the old routing. There is no way for it to detect that drift on its own.
-//
-// ─── DEFAULT IS CONSERVATIVE: ONLY BLANK FIELDS ARE FILLED ──────────────────────────────────
-//
-// By default this only touches rows whose `furtherMode` is empty/missing. A row where someone
-// deliberately picked a different account than the default is LEFT ALONE — the routing map is a
-// form pre-fill, not a constraint, and the CRM lets a user override it for good reasons (money
-// genuinely landed somewhere else). Overwriting those would replace fact with assumption.
-//
-// `--overwrite-mismatched` also rewrites rows that disagree with the map. Every such row is
-// listed with its current and proposed value in the dry run first. Use it only if you know the
-// existing values are wrong, not merely different.
-//
-// ─── WHAT IS DELIBERATELY NEVER TOUCHED ─────────────────────────────────────────────────────
-//
-// 1. NON-CASH methods (offset_settlement, including-package, paid_to_external, paid_by_other).
-//    No cash moved, so `furtherMode` SHOULD be blank on these — a value there would wrongly add
-//    the amount to an account balance. They are reported separately, and `--clear-non-cash`
-//    blanks any that wrongly carry one. That is a fix, not a fill, so it is opt-in.
-// 2. COLLAB BRANCHES (Patna, Kolkata, Ahmedabad, Jaipur, Bengaluru, Pune, Lucknow, Chennai,
-//    Jammu, Kashmir, Ranchi, Prayagraj, Chandigarh, Jalandhar). bankRouting.js states outright:
-//    "Collab branches have no entries here by design — lookups fall through to the blank default
-//    and the fields stay visible with no pre-fill (per product decision)." Filling them would
-//    invent a rule the business never set.
-// 3. Methods with no rule for that branch/category — notably `banking`, which is a valid
-//    REVENUE_METHODS value but appears nowhere in BANK_ROUTING_MAP. Those rows are counted and
-//    listed as "no rule exists" so you can decide what the rule should be, rather than having
-//    one guessed.
-// 4. Reversals (`reversalOf` set) and reversed rows (`isReversed`) — their routing mirrors the
-//    original and shouldn't be independently rewritten.
-//
-// ─── SAFETY ─────────────────────────────────────────────────────────────────────────────────
-//
-// - PERIOD LOCK checked per row against the account being written and the row's own date. A row
-//   in a closed period is refused, mirroring every write route in the app.
-// - A FULL BACKUP of every row about to change (with its current values) is written BEFORE any
-//   update. That file is the undo list — restoring means writing those values back.
-// - Idempotent by construction: after a successful run there is nothing left to fill, so a
-//   second run reports zero changes.
-//
-// ─── DATE WINDOW: DEFAULTS TO 2026-08-18 ONWARD ─────────────────────────────────────────────
-//
-// With no date flags this only touches revenue transactions dated 2026-08-18 or later. That is
-// a deliberate default, not a convenience: the alternative — every revenue transaction ever —
-// would silently rewrite years of routing on a bare `--apply`, and older rows were set under
-// earlier rules and by hand. Widening the window is an explicit choice:
-//
-//   (no flag)                -> 2026-08-18 -> now      (the intended backfill window)
-//   --from=2026-09-01        -> that date -> now
-//   --from=... --to=...      -> a bounded window
-//   --all-dates              -> no lower bound; prints a warning when combined with --apply
-//
-// Usage:
-//   node scripts/backfill-revenue-routing.mjs                          # dry run, 18-Aug onward
-//   node scripts/backfill-revenue-routing.mjs --apply                  # fill blanks, 18-Aug onward
-//   node scripts/backfill-revenue-routing.mjs --apply --include-receipt-mode
-//   node scripts/backfill-revenue-routing.mjs --apply --overwrite-mismatched
-//   node scripts/backfill-revenue-routing.mjs --apply --clear-non-cash
-//   node scripts/backfill-revenue-routing.mjs --from=2026-04-01 --to=2026-08-31 --branch=Delhi
-//   node scripts/backfill-revenue-routing.mjs --all-dates              # opt out of the date bound
 
 import mongoose from "mongoose";
 import fs from "fs";
 
-// --- env -----------------------------------------------------------------
 for (const f of [".env.local", ".env"]) {
   if (fs.existsSync(f)) {
     try {
       process.loadEnvFile(f);
     } catch {
-      /* already loaded / unsupported — falls through to the MONGODB_URI check below */
     }
   }
 }
 const MONGODB_URI = process.env.MONGODB_URI;
 
-// ═══ MIRRORED FROM src/constants/bankRouting.js — keep in sync ══════════════════════════════
 const ACCOUNTS = [
   "Cash Book", "HDFC Skin", "HDFC Medihub", "ICICI Medihub", "Mumbai Receipts",
   "Cash ( backend )", "Paytm ( Delhi T44P )", "Paytm ( Noida CK5Y )",
@@ -121,7 +50,6 @@ const BANK_ROUTING_MAP = {
   },
   Mumbai: {
     TRANSPLANT: { cash: MUM, card: MUM, upi: MUM, bajaj_loan: { receiptMode: "Mumbai Receipts", furtherMode: "Bajaj Loan" }, fibe_loan: FIBE },
-    // Sheet: "NA -> Mumbai Receipts" for fibe on SERVICE/MEDICINE — no intermediary receiptMode.
     SERVICE:    { cash: MUM, card: MUM, upi: MUM, bajaj_loan: { receiptMode: "Mumbai Receipts", furtherMode: "Bajaj Loan" }, fibe_loan: { receiptMode: "", furtherMode: "Fibe Loan" } },
     MEDICINE:   { cash: MUM, card: MUM, upi: MUM, bajaj_loan: { receiptMode: "Mumbai Receipts", furtherMode: "Bajaj Loan" }, fibe_loan: { receiptMode: "", furtherMode: "Fibe Loan" } },
   },
@@ -130,9 +58,7 @@ const BANK_ROUTING_MAP = {
 function getRouting(branch, category, method) {
   return BANK_ROUTING_MAP?.[branch]?.[category]?.[method] || null;
 }
-// ═══════════════════════════════════════════════════════════════════════════════════════════
 
-// --- args ------------------------------------------------------------------
 const args = process.argv.slice(2);
 const arg = (name) => args.find((a) => a.startsWith(`--${name}=`))?.split("=")[1];
 const APPLY = args.includes("--apply");
@@ -143,10 +69,6 @@ const ALL_DATES = args.includes("--all-dates");
 const TO = arg("to") || null;
 const BRANCH = arg("branch") || null;
 
-// The window this backfill is actually FOR. Defaulted rather than left open because the
-// alternative default — "every revenue transaction ever" — silently rewrites years of history
-// on a bare `--apply`, and routing on older rows was set under earlier rules and by hand. A
-// date bound has to be an opt-OUT, not an opt-in.
 const DEFAULT_FROM = "2026-08-18";
 const FROM = ALL_DATES ? null : arg("from") || DEFAULT_FROM;
 
@@ -203,7 +125,6 @@ async function run() {
   const AccountPeriod = mongoose.models.AccountPeriod || mongoose.model("AccountPeriod", new mongoose.Schema({}, { strict: false, collection: "accountperiods" }));
   const Transactions = mongoose.models.Transactions || mongoose.model("Transactions", new mongoose.Schema({}, { strict: false, collection: "transactions" }));
 
-  // --- period lock, reimplemented (periodLock.js imports @/-aliased modules) -----------------
   const isOpeningSeed = (p) => new Date(p.periodStart).getTime() === new Date(p.periodEnd).getTime();
   async function closedPeriodsCovering(account, date) {
     const rows = await AccountPeriod.find({
@@ -232,10 +153,10 @@ async function run() {
   const all = await Transactions.find(query).sort({ date: 1 }).lean();
   console.log(`Scanned ${all.length} revenue transaction(s).\n`);
 
-  const toFill = [];        // blank -> value
-  const mismatched = [];    // value -> different value
-  const nonCashStray = [];  // non-cash method but has a furtherMode
-  const noRule = {};        // branch|category|method -> count
+  const toFill = [];
+  const mismatched = [];
+  const nonCashStray = [];
+  const noRule = {};
   const collabSkipped = [];
   const alreadyCorrect = [];
   const skippedReversal = [];
@@ -286,7 +207,6 @@ async function run() {
     toFill.push({ tx, changes });
   }
 
-  // --- report -------------------------------------------------------------------------------
   console.log(`  Will update            : ${toFill.length}`);
   console.log(`  Already correct        : ${alreadyCorrect.length}`);
   console.log(`  Mismatched (not fixed) : ${mismatched.length}${OVERWRITE_MISMATCHED ? "  (overwrite ON — folded into 'will update')" : ""}`);
@@ -349,7 +269,6 @@ async function run() {
     return;
   }
 
-  // Backup BEFORE any write — this is the undo list.
   const backupPath = `backfill-revenue-routing-backup-${Date.now()}.json`;
   fs.writeFileSync(
     backupPath,

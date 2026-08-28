@@ -48,7 +48,6 @@ export default function BookAppointment() {
     },
   });
 
-  // Fetch agents on component mount
   useEffect(() => {
     const fetchEmployees = async () => {
       try {
@@ -82,16 +81,13 @@ export default function BookAppointment() {
     };
   };
 
-  // Clean empty ObjectId fields before sending to API
   const cleanObjectIdFields = (data) => {
     const cleaned = JSON.parse(JSON.stringify(data));
 
-    // Convert empty strings to null for ObjectId fields
     if (cleaned.personal && cleaned.personal.reference === "") {
       cleaned.personal.reference = null;
     }
 
-    // Clean empty number fields
     const numberFields = ["age", "packageQuoted"];
     numberFields.forEach((field) => {
       if (cleaned.personal && cleaned.personal[field] === "") {
@@ -106,16 +102,14 @@ export default function BookAppointment() {
     e.preventDefault();
     setIsSubmitting(true);
 
-    // Basic validation
     if (!formData.personal.name || !formData.personal.phone) {
       toast.error("Please fill in all required fields (Name and Phone are required)");
-      
+
       setIsSubmitting(false);
       return;
     }
 
     try {
-      // Clean the form data before sending
       const cleanedData = cleanObjectIdFields(formData);
 
       const response = await fetch("/api/patients/create", {
@@ -135,7 +129,6 @@ export default function BookAppointment() {
       toast.success("Appointment booked successfully! Our team will contact you soon.");
 
 
-      // Reset form after successful submission
       setTimeout(() => {
         setFormData({
           personal: {
@@ -160,7 +153,7 @@ export default function BookAppointment() {
       }, 3000);
     } catch (error) {
       toast.error(`Error booking appointment: ${error.message}`);
-      
+
     } finally {
       setIsSubmitting(false);
     }
@@ -172,7 +165,6 @@ export default function BookAppointment() {
 
       <main className="flex-1 px-4 py-6 lg:px-8 lg:py-8">
         <div className="max-w-7xl mx-auto">
-          {/* Header */}
           <div className="text-center mb-8">
             <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4">
               <Calendar className="h-8 w-8 text-blue-600" />
@@ -185,14 +177,12 @@ export default function BookAppointment() {
             </p>
           </div>
 
-         
-          {/* Appointment Form */}
+
           <div className=" overflow-hidden">
-            
+
 
             <form onSubmit={handleSubmit} className="p-6 lg:p-8">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 gap-x-8">
-                {/* Personal Details */}
                 <InputField
                   label="Full Name"
                   required
@@ -310,7 +300,6 @@ export default function BookAppointment() {
                   ]}
                 />
 
-                {/* Full width fields */}
                 <InputField
                   label="Address"
                   type="textarea"
@@ -331,7 +320,6 @@ export default function BookAppointment() {
                 />
               </div>
 
-              {/* Submit Button */}
               <div className="mt-8 pt-6 border-t border-gray-200">
                 <div className="flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0">
                   <div className="text-sm text-gray-600">
@@ -357,11 +345,11 @@ export default function BookAppointment() {
                 </div>
               </div>
 
-              
+
             </form>
           </div>
 
-         
+
         </div>
       </main>
     </section>

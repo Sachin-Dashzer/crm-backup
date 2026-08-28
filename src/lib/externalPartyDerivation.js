@@ -2,16 +2,6 @@ import mongoose from "mongoose";
 import Payable from "@/models/Payable";
 import Receivable from "@/models/Receivable";
 
-// Shared atomic-linking logic for the two "someone else physically handled the cash"
-// methods: paid_to_external (revenue) and paid_by_other (expense). Both sides book the
-// full transaction amount as ours — the sale/cost happened — and separately create a
-// Payable/Receivable for the debt with whoever actually touched the money. Used by
-// transplant/service/medicine/expense create routes so the linking logic exists once.
-
-// ATOMICITY: MongoDB session/transaction, same approach as the collab flow
-// (src/lib/collabDerivation.js) — verified against this deployment there (replica set
-// atlas-ool7b4-shard-0, commit + rollback both confirmed). Wrap exactly the main
-// Transaction write(s) and the linked Payable/Receivable write in `fn`; nothing else.
 export async function withExternalPartyLink(fn) {
   const session = await mongoose.startSession();
   try {
@@ -25,15 +15,8 @@ export async function withExternalPartyLink(fn) {
   }
 }
 
-// Generic alias — the implementation above has always been a plain session wrapper; only the
-// name was scoped to the external-party flows that needed it first. Use this name for any other
-// atomic session need (e.g. receivable auto-allocation) so the import doesn't imply an external
-// party is involved.
 export const withDbTransaction = withExternalPartyLink;
 
-// expenseGiver's type/refId convention has no OTHER — MANUAL is its "no backing record"
-// value. Payable.payee.kind / Receivable.payer.kind use OTHER for that instead. This is
-// the one place that mapping happens.
 function toDocKind(partyKind) {
   return partyKind === "MANUAL" ? "OTHER" : partyKind;
 }
@@ -44,7 +27,6 @@ const REVENUE_CATEGORY_LABEL = {
   MEDICINE: "Medicine",
 };
 
-// Money someone else collected on our behalf — they owe it to us.
 export async function createExternalReceivable({
   session,
   amount,
@@ -71,9 +53,6 @@ export async function createExternalReceivable({
         relatedPatient: relatedPatient || undefined,
         totalAmount: amount,
         branch,
-        // The source transaction books the full sale as revenue right now — it is only the CASH
-        // that is missing. So when this receivable is later collected, that receipt moves cash
-        // for revenue already counted and must be flagged isSettlement.
         costAlreadyRecognised: true,
         remarks: `Paid to external party — ${name} received ₹${amount} on our behalf (their method: ${method || "unspecified"}).`,
         createdBy: { ...actor, date: new Date() },
@@ -93,7 +72,6 @@ export async function createExternalReceivable({
   return receivable;
 }
 
-// Money someone else paid on our behalf — we owe it to them.
 export async function createExternalPayable({
   session,
   amount,
@@ -120,9 +98,6 @@ export async function createExternalPayable({
         relatedPatient: relatedPatient || undefined,
         totalAmount: amount,
         branch,
-        // The source transaction books the full cost as an expense right now — only the cash is
-        // outstanding. Repaying this party later moves cash for a cost already counted, so that
-        // payment must be flagged isSettlement.
         costAlreadyRecognised: true,
         remarks: `Paid by external party — ${name} covered ₹${amount} on our behalf (their method: ${method || "unspecified"}).`,
         createdBy: { ...actor, date: new Date() },
@@ -142,9 +117,6 @@ export async function createExternalPayable({
   return payable;
 }
 
-// How much has actually been settled against a linked Payable/Receivable, computed live under
-// the same rule the payables/receivables pages use — never a stored figure that could disagree
-// with what the user is looking at.
 async function settledAgainst(kind, id, session) {
   const { default: Transactions } = await import("@/models/Transactions");
   const { UNSETTLED_METHODS } = await import("@/constants/bankRouting");
@@ -162,29 +134,6 @@ async function settledAgainst(kind, id, session) {
   return agg?.total || 0;
 }
 
-// Keeps the linked Payable/Receivable in step when a transaction is EDITED into, out of, or
-// within one of the external-party methods.
-//
-// The create routes have always done this; the update routes never did, which is why
-// paid_to_external / paid_by_other were withheld from edit forms (see getMethodOptions). The
-// failure they were avoiding is specific and bad: those methods are in UNSETTLED_METHODS, so
-// they are excluded from revenue and expense totals on the understanding that a linked
-// receivable/payable will later be settled by a transaction that DOES count. Switch a row to
-// one of them without creating that document and the amount simply leaves the books — no
-// total, no receivable, nothing to chase.
-//
-// Four transitions, all handled here so no update route re-implements them:
-//   normal   -> external : create the document and link it
-//   external -> normal   : cancel the document it created, then unlink
-//   external -> external : keep the document's amount and payer in step with the edit
-//   normal   -> normal   : nothing
-//
-// Refuses rather than silently corrupting when money has already moved against the linked
-// document: cancelling or shrinking a receivable that has receipts against it would strand
-// them, pointing at a document that no longer claims to be owed.
-//
-// Returns a patch to apply to the transaction, or null when nothing needs to change. Must run
-// inside the caller's session so the document write and the transaction write commit together.
 export async function syncExternalPartyOnUpdate({
   session,
   transaction,
@@ -213,7 +162,6 @@ export async function syncExternalPartyOnUpdate({
 
   if (!wasExternal && !isExternalNow) return null;
 
-  // ── external -> normal : cancel the document this transaction created ──
   if (wasExternal && !isExternalNow) {
     const settled = await settledAgainst(kind, linkedId, session);
     if (settled > 0) {
@@ -239,8 +187,6 @@ export async function syncExternalPartyOnUpdate({
       },
       { session },
     );
-    // Cleared wholesale: a leftover name or direction on a row that is no longer external
-    // reads as though an external party were still involved.
     return {
       externalParty: {
         direction: null,
@@ -260,7 +206,6 @@ export async function syncExternalPartyOnUpdate({
   const partyKind = nextExternalParty.partyKind || "MANUAL";
   const partyRefId = partyKind !== "MANUAL" ? nextExternalParty.partyRefId : null;
 
-  // ── normal -> external : create the document ──
   if (!wasExternal && isExternalNow) {
     const create = isExpense ? createExternalPayable : createExternalReceivable;
     const doc = await create({
@@ -287,7 +232,6 @@ export async function syncExternalPartyOnUpdate({
     };
   }
 
-  // ── external -> external : keep the existing document in step ──
   const existing = await Model.findById(linkedId).session(session || null);
   if (!existing) {
     throw new Error(
@@ -327,7 +271,6 @@ export async function syncExternalPartyOnUpdate({
     partySide.refId = partyRefId;
   }
 
-  // A cancelled document being edited back into use is reinstated rather than left dangling.
   if (existing.isCancelled) {
     existing.isCancelled = false;
     existing.log.push({
@@ -354,9 +297,6 @@ export async function syncExternalPartyOnUpdate({
   };
 }
 
-// Shared request-body validation for both directions. Returns an error string, or null
-// if the externalParty payload is well-formed. `direction` is "RECEIVED_BY" | "PAID_BY",
-// purely for the error message wording.
 export function validateExternalParty(externalParty, direction) {
   const who = direction === "RECEIVED_BY" ? "Receiver" : "Sender";
   if (!externalParty || typeof externalParty !== "object") {

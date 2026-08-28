@@ -27,7 +27,6 @@ export default function VisitedPatients() {
       setPatients(data.patients || []);
     } catch (error) {
       console.error("Error:", error);
-      // Mock data
       setPatients([
         {
           _id: "1",
@@ -129,7 +128,7 @@ export default function VisitedPatients() {
                   {filteredPatients.length} Visited Patients
                 </h3>
               </div>
-              
+
               {filteredPatients.length === 0 ? (
                 <div className="text-center py-12">
                   <CheckCircle className="w-16 h-16 mx-auto mb-4 text-gray-300" />
@@ -155,7 +154,7 @@ export default function VisitedPatients() {
                           Completed
                         </span>
                       </div>
-                      
+
                       <div className="space-y-2 text-sm">
                         <div className="flex items-center gap-2 text-gray-600">
                           <MapPin className="w-3 h-3" />

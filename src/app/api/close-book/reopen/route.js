@@ -6,15 +6,6 @@ import connectDB from "@/lib/db";
 import AccountPeriod, { isOpeningSeed } from "@/models/AccountPeriod";
 import { recomputeChain } from "@/lib/accountPeriods";
 
-// Reopen a closed period. Super-admin only, reason mandatory, and the reason plus the actor
-// are written into the period's log before anything else happens.
-//
-// Reopening is the ONLY way into a closed period — there is no role bypass on the edit guard,
-// so this endpoint is the single audited entry point.
-//
-// On reopen the whole forward chain is recomputed immediately, not lazily and not on next
-// read. If April's opening still carried March's pre-reopen closing figure, April and every
-// month after it would be wrong by exactly that delta while continuing to add up internally.
 const ALLOWED_ROLES = ["super-admin"];
 
 export async function POST(req) {
@@ -39,8 +30,6 @@ export async function POST(req) {
       );
     }
 
-    // branch: null — only company-level closes can be reopened; a branch row is an opening seed,
-    // edited from the Opening Balances screen rather than reopened.
     const query = periodId
       ? { _id: periodId }
       : { account, branch: null, periodStart: new Date(from), periodEnd: new Date(to) };
@@ -79,7 +68,6 @@ export async function POST(req) {
         });
         await period.save({ session: dbSession });
 
-        // Recompute this period and then every later one for the account, in order.
         recomputed = await recomputeChain({
           account: period.account,
           fromDate: period.periodStart,
@@ -112,7 +100,6 @@ export async function POST(req) {
   }
 }
 
-// Lists closed periods so the UI can offer them for reopening, newest first.
 export async function GET(request) {
   try {
     const session = await getServerSession(authOptions);
@@ -123,8 +110,6 @@ export async function GET(request) {
     const account = searchParams.get("account") || "";
     const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "50")));
 
-    // Company-level closes only. The $expr already excludes zero-length seeds, but branch rows
-    // are never closes at all, so scope them out explicitly rather than relying on that.
     const query = {
       isClosed: true,
       branch: null,

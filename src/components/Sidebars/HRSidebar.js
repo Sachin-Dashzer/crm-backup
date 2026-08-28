@@ -91,7 +91,6 @@ export default function HRSidebar() {
           open ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         }`}
       >
-        {/* Brand */}
         <div className="px-5 py-5 flex items-center justify-between shrink-0">
           <Link href="/hr/dashboard" onClick={close} className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-linear-to-br from-violet-500 via-purple-500 to-indigo-500 flex items-center justify-center shadow-md brand-glow">
@@ -179,7 +178,6 @@ export default function HRSidebar() {
           </NavSection>
         </nav>
 
-        {/* User profile */}
         <div className="shrink-0 border-t border-gray-100 p-4 space-y-3">
           <div className="flex items-center gap-3 px-1">
             <div className="w-9 h-9 rounded-full bg-linear-to-br from-violet-500 via-purple-500 to-indigo-500 flex items-center justify-center text-white font-bold text-sm shrink-0 shadow-md">

@@ -6,8 +6,6 @@ import Patient from "@/models/Patient";
 import { createCollabCaseAtomic } from "@/lib/collabDerivation";
 import { COLLAB_BRANCHES } from "@/lib/branches";
 
-// Collab case entry is the collab panel's job; admin/super-admin keep access for
-// the emergency entry modal on /admin/collab-settlement. No other role can reach it.
 const ALLOWED_ROLES = ["collab", "admin", "super-admin"];
 
 export async function POST(req) {
@@ -45,8 +43,6 @@ export async function POST(req) {
       );
     }
 
-    // Main branches must never reach a collab collection — checked explicitly
-    // here as well as by the schema enum and the model's save-time validator.
     if (!COLLAB_BRANCHES.includes(clinic)) {
       return NextResponse.json(
         { error: "Invalid clinic — collab cases can only be created for partner clinics" },
@@ -61,8 +57,6 @@ export async function POST(req) {
       return NextResponse.json({ error: "Patient not found" }, { status: 404 });
     }
 
-    // The package is read from the patient, never sent by the client and never
-    // written back — it is derived from counselling.finlpackage by Patient's hook.
     const grossPackage = patientDoc.payments?.totalAmount || 0;
     if (grossPackage <= 0) {
       return NextResponse.json(
@@ -74,8 +68,6 @@ export async function POST(req) {
       );
     }
 
-    // A discount is applied on top of the patient's package rather than editing it, so the
-    // patient record stays the single source of truth. Everything downstream splits the NET.
     const discountNum = Number(discount) || 0;
     if (!Number.isFinite(discountNum) || discountNum < 0 || discountNum > grossPackage) {
       return NextResponse.json(
@@ -97,8 +89,6 @@ export async function POST(req) {
     if (!Number.isFinite(clinicShareNum) || clinicShareNum < 0) {
       return NextResponse.json({ error: "Clinic share must be a non-negative number" }, { status: 400 });
     }
-    // ourShare is always the remainder — it is never entered independently, so the
-    // ourShare + clinicShare === totalPackage invariant cannot be violated by input.
     const ourShareNum = Math.round((totalPackage - clinicShareNum) * 100) / 100;
     if (ourShareNum < 0) {
       return NextResponse.json(
@@ -152,8 +142,6 @@ export async function POST(req) {
     );
   } catch (error) {
     console.error("Error creating collab case:", error);
-    // Surface the model's invariant messages verbatim — they name the exact
-    // numbers that disagreed, which is the whole point of rejecting loudly.
     return NextResponse.json(
       { error: error?.message || "Failed to create collab case" },
       { status: 400 },

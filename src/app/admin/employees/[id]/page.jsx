@@ -5,12 +5,6 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Gift, Wallet } from "lucide-react";
 
-// No SidebarComponent: /admin routes get theirs from src/app/admin/layout.jsx.
-//
-// §3.4 — "Employee detail page": today only StaffTable's list + an edit form exist for an
-// employee. This is the first read-only detail surface, and its whole content is the
-// "Incentives earned" mirror of Patient.incentives — a live aggregation over every patient (see
-// src/app/api/employees/[id]/incentives/route.js), never a second stored copy.
 const MONTH_NAMES = [
   "January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December",
@@ -58,7 +52,6 @@ export default function EmployeeDetailPage() {
       const json = await fetch(`/api/employees/${id}/incentives?${qs}`).then((r) => r.json());
       if (json.success) setData(json);
     } catch {
-      /* leave previous data on screen */
     } finally {
       setRowsLoading(false);
     }

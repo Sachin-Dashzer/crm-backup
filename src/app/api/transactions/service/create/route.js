@@ -1,4 +1,3 @@
-// app/api/transactions/service/create/route.js
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
@@ -48,7 +47,6 @@ export async function POST(req) {
       },
     ];
 
-    // Back-date entry prevention — only admin/super-admin can enter past dates
     if (date) {
       const todayStart = new Date();
       todayStart.setUTCHours(0, 0, 0, 0);
@@ -95,8 +93,6 @@ export async function POST(req) {
       }
     }
 
-    // "Paid to External" — someone else physically received the cash on our behalf.
-    // The sale still books in full; a Receivable tracks what they owe us.
     if (method === "paid_to_external") {
       const partyError = validateExternalParty(externalParty, "RECEIVED_BY");
       if (partyError) {
@@ -128,9 +124,6 @@ export async function POST(req) {
       return { itemDiscount, itemFinalAmount: itemSubtotal - itemDiscount };
     };
 
-    // allocationsByIndex: one { receivableId, receivableAllocations } per service item, same
-    // order as `services` — see resolveReceivableAllocations. Omitted entirely on the
-    // paid_to_external path, where every item's receivableId/receivableAllocations stay empty.
     const buildTxnDocs = (allocationsByIndex) =>
       services.map((item, idx) => {
         const { itemDiscount, itemFinalAmount } = computeItemFinalAmount(item);
@@ -180,8 +173,6 @@ export async function POST(req) {
     if (method === "paid_to_external") {
       savedTransactions = await withExternalPartyLink(async (dbSession) => {
         const txns = await Transactions.create(buildTxnDocs(), { session: dbSession });
-        // One Receivable for the whole batch (finalTotal) — the external party
-        // received one payment covering every line item, not one per item.
         const receivable = await createExternalReceivable({
           session: dbSession,
           amount: finalTotal,
@@ -201,9 +192,6 @@ export async function POST(req) {
         return txns;
       });
     } else {
-      // Auto-allocation (or an explicit override) happens server-side, inside the same
-      // transaction as the write — see src/lib/receivableAllocation.js. The whole batch is
-      // allocated as one continuous FIFO stream across its line items, not per item.
       try {
         savedTransactions = await withDbTransaction(async (dbSession) => {
           const itemAmounts = services.map((item) => computeItemFinalAmount(item).itemFinalAmount);
@@ -221,14 +209,12 @@ export async function POST(req) {
       }
     }
 
-    // ── Patient payment update (only if a registered patient is linked) ──
     let updatedPatient = null;
 
     if (patientId) {
       const patient = await Patient.findById(patientId);
 
       if (patient) {
-        // Ensure payments object is initialised
         patient.payments = patient.payments || {
           amountReceived: 0,
           pendingAmount: 0,
@@ -238,14 +224,11 @@ export async function POST(req) {
           transactions: [],
         };
 
-        // Push all new transaction IDs
         const newIds = savedTransactions.map((t) => t._id);
         patient.payments.transactions.push(...newIds);
 
-        // Add finalTotal (amount actually paid) to amountReceived
         patient.payments.amountReceived += finalTotal;
 
-        // Recalculate total discount from ALL revenue transactions on this patient
         const allTransactions = await Transactions.find({
           _id: { $in: patient.payments.transactions },
           costType: "Revenue",
@@ -255,7 +238,6 @@ export async function POST(req) {
           0
         );
 
-        // Recalculate pending amount
         const adjustedTotal = Math.max(
           0,
           patient.payments.totalAmount - patient.payments.discount
@@ -265,7 +247,6 @@ export async function POST(req) {
           adjustedTotal - patient.payments.amountReceived
         );
 
-        // Audit trail
         patient.editors = patient.editors || [];
         patient.editors.push({
           name: session.user.name,
@@ -282,7 +263,6 @@ export async function POST(req) {
         };
       }
     }
-    // ────────────────────────────────────────────────────────────────────
 
     return NextResponse.json(
       {

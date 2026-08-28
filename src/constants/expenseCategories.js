@@ -1,11 +1,3 @@
-/**
- * Expense Category -> Expense Type tree.
- * Used only for EXPENSE transactions. Every category has at least one
- * Expense Type option (some categories are single-option, mirroring the
- * category name itself). Single source of truth — imported by every
- * panel's expense form, validation, CSV export, WhatsApp approval
- * message, and reports.
- */
 export const EXPENSE_CATEGORY_TREE = {
   "Salary": ["Salary"],
   "Rent": [
@@ -95,8 +87,6 @@ export const EXPENSE_CATEGORY_TREE = {
     "PATIENT TREATMENT CHARGES",
   ],
   "Interest Expenses": ["Interest Expenses"],
-  // Original four kept — historical rows reference them and Q3 said keep them fully active.
-  // The sixteen below are the new sheet's entries, additive alongside the originals.
   "Taxes": [
     "GST",
     "ROC",

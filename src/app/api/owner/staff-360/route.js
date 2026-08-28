@@ -1,19 +1,3 @@
-// src/app/api/owner/staff-360/route.js
-//
-// All Staff 360° — name, role, branch (real since Step 6's backfill), isactive,
-// incentiveRate, salaryStructure.baseSalary, and a derived "patients handled" count.
-//
-// "Patients handled" reuses Employee.patient[] rather than re-querying Patient across
-// counselling.counsellor / surgery.doctor / surgery.seniorTech / etc. separately — that array
-// is already the authoritative, kept-in-sync patient list for every role (confirmed in
-// src/app/api/employees/get-patients/route.js's own comment: "the same field ... already
-// treats as authoritative, covering every role, not just counsellors"). Re-deriving it from
-// scratch here would be a second, possibly-drifting implementation of something that already
-// exists.
-//
-// No Attendance/Productivity/Quality/Compliance/Deductions/Final Score columns — none of that
-// data exists anywhere in this schema (see src/models/Employee.js), so showing them would mean
-// inventing numbers.
 
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";

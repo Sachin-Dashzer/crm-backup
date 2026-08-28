@@ -19,8 +19,6 @@ export const COLLAB_BRANCHES = [
 
 export const ALL_BRANCHES = [...MAIN_BRANCHES, ...COLLAB_BRANCHES];
 
-// Resolves the Mongo filter object to merge into a query's `branch` (or custom field)
-// restriction, given the logged-in user's session and an optional client-requested branch.
 export function resolveBranchFilter(session, requestedBranch, field = "branch") {
   const userBranch = session?.user?.branch;
 

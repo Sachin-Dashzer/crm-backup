@@ -1,76 +1,17 @@
-// scripts/vendors-bulk-import.mjs
-//
-// Bulk-imports vendor directory entries from vendors.xlsx into the Vendor collection, ahead of
-// creating payables for the "Other Expense" / procurement heads that need these vendors as
-// their payee.
-//
-// UPDATED behaviour: a row that matches an existing vendor no longer just gets skipped — it
-// UPDATES that vendor's details (name cleanup, contact, email, address, gstNumber, DealsIn),
-// filling in anything blank and correcting anything that differs, via $set plus a logged entry
-// in the vendor's own `editors[]` array (previousValue/newValue per field, matching what the
-// update API itself records).
-//
-// THE CATCH — a "match" here comes from the same $or query the create API uses (same `name` OR
-// same `contact`), and a same-contact match does NOT guarantee it's the same vendor. Live check
-// against this database found exactly that case: row 12 "Pharmachem Distributors" matches an
-// EXISTING VENDOR NAMED "CUTISOINS COSMECEUTICALS PVT LTD" — completely different business,
-// same phone number on file. Blindly updating that record would overwrite Cutisoins' real data
-// with Pharmachem's, under Cutisoins' _id.
-//
-// So every match is classified before anything is written:
-//   - NAME-SIMILAR match (>=50% word overlap between the sheet name and the existing name, after
-//     normalising case/punctuation) — treated as the same vendor with messy formatting, e.g.
-//     "Helpsure Healthcare Private Limited" / "HELPSURE HEALTHCARE PVT LTD". Updated automatically.
-//   - NAME-MISMATCH match (matched only by contact, names share nothing) — e.g. Pharmachem /
-//     Cutisoins. NEVER auto-updated. Requires --confirm-contact-only-updates, and even then is
-//     printed under its own loud warning banner every run, dry or applied.
-// This is a heuristic on real but messy data, not a certainty — the dry run always prints the
-// full old-vs-new diff for every match, safe or risky, so nothing changes without being visible
-// first.
-//
-// SCHEMA GAP — read before running: the Vendor model (src/models/Vendor.js) has no field for
-// "opening balance", "contact person name", or a second phone number. It only holds name,
-// contact (a single Number), email, address, gstNumber, DealsIn. So:
-//   - "Contact Person" (e.g. "SURRENDRA" for Helpsure Healthcare) is folded into `address` as
-//     "Contact person: <name> | <original address>" — there's nowhere else for it to go.
-//   - A second phone number (two rows have "<num1> / <num2>") is folded into `address` as
-//     "Alt contact: <num2>" — `contact` only ever takes the first number, since it's a Number
-//     field, not a string.
-//   - "Opening Balance" is captured in this script's PAYLOAD for the record, but is
-//     DELIBERATELY NOT WRITTEN anywhere — money owed to a vendor belongs in a Payable (payee.kind:
-//     "VENDOR"), never on the vendor document itself (mirrors the Payable model's own comment:
-//     "Do NOT add amountPaid/balanceAmount fields — that reintroduces double-storage drift").
-//     Tell me how to categorise each vendor's balance (purpose/expenseCategory) once vendors
-//     exist and I'll build that script next, the way rent-opening-payables-march-2026.mjs was built.
-//
-// ONE DATA ANOMALY FLAGGED (not blocking): row 19, "Yurexa Wellness", has a 9-digit contact
-// number (991195209) in the source sheet — one digit short of a normal Indian mobile number.
-//
-// Usage:
-//   node scripts/vendors-bulk-import.mjs                                  # dry run
-//   node scripts/vendors-bulk-import.mjs --dump-json                       # write entries out, no DB
-//   node scripts/vendors-bulk-import.mjs --apply                          # write (new + name-similar updates)
-//   node scripts/vendors-bulk-import.mjs --apply --confirm-contact-only-updates   # also apply the risky ones
 
 import mongoose from "mongoose";
 import fs from "fs";
 
-// --- env -----------------------------------------------------------------
 for (const f of [".env.local", ".env"]) {
   if (fs.existsSync(f)) {
     try {
       process.loadEnvFile(f);
     } catch {
-      /* already loaded / unsupported — fall through to the MONGODB_URI check below */
     }
   }
 }
 const MONGODB_URI = process.env.MONGODB_URI;
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// THE DATA — parsed from vendors.xlsx. openingBalance is carried along for the record (see the
-// schema-gap note above) but is never written to the Vendor document.
-// ═══════════════════════════════════════════════════════════════════════════════
 const VENDOR_ENTRIES = [
   {
     "rowNum": 2,
@@ -314,7 +255,6 @@ const VENDOR_ENTRIES = [
   }
 ];
 
-// --- args ------------------------------------------------------------------
 const args = process.argv.slice(2);
 const APPLY = args.includes("--apply");
 const CONFIRM_RISKY = args.includes("--confirm-contact-only-updates");
@@ -350,7 +290,6 @@ function validate() {
   return { errors, warnings };
 }
 
-// Normalises a vendor name for comparison: uppercase, strip punctuation, collapse whitespace.
 function normWords(name) {
   return (name || "")
     .toUpperCase()
@@ -359,10 +298,6 @@ function normWords(name) {
     .filter(Boolean);
 }
 
-// Word-overlap ratio against the SMALLER name's word count, so "Bhawani Drugs Distributors"
-// vs "BHAWANI DRUGS" (2 of 2 words in the shorter name present) scores high even though the
-// longer name has an extra word — the mismatch case (Pharmachem vs Cutisoins) shares zero
-// words either way, so the threshold cleanly separates the two kinds of match seen live.
 function nameSimilarity(a, b) {
   const wa = new Set(normWords(a));
   const wb = new Set(normWords(b));
@@ -374,16 +309,8 @@ function nameSimilarity(a, b) {
 
 const NAME_SIMILARITY_THRESHOLD = 0.5;
 
-// Fields that can be updated on an existing vendor. `name` is included deliberately — cleaning
-// up "HELPSURE HEALTHCARE PVT LTD      " to the sheet's "Helpsure Healthcare Private Limited"
-// is exactly the kind of detail-refresh being asked for, not an identity change, since the
-// match already confirmed (by name-similarity or explicit confirmation) that it's the same
-// vendor. Never applied to a NAME-MISMATCH match unless --confirm-contact-only-updates is set.
 const UPDATABLE_FIELDS = ["name", "contact", "email", "address", "gstNumber", "DealsIn"];
 
-// Diffs a sheet entry against an existing vendor doc. A field only counts as a change when the
-// sheet has a real value AND it differs from what's stored — an entry with no email, say, never
-// blanks out an existing one. Returns [] when nothing would change.
 function diffFields(entry, existing) {
   const changes = [];
   for (const field of UPDATABLE_FIELDS) {
@@ -424,9 +351,6 @@ async function run() {
       new mongoose.Schema({}, { strict: false, collection: "vendors" }),
     );
 
-  // ---------------------------------------------------------------------------
-  // PASS 1 — classify every row: new / name-similar update / name-mismatch update. No writes.
-  // ---------------------------------------------------------------------------
   console.log("Matching against existing vendors (by name or contact, same rule the create API uses)...\n");
   const toCreate = [];
   const safeUpdates = [];
@@ -498,9 +422,6 @@ async function run() {
     return;
   }
 
-  // ---------------------------------------------------------------------------
-  // PASS 2 — write.
-  // ---------------------------------------------------------------------------
   console.log("\nCreating new vendors...");
   const created = [];
   const createFailed = [];

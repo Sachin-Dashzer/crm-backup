@@ -8,15 +8,9 @@ import OwnerSidebar from "@/components/Sidebars/OwnerSidebar";
 import { OwnerTopbar, KpiRow, Card, Funnel, ProgressBar, Modal, DataTable } from "@/components/owner";
 import { ALL_BRANCHES } from "@/lib/branches";
 
-/* ─────────────────────────────────────────────
-   Constants — same shape as super-admin/dashboard/page.jsx
-───────────────────────────────────────────── */
 const BRANCHES    = ["All", ...ALL_BRANCHES];
 const DATE_RANGES = ["Today", "Yesterday", "Last 7 Days", "Last 30 Days", "Custom"];
 
-/* ─────────────────────────────────────────────
-   Helpers — reused verbatim from super-admin/dashboard/page.jsx
-───────────────────────────────────────────── */
 const rupee = (n) =>
   new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(n || 0);
 
@@ -48,10 +42,6 @@ function fmtDate(iso) {
   return new Date(iso).toLocaleDateString("en-IN", { day: "2-digit", month: "short" });
 }
 
-/* ─────────────────────────────────────────────
-   Recommendation rules — every entry below is computed from a real, already-fetched number.
-   No rule fires => the panel says so honestly; nothing here is placeholder/invented copy.
-───────────────────────────────────────────── */
 function buildRecommendations({ d, stalledBookingsCount, onOpenStalled }) {
   const recs = [];
 
@@ -80,9 +70,6 @@ function buildRecommendations({ d, stalledBookingsCount, onOpenStalled }) {
   return recs;
 }
 
-/* ─────────────────────────────────────────────
-   Main Page
-───────────────────────────────────────────── */
 export default function OwnerCommandCenter() {
   const [branch, setBranch]       = useState("All");
   const [dateRange, setDateRange] = useState("Today");
@@ -91,12 +78,9 @@ export default function OwnerCommandCenter() {
   const [data, setData]           = useState(null);
   const [error, setError]         = useState(null);
 
-  // Receivables/payables are running balances, not period-scoped — fetched independently,
-  // only re-sliced by branch. Same split as super-admin/dashboard/page.jsx.
   const [finance, setFinance]               = useState(null);
   const [financeLoading, setFinanceLoading] = useState(true);
 
-  // Rule-based recommendations — also not period-scoped (see the route's own comment).
   const [stalledBookings, setStalledBookings]           = useState([]);
   const [stalledBookingsCount, setStalledBookingsCount] = useState(0);
   const [recLoading, setRecLoading]                     = useState(true);

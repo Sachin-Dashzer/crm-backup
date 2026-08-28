@@ -55,11 +55,10 @@ export default function SurgerySidebar() {
     { name: "Reports",         path: "/surgery/reports",     icon: FileBarChart },
   ];
 
-  
+
 
   return (
     <>
-      {/* Mobile Menu Button */}
       <button
         onClick={() => setSidebarOpen(true)}
         className="lg:hidden fixed top-4 left-4 z-40 p-2 bg-white rounded-lg shadow-md"
@@ -67,7 +66,6 @@ export default function SurgerySidebar() {
         <Menu className="w-6 h-6 text-gray-700" />
       </button>
 
-      {/* Overlay */}
       {sidebarOpen && (
         <div
           className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
@@ -75,13 +73,11 @@ export default function SurgerySidebar() {
         ></div>
       )}
 
-      {/* Sidebar */}
       <aside
         className={`fixed left-0 top-0 lg:sticky w-80 bg-white border-r shadow-sm p-6 space-y-6 z-50 h-screen transition-transform duration-300 flex flex-col ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         }`}
       >
-        {/* Header */}
         <div className="flex items-center justify-between">
           <Link href="/surgery/dashboard" className="flex items-center gap-2">
             <div className="w-10 h-10 bg-linear-to-r from-green-600 to-emerald-600 rounded-lg flex items-center justify-center brand-glow">
@@ -92,7 +88,7 @@ export default function SurgerySidebar() {
               <p className="text-xs text-gray-500">Surgery Panel</p>
             </div>
           </Link>
-          <button 
+          <button
             className="lg:hidden p-1 hover:bg-gray-100 rounded"
             onClick={() => setSidebarOpen(false)}
           >
@@ -100,7 +96,6 @@ export default function SurgerySidebar() {
           </button>
         </div>
 
-        {/* Quick Stats */}
         <div className="grid grid-cols-2 gap-3">
           <div className="p-3 bg-green-50 rounded-lg border border-green-100">
             <div className="flex items-center gap-2 mb-1">
@@ -118,7 +113,6 @@ export default function SurgerySidebar() {
           </div>
         </div>
 
-        {/* Navigation */}
         <nav className="flex-1 space-y-1 overflow-y-auto scrollbar-hide">
           {navItems.map((item) => (
             <NavItem
@@ -132,7 +126,6 @@ export default function SurgerySidebar() {
           ))}
         </nav>
 
-        {/* User Info & Logout */}
         <div className="space-y-3 border-t pt-4">
           <div className="p-3 bg-linear-to-r from-green-50 to-emerald-50 rounded-lg">
             <div className="flex items-center gap-3">
@@ -147,8 +140,8 @@ export default function SurgerySidebar() {
           </div>
 
           <LogoutButton />
-          
-         
+
+
         </div>
       </aside>
     </>

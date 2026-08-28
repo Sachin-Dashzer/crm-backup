@@ -1,76 +1,17 @@
-// scripts/employee-salary-payables-import.mjs
-//
-// Creates July 2026 SALARY payables for 277 employees from emp_2.txt — one Payable per
-// employee (payee.kind: EMPLOYEE, payee.refId: the employee's live _id, purpose: SALARY),
-// matching exactly how the Agent tab's own Salary sub-flow creates them
-// (expenseCategory/expenseSubType: "Salary").
-//
-// THE SOURCE FILE HAD REAL ISSUES, resolved and surfaced rather than silently applied:
-//
-//   - 16 rows have amount 0 (mostly explicitly "(Inactive)" employees, a few not marked but
-//     still zero) — nothing owed, so no payable is created for them at all. 282 of 298 rows
-//     had a real amount.
-//   - 5 employees appear TWICE for the same phone + July 2026, with genuinely different
-//     amounts (Sunita: 16000 then 14416; Khushi Jindhad: 20000 then 15484; Jyoti Kumari: 11392
-//     then 4968; Khushboo: 11100 then 13000; Simran, marked "(Inactive)" first then not: 3290
-//     then 17419) — these are not duplicates of different people, they're the same person
-//     entered twice with a correction. The LATER occurrence in the file is treated as
-//     authoritative (consistent with how emp_1.txt's within-file conflicts were handled) — but
-//     every one of these is printed explicitly below and at runtime, since a wrong pick here is
-//     real salary money, not a formatting detail.
-//   - 3 employees (Shejad, Tanish, Naveen) have `employeePhone: "Not found"` — a literal
-//     placeholder string, not a missing value that happened to be blank. Grouping naively by
-//     phone would have silently collapsed these three DIFFERENT people into one (an early draft
-//     of this script's parsing did exactly that and dropped two of them — caught before this
-//     version was finalised). These three are resolved by NAME instead of phone, and every
-//     name-based match is additionally flagged for manual confirmation (see below) since name
-//     alone is a weaker identifier than phone.
-//   - Branch values in the sheet ("Del", "HYD", "CD", "GD", "Backend", "Vaishali") are not the
-//     CRM's branch enum at all — they're finer location tags. Mapped the same way the Rent data
-//     already established: "Del"->Delhi, "HYD"->Hyderabad, "Noida"->Noida unchanged, and
-//     "CD"/"GD"/"Backend"/"Vaishali" all collapse to "Delhi" (all four are Delhi-area
-//     clinics/offices per the Rent import). The original finer tag is preserved in remarks
-//     (e.g. "[Backend] July 2026 salary") rather than discarded.
-//
-// EMPLOYEE RESOLUTION IS LIVE, NOT EMBEDDED — payee.refId must be a real Employee _id, which
-// only exists once scripts/employees-bulk-import.mjs / employees-bulk-update.mjs have run.
-// Resolution order per row: (1) exact phone match; (2) if no phone was usable, name match
-// instead. EVERY resolved match — phone or name — is then checked with the same name-similarity
-// safeguard scripts/employees-bulk-update.mjs introduced (first-word match, or >=75% word
-// overlap) before being treated as safe; a phone match against a stored name that doesn't clear
-// that bar, or any name-only match, is held in a separate bucket requiring explicit
-// confirmation, never applied silently.
-//
-// NO DUPLICATE GUARD NEEDED BEYOND THE MODEL'S OWN — Payable's partial unique index already
-// covers (payee.kind, payee.refId, payee.label, purpose, period) for SALARY, so a second
-// attempt at the same employee+month fails at the database level; this script also checks
-// proactively so the report is clear rather than relying solely on a caught error.
-//
-// Usage:
-//   node scripts/employee-salary-payables-import.mjs                        # dry run
-//   node scripts/employee-salary-payables-import.mjs --dump-json             # write rows out, no DB
-//   node scripts/employee-salary-payables-import.mjs --apply                # write (name-matched rows held back)
-//   node scripts/employee-salary-payables-import.mjs --apply --confirm-name-matches
 
 import mongoose from "mongoose";
 import fs from "fs";
 
-// --- env -----------------------------------------------------------------
 for (const f of [".env.local", ".env"]) {
   if (fs.existsSync(f)) {
     try {
       process.loadEnvFile(f);
     } catch {
-      /* already loaded / unsupported — fall through to the MONGODB_URI check below */
     }
   }
 }
 const MONGODB_URI = process.env.MONGODB_URI;
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// THE DATA — parsed and deduplicated from emp_2.txt (see header notes above for exactly what
-// was excluded and why). One entry per employee for July 2026.
-// ═══════════════════════════════════════════════════════════════════════════════
 const SALARY_ROWS = [
   {
     "employeeName": "pradeep kumar",
@@ -3952,7 +3893,6 @@ const SALARY_ROWS = [
   }
 ];
 
-// --- args ------------------------------------------------------------------
 const args = process.argv.slice(2);
 const APPLY = args.includes("--apply");
 const CONFIRM_NAME_MATCHES = args.includes("--confirm-name-matches");
@@ -3973,11 +3913,6 @@ if (!MONGODB_URI) {
   process.exit(1);
 }
 
-// Titles/role-tags that shouldn't count as an identity match on their own — "Dr Ashi Gautam"
-// and "Dr. Pranendra Singh" both start with "Dr", and treating that shared first word as a
-// signal nearly caused exactly that false match while preparing this report's reconciliation
-// (caught before being applied). "Hr" is the same kind of generic tag (a department label
-// prefixed onto a name, e.g. "Hr Muskan"), not part of anyone's actual name.
 const TITLE_WORDS = new Set(["DR", "MR", "MRS", "MS", "MD", "HR"]);
 function normWords(name) {
   const words = (name || "").toUpperCase().replace(/[^A-Z0-9\s]/g, " ").split(/\s+/).filter(Boolean);
@@ -3994,19 +3929,9 @@ function nameSimilarity(a, b) {
   return shared / Math.min(wa.size, wb.size);
 }
 const normExact = (s) => (s || "").trim().toLowerCase().replace(/\s+/g, " ");
-// Same rule scripts/employees-bulk-update.mjs settled on after "Nishi Afterservice" / "Ritu
-// Afterservice" proved a plain overlap ratio isn't reliable at the boundary: safe only when the
-// first word (the actual given name, titles already stripped above) matches, or overall overlap
-// clears a much higher 75% bar.
 function isSafeNameMatch(a, b) {
   const wa = normWords(a);
   const wb = normWords(b);
-  // A bare single word (after stripping any title) is too weak to trust on its own — "Muskan"
-  // alone can't tell "Muskan Sharma" and "Muskan Sayed" apart even though both share that one
-  // word with a bare "Hr Muskan" record, and this dataset has more than one real "Mansi" and
-  // more than one real "Sheetal" on staff. The first-word shortcut only applies when BOTH sides
-  // carry a second word (an actual surname/qualifier) — a bare-name-only comparison always
-  // falls through to needing confirmation, never auto-resolved.
   if (wa.length < 2 || wb.length < 2) return false;
   if (wa[0] === wb[0]) return true;
   return nameSimilarity(a, b) >= 0.75;
@@ -4043,16 +3968,13 @@ async function run() {
   const Employee = mongoose.models.Employee || mongoose.model("Employee", new mongoose.Schema({}, { strict: false, collection: "employees" }));
   const Payable = mongoose.models.Payable || mongoose.model("Payable", new mongoose.Schema({}, { strict: false, collection: "payables" }));
 
-  // ---------------------------------------------------------------------------
-  // PASS 1 — resolve every row's employee and classify it. No writes.
-  // ---------------------------------------------------------------------------
   console.log("Resolving employees and checking for existing payables...\n");
   const resolved = [];
 
   for (const r of SALARY_ROWS) {
     let employee = null;
     let matchedBy = null;
-    let ambiguous = null; // set when phone or name collides across more than one real employee
+    let ambiguous = null;
 
     if (r.employeePhone) {
       const byPhone = await Employee.find({ phone: r.employeePhone }).select("_id name phone").lean();
@@ -4060,14 +3982,6 @@ async function run() {
         employee = byPhone[0];
         matchedBy = "phone";
       } else if (byPhone.length > 1) {
-        // The Employee model has no unique index on phone — two real people CAN share one.
-        // But it's also seen here as two DUPLICATE records for the SAME person (e.g. "Dr,
-        // Ashalata Roy" / "Dr. Ashalata Roy" both on the same phone) — when the sheet's own
-        // name is an exact match to exactly ONE of the candidates, that's a real tie-breaker,
-        // not a guess: use it. Only stays ambiguous when the sheet's name doesn't exactly pick
-        // one out (e.g. two candidates BOTH named identically "MOHIT SHAH" — a genuine
-        // duplicate employee record that needs manual dedup, not something a name comparison
-        // can ever resolve).
         const exactHits = byPhone.filter((c) => normExact(c.name) === normExact(r.employeeName));
         if (exactHits.length === 1) {
           employee = exactHits[0];
@@ -4079,10 +3993,6 @@ async function run() {
     }
 
     if (!employee && !ambiguous) {
-      // Name fallback — reached when the sheet had no usable phone, or the phone matched no
-      // one. Matches on EXACT name (case/whitespace-insensitive), which is itself a strong
-      // identity signal — but the same collision risk applies: two different real employees
-      // can share one exact name (very plausible with 300+ staff and common first names).
       const byName = await Employee.find({ name: new RegExp(`^\\s*${r.employeeName.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*$`, "i") })
         .select("_id name phone")
         .lean();
@@ -4103,18 +4013,9 @@ async function run() {
       continue;
     }
 
-    // An EXACT name match (matchedBy === "name", or a phone match whose stored name is
-    // identical up to case/whitespace) is a stronger signal than the word-overlap heuristic —
-    // trust it outright. Only a phone match against a NON-exact, merely word-overlapping name
-    // needs the coarser isSafeNameMatch check, and anything short of that is held for review.
     const exact = normExact(r.employeeName) === normExact(employee.name);
     const safe = exact || (matchedBy === "phone" && isSafeNameMatch(r.employeeName, employee.name));
 
-    // Check for an existing payable FIRST, regardless of match confidence — otherwise a
-    // needs-confirm row that was already created in an earlier --confirm-name-matches run keeps
-    // being reported as "needs confirmation" forever, even though nothing is actually pending
-    // for it. This was reported as "I ran the apply command, nothing happened" — nothing WAS
-    // wrong in the database, only the dry-run's own reporting never looked.
     const existingPayable = await Payable.findOne({
       "payee.kind": "EMPLOYEE",
       "payee.refId": employee._id,

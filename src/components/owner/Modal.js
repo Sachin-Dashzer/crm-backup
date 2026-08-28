@@ -1,5 +1,3 @@
-// .modal-wrap/.modal drill-down. Fully controlled by the parent (open/onClose) — unmounts
-// when closed rather than relying on the CSS .active toggle, since React handles that for us.
 export default function Modal({ open, onClose, title, subtitle, children }) {
   if (!open) return null;
 

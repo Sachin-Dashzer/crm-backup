@@ -1,11 +1,3 @@
-/**
- * Route-level fallback for every /admin page.
- *
- * Admin pages are client components that fetch on mount, so before this existed a navigation
- * showed the previous page frozen until the new page's JS loaded and its first fetch resolved.
- * This renders instantly — and because it lives inside admin/layout.jsx, the sidebar stays put
- * while it shows, so only the content area changes.
- */
 export default function AdminLoading() {
   return (
     <main className="flex-1 p-4 sm:p-6 lg:p-8" aria-busy="true" aria-label="Loading">

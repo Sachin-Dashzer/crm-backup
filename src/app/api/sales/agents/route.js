@@ -16,32 +16,26 @@ const handler = async (req) => {
       })
       .sort({ name: 1 });
 
-    // Transform data to match frontend expectations
     const agentsData = data.map((employee) => {
       const patients = employee.patient || [];
 
-      // Calculate metrics
       const totalRevenue = patients.reduce((total, patient) => {
         return total + (parseInt(patient.payments?.amountReceived) || 0);
       }, 0);
 
       const totalPatients = patients.length;
-      
-      // FIXED: Check for counsellor ObjectId
+
       const visitedPatients = patients.filter(
         (patient) => patient.counselling?.counsellor
       ).length;
 
-      // FIXED: Check for surgeryDate Date object
       const readyForSurgery = patients.filter(
         (patient) => patient.surgery?.surgeryDate
       ).length;
 
-      // Calculate conversion rate
       const conversionRate =
         totalPatients > 0 ? (readyForSurgery / totalPatients) * 100 : 0;
 
-      // Calculate techniques sold
       const techniques = {};
       patients.forEach((patient) => {
         const technique = patient.surgery?.technique;
@@ -67,7 +61,6 @@ const handler = async (req) => {
         graftsImplanted: patients.reduce((total, patient) => {
           return total + (parseInt(patient.surgery?.graftsImplanted) || 0);
         }, 0),
-        // Include patient details for potential expansion
         patients: patients.map((patient) => ({
           id: patient._id,
           name: patient.personal?.name,

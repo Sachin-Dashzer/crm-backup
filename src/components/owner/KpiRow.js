@@ -1,6 +1,3 @@
-// Row of .kpi cards, e.g.:
-//   <KpiRow items={[{ label: "Revenue", value: "₹12.4L", sub: "+8% vs last period", kind: "good" }]} />
-// kind controls the .sub modifier class: "good" (default, no class needed), "warn", "bad", "info".
 export default function KpiRow({ items = [] }) {
   return (
     <div className="grid kpi-grid">

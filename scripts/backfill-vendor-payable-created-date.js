@@ -1,25 +1,3 @@
-// One-time backfill: sets createdAt on every VENDOR-kind Payable missing it (Medicine
-// Procurement, Medical Consumables, Professional Expenses — from scripts/vendor-payables-bulk-import.mjs,
-// which used the same timestamp-less loose schema as every other bulk-import script here).
-//
-// Why this matters beyond "the date is wrong": buildPayableGroupedStages classifies a payable as
-// "opening" (before a date filter's `from`) using `$lt` on createdAt. A MISSING field sorts
-// BELOW any real Date in BSON comparison order, so a document with no createdAt at all evaluates
-// as "before" ANY `from` date — not "unclassified", but wrongly counted as opening. Defaulting
-// the Liabilities page's date filter (see admin/liabilities/page.jsx) would otherwise turn every
-// one of these 121 documents into a false "opening due" figure the moment a `from` is set.
-//
-// Every one of these payables carries a real dueDate (verified: 0 of 121 are missing it), which
-// this uses as createdAt — except the 16 explicitly marked "Opening bill ... Opening Balance" in
-// remarks (all dueDate 2026-04-01, mirroring the Rent opening payables' same period), which get
-// dueDate MINUS ONE DAY instead. Without that distinction they'd land exactly ON the go-live
-// cutover date and — since beforeRange uses strict $lt — be classified as regular "raised in
-// range" activity, not opening, defeating the entire point of dating them at all.
-//
-// Dry run by default. Re-run with --apply to write.
-//
-//   node scripts/backfill-vendor-payable-created-date.js
-//   node scripts/backfill-vendor-payable-created-date.js --apply
 
 import mongoose from "mongoose";
 import fs from "fs";

@@ -1,13 +1,11 @@
 import mongoose from "mongoose";
 import fs from "fs";
 
-// --- env -----------------------------------------------------------------
 for (const f of [".env.local", ".env"]) {
   if (fs.existsSync(f)) {
     try {
       process.loadEnvFile(f);
     } catch {
-      /* already loaded / unsupported — fall through to the MONGODB_URI check below */
     }
   }
 }
@@ -3151,7 +3149,6 @@ const PAYMENT_ENTRIES = [
   }
 ];
 
-// --- args ------------------------------------------------------------------
 const args = process.argv.slice(2);
 const arg = (name) => args.find((a) => a.startsWith(`--${name}=`))?.split("=")[1];
 const APPLY = args.includes("--apply");
@@ -3226,11 +3223,6 @@ async function run() {
   const BULK_TAG_RE = /\[BULK-VENDOR-BILL-(\d+)\]/;
   const UNSETTLED_METHODS = ["paid_to_external", "paid_by_other"];
 
-  // ---------------------------------------------------------------------------
-  // PASS 1 — for each vendor, load its payables (ordered exactly as patient-vouncher.xlsx
-  // listed them, via the embedded row-number tag) and walk this sheet's payment rows against
-  // them with the FIFO pointer verified offline. No writes yet.
-  // ---------------------------------------------------------------------------
   console.log("Resolving vendors, loading bill order, and replaying the payment sequence...\n");
 
   const vendorGroups = new Map();
@@ -3269,8 +3261,6 @@ async function run() {
       const already = await Transactions.findOne({ paymentId }).select("_id").lean();
       if (already) {
         resolved.push({ e, status: "already-imported", existingId: String(already._id) });
-        // Still advance the pointer on Settled so subsequent rows in this vendor resolve
-        // against the right bill even when re-running after a partial prior success.
         if (e.status === "Settled" && billIdx < tagged.length - 1) billIdx++;
         continue;
       }
@@ -3282,7 +3272,6 @@ async function run() {
 
       const payable = tagged[billIdx];
 
-      // Live aggregation cross-check — same UNSETTLED_METHODS exclusion the API route uses.
       const [paidAgg] = await Transactions.aggregate([
         { $match: { payableId: payable._id, approvalStatus: "APPROVED", method: { $nin: UNSETTLED_METHODS } } },
         { $group: { _id: null, paid: { $sum: "$amount" } } },
@@ -3297,8 +3286,6 @@ async function run() {
 
       resolved.push({ e, status: "ok", vendor, payable, paymentId });
 
-      // Advance the FIFO pointer exactly when the sheet says this bill is now Settled — the
-      // same rule verified offline against every row before this script was written.
       if (e.status === "Settled" && billIdx < tagged.length - 1) billIdx++;
     }
   }

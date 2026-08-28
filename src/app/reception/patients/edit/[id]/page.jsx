@@ -275,7 +275,6 @@ const TransactionManager = ({ transactions, onChange, onAdd, onRemove }) => (
   </div>
 );
 
-// Multi-select component for employees
 const MultiSelectEmployee = ({ label, options, selectedIds, onChange }) => {
   const handleToggle = (employeeId) => {
     const newSelection = selectedIds.includes(employeeId)
@@ -607,7 +606,6 @@ export default function PatientEditDetails() {
   const router = useRouter();
   const toast = useToast();
 
-  // Fetch employees on component mount
   useEffect(() => {
     const fetchEmployees = async () => {
       try {
@@ -641,7 +639,6 @@ export default function PatientEditDetails() {
         if (data.success && data.patient) {
           const patientData = data.patient;
 
-          // Helper function to extract IDs from populated or non-populated data
           const extractIds = (data) => {
             if (!data) return [];
             if (Array.isArray(data)) {
@@ -815,7 +812,6 @@ export default function PatientEditDetails() {
     }));
   };
 
-  // PRP handlers
   const handlePRPChange = (index, field, value) => {
     const newPRP = [...formData.afterSurgery.prp];
     newPRP[index] = {
@@ -1027,17 +1023,14 @@ export default function PatientEditDetails() {
     handleChange("payments", "transactions", newTransactions);
   };
 
-  // Clean empty ObjectId fields before sending to API
   const cleanObjectIdFields = (data) => {
     const cleaned = JSON.parse(JSON.stringify(data));
 
-    // Single ObjectId fields
     const objectIdFields = {
       personal: ["reference"],
       counselling: ["counsellor"],
     };
 
-    // Array ObjectId fields - ALL surgery team fields are now arrays
     const arrayObjectIdFields = {
       surgery: [
         "doctor",
@@ -1049,7 +1042,6 @@ export default function PatientEditDetails() {
       ],
     };
 
-    // Convert empty strings to null for single ObjectId fields
     Object.keys(objectIdFields).forEach((section) => {
       if (cleaned[section]) {
         objectIdFields[section].forEach((field) => {
@@ -1063,7 +1055,6 @@ export default function PatientEditDetails() {
       }
     });
 
-    // Handle array ObjectId fields
     Object.keys(arrayObjectIdFields).forEach((section) => {
       if (cleaned[section]) {
         arrayObjectIdFields[section].forEach((field) => {
@@ -1084,7 +1075,6 @@ export default function PatientEditDetails() {
       }
     });
 
-    // Clean empty number fields
     const numberFields = {
       personal: ["age", "packageQuoted"],
       counselling: ["finlpackage", "graftsSuggested"],
@@ -1261,7 +1251,6 @@ export default function PatientEditDetails() {
           </div>
 
           <div className="px-8 py-8">
-            {/* Step 1: Personal Details - Keep as is from your original code */}
             {step === 1 && (
               <div className="space-y-8">
                 <StepHeader
@@ -1280,14 +1269,6 @@ export default function PatientEditDetails() {
                     placeholder="Enter full name"
                   />
 
-                  {/* <InputField
-                    label="Phone Number"
-                    type="tel"
-                    required
-                    value={formData.personal.phone}
-                    onChange={createChangeHandler("personal", "phone")}
-                    placeholder="Enter phone number"
-                  /> */}
 
                   <InputField
                     label="Email Address"
@@ -1345,16 +1326,6 @@ export default function PatientEditDetails() {
                     onChange={createChangeHandler("personal", "visitDate")}
                   />
 
-                  {/* <InputField
-                    label="Reference Source (Agent)"
-                    type="select"
-                    value={formData.personal.reference}
-                    onChange={createChangeHandler("personal", "reference")}
-                    options={employees.Agent.map((emp) => ({
-                      value: emp._id,
-                      label: emp.name,
-                    }))}
-                  /> */}
 
                   <InputField
                     label="Package Quoted (₹)"
@@ -1464,7 +1435,6 @@ export default function PatientEditDetails() {
                     placeholder="Number of grafts"
                   />
 
-                  {/* Hair Loss Type - Radio Buttons */}
                   <div className="space-y-3 my-3">
                     <label className="block mb-4 text-md underline font-bold text-gray-700">
                       Hair Loss Type *
@@ -1520,7 +1490,6 @@ export default function PatientEditDetails() {
                     </div>
                   </div>
 
-                  {/* Area of Concern - Radio Buttons */}
                   <div className="space-y-3 my-3">
                     <label className="block mb-4 text-md underline font-bold text-gray-700">
                       Area of Concern *
@@ -1561,7 +1530,6 @@ export default function PatientEditDetails() {
                     </div>
                   </div>
 
-                  {/* Hair Loss Reason - Radio Buttons */}
                   <div className="space-y-3">
                     <label className="block mb-4 text-lg underline font-bold text-gray-700">
                       Hair Loss Reason *
@@ -1610,7 +1578,6 @@ export default function PatientEditDetails() {
                     </div>
                   </div>
 
-                  {/* Hair Loss Duration - Radio Buttons */}
                   <div className="space-y-3">
                     <label className="block mb-4 text-md underline font-bold text-gray-700">
                       Hair Loss Duration *
@@ -1663,7 +1630,6 @@ export default function PatientEditDetails() {
                     </div>
                   </div>
 
-                  {/* Updated Benefits Manager */}
                   <BenefitsManager
                     benefits={formData.counselling.additionalbenefits}
                     onChange={(value, index) =>
@@ -1810,7 +1776,6 @@ export default function PatientEditDetails() {
                 </div>
               </div>
             )}
-            {/* Step 4: Surgery Details - UPDATED WITH MULTI-SELECT */}
             {step === 4 && (
               <div className="space-y-8">
                 <StepHeader
@@ -1877,7 +1842,6 @@ export default function PatientEditDetails() {
                     className="md:col-span-2"
                   />
 
-                  {/* Multi-select for Doctors */}
                   <div className="md:col-span-2">
                     <MultiSelectEmployee
                       label="Operating Doctors (Select Multiple)"
@@ -1889,7 +1853,6 @@ export default function PatientEditDetails() {
                     />
                   </div>
 
-                  {/* Multi-select for Senior Technicians */}
                   <div className="md:col-span-2">
                     <MultiSelectEmployee
                       label="Senior Technicians (Select Multiple)"
@@ -1901,7 +1864,6 @@ export default function PatientEditDetails() {
                     />
                   </div>
 
-                  {/* Multi-select for Right Implanters */}
                   <div className="md:col-span-2">
                     <MultiSelectEmployee
                       label="Right Side Implanters (Select Multiple)"
@@ -1913,7 +1875,6 @@ export default function PatientEditDetails() {
                     />
                   </div>
 
-                  {/* Multi-select for Left Implanters */}
                   <div className="md:col-span-2">
                     <MultiSelectEmployee
                       label="Left Side Implanters (Select Multiple)"
@@ -1925,7 +1886,6 @@ export default function PatientEditDetails() {
                     />
                   </div>
 
-                  {/* Multi-select for Grafting Persons */}
                   <div className="md:col-span-2">
                     <MultiSelectEmployee
                       label="Grafting Specialists (Select Multiple)"
@@ -1937,7 +1897,6 @@ export default function PatientEditDetails() {
                     />
                   </div>
 
-                  {/* Multi-select for Helpers */}
                   <div className="md:col-span-2">
                     <MultiSelectEmployee
                       label="Surgery Helpers (Select Multiple)"
@@ -1952,7 +1911,6 @@ export default function PatientEditDetails() {
               </div>
             )}
 
-            {/* Step 5: After Surgery Care - NEW STEP */}
             {step === 5 && (
               <div className="space-y-8">
                 <StepHeader
@@ -1993,7 +1951,6 @@ export default function PatientEditDetails() {
               </div>
             )}
 
-            {/* Step 6: Payment Details - Keep your existing code */}
             {step === 6 && (
               <div className="space-y-8">
                 <StepHeader
@@ -2054,7 +2011,6 @@ export default function PatientEditDetails() {
               </div>
             )}
 
-            {/* Step 7: Document Upload - Keep your existing code */}
             {step === 7 && (
               <div className="space-y-8">
                 <StepHeader

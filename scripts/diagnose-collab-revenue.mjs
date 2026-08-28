@@ -1,23 +1,3 @@
-// scripts/diagnose-collab-revenue.mjs
-//
-// READ-ONLY. No --apply flag exists in this file at all — it writes nothing, ever.
-//
-// Every collab case created so far books the FULL package as revenue at case-creation time
-// (src/lib/collabDerivation.js's old step 2), regardless of how much was actually collected.
-// That's the bug this whole fix addresses. Before touching the code that created the problem,
-// this script measures exactly how big it is: per case, how much revenue is overstated, whether
-// that revenue sits inside a period that's already closed (and therefore can't just be
-// reversed), and whether anything has already settled against the case's linked Payable/
-// Receivable (which would make a blind reversal strand it).
-//
-// This script does NOT decide what to do about any of it — see the fix's §3: the correct
-// treatment differs per case (nothing collected -> reverse outright; partly collected ->
-// reverse down to what was collected; period closed -> needs an explicit decision; already
-// settled against -> manual handling). That's a separate, later script, written only after
-// this report has been reviewed.
-//
-// Usage:
-//   node scripts/diagnose-collab-revenue.mjs
 
 import mongoose from "mongoose";
 import fs from "fs";
@@ -36,9 +16,6 @@ if (!MONGODB_URI) {
   process.exit(1);
 }
 
-// Same account list periodLock.js checks against — duplicated here rather than imported since
-// scripts/ can't resolve the "@/" alias outside Next.js (see scripts/backfill-employee-branch.mjs
-// for the same reasoning). Kept in sync by hand; it changes rarely.
 const ACCOUNTS = [
   "Cash Book",
   "HDFC Skin",
@@ -72,9 +49,6 @@ async function run() {
   const cases = await CollabCase.find({}).lean();
   console.log(`\nFound ${cases.length} collab case(s).\n`);
 
-  // Every closed, non-seed, company-level (branch: null) period — fetched once, checked
-  // in-memory per case. Mirrors src/lib/periodLock.js's closedPeriodsCovering, minus the
-  // isOpeningSeed check inlined below (a seed has periodStart === periodEnd).
   const closedPeriods = await AccountPeriod.find({ branch: null, isClosed: true }).lean();
   function isClosedForDate(account, date) {
     if (!date) return false;
@@ -82,7 +56,7 @@ async function run() {
     const rows = closedPeriods.filter(
       (p) =>
         p.account === account &&
-        new Date(p.periodStart).getTime() !== new Date(p.periodEnd).getTime() && // not a seed
+        new Date(p.periodStart).getTime() !== new Date(p.periodEnd).getTime() &&
         new Date(p.periodStart).getTime() <= t &&
         new Date(p.periodEnd).getTime() >= t,
     );
@@ -96,16 +70,10 @@ async function run() {
         ? { closed: true, reason: `${tx.furtherMode} closed ${new Date(closed.periodStart).toLocaleDateString("en-IN")}–${new Date(closed.periodEnd).toLocaleDateString("en-IN")}` }
         : { closed: false, reason: null };
     }
-    // No furtherMode: locked only if EVERY account is closed for this date (see periodLock.js).
     const allClosed = ACCOUNTS.every((a) => isClosedForDate(a, tx.date));
     return { closed: allClosed, reason: allClosed ? "all accounts closed for this date" : null };
   }
 
-  // Simple settled-against check for reporting purposes — sums transactions carrying this
-  // payableId/receivableId. Not the full paid/pending aggregation (which also weighs
-  // isSettlement/costAlreadyRecognised); good enough to flag "something already happened here,
-  // handle by hand" without re-implementing lib/payableAggregation.js / receivableAggregation.js
-  // outside Next.js.
   async function settledSummary(kind, id) {
     if (!id) return { count: 0, total: 0 };
     const field = kind === "payable" ? "payableId" : "receivableId";
@@ -120,9 +88,6 @@ async function run() {
   for (const c of cases) {
     const patient = c.patient ? await Patient.findById(c.patient).select("personal.name payments.amountReceived").lean() : null;
 
-    // The old code's single gross-package transaction — collabSplit is ONLY ever set by that
-    // exact code path, so it's the unambiguous marker for "this is the old-style booking",
-    // independent of whether the fix has since run against other cases.
     const grossTxCandidates = await Transactions.find({
       "collabRef.caseId": c._id,
       costType: "Revenue",
@@ -169,9 +134,6 @@ async function run() {
         settledSummary("receivable", receivableId),
       ]);
 
-      // Sanity check: does the patient's own amountReceived reflect at least ourReceived from
-      // this case? (A loose >= check, not exact equality — the patient may have other, unrelated
-      // direct payments too.)
       const patientAmountReceived = patient?.payments?.amountReceived || 0;
       const patientAgrees = ourReceived === 0 || patientAmountReceived >= ourReceived;
 

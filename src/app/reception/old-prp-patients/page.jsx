@@ -19,7 +19,6 @@ import {
   ChevronDown,
 } from "lucide-react";
 
-/* ── Constants ─────────────────────────────────────────────────────────────── */
 const BRANCHES = ["Delhi", "Mumbai", "Hyderabad", "Noida"];
 const GENDERS  = ["MALE", "FEMALE", "OTHER"];
 const TECHNIQUES = [
@@ -46,7 +45,6 @@ const INITIAL_FORM = {
   sessions: [{ ...EMPTY_SESSION, prpNumber: "" }],
 };
 
-/* ── Small UI helpers ──────────────────────────────────────────────────────── */
 function Label({ children, required }) {
   return (
     <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">
@@ -114,7 +112,6 @@ function Toast({ toast, onDismiss }) {
   );
 }
 
-/* ── Main Page ─────────────────────────────────────────────────────────────── */
 export default function OldPRPPatientsPage() {
   const [form, setForm] = useState(INITIAL_FORM);
   const [loading, setLoading] = useState(false);
@@ -125,7 +122,6 @@ export default function OldPRPPatientsPage() {
     setTimeout(() => setToast(null), 5000);
   };
 
-  /* Field helpers */
   const set = (field, value) => setForm((f) => ({ ...f, [field]: value }));
 
   const autoCalcPending = (field, value) => {
@@ -138,7 +134,6 @@ export default function OldPRPPatientsPage() {
     });
   };
 
-  /* Session helpers */
   const addSession = () =>
     setForm((f) => ({
       ...f,
@@ -157,7 +152,6 @@ export default function OldPRPPatientsPage() {
       sessions: f.sessions.map((s, i) => (i === idx ? { ...s, [field]: value } : s)),
     }));
 
-  /* Submit */
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.name.trim() || !form.phone.trim()) {
@@ -228,7 +222,6 @@ export default function OldPRPPatientsPage() {
         <div className="p-4 sm:p-6 lg:p-8">
           <div className="max-w-3xl mx-auto space-y-6">
 
-            {/* Header */}
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-linear-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-md">
                 <Droplets className="w-5 h-5 text-white" />
@@ -243,7 +236,6 @@ export default function OldPRPPatientsPage() {
 
             <form onSubmit={handleSubmit} className="space-y-5">
 
-              {/* Patient Information */}
               <SectionCard title="Patient Information" icon={<User className="w-4 h-4" />}>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
@@ -308,7 +300,6 @@ export default function OldPRPPatientsPage() {
                 </div>
               </SectionCard>
 
-              {/* Surgery & Treatment */}
               <SectionCard title="Surgery & Treatment" icon={<Scissors className="w-4 h-4" />}>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
@@ -358,7 +349,6 @@ export default function OldPRPPatientsPage() {
                 </div>
               </SectionCard>
 
-              {/* PRP / GFC Sessions */}
               <SectionCard title="Past Sessions" icon={<Droplets className="w-4 h-4" />}>
                 <p className="text-xs text-gray-400 mb-3">Enter each session the patient has already taken. Set the correct session number per treatment type.</p>
                 <div className="space-y-3">
@@ -367,7 +357,6 @@ export default function OldPRPPatientsPage() {
                       key={idx}
                       className="grid grid-cols-12 gap-3 p-3 bg-indigo-50 rounded-xl border border-indigo-100 items-end"
                     >
-                      {/* Session # — editable */}
                       <div className="col-span-12 sm:col-span-2">
                         <label className="block text-xs font-semibold text-indigo-700 mb-1">Session #</label>
                         <input
@@ -379,7 +368,6 @@ export default function OldPRPPatientsPage() {
                         />
                       </div>
 
-                      {/* Date */}
                       <div className="col-span-12 sm:col-span-3">
                         <label className="block text-xs font-semibold text-indigo-700 mb-1">Session Date</label>
                         <Input
@@ -389,7 +377,6 @@ export default function OldPRPPatientsPage() {
                         />
                       </div>
 
-                      {/* Type */}
                       <div className="col-span-12 sm:col-span-4">
                         <label className="block text-xs font-semibold text-indigo-700 mb-1">Type</label>
                         <div className="grid grid-cols-2 gap-1.5">
@@ -410,7 +397,6 @@ export default function OldPRPPatientsPage() {
                         </div>
                       </div>
 
-                      {/* Remove */}
                       <div className="col-span-12 sm:col-span-3 flex justify-end">
                         {form.sessions.length > 1 && (
                           <button
@@ -436,7 +422,6 @@ export default function OldPRPPatientsPage() {
                 </div>
               </SectionCard>
 
-              {/* Payment Info */}
               <SectionCard title="Payment Details (Optional)" icon={<IndianRupee className="w-4 h-4" />}>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
@@ -475,7 +460,6 @@ export default function OldPRPPatientsPage() {
                 <p className="text-xs text-gray-400 mt-2">Pending amount is auto-calculated from total − received.</p>
               </SectionCard>
 
-              {/* Info banner */}
               <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-800">
                 <AlertCircle className="w-5 h-5 shrink-0 text-amber-500 mt-0.5" />
                 <div>
@@ -487,7 +471,6 @@ export default function OldPRPPatientsPage() {
                 </div>
               </div>
 
-              {/* Submit */}
               <button
                 type="submit"
                 disabled={loading}

@@ -1,4 +1,3 @@
-// components/AdminResetPasswordForm.jsx - CREATE THIS FILE
 'use client';
 
 import { useState } from 'react';
@@ -56,7 +55,7 @@ export default function AdminResetPasswordForm({ users }) {
       }
 
       setSuccess(data.message);
-      
+
       setSelectedUserId('');
       setNewPassword('');
       setConfirmPassword('');
@@ -72,10 +71,10 @@ export default function AdminResetPasswordForm({ users }) {
   return (
     <div className="max-w-2xl mx-auto p-6 bg-white rounded-lg shadow">
       <h2 className="text-2xl font-bold mb-6 text-gray-900">Reset User Password</h2>
-      
+
       <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded">
         <p className="text-sm text-red-800">
-          ⚠️ <strong>Warning:</strong> Resetting a user's password will immediately log them out 
+          ⚠️ <strong>Warning:</strong> Resetting a user's password will immediately log them out
           from ALL devices. They will need to use the new password to log in again.
         </p>
       </div>
@@ -174,7 +173,7 @@ export default function AdminResetPasswordForm({ users }) {
           >
             Clear
           </button>
-          
+
           <button
             type="submit"
             disabled={loading}

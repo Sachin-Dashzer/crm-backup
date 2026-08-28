@@ -19,8 +19,6 @@ async function loadOr404(id) {
   return { advance };
 }
 
-// Single read — used by the document-level "Further Advance"/"Record Recovery" UI to show the
-// row's own detail without duplicating field names.
 export async function GET(req, { params }) {
   try {
     const session = await getServerSession(authOptions);
@@ -39,10 +37,6 @@ export async function GET(req, { params }) {
   }
 }
 
-// Re-sums every non-cancelled OUT row against an advance and writes that figure onto the
-// Receivable's totalAmount — exact mirror of resyncPayableTotal in
-// /api/borrowings/[id]/route.js. MUST run inside the caller's session, and MUST run AFTER the
-// row whose isCancelled/amount just changed has itself been saved on that same session.
 async function resyncReceivableTotal({ receivableId, session, performedBy, note }) {
   const receivable = await Receivable.findById(receivableId).session(session);
   if (!receivable) return null;
@@ -89,19 +83,6 @@ async function resyncReceivableTotal({ receivableId, session, performedBy, note 
   return receivable;
 }
 
-// Cancel / reinstate / settle / unsettle — never hard-deleted (see DELETE below), same convention
-// as /api/borrowings/[id]. A cancelled row stops counting toward both the account balance
-// (accountBalances.js) and the linked Receivable's received/pending (receivableAggregation.js).
-//
-// Cancelling an OUT row is refused while any IN row exists against the same Receivable — that
-// money has already been (at least partly) recovered against the claim this OUT created, and
-// erasing the OUT out from under it would strand those recoveries with nothing to point at.
-//
-// §4.3 — settle/unsettle link this row (the advance's own creating OUT row only — the same one
-// the aggregation's settlesPayableId $lookup filters on, see payableAggregation.js) to an
-// UNRELATED, pre-existing Payable for the same party (e.g. an advance paid to a rent vendor,
-// settled against their own outstanding rent payable). Never mutates the target Payable's
-// totalAmount — only its live paid/pending aggregation changes, the moment this field is set.
 export async function PATCH(req, { params }) {
   try {
     const session = await getServerSession(authOptions);
@@ -168,7 +149,6 @@ export async function PATCH(req, { params }) {
         return NextResponse.json({ message: "Settlement unlinked", advance });
       }
 
-      // action === "settle"
       if (advance.settlesPayableId) {
         return NextResponse.json(
           { error: "Already settling a payable — unsettle it first" },
@@ -186,8 +166,6 @@ export async function PATCH(req, { params }) {
       if (target.isCancelled) {
         return NextResponse.json({ error: "This payable has been cancelled" }, { status: 400 });
       }
-      // §4.3 — same-party restriction: cross-party settlement is almost always a data-entry
-      // error. A party with no refId (kind "OTHER") can never be matched this way.
       if (!advance.party.refId || !target.payee?.refId || String(advance.party.refId) !== String(target.payee.refId)) {
         return NextResponse.json(
           { error: "This payable belongs to a different party than this advance — settlement is restricted to the same party" },
@@ -259,9 +237,6 @@ export async function PATCH(req, { params }) {
           performedBy,
           performedAt: new Date(),
         });
-        // Saved BEFORE the resync below — resyncReceivableTotal re-aggregates the Advance
-        // collection by isCancelled, on this same session, so it must see this row's own new
-        // isCancelled value or it will count (or fail to count) itself.
         await advance.save({ session: dbSession });
 
         if (advance.direction === "OUT") {
@@ -287,9 +262,6 @@ export async function PATCH(req, { params }) {
   }
 }
 
-// Edits the row's own fields — amount, date, account, branch, reference, remarks, receipts.
-// direction and receivableId are structural and never change here — see the identical note in
-// /api/borrowings/[id]'s PUT.
 export async function PUT(req, { params }) {
   try {
     const session = await getServerSession(authOptions);
@@ -376,7 +348,6 @@ export async function PUT(req, { params }) {
           });
         }
 
-        // Saved BEFORE the resync below — same reason as PATCH above.
         await advance.save({ session: dbSession });
 
         if (amountChanged && advance.direction === "OUT") {
@@ -399,8 +370,6 @@ export async function PUT(req, { params }) {
   }
 }
 
-// Hard delete — refused unless the row is ALREADY cancelled, same guard and reasoning as
-// /api/borrowings/[id]'s DELETE.
 export async function DELETE(req, { params }) {
   try {
     const session = await getServerSession(authOptions);

@@ -8,19 +8,6 @@ import { deriveCrystallisation } from "@/lib/collabFormula";
 import { REVENUE_METHODS } from "@/constants/paymentMethods";
 import { Building2, Loader2, TrendingDown, TrendingUp } from "lucide-react";
 
-// THE single collab case entry form. Used by the collab panel and, unchanged, by the
-// admin emergency-entry modal on /admin/collab-settlement. Do not fork this per caller —
-// the whole point is that both entry points feed the same formula.
-//
-// Partial is the normal case: ONE amount field, and the "Who did the patient pay?" toggle above
-// it decides who it credits — not two separate "collected by us"/"collected by clinic" boxes
-// shown together (that used to invite filling in both, or the wrong one, for a single collection
-// event that only ever happens on one side at a time). "Patient paid the full package" pre-fills
-// that one field to the net chargeable amount and locks it; unchecking (or never checking it)
-// leaves it free to type, and the pre-fill stops the moment the user edits it themselves (see
-// amountsTouched below). Method/reference/bank-routing likewise describe whichever side is
-// currently selected — see the conditional block near the bottom.
-
 const PROCEDURE_OPTIONS = [
   "Sapphire FUE",
   "DHI",
@@ -35,7 +22,6 @@ const PROCEDURE_OPTIONS = [
   "Other",
 ];
 
-// A collab case records how the PATIENT paid — money coming in — so this is a revenue form.
 const METHOD_OPTIONS = REVENUE_METHODS;
 
 const PAYMENT_SOURCES = [
@@ -49,7 +35,6 @@ const getTodayIST = () =>
   new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
 
 export default function CollabCaseForm({
-  // Pre-selected clinic for the collab panel; admin passes nothing and picks from the dropdown.
   defaultClinic = "",
   onSuccess,
   onCancel,
@@ -67,9 +52,6 @@ export default function CollabCaseForm({
   const [discount, setDiscount] = useState(0);
   const [paymentSource, setPaymentSource] = useState("us");
   const [fullPackage, setFullPackage] = useState(false);
-  // One field for one collection event — credited to whichever side `paymentSource` currently
-  // points at (see ourReceived/clinicReceived below). Switching the toggle re-labels this same
-  // value rather than moving it between two boxes.
   const [amount, setAmount] = useState(0);
   const [amountsTouched, setAmountsTouched] = useState(false);
   const [method, setMethod] = useState("cash");
@@ -93,7 +75,6 @@ export default function CollabCaseForm({
         setPatients(data.patients || []);
       }
     } catch {
-      /* search failures are non-fatal — the user can retype */
     } finally {
       setPatientSearching(false);
     }
@@ -116,37 +97,23 @@ export default function CollabCaseForm({
 
   const selectedPatient = patientCache[patientId] || patients.find((p) => p._id === patientId);
 
-  // Read-only: the package already lives on Patient.payments.totalAmount (derived from
-  // counselling.finlpackage). Never written back to from here — a discount is applied on top
-  // instead, so the patient's own package figure stays the single source of truth.
   const grossPackage = selectedPatient?.payments?.totalAmount || 0;
   const discountNum = Number(discount) || 0;
-  // Everything downstream (split, collections, the settlement formula) works off the NET
-  // figure — that is what is actually chargeable and therefore what gets booked as revenue.
   const totalPackage = Math.round((grossPackage - discountNum) * 100) / 100;
   const ourShare = Math.round((totalPackage - (Number(clinicShare) || 0)) * 100) / 100;
   const discountInvalid = discountNum < 0 || discountNum > grossPackage;
 
-  // Partial is the normal case — the source toggle alone no longer assumes a full-package amount.
-  // Only the "Patient paid the full package" checkbox pre-fills the one amount field to the full
-  // net package, and only until the user types a value of their own (amountsTouched) — after
-  // that, the field is the source of truth. No longer depends on paymentSource: switching the
-  // toggle re-labels the same value instead of moving it between two boxes.
   useEffect(() => {
     if (amountsTouched) return;
     if (!fullPackage || !totalPackage) return;
     setAmount(totalPackage);
   }, [fullPackage, totalPackage, amountsTouched]);
 
-  // A new patient means a new package — let the pre-fill apply again.
   useEffect(() => {
     setAmountsTouched(false);
     setFullPackage(false);
   }, [patientId]);
 
-  // Credited to whichever side the toggle points at — never both, since this form only ever
-  // records ONE collection event. A part payment split across both sides is two separate entries
-  // (create the case with one, then Record Collection for the other), not one form submission.
   const amountNum = Number(amount) || 0;
   const ourReceived = paymentSource === "us" ? amountNum : 0;
   const clinicReceived = paymentSource === "clinic" ? amountNum : 0;
@@ -155,8 +122,6 @@ export default function CollabCaseForm({
   const overCollected = totalPackage > 0 && totalCollected - totalPackage > 0.01;
   const shareMismatch = totalPackage > 0 && ourShare < 0;
 
-  // The clinic's fixed fee is no longer booked per instalment — it crystallises once, when this
-  // entry brings the case to its full package amount. Only then is there a branch to preview.
   const isCompleting = totalPackage > 0 && totalPackage - totalCollected <= 0.01;
   const crystallisation = isCompleting
     ? deriveCrystallisation({ clinicReceived: Number(clinicReceived) || 0, clinicShare: Number(clinicShare) || 0 })
@@ -165,8 +130,6 @@ export default function CollabCaseForm({
   const formatPatientOption = (p) =>
     `${p.personal?.name || "N/A"} — Package: ${formatCurrency(p?.payments?.totalAmount)}`;
 
-  // Same rule every other money-movement form in this codebase applies (see SettleModal) —
-  // cash is the only method with no independently-verifiable trail, everything else needs one.
   const paymentIdMissing = method !== "cash" && !paymentId.trim();
 
   const canSubmit =
@@ -205,7 +168,6 @@ export default function CollabCaseForm({
       });
       const data = await res.json();
       if (!res.ok) {
-        // Server invariant messages name the exact numbers that disagreed — show verbatim.
         setError(data.error || "Failed to create collab case");
         return;
       }
@@ -219,7 +181,6 @@ export default function CollabCaseForm({
 
   return (
     <div className="space-y-5">
-      {/* Patient + clinic */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -243,7 +204,6 @@ export default function CollabCaseForm({
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Partner Clinic <span className="text-red-500">*</span>
           </label>
-          {/* COLLAB_BRANCHES only — a main branch must never be selectable here. */}
           <select
             value={clinic}
             onChange={(e) => setClinic(e.target.value)}
@@ -259,7 +219,6 @@ export default function CollabCaseForm({
         </div>
       </div>
 
-      {/* Package (read-only, from the patient) */}
       {patientId && grossPackage <= 0 && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700">
           This patient has no final package set. Set the patient&apos;s package (counselling →
@@ -349,7 +308,6 @@ export default function CollabCaseForm({
         </div>
       </div>
 
-      {/* Payment source — decides who the single amount field below credits. */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
           Who did the patient pay?
@@ -372,8 +330,6 @@ export default function CollabCaseForm({
         </div>
       </div>
 
-      {/* ONE amount field — credited to whichever side is selected above. Always editable for a
-          part payment; the checkbox only pre-fills (and locks) it to the full net package. */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
           Amount paid {paymentSource === "us" ? "to us" : `to ${clinic || "the clinic"}`} (₹)
@@ -396,8 +352,6 @@ export default function CollabCaseForm({
             onChange={(e) => {
               const checked = e.target.checked;
               setFullPackage(checked);
-              // Checking is a deliberate override — clear any earlier manual edit so the
-              // pre-fill below can apply.
               if (checked) setAmountsTouched(false);
             }}
           />
@@ -412,9 +366,6 @@ export default function CollabCaseForm({
         </p>
       )}
 
-      {/* Live preview. The clinic's fee is no longer booked per instalment, so a partial
-          collection (the normal case) shows only what actually happens now; only once this
-          entry completes the package does a payable/receivable branch become relevant. */}
       {totalPackage > 0 && (
         <div
           className={`rounded-lg border p-4 ${
@@ -477,11 +428,6 @@ export default function CollabCaseForm({
         </div>
       )}
 
-      {/* Method/reference/routing all describe THIS collection — i.e. whichever side is
-          currently selected above. When the clinic collected it, nothing lands in one of our own
-          accounts, so BankRoutingFields (receiptMode/furtherMode) is hidden entirely rather than
-          shown-then-silently-dropped: those fields have no meaning here and were never saved for
-          a clinic-side collection anyway. */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -532,9 +478,6 @@ export default function CollabCaseForm({
           )}
         </div>
         {paymentSource === "us" ? (
-          // Which account the money we collected actually landed in. Collab branches have no
-          // entry in BANK_ROUTING_MAP by design (see bankRouting.js), so these start blank and
-          // are picked manually rather than pre-filled.
           <BankRoutingFields
             costType="Revenue"
             branch={clinic}

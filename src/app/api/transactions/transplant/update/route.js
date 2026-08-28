@@ -1,4 +1,3 @@
-// app/api/transactions/transplant/update/route.js
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
@@ -12,7 +11,6 @@ import mongoose from "mongoose";
 
 export async function PUT(req) {
   try {
-    // Authentication check
     const session = await getServerSession(authOptions);
     if (!session?.user?.name || !session?.user?.email || !session?.user?.branch) {
       return NextResponse.json(
@@ -25,7 +23,6 @@ export async function PUT(req) {
 
     const data = await req.json();
 
-    // Validate transaction ID
     if (!data.transactionId || !mongoose.Types.ObjectId.isValid(data.transactionId)) {
       return NextResponse.json(
         { success: false, message: "Valid transaction ID is required" },
@@ -33,7 +30,6 @@ export async function PUT(req) {
       );
     }
 
-    // Find existing transaction
     const existingTransaction = await Transactions.findById(data.transactionId);
     if (!existingTransaction) {
       return NextResponse.json(
@@ -42,7 +38,6 @@ export async function PUT(req) {
       );
     }
 
-    // Verify it's a TRANSPLANT transaction
     if (existingTransaction.transactionCategory !== "TRANSPLANT") {
       return NextResponse.json(
         { success: false, message: "Not a transplant transaction" },
@@ -50,8 +45,6 @@ export async function PUT(req) {
       );
     }
 
-    // Closed-period guard. Checks both where this transaction currently sits and where the
-    // edit would move it, so a change can neither leave nor enter a frozen period.
     const locked = await periodLockResponse(existingTransaction, {
       date: data.date,
       furtherMode: data.furtherMode,
@@ -60,9 +53,6 @@ export async function PUT(req) {
       return NextResponse.json({ ...locked.body, message: locked.body.error }, { status: locked.status });
     }
 
-    // §2.2 — amount changes on a transaction that CREATED a linked document need explicit
-    // confirmation via updateLinked; payments AGAINST one self-correct via aggregation.
-    // This route patches selectively, so only flag when `amount` is actually in the payload.
     const linkedWarning =
       data.amount !== undefined
         ? await checkCascadeOnUpdate(existingTransaction, { amount: data.amount })
@@ -71,7 +61,6 @@ export async function PUT(req) {
       return NextResponse.json({ ...linkedWarning, message: linkedWarning.message }, { status: 409 });
     }
 
-    // Basic validations
     if (data.method !== undefined && !data.method) {
       return NextResponse.json(
         { success: false, message: "Payment method is required" },
@@ -86,7 +75,6 @@ export async function PUT(req) {
       );
     }
 
-    // Validate procedure if provided
     if (data.procedure !== undefined) {
       const validTransplantProcedures = ["Sapphire FUE", "DHI", "Turkish DHI", "Beard Transplant"];
       if (!validTransplantProcedures.includes(data.procedure)) {
@@ -97,19 +85,16 @@ export async function PUT(req) {
       }
     }
 
-    // Store original values
     const originalPatientId = existingTransaction.patient?.toString();
     const originalAmount = existingTransaction.amount || 0;
     const originalProcedure = existingTransaction.procedure;
     const originalDiscount = existingTransaction.discount || 0;
 
-    // New values
     const newPatientId = data.patientId?.toString();
     const newAmount = data.amount !== undefined ? Number(data.amount) : originalAmount;
     const newProcedure = data.procedure || originalProcedure;
     const newDiscount = data.discount !== undefined ? Number(data.discount) : originalDiscount;
 
-    // Track changed fields
     const updatedFields = [];
     const fieldMapping = {
       patientId: { name: "Patient", getValue: (val) => val?.toString() || "" },
@@ -124,16 +109,15 @@ export async function PUT(req) {
       remarks: { name: "Remarks", getValue: (val) => val || "" },
     };
 
-    // Compare fields and track changes
     Object.keys(data).forEach((key) => {
-      if (key === "transactionId") return; // Skip ID field
-      
+      if (key === "transactionId") return;
+
       if (fieldMapping[key]) {
         const mapping = fieldMapping[key];
         const fieldKey = key === "patientId" ? "patient" : key;
         const previousValue = mapping.getValue(existingTransaction[fieldKey]);
         const newValue = mapping.getValue(data[key]);
-        
+
         if (previousValue !== newValue) {
           updatedFields.push({
             name: mapping.name,
@@ -144,14 +128,12 @@ export async function PUT(req) {
       }
     });
 
-    // Prepare update data
     const { transactionId, patientId, ...updateData } = data;
-    
-    // Map patientId to patient field
+
     if (patientId !== undefined) {
       updateData.patient = patientId;
     }
-    
+
     if (updateData.amount !== undefined) {
       updateData.amount = Number(updateData.amount);
     }
@@ -159,7 +141,6 @@ export async function PUT(req) {
       updateData.discount = Number(updateData.discount);
     }
 
-    // Add editor to transaction with tracked fields
     const editorEntry = {
       name: session.user.name,
       email: session.user.email,
@@ -168,9 +149,6 @@ export async function PUT(req) {
       updatedFields: updatedFields,
     };
 
-    // Editing into / out of / within "Paid to External" has to move the linked Receivable with
-    // it, or the amount leaves the books entirely — see syncExternalPartyOnUpdate. Wrapped in a
-    // session so the receivable write and this transaction write commit or roll back together.
     let updatedTransaction;
     try {
       updatedTransaction = await withDbTransaction(async (dbSession) => {
@@ -195,8 +173,6 @@ export async function PUT(req) {
           { new: true, runValidators: true, session: dbSession },
         );
 
-        // Same session as the transaction write, so the linked total can never move while the
-        // amount that justified it fails to commit.
         if (linkedWarning && data.updateLinked) {
           await applyCascadeOnUpdate(existingTransaction, { amount: newAmount }, dbSession, {
             name: session.user.name,
@@ -207,12 +183,9 @@ export async function PUT(req) {
         return saved;
       });
     } catch (syncError) {
-      // These are deliberate refusals (money already settled against the linked receivable),
-      // not faults — surface the reason rather than a generic 500.
       return NextResponse.json({ success: false, message: syncError.message }, { status: 400 });
     }
 
-    // Function to recalculate patient payments for TRANSPLANT
     const recalculatePatientPayments = async (patientId) => {
       if (!patientId || !mongoose.Types.ObjectId.isValid(patientId)) {
         return null;
@@ -221,7 +194,6 @@ export async function PUT(req) {
       const patient = await Patient.findById(patientId);
       if (!patient) return null;
 
-      // Initialize payments
       patient.payments = patient.payments || {
         amountReceived: 0,
         pendingAmount: 0,
@@ -231,13 +203,11 @@ export async function PUT(req) {
         transactions: [],
       };
 
-      // Fetch all revenue transactions for this patient
       const allTransactions = await Transactions.find({
         _id: { $in: patient.payments.transactions },
         costType: "Revenue",
       });
 
-      // Recalculate from scratch (TRANSPLANT: all amounts go to amountReceived)
       let totalAmountReceived = 0;
       let totalDiscount = 0;
 
@@ -250,26 +220,21 @@ export async function PUT(req) {
       patient.payments.amountReceived = totalAmountReceived;
       patient.payments.discount = totalDiscount;
 
-      // Calculate pending amount
       const adjustedTotal = Math.max(0, patient.payments.totalAmount - totalDiscount);
       patient.payments.pendingAmount = Math.max(0, adjustedTotal - totalAmountReceived);
 
-      // Add editor to patient
       patient.editors = patient.editors || [];
       patient.editors.push(editorEntry);
 
       return await patient.save();
     };
 
-    // Handle patient updates
     const patientChanged = originalPatientId !== newPatientId;
     const dataChanged =
       originalAmount !== newAmount ||
       originalDiscount !== newDiscount;
 
-    // Patient changed - update both patients
     if (patientChanged) {
-      // Remove from original patient
       if (originalPatientId) {
         const originalPatient = await Patient.findById(originalPatientId);
         if (originalPatient?.payments) {
@@ -281,7 +246,6 @@ export async function PUT(req) {
         }
       }
 
-      // Add to new patient
       if (newPatientId) {
         const newPatient = await Patient.findById(newPatientId);
         if (newPatient) {
@@ -301,7 +265,6 @@ export async function PUT(req) {
         }
       }
     }
-    // Same patient but data changed
     else if (originalPatientId && dataChanged) {
       await recalculatePatientPayments(originalPatientId);
     }

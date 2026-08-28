@@ -94,7 +94,6 @@ export default function PerformancePage() {
       />
 
       <div className="w-full p-8 px-12 mx-auto">
-        {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">
             Performance Dashboard
@@ -104,7 +103,6 @@ export default function PerformancePage() {
           </p>
         </div>
 
-        {/* Filters */}
         <div className="bg-white rounded-lg shadow p-6 mb-6">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-lg font-semibold text-gray-900">Filters</h2>
@@ -162,9 +160,7 @@ export default function PerformancePage() {
           </div>
         </div>
 
-        {/* Charts Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Agent Performance Chart */}
           <div className="bg-white rounded-lg shadow p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
               Agent Performance (Revenue)
@@ -188,7 +184,6 @@ export default function PerformancePage() {
             </ResponsiveContainer>
           </div>
 
-          {/* Agent Patient Count Chart */}
           <div className="bg-white rounded-lg shadow p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
               Agent Performance (Patients)
@@ -211,7 +206,6 @@ export default function PerformancePage() {
             </ResponsiveContainer>
           </div>
 
-          {/* Revenue by Branch */}
           <div className="bg-white rounded-lg shadow p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
               Revenue by Branch
@@ -244,7 +238,6 @@ export default function PerformancePage() {
             </ResponsiveContainer>
           </div>
 
-          {/* Revenue by Procedure */}
           <div className="bg-white rounded-lg shadow p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
               Revenue by Procedure
@@ -268,7 +261,6 @@ export default function PerformancePage() {
             </ResponsiveContainer>
           </div>
 
-          {/* Monthly Revenue Trend */}
           <div className="bg-white rounded-lg shadow p-6 lg:col-span-2">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
               Monthly Revenue Trend
@@ -300,7 +292,6 @@ export default function PerformancePage() {
             </ResponsiveContainer>
           </div>
 
-          {/* Patient Status Distribution */}
           <div className="bg-white rounded-lg shadow p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
               Patient Status Distribution
@@ -331,7 +322,6 @@ export default function PerformancePage() {
             </ResponsiveContainer>
           </div>
 
-          {/* Conversion Funnel */}
           <div className="bg-white rounded-lg shadow p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
               Conversion Funnel
@@ -349,7 +339,6 @@ export default function PerformancePage() {
           </div>
         </div>
 
-        {/* Summary Stats */}
         <div className="mt-6 grid grid-cols-1 md:grid-cols-4 gap-6">
           <div className="bg-linear-to-br from-blue-500 to-blue-600 rounded-lg shadow p-6 text-white">
             <h3 className="text-sm font-medium opacity-90">Total Revenue</h3>
