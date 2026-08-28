@@ -3,9 +3,15 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import connectDB from "@/lib/db";
 import Transactions from "@/models/Transactions";
+import CollabCase from "@/models/CollabCase";
 import { checkPeriodLock } from "@/lib/periodLock";
 import { withDbTransaction } from "@/lib/externalPartyDerivation";
 import { reverseTransaction, ReversalError } from "@/lib/reverseTransaction";
+import {
+  computeCaseBalance,
+  isFullyCollected,
+  unwindClinicShareCrystallisation,
+} from "@/lib/collabDerivation";
 
 // Creates a REVERSAL: a negative-amount transaction pointing at the row it reverses.
 //
@@ -42,9 +48,42 @@ export async function POST(request, { params }) {
       branch: session.user.branch,
     };
 
-    const result = await withDbTransaction((dbSession) =>
-      reverseTransaction({ transactionId: id, amount, reason, remarks, date, actor, dbSession }),
-    );
+    const result = await withDbTransaction(async (dbSession) => {
+      const reversalResult = await reverseTransaction({
+        transactionId: id,
+        amount,
+        reason,
+        remarks,
+        date,
+        actor,
+        dbSession,
+      });
+
+      // Collab awareness: reversing one of a collab case's own collection transactions can drop
+      // a previously-completed case back under its package total. Crystallisation transactions
+      // themselves are excluded — those are unwound as a unit by unwindClinicShareCrystallisation,
+      // never individually. Runs in the SAME transaction as the reversal above, so either both
+      // commit or neither does — refusing to unwind (a real settlement already paid against the
+      // clinic payable) correctly refuses the collection reversal too.
+      const caseId = reversalResult.original.collabRef?.caseId;
+      const isCrystallisationRow = reversalResult.original.collabRef?.crystallisation === true;
+      if (caseId && !isCrystallisationRow) {
+        const collabCase = await CollabCase.findById(caseId).session(dbSession);
+        if (collabCase?.clinicShareSettledAt) {
+          const balance = await computeCaseBalance(caseId, dbSession);
+          if (!isFullyCollected(collabCase, balance)) {
+            await unwindClinicShareCrystallisation({
+              session: dbSession,
+              collabCase,
+              actor,
+              reason: `Collection reversed: ${reason}`,
+            });
+          }
+        }
+      }
+
+      return reversalResult;
+    });
 
     return NextResponse.json(
       {

@@ -23,7 +23,6 @@ import {
   ScrollText,
   FileText,
   Banknote,
-  ArrowLeftRight,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -193,24 +192,16 @@ export default function AdminSidebar() {
               active={isActive("/admin/liabilities")}
               onClick={close}
             />
-            {/* Deposits/loans/advances that must be repaid — see src/models/Borrowing.js. A
-                summary already lives inside Liabilities' own Borrowings section; this is the
-                dedicated CRUD page for the underlying rows and their loan documents. */}
+            {/* §4.1 — Borrowings (deposits/loans that must be repaid, src/models/Borrowing.js)
+                and Advances (money WE lent out that must come back, src/models/Advance.js) merged
+                into one page, two tabs. Summaries still live inside Liabilities'/Assets' own
+                sections; this is the dedicated CRUD page for the underlying rows and their loan/
+                advance documents, plus settling either against a party's own balance (§4.2). */}
             <NavItem
-              label="Borrowings"
-              href="/admin/borrowings"
+              label="Financing"
+              href="/admin/financing"
               icon={Banknote}
-              active={isActive("/admin/borrowings")}
-              onClick={close}
-            />
-            {/* The mirror: money WE lent out (advance salary/rent, personal advances) that must
-                come back — see src/models/Advance.js. Summary lives inside Assets' own Advances
-                section; this is the dedicated CRUD page. */}
-            <NavItem
-              label="Advances"
-              href="/admin/advances"
-              icon={ArrowLeftRight}
-              active={isActive("/admin/advances")}
+              active={isActive("/admin/financing")}
               onClick={close}
             />
             <NavItem

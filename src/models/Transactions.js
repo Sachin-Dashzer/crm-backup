@@ -194,6 +194,11 @@ const transactionSchema = new mongoose.Schema(
         index: true,
         default: null,
       },
+      // Marks the expense/offset-revenue rows crystalliseClinicShare itself writes when a case's
+      // running total first reaches its package amount — see collabDerivation.js. Lets an unwind
+      // (a reversed collection dropping the case back under its package) find exactly these rows
+      // and no others, without guessing from remarks text.
+      crystallisation: { type: Boolean, default: false },
     },
 
     // Set only when method is "paid_to_external" (revenue) or "paid_by_other" (expense) —

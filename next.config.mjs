@@ -24,6 +24,18 @@ const nextConfig = {
         destination: "/admin/assets?section=receivables",
         permanent: false,
       },
+      // §4.1 — Borrowings and Advances merged into one page, two tabs. Same "not permanent"
+      // reasoning as the pair above.
+      {
+        source: "/admin/borrowings",
+        destination: "/admin/financing?tab=borrowings",
+        permanent: false,
+      },
+      {
+        source: "/admin/advances",
+        destination: "/admin/financing?tab=advances",
+        permanent: false,
+      },
     ];
   },
 };

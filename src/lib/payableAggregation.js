@@ -15,9 +15,24 @@ import { UNSETTLED_METHODS } from "@/constants/bankRouting";
 // this $lookup simply matches nothing — no Borrowing row is ever created against a payableId
 // this route didn't itself hand out — so every existing report is unaffected.
 //
+// §4.2 — a third source: an Advance that SETTLES this payable (Advance.settlesPayableId — an
+// unrelated, pre-existing obligation an advance offsets, e.g. an advance paid to a rent vendor
+// settled against their own rent payable). Economically identical to a payment, so it folds into
+// the SAME "paid" — this is what makes the payable's pending (and every existing rollup that
+// sums it) drop automatically, with no other code needing to know settlement exists. `pending`
+// stays clamped at 0 exactly as before — never negative, so no existing consumer that sums it
+// across many documents can have one party's overpayment silently cancel another's balance. The
+// unclamped signed figure, for the single-document "advance in hand" display (see
+// DrillDownTable.jsx), is added separately below as netPending/advanceInHand — never by
+// touching this clamp.
+//
 // Ageing (daysOverdue / daysToDue / ageingBucket) is appended from the shared
 // buildAgeingStages() so the header summary and the table age rows identically.
-export function buildPayableAggregationStages(txCollectionName, borrowingsCollectionName = "borrowings") {
+export function buildPayableAggregationStages(
+  txCollectionName,
+  borrowingsCollectionName = "borrowings",
+  advancesCollectionName = "advances",
+) {
   return [
     {
       $lookup: {
@@ -65,17 +80,40 @@ export function buildPayableAggregationStages(txCollectionName, borrowingsCollec
       },
     },
     {
+      $lookup: {
+        from: advancesCollectionName,
+        let: { payableId: "$_id" },
+        pipeline: [
+          {
+            $match: {
+              $expr: {
+                $and: [
+                  { $eq: ["$settlesPayableId", "$$payableId"] },
+                  { $eq: ["$direction", "OUT"] },
+                  { $ne: ["$isCancelled", true] },
+                ],
+              },
+            },
+          },
+          { $group: { _id: null, paid: { $sum: "$amount" }, paymentCount: { $sum: 1 } } },
+        ],
+        as: "advanceSettlementAgg",
+      },
+    },
+    {
       $addFields: {
         paid: {
           $add: [
             { $ifNull: [{ $arrayElemAt: ["$paymentAgg.paid", 0] }, 0] },
             { $ifNull: [{ $arrayElemAt: ["$borrowingAgg.paid", 0] }, 0] },
+            { $ifNull: [{ $arrayElemAt: ["$advanceSettlementAgg.paid", 0] }, 0] },
           ],
         },
         paymentCount: {
           $add: [
             { $ifNull: [{ $arrayElemAt: ["$paymentAgg.paymentCount", 0] }, 0] },
             { $ifNull: [{ $arrayElemAt: ["$borrowingAgg.paymentCount", 0] }, 0] },
+            { $ifNull: [{ $arrayElemAt: ["$advanceSettlementAgg.paymentCount", 0] }, 0] },
           ],
         },
       },
@@ -83,6 +121,11 @@ export function buildPayableAggregationStages(txCollectionName, borrowingsCollec
     {
       $addFields: {
         pending: { $max: [{ $subtract: ["$totalAmount", "$paid"] }, 0] },
+        // §4.2 — unclamped signed pending, and the amount by which an advance settling this
+        // payable exceeds it ("advance in hand"). Never summed into a roll-up; read only by a
+        // single document's own display (see DrillDownTable.jsx's documentColumns).
+        netPending: { $subtract: ["$totalAmount", "$paid"] },
+        advanceInHand: { $max: [{ $subtract: ["$paid", "$totalAmount"] }, 0] },
         status: {
           $switch: {
             branches: [
@@ -109,7 +152,7 @@ export function buildPayableAggregationStages(txCollectionName, borrowingsCollec
       },
     },
     ...buildAgeingStages(),
-    { $project: { paymentAgg: 0, borrowingAgg: 0 } },
+    { $project: { paymentAgg: 0, borrowingAgg: 0, advanceSettlementAgg: 0 } },
   ];
 }
 

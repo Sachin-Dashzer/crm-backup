@@ -14,9 +14,20 @@ import { UNSETTLED_METHODS } from "@/constants/bankRouting";
 // didn't itself hand out — so every existing report is unaffected. Exact mirror of the borrowing
 // $lookup in payableAggregation.js; fix the two together.
 //
+// §4.2 — a third source: a Borrowing that SETTLES this receivable (Borrowing.settlesReceivableId
+// — money borrowed FROM a party who also owes us something else, netted against what they owe).
+// Folds into the SAME "received" for the identical reason the payable side folds an advance into
+// "paid" — see that file's header comment for the full reasoning (never clamp-breaking, the
+// unclamped signed figure is netPending/advanceInHand below, read only by a single document's
+// own display, never summed into a roll-up).
+//
 // Ageing comes from the same shared buildAgeingStages() the payable side uses, so "31–60 days"
 // means the same thing on both pages.
-export function buildReceivableAggregationStages(txCollectionName, advancesCollectionName = "advances") {
+export function buildReceivableAggregationStages(
+  txCollectionName,
+  advancesCollectionName = "advances",
+  borrowingsCollectionName = "borrowings",
+) {
   return [
     {
       $lookup: {
@@ -111,17 +122,40 @@ export function buildReceivableAggregationStages(txCollectionName, advancesColle
       },
     },
     {
+      $lookup: {
+        from: borrowingsCollectionName,
+        let: { receivableId: "$_id" },
+        pipeline: [
+          {
+            $match: {
+              $expr: {
+                $and: [
+                  { $eq: ["$settlesReceivableId", "$$receivableId"] },
+                  { $eq: ["$direction", "IN"] },
+                  { $ne: ["$isCancelled", true] },
+                ],
+              },
+            },
+          },
+          { $group: { _id: null, received: { $sum: "$amount" }, receiptCount: { $sum: 1 } } },
+        ],
+        as: "borrowingSettlementAgg",
+      },
+    },
+    {
       $addFields: {
         received: {
           $add: [
             { $ifNull: [{ $arrayElemAt: ["$receiptAgg.received", 0] }, 0] },
             { $ifNull: [{ $arrayElemAt: ["$advanceAgg.received", 0] }, 0] },
+            { $ifNull: [{ $arrayElemAt: ["$borrowingSettlementAgg.received", 0] }, 0] },
           ],
         },
         receiptCount: {
           $add: [
             { $ifNull: [{ $arrayElemAt: ["$receiptAgg.receiptCount", 0] }, 0] },
             { $ifNull: [{ $arrayElemAt: ["$advanceAgg.receiptCount", 0] }, 0] },
+            { $ifNull: [{ $arrayElemAt: ["$borrowingSettlementAgg.receiptCount", 0] }, 0] },
           ],
         },
       },
@@ -129,6 +163,9 @@ export function buildReceivableAggregationStages(txCollectionName, advancesColle
     {
       $addFields: {
         pending: { $max: [{ $subtract: ["$totalAmount", "$received"] }, 0] },
+        // §4.2 — mirror of payableAggregation.js's netPending/advanceInHand.
+        netPending: { $subtract: ["$totalAmount", "$received"] },
+        advanceInHand: { $max: [{ $subtract: ["$received", "$totalAmount"] }, 0] },
         status: {
           $switch: {
             branches: [
@@ -157,7 +194,7 @@ export function buildReceivableAggregationStages(txCollectionName, advancesColle
       },
     },
     ...buildAgeingStages(),
-    { $project: { receiptAgg: 0, advanceAgg: 0 } },
+    { $project: { receiptAgg: 0, advanceAgg: 0, borrowingSettlementAgg: 0 } },
   ];
 }
 

@@ -5,6 +5,7 @@ import connectDB from "@/lib/db";
 import mongoose from "mongoose";
 import Receivable from "@/models/Receivable";
 import Transactions from "@/models/Transactions";
+import Borrowing from "@/models/Borrowing";
 import DeleteLog from "@/models/DeleteLog";
 import { buildReceivableAggregationStages } from "@/lib/receivableAggregation";
 
@@ -100,6 +101,23 @@ export async function PATCH(req, { params }) {
     }
 
     if (isCancelled === true && !receivable.isCancelled) {
+      // §4.4 — mirror of the payable-side guard: refuse to cancel a receivable an open
+      // borrowing is settling (settlesReceivableId — see src/models/Borrowing.js).
+      const settlingBorrowing = await Borrowing.findOne({
+        settlesReceivableId: receivable._id,
+        isCancelled: { $ne: true },
+      });
+      if (settlingBorrowing) {
+        return NextResponse.json(
+          {
+            error:
+              `An open borrowing (₹${settlingBorrowing.amount.toLocaleString("en-IN")} from ` +
+              `${settlingBorrowing.party?.label || "a party"}) is settling this receivable. Unsettle it first.`,
+          },
+          { status: 409 },
+        );
+      }
+
       receivable.isCancelled = true;
       receivable.log.push({
         action: "Cancelled",
@@ -192,7 +210,7 @@ export async function DELETE(req, { params }) {
         {
           error:
             `${linkedAdvances} advance row(s) are recorded against this receivable. ` +
-            `Cancel those first (see /admin/advances), or cancel this receivable instead of ` +
+            `Cancel those first (see /admin/financing), or cancel this receivable instead of ` +
             `deleting it — deleting it now would leave those rows pointing at nothing.`,
         },
         { status: 409 },

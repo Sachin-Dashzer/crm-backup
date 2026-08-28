@@ -179,6 +179,9 @@ export async function PATCH(req, { params }) {
           }
 
           collabCase.status = "CANCELLED";
+          // Nothing recognises the clinic-share crystallisation any more — every linked
+          // transaction was just reversed above, and both documents were just soft-cancelled.
+          collabCase.clinicShareSettledAt = null;
           collabCase.log.push({
             action: "Cancelled",
             previousValue: "OPEN",
@@ -289,8 +292,8 @@ export async function DELETE(req, { params }) {
     // case that recorded it must reverse that too, or the patient permanently shows money
     // "received" with no transaction left to back it up. Two kinds of Revenue row are excluded
     // here, neither of which ever touched Patient.payments: a collectedBy:"CLINIC" row
-    // (method: "paid_to_external") and topUpClinicShare's own offset_settlement contra against
-    // the collab Receivable (receivableId set — see collabDerivation.js). collabSplit is no
+    // (method: "paid_to_external") and crystalliseClinicShare's own offset_settlement transaction
+    // against the collab Receivable (receivableId set — see collabDerivation.js). collabSplit is no
     // longer set on any transaction under the current write path, so this can no longer be read
     // off collabSplit.ourReceived the way it was before that fix.
     const ourReceivedTotal = linkedTx.reduce(

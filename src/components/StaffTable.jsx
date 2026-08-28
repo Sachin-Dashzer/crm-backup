@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   Filter, X, Plus, ChevronRight, ChevronLeft,
-  Search, TrendingUp, Edit, Users, IndianRupee, Activity, Trash2, Calendar, Stethoscope,
+  Search, TrendingUp, Edit, Users, IndianRupee, Activity, Trash2, Calendar, Stethoscope, Eye,
 } from "lucide-react";
 
 /* ─── Constants ──────────────────────────────────────────────── */
@@ -46,6 +46,9 @@ const EMPTY_FILTERS = {
      addEmployeePath,        // string | null — hides Add button if null
      editBasePath,           // e.g. "/admin/employees/update"
      canDelete,              // boolean — shows delete button in HR
+     viewBasePath,           // string | null — e.g. "/admin/employees"; adds a "View" link per
+                              // row (§3.4's employee detail / incentives-earned page) when set.
+                              // null by default — only the admin config opts in.
    }
 ═══════════════════════════════════════════════════════════════ */
 export default function StaffTable({ config = {} }) {
@@ -54,6 +57,7 @@ export default function StaffTable({ config = {} }) {
     addEmployeePath = null,
     editBasePath    = "/admin/employees/update",
     canDelete       = false,
+    viewBasePath    = null,
   } = config;
 
   /* ── State ── */
@@ -361,6 +365,15 @@ export default function StaffTable({ config = {} }) {
                           )}
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-1">
+                              {viewBasePath && (
+                                <Link
+                                  href={`${viewBasePath}/${item._id}`}
+                                  className="p-2 rounded-lg hover:bg-gray-100 text-gray-600 transition-colors"
+                                  title="View employee"
+                                >
+                                  <Eye className="w-4 h-4" />
+                                </Link>
+                              )}
                               <Link
                                 href={`${editBasePath}/${item._id}`}
                                 className="p-2 rounded-lg hover:bg-blue-50 text-blue-600 transition-colors"

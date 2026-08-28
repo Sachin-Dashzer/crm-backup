@@ -5,6 +5,7 @@ import mongoose from "mongoose";
 import connectDB from "@/lib/db";
 import Borrowing from "@/models/Borrowing";
 import Payable from "@/models/Payable";
+import Receivable from "@/models/Receivable";
 import { ACCOUNTS } from "@/constants/bankRouting";
 import { ALL_BRANCHES } from "@/lib/branches";
 import { checkPeriodLock } from "@/lib/periodLock";
@@ -93,14 +94,20 @@ async function resyncPayableTotal({ payableId, session, performedBy, note }) {
   return payable;
 }
 
-// Cancel / reinstate — never hard-deleted (see DELETE below for when a genuine removal is safe),
-// same convention as AccountTransfer/SuspenseEntry. A cancelled row stops counting toward both
-// the account balance (accountBalances.js) and the linked Payable's paid/pending
-// (payableAggregation.js).
+// Cancel / reinstate / settle / unsettle — never hard-deleted (see DELETE below for when a
+// genuine removal is safe), same convention as AccountTransfer/SuspenseEntry. A cancelled row
+// stops counting toward both the account balance (accountBalances.js) and the linked Payable's
+// paid/pending (payableAggregation.js).
 //
 // Cancelling an IN row is refused while any OUT row exists against the same Payable — that
 // money has already been (at least partly) repaid against the liability this IN created, and
 // erasing the IN out from under it would strand those repayments with nothing to point at.
+//
+// §4.3 — settle/unsettle link this row (the loan's own creating IN row only — the same one the
+// aggregation's settlesReceivableId $lookup filters on, see receivableAggregation.js) to an
+// UNRELATED, pre-existing Receivable for the same party, so this borrowing nets against what
+// that party separately owes us. Never mutates the target Receivable's totalAmount — only its
+// live received/pending aggregation changes, the moment this field is set.
 export async function PATCH(req, { params }) {
   try {
     const session = await getServerSession(authOptions);
@@ -116,10 +123,110 @@ export async function PATCH(req, { params }) {
     if (found.error) return NextResponse.json({ error: found.error }, { status: found.status });
     const borrowing = found.borrowing;
 
-    const { action, note } = await req.json();
-    if (!["cancel", "reinstate"].includes(action)) {
-      return NextResponse.json({ error: "action must be: cancel or reinstate" }, { status: 400 });
+    const body = await req.json();
+    const { action, note } = body;
+    if (!["cancel", "reinstate", "settle", "unsettle"].includes(action)) {
+      return NextResponse.json({ error: "action must be: cancel, reinstate, settle, or unsettle" }, { status: 400 });
     }
+
+    const performedBy = { name: session.user.name, email: session.user.email };
+
+    if (action === "settle" || action === "unsettle") {
+      if (borrowing.isCancelled) {
+        return NextResponse.json({ error: "Reinstate this borrowing before settling it" }, { status: 400 });
+      }
+      if (borrowing.direction !== "IN") {
+        return NextResponse.json(
+          { error: "Only the loan's own receiving (IN) row can settle a receivable" },
+          { status: 400 },
+        );
+      }
+
+      if (action === "unsettle") {
+        if (!borrowing.settlesReceivableId) {
+          return NextResponse.json({ error: "This borrowing isn't settling a receivable" }, { status: 400 });
+        }
+        const dbSession = await mongoose.startSession();
+        try {
+          await dbSession.withTransaction(async () => {
+            const target = await Receivable.findById(borrowing.settlesReceivableId).session(dbSession);
+            borrowing.log.push({
+              action: "Note Added",
+              note: note || `Unlinked from receivable ${borrowing.settlesReceivableId}`,
+              performedBy,
+              performedAt: new Date(),
+            });
+            borrowing.settlesReceivableId = null;
+            await borrowing.save({ session: dbSession });
+            if (target) {
+              target.log.push({
+                action: "Note Added",
+                note: note || `No longer settled by borrowing ${borrowing._id}`,
+                performedBy,
+                performedAt: new Date(),
+              });
+              await target.save({ session: dbSession });
+            }
+          });
+        } finally {
+          await dbSession.endSession();
+        }
+        return NextResponse.json({ message: "Settlement unlinked", borrowing });
+      }
+
+      // action === "settle"
+      if (borrowing.settlesReceivableId) {
+        return NextResponse.json(
+          { error: "Already settling a receivable — unsettle it first" },
+          { status: 400 },
+        );
+      }
+      const { settlesReceivableId } = body;
+      if (!settlesReceivableId || !mongoose.Types.ObjectId.isValid(settlesReceivableId)) {
+        return NextResponse.json({ error: "A valid settlesReceivableId is required" }, { status: 400 });
+      }
+      const target = await Receivable.findById(settlesReceivableId);
+      if (!target) {
+        return NextResponse.json({ error: "Receivable not found" }, { status: 404 });
+      }
+      if (target.isCancelled) {
+        return NextResponse.json({ error: "This receivable has been cancelled" }, { status: 400 });
+      }
+      // §4.3 — same-party restriction: cross-party settlement is almost always a data-entry
+      // error. A party with no refId (kind "OTHER") can never be matched this way.
+      if (!borrowing.party.refId || !target.payer?.refId || String(borrowing.party.refId) !== String(target.payer.refId)) {
+        return NextResponse.json(
+          { error: "This receivable belongs to a different party than this borrowing — settlement is restricted to the same party" },
+          { status: 400 },
+        );
+      }
+
+      const dbSession = await mongoose.startSession();
+      try {
+        await dbSession.withTransaction(async () => {
+          borrowing.settlesReceivableId = target._id;
+          borrowing.log.push({
+            action: "Note Added",
+            note: note || `Settling against receivable ${target._id} (${target.payer?.label || "party"})`,
+            performedBy,
+            performedAt: new Date(),
+          });
+          await borrowing.save({ session: dbSession });
+
+          target.log.push({
+            action: "Note Added",
+            note: note || `Settled by borrowing ${borrowing._id} (${borrowing.party.label})`,
+            performedBy,
+            performedAt: new Date(),
+          });
+          await target.save({ session: dbSession });
+        });
+      } finally {
+        await dbSession.endSession();
+      }
+      return NextResponse.json({ message: "Settlement linked", borrowing });
+    }
+
     if (action === "cancel" && borrowing.isCancelled) {
       return NextResponse.json({ error: "This borrowing is already cancelled" }, { status: 400 });
     }
@@ -127,7 +234,6 @@ export async function PATCH(req, { params }) {
       return NextResponse.json({ error: "This borrowing is not cancelled" }, { status: 400 });
     }
 
-    const performedBy = { name: session.user.name, email: session.user.email };
     const nextCancelled = action === "cancel";
 
     if (borrowing.direction === "IN" && action === "cancel") {

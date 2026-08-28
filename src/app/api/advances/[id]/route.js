@@ -5,6 +5,7 @@ import mongoose from "mongoose";
 import connectDB from "@/lib/db";
 import Advance from "@/models/Advance";
 import Receivable from "@/models/Receivable";
+import Payable from "@/models/Payable";
 import { ACCOUNTS } from "@/constants/bankRouting";
 import { ALL_BRANCHES } from "@/lib/branches";
 import { checkPeriodLock } from "@/lib/periodLock";
@@ -88,13 +89,19 @@ async function resyncReceivableTotal({ receivableId, session, performedBy, note 
   return receivable;
 }
 
-// Cancel / reinstate — never hard-deleted (see DELETE below), same convention as
-// /api/borrowings/[id]. A cancelled row stops counting toward both the account balance
+// Cancel / reinstate / settle / unsettle — never hard-deleted (see DELETE below), same convention
+// as /api/borrowings/[id]. A cancelled row stops counting toward both the account balance
 // (accountBalances.js) and the linked Receivable's received/pending (receivableAggregation.js).
 //
 // Cancelling an OUT row is refused while any IN row exists against the same Receivable — that
 // money has already been (at least partly) recovered against the claim this OUT created, and
 // erasing the OUT out from under it would strand those recoveries with nothing to point at.
+//
+// §4.3 — settle/unsettle link this row (the advance's own creating OUT row only — the same one
+// the aggregation's settlesPayableId $lookup filters on, see payableAggregation.js) to an
+// UNRELATED, pre-existing Payable for the same party (e.g. an advance paid to a rent vendor,
+// settled against their own outstanding rent payable). Never mutates the target Payable's
+// totalAmount — only its live paid/pending aggregation changes, the moment this field is set.
 export async function PATCH(req, { params }) {
   try {
     const session = await getServerSession(authOptions);
@@ -110,10 +117,110 @@ export async function PATCH(req, { params }) {
     if (found.error) return NextResponse.json({ error: found.error }, { status: found.status });
     const advance = found.advance;
 
-    const { action, note } = await req.json();
-    if (!["cancel", "reinstate"].includes(action)) {
-      return NextResponse.json({ error: "action must be: cancel or reinstate" }, { status: 400 });
+    const body = await req.json();
+    const { action, note } = body;
+    if (!["cancel", "reinstate", "settle", "unsettle"].includes(action)) {
+      return NextResponse.json({ error: "action must be: cancel, reinstate, settle, or unsettle" }, { status: 400 });
     }
+
+    const performedBy = { name: session.user.name, email: session.user.email };
+
+    if (action === "settle" || action === "unsettle") {
+      if (advance.isCancelled) {
+        return NextResponse.json({ error: "Reinstate this advance before settling it" }, { status: 400 });
+      }
+      if (advance.direction !== "OUT") {
+        return NextResponse.json(
+          { error: "Only the advance's own paid-out (OUT) row can settle a payable" },
+          { status: 400 },
+        );
+      }
+
+      if (action === "unsettle") {
+        if (!advance.settlesPayableId) {
+          return NextResponse.json({ error: "This advance isn't settling a payable" }, { status: 400 });
+        }
+        const dbSession = await mongoose.startSession();
+        try {
+          await dbSession.withTransaction(async () => {
+            const target = await Payable.findById(advance.settlesPayableId).session(dbSession);
+            advance.log.push({
+              action: "Note Added",
+              note: note || `Unlinked from payable ${advance.settlesPayableId}`,
+              performedBy,
+              performedAt: new Date(),
+            });
+            advance.settlesPayableId = null;
+            await advance.save({ session: dbSession });
+            if (target) {
+              target.log.push({
+                action: "Note Added",
+                note: note || `No longer settled by advance ${advance._id}`,
+                performedBy,
+                performedAt: new Date(),
+              });
+              await target.save({ session: dbSession });
+            }
+          });
+        } finally {
+          await dbSession.endSession();
+        }
+        return NextResponse.json({ message: "Settlement unlinked", advance });
+      }
+
+      // action === "settle"
+      if (advance.settlesPayableId) {
+        return NextResponse.json(
+          { error: "Already settling a payable — unsettle it first" },
+          { status: 400 },
+        );
+      }
+      const { settlesPayableId } = body;
+      if (!settlesPayableId || !mongoose.Types.ObjectId.isValid(settlesPayableId)) {
+        return NextResponse.json({ error: "A valid settlesPayableId is required" }, { status: 400 });
+      }
+      const target = await Payable.findById(settlesPayableId);
+      if (!target) {
+        return NextResponse.json({ error: "Payable not found" }, { status: 404 });
+      }
+      if (target.isCancelled) {
+        return NextResponse.json({ error: "This payable has been cancelled" }, { status: 400 });
+      }
+      // §4.3 — same-party restriction: cross-party settlement is almost always a data-entry
+      // error. A party with no refId (kind "OTHER") can never be matched this way.
+      if (!advance.party.refId || !target.payee?.refId || String(advance.party.refId) !== String(target.payee.refId)) {
+        return NextResponse.json(
+          { error: "This payable belongs to a different party than this advance — settlement is restricted to the same party" },
+          { status: 400 },
+        );
+      }
+
+      const dbSession = await mongoose.startSession();
+      try {
+        await dbSession.withTransaction(async () => {
+          advance.settlesPayableId = target._id;
+          advance.log.push({
+            action: "Note Added",
+            note: note || `Settling against payable ${target._id} (${target.payee?.label || "party"})`,
+            performedBy,
+            performedAt: new Date(),
+          });
+          await advance.save({ session: dbSession });
+
+          target.log.push({
+            action: "Note Added",
+            note: note || `Settled by advance ${advance._id} (${advance.party.label})`,
+            performedBy,
+            performedAt: new Date(),
+          });
+          await target.save({ session: dbSession });
+        });
+      } finally {
+        await dbSession.endSession();
+      }
+      return NextResponse.json({ message: "Settlement linked", advance });
+    }
+
     if (action === "cancel" && advance.isCancelled) {
       return NextResponse.json({ error: "This advance is already cancelled" }, { status: 400 });
     }
@@ -121,7 +228,6 @@ export async function PATCH(req, { params }) {
       return NextResponse.json({ error: "This advance is not cancelled" }, { status: 400 });
     }
 
-    const performedBy = { name: session.user.name, email: session.user.email };
     const nextCancelled = action === "cancel";
 
     if (advance.direction === "OUT" && action === "cancel") {

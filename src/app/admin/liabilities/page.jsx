@@ -478,7 +478,7 @@ function LiabilitiesPageInner() {
                 <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wide">Borrowings</h2>
               </div>
               <Link
-                href="/admin/borrowings"
+                href="/admin/financing?tab=borrowings"
                 className="inline-flex items-center gap-1 text-xs font-semibold text-violet-700 hover:text-violet-800"
               >
                 Manage all loans <ArrowUpRight className="w-3.5 h-3.5" />

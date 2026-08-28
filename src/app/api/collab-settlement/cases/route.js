@@ -83,9 +83,10 @@ export async function GET(request) {
         // collectedBy kinds without discriminating) — neither is a valid source for these totals
         // any more.
         //
-        // receivableId excluded (must be null): topUpClinicShare's offset_settlement contra and
-        // a later real THEY_PAID settlement both carry receivableId and represent the SAME money
-        // the paid_to_external row already counted here — counting them too would double it.
+        // receivableId excluded (must be null): crystalliseClinicShare's offset_settlement
+        // transaction and a later real THEY_PAID settlement both carry receivableId and represent
+        // the SAME money the paid_to_external row already counted here — counting them too would
+        // double it.
         $lookup: {
           from: txCollection,
           let: { caseId: "$_id" },

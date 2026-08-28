@@ -167,6 +167,17 @@ export async function reverseTransaction({
     if (original[f] !== undefined && original[f] !== null) doc[f] = original[f];
   }
 
+  // collabRef isn't in MIRRORED_FIELDS (that list is flat top-level fields) — mirrored separately
+  // since it's nested, and only caseId is meaningful to carry forward (every collab write path
+  // leaves collabRef.payableId/receivableId permanently null — see collabDerivation.js's own
+  // comments — and settlementId belongs to the settlement's own transaction, not a reversal of
+  // it). Without this, reversing a collab collection is invisible to every case-scoped
+  // aggregation (cumulativeClinicReceived, the case list, the over-collection guard), leaving a
+  // case's derived totals wrong immediately after the reversal meant to correct them.
+  if (original.collabRef?.caseId) {
+    doc.collabRef = { caseId: original.collabRef.caseId };
+  }
+
   const [reversal] = await Transactions.create(
     [
       {

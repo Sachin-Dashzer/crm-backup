@@ -602,7 +602,7 @@ function AssetsPageInner() {
                 <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wide">Advances</h2>
               </div>
               <Link
-                href="/admin/advances"
+                href="/admin/financing?tab=advances"
                 className="inline-flex items-center gap-1 text-xs font-semibold text-teal-700 hover:text-teal-800"
               >
                 Manage all advances <ArrowUpRight className="w-3.5 h-3.5" />

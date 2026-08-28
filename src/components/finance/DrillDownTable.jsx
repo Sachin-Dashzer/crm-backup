@@ -654,7 +654,24 @@ export default function DrillDownTable({
       numeric: true,
       render: (r) => formatCurrency(isPayableSection ? r.paid : r.received),
     },
-    { key: "pending", label: "Pending", numeric: true },
+    {
+      key: "pending",
+      label: "Pending",
+      numeric: true,
+      // §4.2 — an advance/borrowing settling this document can exceed its outstanding, going
+      // negative ("advance in hand"). `pending` itself stays the existing clamped-at-zero figure
+      // every roll-up already sums; advanceInHand (never clamped, never summed elsewhere) is
+      // what surfaces that condition here, on this one document's own row, in a distinct style —
+      // never silently offsetting anything else.
+      render: (r) =>
+        r.advanceInHand > 0 ? (
+          <span className="text-amber-700 font-semibold" title="Advance in hand — this party has been paid more than they're currently owed">
+            −{formatCurrency(r.advanceInHand)} <span className="text-[10px] font-normal">(advance in hand)</span>
+          </span>
+        ) : (
+          formatCurrency(r.pending)
+        ),
+    },
     {
       key: "status",
       label: "Status",

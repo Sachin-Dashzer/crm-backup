@@ -76,6 +76,19 @@ const advanceSchema = new mongoose.Schema(
       index: true,
     },
 
+    // §4.2 — an existing, UNRELATED Payable this advance offsets (e.g. an advance paid to a rent
+    // vendor, settled against their own outstanding rent payable) — distinct from `receivableId`
+    // above, which is the Receivable THIS advance itself created. Only ever set on the creating
+    // ("OUT") row of a running advance — see the settle/unsettle actions in
+    // src/app/api/advances/[id]/route.js. Never mutates the target Payable's totalAmount; only
+    // its live paid/pending aggregation (src/lib/payableAggregation.js) changes.
+    settlesPayableId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Payable",
+      default: null,
+      index: true,
+    },
+
     // Optional, same rule as AccountTransfer/SuspenseEntry/Borrowing: null means company-level,
     // and a branch-filtered view shows only rows tagged to that branch.
     branch: { type: String, enum: ALL_BRANCHES, default: null, index: true },

@@ -3,8 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import connectDB from "@/lib/db";
 import CollabCase from "@/models/CollabCase";
-import Transactions from "@/models/Transactions";
-import { recordCollabCollectionAtomic } from "@/lib/collabDerivation";
+import { recordCollabCollectionAtomic, computeCaseBalance } from "@/lib/collabDerivation";
 
 // Records a later instalment against a collab case — either the patient paying US more
 // (collectedBy: "US") or the clinic collecting more directly (collectedBy: "CLINIC", the
@@ -65,34 +64,10 @@ export async function POST(req, { params }) {
       return NextResponse.json({ error: "This case has been cancelled" }, { status: 400 });
     }
 
-    // How much of THIS case's package is already accounted for — every collabRef-linked revenue
-    // transaction, both collected-by-us and collected-by-clinic (a paid_to_external transaction
-    // still represents money genuinely off the patient's outstanding balance, even though it
-    // hasn't reached one of our own accounts).
-    //
-    // FIXED: this used to match on `patient: collabCase.patient` with no collabRef filter at
-    // all, so an unrelated direct payment by the same patient (e.g. a normal transplant payment
-    // that has nothing to do with this collab case) silently reduced this case's remaining
-    // balance. Scoped to this case's own transactions only.
-    //
-    // receivableId: null excludes two kinds of rows that are NOT a new collection off the
-    // package: topUpClinicShare's own offset_settlement contra (see collabDerivation.js — it
-    // pays down the collab Receivable for revenue already counted by the paid_to_external row
-    // that raised it) and a real THEY_PAID settlement collecting against that same Receivable
-    // later. Counting either here would double an amount already collected once.
-    const [agg] = await Transactions.aggregate([
-      {
-        $match: {
-          "collabRef.caseId": collabCase._id,
-          costType: "Revenue",
-          approvalStatus: { $nin: ["PENDING", "REJECTED"] },
-          receivableId: null,
-        },
-      },
-      { $group: { _id: null, totalCollected: { $sum: "$amount" }, totalDiscount: { $sum: "$discount" } } },
-    ]);
-    const totalCollected = agg?.totalCollected || 0;
-    const totalDiscount = agg?.totalDiscount || 0;
+    // How much of THIS case's package is already accounted for — same aggregation
+    // crystalliseClinicShare's completion check and the reversal-driven unwind check use (see
+    // collabDerivation.js's computeCaseBalance), so all three can never disagree on "remaining".
+    const { totalCollected, totalDiscount } = await computeCaseBalance(collabCase._id);
     const remaining = round2(collabCase.packageAmount - totalCollected - totalDiscount);
 
     if (parsedAmount + parsedDiscount > remaining && !allowOverpayment) {

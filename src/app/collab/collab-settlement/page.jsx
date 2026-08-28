@@ -16,6 +16,14 @@ import {
   TrendingUp,
   TrendingDown,
   Loader2,
+  User,
+  Wallet,
+  CreditCard,
+  StickyNote,
+  AlertTriangle,
+  CheckCircle2,
+  Percent,
+  IndianRupee,
 } from "lucide-react";
 
 // The collab panel's read-oriented view of the same running account with partner clinics that
@@ -341,17 +349,21 @@ export default function CollabSettlementPage() {
                           </div>
                           <div>
                             <span className="text-gray-500">Case Net </span>
-                            <span
-                              className={`font-bold ${
-                                c.caseNet > 0
-                                  ? "text-emerald-700"
-                                  : c.caseNet < 0
-                                    ? "text-rose-600"
-                                    : "text-gray-500"
-                              }`}
-                            >
-                              {formatCurrency(c.caseNet)}
-                            </span>
+                            {c.clinicShareSettledAt ? (
+                              <span
+                                className={`font-bold ${
+                                  c.caseNet > 0
+                                    ? "text-emerald-700"
+                                    : c.caseNet < 0
+                                      ? "text-rose-600"
+                                      : "text-gray-500"
+                                }`}
+                              >
+                                {formatCurrency(c.caseNet)}
+                              </span>
+                            ) : (
+                              <span className="font-medium text-gray-400 italic">Pending completion</span>
+                            )}
                           </div>
                         </div>
                         {c.status === "OPEN" && (
@@ -441,15 +453,19 @@ export default function CollabSettlementPage() {
                                 {formatCurrency(c.patientOutstanding)}
                               </td>
                               <td
-                                className={`px-3 py-2 text-right font-bold ${
-                                  c.caseNet > 0
-                                    ? "text-emerald-700"
-                                    : c.caseNet < 0
-                                      ? "text-rose-600"
-                                      : "text-gray-500"
-                                }`}
+                                className={
+                                  c.clinicShareSettledAt
+                                    ? `px-3 py-2 text-right font-bold ${
+                                        c.caseNet > 0
+                                          ? "text-emerald-700"
+                                          : c.caseNet < 0
+                                            ? "text-rose-600"
+                                            : "text-gray-500"
+                                      }`
+                                    : "px-3 py-2 text-right font-medium text-gray-400 italic"
+                                }
                               >
-                                {formatCurrency(c.caseNet)}
+                                {c.clinicShareSettledAt ? formatCurrency(c.caseNet) : "Pending completion"}
                               </td>
                               <td className="px-3 py-2">
                                 <StatusBadge status={c.status} />
@@ -683,6 +699,9 @@ function RecordCollectionModal({ collabCase, onClose, onSuccess, toast }) {
   // why this modal existed in the first place.
   const [collectedBy, setCollectedBy] = useState("CLINIC");
   const [amount, setAmount] = useState("");
+  // Pre-fills `amount` to the patient's full remaining outstanding and locks it — the shortcut
+  // for "this collection completes the case", mirroring CollabCaseForm's own checkbox.
+  const [fullPackage, setFullPackage] = useState(false);
   // A waiver granted at the time of this collection — reduces the patient's outstanding the
   // same as a payment would, but is never money collected (see the model comment on
   // clinicCollections.discount).
@@ -703,6 +722,12 @@ function RecordCollectionModal({ collabCase, onClose, onSuccess, toast }) {
   const [note, setNote] = useState("");
   const [allowOverpayment, setAllowOverpayment] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  // Deliberate override, not a continuous lock: checking pre-fills once; unchecking just leaves
+  // the current value editable rather than resetting it.
+  useEffect(() => {
+    if (fullPackage) setAmount(String(collabCase.patientOutstanding || 0));
+  }, [fullPackage, collabCase.patientOutstanding]);
 
   const overBalance = parseFloat(amount || 0) + parseFloat(discount || 0) > collabCase.patientOutstanding;
 
@@ -759,192 +784,260 @@ function RecordCollectionModal({ collabCase, onClose, onSuccess, toast }) {
     }
   };
 
+  const inputBase =
+    "w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-900 shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-400 disabled:bg-gray-50 disabled:text-gray-400";
+
+  const SectionLabel = ({ children }) => (
+    <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-3">{children}</p>
+  );
+
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full">
-        <div className="flex items-center justify-between p-5 border-b border-gray-100">
-          <h3 className="text-lg font-bold text-gray-900">Record Collection</h3>
-          <button onClick={onClose} className="p-1.5 hover:bg-gray-100 rounded-lg">
-            <X className="w-5 h-5 text-gray-500" />
+    <div className="fixed inset-0 bg-gray-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[92vh] flex flex-col overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100 shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center shrink-0">
+              <IndianRupee className="w-5 h-5 text-indigo-600" />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-gray-900">Record Collection</h3>
+              <p className="text-xs text-gray-500">{collabCase.patientName || "Patient"} · {collabCase.clinic}</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+            <X className="w-4 h-4 text-gray-400" />
           </button>
         </div>
-        <div className="p-5 space-y-4">
+
+        {/* Body */}
+        <div className="px-6 py-5 space-y-6 overflow-y-auto">
+          {/* Who collected */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Who collected this?</label>
-            <div className="grid grid-cols-2 gap-2">
+            <SectionLabel>Who collected this?</SectionLabel>
+            <div className="grid grid-cols-2 gap-2.5">
               <button
                 type="button"
                 onClick={() => setCollectedBy("CLINIC")}
-                className={`px-3 py-2 rounded-lg text-sm font-semibold border ${
+                className={`flex items-center justify-center gap-2 px-3 py-3 rounded-xl text-sm font-semibold border-2 transition-all ${
                   collectedBy === "CLINIC"
-                    ? "bg-indigo-600 text-white border-indigo-600"
-                    : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                    ? "bg-indigo-50 text-indigo-700 border-indigo-400 shadow-sm"
+                    : "bg-white text-gray-500 border-gray-200 hover:border-gray-300"
                 }`}
               >
-                {collabCase.clinic}
+                <Building2 className="w-4 h-4 shrink-0" />
+                <span className="truncate">{collabCase.clinic}</span>
               </button>
               <button
                 type="button"
                 onClick={() => setCollectedBy("US")}
-                className={`px-3 py-2 rounded-lg text-sm font-semibold border ${
+                className={`flex items-center justify-center gap-2 px-3 py-3 rounded-xl text-sm font-semibold border-2 transition-all ${
                   collectedBy === "US"
-                    ? "bg-indigo-600 text-white border-indigo-600"
-                    : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                    ? "bg-emerald-50 text-emerald-700 border-emerald-400 shadow-sm"
+                    : "bg-white text-gray-500 border-gray-200 hover:border-gray-300"
                 }`}
               >
+                <User className="w-4 h-4 shrink-0" />
                 Us directly
               </button>
             </div>
-          </div>
 
-          {collectedBy === "CLINIC" ? (
-            <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-3 text-sm text-indigo-800">
-              This records money{" "}
-              <strong>
-                {collabCase.patientName || "the patient"} paid directly to {collabCase.clinic}
-              </strong>{" "}
-              — not money paid to us. It still books revenue right now, the same as any other collab
-              collection — it just never lands in one of our own cash/bank accounts.
-            </div>
-          ) : (
-            <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 text-sm text-emerald-800">
-              This records money{" "}
-              <strong>{collabCase.patientName || "the patient"} paid US directly</strong> — an
-              ordinary payment, exactly like a direct transplant/service payment. It lands in one of
-              our own accounts below and updates the patient&apos;s own payment record.
-            </div>
-          )}
-
-          <div className="bg-gray-50 rounded-lg p-3 text-sm">
-            <p className="text-gray-500">
-              Patient outstanding:{" "}
-              <span className="font-bold text-amber-700">
-                {formatCurrency(collabCase.patientOutstanding)}
-              </span>
-            </p>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              Amount {collabCase.patientName || "patient"} paid{" "}
-              {collectedBy === "US" ? "us directly" : collabCase.clinic} (₹) *
-            </label>
-            <input
-              type="number"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              min="0"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-              placeholder="0"
-            />
-            {overBalance && (
-              <label className="flex items-center gap-2 mt-2 text-xs text-amber-700">
-                <input
-                  type="checkbox"
-                  checked={allowOverpayment}
-                  onChange={(e) => setAllowOverpayment(e.target.checked)}
-                />
-                Exceeds patient&apos;s outstanding balance — allow anyway
-              </label>
+            {collectedBy === "CLINIC" ? (
+              <div className="flex gap-2.5 mt-3 bg-indigo-50/70 border border-indigo-100 rounded-xl p-3">
+                <Building2 className="w-4 h-4 text-indigo-500 shrink-0 mt-0.5" />
+                <p className="text-xs leading-relaxed text-indigo-800">
+                  Money <strong>{collabCase.patientName || "the patient"}</strong> paid directly to{" "}
+                  <strong>{collabCase.clinic}</strong> — not to us. Still books revenue right now,
+                  it just never lands in one of our own cash/bank accounts.
+                </p>
+              </div>
+            ) : (
+              <div className="flex gap-2.5 mt-3 bg-emerald-50/70 border border-emerald-100 rounded-xl p-3">
+                <User className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                <p className="text-xs leading-relaxed text-emerald-800">
+                  Money <strong>{collabCase.patientName || "the patient"}</strong> paid{" "}
+                  <strong>us directly</strong> — an ordinary payment. Lands in one of our own
+                  accounts below and updates the patient&apos;s own payment record.
+                </p>
+              </div>
             )}
           </div>
 
+          {/* Amount */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Discount / Waiver (₹)</label>
-            <input
-              type="number"
-              value={discount}
-              onChange={(e) => setDiscount(e.target.value)}
-              min="0"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-              placeholder="0"
-            />
-            <p className="text-xs text-gray-400 mt-1">
-              Reduces the patient&apos;s outstanding without being money collected — not part of the amount above.
-            </p>
-          </div>
+            <SectionLabel>Amount</SectionLabel>
+            <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 space-y-3.5">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-gray-500 flex items-center gap-1.5">
+                  <Wallet className="w-3.5 h-3.5" /> Patient outstanding
+                </span>
+                <span className="font-bold text-amber-700">{formatCurrency(collabCase.patientOutstanding)}</span>
+              </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Date</label>
-              <input
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Payment Method</label>
-              <select
-                value={paymentMethod}
-                onChange={(e) => setPaymentMethod(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1.5">
+                  Paid {collectedBy === "US" ? "to us directly" : `to ${collabCase.clinic}`}{" "}
+                  <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-sm">₹</span>
+                  <input
+                    type="number"
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    min="0"
+                    disabled={fullPackage}
+                    className={`${inputBase} pl-7 text-base font-semibold`}
+                    placeholder="0"
+                  />
+                </div>
+              </div>
+
+              <label
+                className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg border cursor-pointer transition-colors ${
+                  fullPackage ? "bg-indigo-50 border-indigo-300" : "bg-white border-gray-200 hover:border-gray-300"
+                }`}
               >
-                {[...REVENUE_METHODS, { value: "other", label: "Other" }].map((m) => (
-                  <option key={m.value} value={m.value}>
-                    {m.label}
-                  </option>
-                ))}
-              </select>
+                <input
+                  type="checkbox"
+                  checked={fullPackage}
+                  onChange={(e) => setFullPackage(e.target.checked)}
+                  className="accent-indigo-600 w-4 h-4 shrink-0"
+                />
+                <CheckCircle2 className={`w-3.5 h-3.5 shrink-0 ${fullPackage ? "text-indigo-600" : "text-gray-300"}`} />
+                <span className={`text-xs font-medium ${fullPackage ? "text-indigo-800" : "text-gray-600"}`}>
+                  This completes the case — pay the full remaining outstanding
+                </span>
+              </label>
+
+              {overBalance && (
+                <label className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg border border-amber-300 bg-amber-50 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={allowOverpayment}
+                    onChange={(e) => setAllowOverpayment(e.target.checked)}
+                    className="accent-amber-600 w-4 h-4 shrink-0"
+                  />
+                  <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                  <span className="text-xs font-medium text-amber-800">
+                    Exceeds patient&apos;s outstanding balance — allow anyway
+                  </span>
+                </label>
+              )}
+
+              <div>
+                <label className="flex items-center gap-1.5 text-xs font-medium text-gray-600 mb-1.5">
+                  <Percent className="w-3 h-3" /> Discount / Waiver (₹)
+                </label>
+                <input
+                  type="number"
+                  value={discount}
+                  onChange={(e) => setDiscount(e.target.value)}
+                  min="0"
+                  className={inputBase}
+                  placeholder="0"
+                />
+                <p className="text-[11px] text-gray-400 mt-1.5">
+                  Reduces the patient&apos;s outstanding without being money collected — not part of the amount above.
+                </p>
+              </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <BankRoutingFields
-              costType="Revenue"
-              branch={collabCase.clinic}
-              transactionCategory="TRANSPLANT"
-              method={paymentMethod}
-              receiptMode={receiptMode}
-              furtherMode={furtherMode}
-              onChange={(patch) => {
-                if (patch.receiptMode !== undefined) setReceiptMode(patch.receiptMode);
-                if (patch.furtherMode !== undefined) setFurtherMode(patch.furtherMode);
-              }}
-            />
-          </div>
-          {collectedBy === "US" && (
-            <p className="text-xs text-gray-400 -mt-2">
-              This is where the money actually lands — the same account fields any direct payment uses.
-            </p>
-          )}
-
+          {/* Payment details */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              Transaction ID / Reference {paymentMethod !== "cash" && <span className="text-red-500">*</span>}
-            </label>
-            <input
-              type="text"
-              value={reference}
-              onChange={(e) => setReference(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-              placeholder={paymentMethod === "cash" ? "Optional" : "Required for non-cash payments"}
-            />
+            <SectionLabel>Payment Details</SectionLabel>
+            <div className="space-y-3.5">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1.5">Date</label>
+                  <input
+                    type="date"
+                    value={date}
+                    onChange={(e) => setDate(e.target.value)}
+                    className={inputBase}
+                  />
+                </div>
+                <div>
+                  <label className="flex items-center gap-1.5 text-xs font-medium text-gray-600 mb-1.5">
+                    <CreditCard className="w-3 h-3" /> Payment Method
+                  </label>
+                  <select
+                    value={paymentMethod}
+                    onChange={(e) => setPaymentMethod(e.target.value)}
+                    className={inputBase}
+                  >
+                    {[...REVENUE_METHODS, { value: "other", label: "Other" }].map((m) => (
+                      <option key={m.value} value={m.value}>
+                        {m.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <BankRoutingFields
+                  costType="Revenue"
+                  branch={collabCase.clinic}
+                  transactionCategory="TRANSPLANT"
+                  method={paymentMethod}
+                  receiptMode={receiptMode}
+                  furtherMode={furtherMode}
+                  onChange={(patch) => {
+                    if (patch.receiptMode !== undefined) setReceiptMode(patch.receiptMode);
+                    if (patch.furtherMode !== undefined) setFurtherMode(patch.furtherMode);
+                  }}
+                />
+              </div>
+              {collectedBy === "US" && (
+                <p className="text-[11px] text-gray-400 -mt-2">
+                  This is where the money actually lands — the same account fields any direct payment uses.
+                </p>
+              )}
+
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1.5">
+                  Transaction ID / Reference {paymentMethod !== "cash" && <span className="text-red-500">*</span>}
+                </label>
+                <input
+                  type="text"
+                  value={reference}
+                  onChange={(e) => setReference(e.target.value)}
+                  className={inputBase}
+                  placeholder={paymentMethod === "cash" ? "Optional" : "Required for non-cash payments"}
+                />
+              </div>
+            </div>
           </div>
 
+          {/* Note */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Note</label>
+            <SectionLabel>
+              <span className="inline-flex items-center gap-1.5"><StickyNote className="w-3 h-3" /> Note</span>
+            </SectionLabel>
             <textarea
               value={note}
               onChange={(e) => setNote(e.target.value)}
               rows={2}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg resize-none"
+              className={`${inputBase} resize-none`}
               placeholder="Optional"
             />
           </div>
         </div>
-        <div className="flex gap-3 p-5 border-t border-gray-100">
+
+        {/* Footer */}
+        <div className="flex gap-3 px-6 py-4 border-t border-gray-100 bg-gray-50/50 shrink-0">
           <button
             onClick={onClose}
-            className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl font-semibold text-gray-700 hover:bg-gray-50"
+            className="flex-1 px-4 py-2.5 border border-gray-200 bg-white rounded-xl font-semibold text-sm text-gray-700 hover:bg-gray-50 transition-colors"
           >
             Cancel
           </button>
           <button
             onClick={handleSubmit}
             disabled={submitting}
-            className="flex-1 px-4 py-2.5 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 disabled:opacity-50 flex items-center justify-center gap-2"
+            className="flex-1 px-4 py-2.5 bg-indigo-600 text-white rounded-xl font-semibold text-sm shadow-sm hover:bg-indigo-700 disabled:opacity-50 flex items-center justify-center gap-2 transition-colors"
           >
             {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save Collection"}
           </button>

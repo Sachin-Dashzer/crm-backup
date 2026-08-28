@@ -11,7 +11,11 @@ import {
   Eye,
   Droplet,
   Clock,
+  Gift,
+  Plus,
+  Ban,
 } from "lucide-react";
+import AddIncentiveModal from "@/components/finance/AddIncentiveModal";
 
 const PatientProfile = () => {
   const params = useParams();
@@ -19,6 +23,7 @@ const PatientProfile = () => {
   const [patientData, setPatientData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState(null);
+  const [showAddIncentive, setShowAddIncentive] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -78,6 +83,42 @@ const PatientProfile = () => {
     }
     
     return "N/A";
+  };
+
+  // §3.4 — locally mutate patientData rather than refetching the whole patient after an
+  // incentives change; both API calls return the exact row that changed, so this is always
+  // in sync with what the server just wrote.
+  const handleIncentiveAdded = (data) => {
+    setPatientData((prev) => ({
+      ...prev,
+      incentives: [...(prev.incentives || []), data.incentive],
+      totalIncentives: (prev.totalIncentives || 0) + (data.incentive?.amount || 0),
+    }));
+    setShowAddIncentive(false);
+  };
+
+  const handleCancelIncentive = async (incentive) => {
+    const reason = window.prompt("Reason for cancelling this incentive (optional):", "");
+    if (reason === null) return; // dismissed
+    try {
+      const res = await fetch(`/api/patients/${id}/incentives/${incentive._id}`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || "Failed to cancel incentive");
+        return;
+      }
+      setPatientData((prev) => ({
+        ...prev,
+        incentives: (prev.incentives || []).map((i) => (i._id === incentive._id ? data.incentive : i)),
+        totalIncentives: (prev.totalIncentives || 0) - (incentive.amount || 0),
+      }));
+    } catch {
+      alert("Failed to cancel incentive");
+    }
   };
 
   // Helper functions for formatting
@@ -1394,6 +1435,89 @@ const PatientProfile = () => {
                     </div>
                   )}
               </div>
+
+              {/* §3.4 — Incentives Section: money owed to employees FOR this patient, backed by
+                  a real Payable the moment it's added — see src/lib/incentiveDerivation.js. */}
+              <div className="mb-8">
+                <div className="flex items-center justify-between mb-4 border-b pb-2">
+                  <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                    <Gift className="w-5 h-5 text-indigo-600" /> INCENTIVES
+                  </h2>
+                  <button
+                    type="button"
+                    onClick={() => setShowAddIncentive(true)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700"
+                  >
+                    <Plus className="w-4 h-4" /> Add Incentive
+                  </button>
+                </div>
+
+                <p className="text-sm text-gray-600 mb-3">
+                  Total incentives on this patient:{" "}
+                  <span className="font-bold text-gray-900">
+                    {formatCurrency(patientData.totalIncentives)}
+                  </span>
+                </p>
+
+                {patientData.incentives && patientData.incentives.length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <table className="w-full border-collapse border border-gray-300">
+                      <thead>
+                        <tr className="bg-gray-100">
+                          <th className="border border-gray-300 px-4 py-2 text-left text-sm font-medium text-gray-700">Employee</th>
+                          <th className="border border-gray-300 px-4 py-2 text-left text-sm font-medium text-gray-700">Role</th>
+                          <th className="border border-gray-300 px-4 py-2 text-left text-sm font-medium text-gray-700">Purpose</th>
+                          <th className="border border-gray-300 px-4 py-2 text-left text-sm font-medium text-gray-700">Date</th>
+                          <th className="border border-gray-300 px-4 py-2 text-right text-sm font-medium text-gray-700">Amount</th>
+                          <th className="border border-gray-300 px-4 py-2 text-left text-sm font-medium text-gray-700">Status</th>
+                          <th className="border border-gray-300 px-4 py-2 text-right text-sm font-medium text-gray-700">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {patientData.incentives.map((incentive) => (
+                          <tr
+                            key={incentive._id}
+                            className={`hover:bg-gray-50 ${incentive.isCancelled ? "text-gray-400 line-through" : ""}`}
+                          >
+                            <td className="border border-gray-300 px-4 py-2 text-sm">{incentive.employeeName || "N/A"}</td>
+                            <td className="border border-gray-300 px-4 py-2 text-sm">{incentive.role || "N/A"}</td>
+                            <td className="border border-gray-300 px-4 py-2 text-sm">{incentive.purpose}</td>
+                            <td className="border border-gray-300 px-4 py-2 text-sm">{formatDate(incentive.date)}</td>
+                            <td className="border border-gray-300 px-4 py-2 text-sm text-right font-medium">
+                              {formatCurrency(incentive.amount)}
+                            </td>
+                            <td className="border border-gray-300 px-4 py-2 text-sm">
+                              {incentive.isCancelled ? "Cancelled" : "Active"}
+                            </td>
+                            <td className="border border-gray-300 px-4 py-2 text-sm text-right">
+                              {!incentive.isCancelled && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleCancelIncentive(incentive)}
+                                  className="inline-flex items-center gap-1 text-red-600 hover:text-red-700 text-xs font-semibold"
+                                  title="Cancel this incentive"
+                                >
+                                  <Ban className="w-3.5 h-3.5" /> Cancel
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-400">No incentives recorded for this patient yet.</p>
+                )}
+              </div>
+
+              {showAddIncentive && (
+                <AddIncentiveModal
+                  patientId={id}
+                  onClose={() => setShowAddIncentive(false)}
+                  onSuccess={handleIncentiveAdded}
+                />
+              )}
 
               {/* Documents Section */}
               <div className="mb-8">

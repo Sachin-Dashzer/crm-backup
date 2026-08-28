@@ -4,18 +4,22 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import SearchableSelect from "@/components/SearchableSelect";
 import BankRoutingFields from "@/components/BankRoutingFields";
 import { COLLAB_BRANCHES } from "@/lib/branches";
-import { deriveClinicSettlement } from "@/lib/collabFormula";
+import { deriveCrystallisation } from "@/lib/collabFormula";
 import { REVENUE_METHODS } from "@/constants/paymentMethods";
-import { Building2, Loader2, TrendingDown, TrendingUp, CheckCircle2 } from "lucide-react";
+import { Building2, Loader2, TrendingDown, TrendingUp } from "lucide-react";
 
 // THE single collab case entry form. Used by the collab panel and, unchanged, by the
 // admin emergency-entry modal on /admin/collab-settlement. Do not fork this per caller —
 // the whole point is that both entry points feed the same formula.
 //
-// The payment-source selector is a UI SHORTCUT that pre-fills ourReceived/clinicReceived —
-// it is NOT a lock. Both fields are always editable in every state, so a part payment
-// ("patient paid us 5,000 of a 50,000 package") can be entered directly; the pre-fill only
-// stops once the user types a value of their own (see amountsTouched below).
+// Partial is the normal case: ONE amount field, and the "Who did the patient pay?" toggle above
+// it decides who it credits — not two separate "collected by us"/"collected by clinic" boxes
+// shown together (that used to invite filling in both, or the wrong one, for a single collection
+// event that only ever happens on one side at a time). "Patient paid the full package" pre-fills
+// that one field to the net chargeable amount and locks it; unchecking (or never checking it)
+// leaves it free to type, and the pre-fill stops the moment the user edits it themselves (see
+// amountsTouched below). Method/reference/bank-routing likewise describe whichever side is
+// currently selected — see the conditional block near the bottom.
 
 const PROCEDURE_OPTIONS = [
   "Sapphire FUE",
@@ -37,7 +41,6 @@ const METHOD_OPTIONS = REVENUE_METHODS;
 const PAYMENT_SOURCES = [
   { id: "us", label: "Patient paid us" },
   { id: "clinic", label: "Patient paid the clinic" },
-  { id: "split", label: "Split between both" },
 ];
 
 const formatCurrency = (amount) => `₹${Number(amount || 0).toLocaleString("en-IN")}`;
@@ -63,8 +66,11 @@ export default function CollabCaseForm({
   const [clinicShare, setClinicShare] = useState(20000);
   const [discount, setDiscount] = useState(0);
   const [paymentSource, setPaymentSource] = useState("us");
-  const [ourReceived, setOurReceived] = useState(0);
-  const [clinicReceived, setClinicReceived] = useState(0);
+  const [fullPackage, setFullPackage] = useState(false);
+  // One field for one collection event — credited to whichever side `paymentSource` currently
+  // points at (see ourReceived/clinicReceived below). Switching the toggle re-labels this same
+  // value rather than moving it between two boxes.
+  const [amount, setAmount] = useState(0);
   const [amountsTouched, setAmountsTouched] = useState(false);
   const [method, setMethod] = useState("cash");
   const [paymentId, setPaymentId] = useState("");
@@ -121,34 +127,40 @@ export default function CollabCaseForm({
   const ourShare = Math.round((totalPackage - (Number(clinicShare) || 0)) * 100) / 100;
   const discountInvalid = discountNum < 0 || discountNum > grossPackage;
 
-  // The selector only PRE-FILLS the two collected amounts, and only until the user types a
-  // value of their own — after that, the two fields are the source of truth, not the selector.
+  // Partial is the normal case — the source toggle alone no longer assumes a full-package amount.
+  // Only the "Patient paid the full package" checkbox pre-fills the one amount field to the full
+  // net package, and only until the user types a value of their own (amountsTouched) — after
+  // that, the field is the source of truth. No longer depends on paymentSource: switching the
+  // toggle re-labels the same value instead of moving it between two boxes.
   useEffect(() => {
     if (amountsTouched) return;
-    if (!totalPackage) return;
-    if (paymentSource === "us") {
-      setOurReceived(totalPackage);
-      setClinicReceived(0);
-    } else if (paymentSource === "clinic") {
-      setOurReceived(0);
-      setClinicReceived(totalPackage);
-    }
-  }, [paymentSource, totalPackage, amountsTouched]);
+    if (!fullPackage || !totalPackage) return;
+    setAmount(totalPackage);
+  }, [fullPackage, totalPackage, amountsTouched]);
 
-  // A new patient means a new package — let the selector pre-fill again.
+  // A new patient means a new package — let the pre-fill apply again.
   useEffect(() => {
     setAmountsTouched(false);
+    setFullPackage(false);
   }, [patientId]);
 
-  // Live preview through the SAME function the server uses.
-  const settlement = deriveClinicSettlement({
-    clinicReceived: Number(clinicReceived) || 0,
-    clinicShare: Number(clinicShare) || 0,
-  });
+  // Credited to whichever side the toggle points at — never both, since this form only ever
+  // records ONE collection event. A part payment split across both sides is two separate entries
+  // (create the case with one, then Record Collection for the other), not one form submission.
+  const amountNum = Number(amount) || 0;
+  const ourReceived = paymentSource === "us" ? amountNum : 0;
+  const clinicReceived = paymentSource === "clinic" ? amountNum : 0;
 
-  const totalCollected = (Number(ourReceived) || 0) + (Number(clinicReceived) || 0);
+  const totalCollected = amountNum;
   const overCollected = totalPackage > 0 && totalCollected - totalPackage > 0.01;
   const shareMismatch = totalPackage > 0 && ourShare < 0;
+
+  // The clinic's fixed fee is no longer booked per instalment — it crystallises once, when this
+  // entry brings the case to its full package amount. Only then is there a branch to preview.
+  const isCompleting = totalPackage > 0 && totalPackage - totalCollected <= 0.01;
+  const crystallisation = isCompleting
+    ? deriveCrystallisation({ clinicReceived: Number(clinicReceived) || 0, clinicShare: Number(clinicShare) || 0 })
+    : null;
 
   const formatPatientOption = (p) =>
     `${p.personal?.name || "N/A"} — Package: ${formatCurrency(p?.payments?.totalAmount)}`;
@@ -337,12 +349,12 @@ export default function CollabCaseForm({
         </div>
       </div>
 
-      {/* Payment source — a pre-fill shortcut, not a branch in the derivation */}
+      {/* Payment source — decides who the single amount field below credits. */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
           Who did the patient pay?
         </label>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {PAYMENT_SOURCES.map((src) => (
             <button
               key={src.id}
@@ -360,39 +372,37 @@ export default function CollabCaseForm({
         </div>
       </div>
 
-      {/* The selector above only pre-fills these two — they are always editable, because
-          they are the actual revenue figures now, not a decorative split of the package. */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Collected by us
-          </label>
+      {/* ONE amount field — credited to whichever side is selected above. Always editable for a
+          part payment; the checkbox only pre-fills (and locks) it to the full net package. */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Amount paid {paymentSource === "us" ? "to us" : `to ${clinic || "the clinic"}`} (₹)
+        </label>
+        <input
+          type="number"
+          min="0"
+          value={amount}
+          disabled={fullPackage}
+          onChange={(e) => {
+            setAmount(e.target.value);
+            setAmountsTouched(true);
+          }}
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg disabled:bg-gray-50 disabled:text-gray-500"
+        />
+        <label className="flex items-center gap-2 mt-2.5 text-sm text-gray-700">
           <input
-            type="number"
-            min="0"
-            value={ourReceived}
+            type="checkbox"
+            checked={fullPackage}
             onChange={(e) => {
-              setOurReceived(e.target.value);
-              setAmountsTouched(true);
+              const checked = e.target.checked;
+              setFullPackage(checked);
+              // Checking is a deliberate override — clear any earlier manual edit so the
+              // pre-fill below can apply.
+              if (checked) setAmountsTouched(false);
             }}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
           />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Collected by clinic
-          </label>
-          <input
-            type="number"
-            min="0"
-            value={clinicReceived}
-            onChange={(e) => {
-              setClinicReceived(e.target.value);
-              setAmountsTouched(true);
-            }}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-          />
-        </div>
+          Patient paid the full package
+        </label>
       </div>
 
       {overCollected && (
@@ -402,72 +412,81 @@ export default function CollabCaseForm({
         </p>
       )}
 
-      {/* Live preview through the same formula the server runs */}
+      {/* Live preview. The clinic's fee is no longer booked per instalment, so a partial
+          collection (the normal case) shows only what actually happens now; only once this
+          entry completes the package does a payable/receivable branch become relevant. */}
       {totalPackage > 0 && (
         <div
           className={`rounded-lg border p-4 ${
-            settlement.kind === "RECEIVABLE"
-              ? "bg-emerald-50 border-emerald-200"
-              : settlement.kind === "PAYABLE"
-                ? "bg-amber-50 border-amber-200"
-                : "bg-gray-50 border-gray-200"
+            !isCompleting
+              ? "bg-gray-50 border-gray-200"
+              : crystallisation.kind === "CLINIC_RETAINS"
+                ? "bg-emerald-50 border-emerald-200"
+                : "bg-amber-50 border-amber-200"
           }`}
         >
-          <div className="flex items-center gap-2">
-            {settlement.kind === "RECEIVABLE" ? (
-              <TrendingUp className="w-4 h-4 text-emerald-600" />
-            ) : settlement.kind === "PAYABLE" ? (
-              <TrendingDown className="w-4 h-4 text-amber-600" />
-            ) : (
-              <CheckCircle2 className="w-4 h-4 text-gray-500" />
-            )}
-            <p className="text-sm font-semibold text-gray-900">
-              {settlement.kind === "RECEIVABLE"
-                ? `${clinic || "Clinic"} will owe us ${formatCurrency(settlement.amount)} — a Receivable will be created`
-                : settlement.kind === "PAYABLE"
-                  ? `We will owe ${clinic || "the clinic"} ${formatCurrency(settlement.amount)} — a Payable will be created`
-                  : "Clinic collected exactly its share — no payable or receivable needed"}
-            </p>
-          </div>
-          <p className="text-[11px] text-gray-600 mt-1.5 font-mono">
-            clinicOwesUs = collectedByClinic {formatCurrency(clinicReceived)} − clinicShare{" "}
-            {formatCurrency(clinicShare)} = {formatCurrency(settlement.clinicOwesUs)}
-          </p>
-          <div className="text-[11px] text-gray-600 mt-2 space-y-0.5">
-            <p className="font-semibold text-gray-800">
-              Revenue booked now: {formatCurrency(totalCollected)}
-            </p>
-            {Number(ourReceived) > 0 && (
-              <p>
-                • {formatCurrency(ourReceived)} collected by us — cash in, added to the
-                patient&apos;s paid total
+          {!isCompleting ? (
+            <div className="text-sm text-gray-800 space-y-1">
+              <p className="font-semibold">Revenue booked now: {formatCurrency(totalCollected)}</p>
+              <p>Still owed by the patient: {formatCurrency(totalPackage - totalCollected)}</p>
+              <p className="text-gray-600">
+                Clinic share ({formatCurrency(clinicShare)}): not yet booked — it is settled when
+                the patient&apos;s balance reaches zero
               </p>
-            )}
-            {Number(clinicReceived) > 0 && (
-              <p>
-                • {formatCurrency(clinicReceived)} collected by {clinic || "the clinic"} —
-                booked as revenue, receivable from them
-              </p>
-            )}
-            {totalPackage - totalCollected > 0.01 && (
-              <p className="font-semibold text-amber-700">
-                Still owed by the patient: {formatCurrency(totalPackage - totalCollected)} (not
-                booked as revenue yet)
-              </p>
-            )}
-            {Number(clinicShare) > 0 && (
-              <p>
-                Clinic share: {formatCurrency(clinicShare)} — payable created in full, expensed
-                as it&apos;s settled
-              </p>
-            )}
-          </div>
+            </div>
+          ) : (
+            <div>
+              <div className="flex items-center gap-2">
+                {crystallisation.kind === "CLINIC_RETAINS" ? (
+                  <TrendingUp className="w-4 h-4 text-emerald-600" />
+                ) : (
+                  <TrendingDown className="w-4 h-4 text-amber-600" />
+                )}
+                <p className="text-sm font-semibold text-gray-900">
+                  {crystallisation.kind === "CLINIC_RETAINS"
+                    ? `This completes the package — ${clinic || "the clinic"} keeps its ${formatCurrency(clinicShare)} fee out of the ${formatCurrency(clinicReceived)} it collected`
+                    : `This completes the package — ${clinic || "the clinic"} collected ${formatCurrency(clinicReceived)} of its ${formatCurrency(clinicShare)} fee`}
+                </p>
+              </div>
+              <div className="text-[11px] text-gray-600 mt-2 space-y-0.5">
+                <p className="font-semibold text-gray-800">
+                  Revenue booked now: {formatCurrency(totalCollected)}
+                </p>
+                {crystallisation.kind === "CLINIC_RETAINS" ? (
+                  <p>
+                    {formatCurrency(crystallisation.pendingAfter)} still owed to us by the clinic.
+                    No payable created.
+                  </p>
+                ) : (
+                  <>
+                    <p>
+                      We owe {clinic || "the clinic"} {formatCurrency(crystallisation.payable)} — a
+                      Payable will be created.
+                    </p>
+                    {crystallisation.expenseFromRetained > 0 && (
+                      <p>
+                        {formatCurrency(crystallisation.expenseFromRetained)} is expensed
+                        immediately, offsetting what the clinic already holds.
+                      </p>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
+      {/* Method/reference/routing all describe THIS collection — i.e. whichever side is
+          currently selected above. When the clinic collected it, nothing lands in one of our own
+          accounts, so BankRoutingFields (receiptMode/furtherMode) is hidden entirely rather than
+          shown-then-silently-dropped: those fields have no meaning here and were never saved for
+          a clinic-side collection anyway. */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Payment Method</label>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            {paymentSource === "us" ? "Payment Method" : "Collection Mode"}
+          </label>
           <select
             value={method}
             onChange={(e) => setMethod(e.target.value)}
@@ -479,6 +498,9 @@ export default function CollabCaseForm({
               </option>
             ))}
           </select>
+          {paymentSource === "clinic" && (
+            <p className="text-[11px] text-gray-400 mt-1">Which instrument {clinic || "the clinic"} collected with.</p>
+          )}
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">Date</label>
@@ -509,22 +531,28 @@ export default function CollabCaseForm({
             <p className="mt-1.5 text-xs text-red-600">Required for any method other than cash.</p>
           )}
         </div>
-        {/* Which account the money we collected actually landed in. Collab branches have no
-            entry in BANK_ROUTING_MAP by design (see bankRouting.js), so these start blank and
-            are picked manually rather than pre-filled. Only meaningful when we collected
-            something — if the clinic took all of it, no account of ours moved. */}
-        <BankRoutingFields
-          costType="Revenue"
-          branch={clinic}
-          transactionCategory={procedure === "Medicine" ? "MEDICINE" : undefined}
-          method={method}
-          receiptMode={receiptMode}
-          furtherMode={furtherMode}
-          onChange={(patch) => {
-            if (patch.receiptMode !== undefined) setReceiptMode(patch.receiptMode);
-            if (patch.furtherMode !== undefined) setFurtherMode(patch.furtherMode);
-          }}
-        />
+        {paymentSource === "us" ? (
+          // Which account the money we collected actually landed in. Collab branches have no
+          // entry in BANK_ROUTING_MAP by design (see bankRouting.js), so these start blank and
+          // are picked manually rather than pre-filled.
+          <BankRoutingFields
+            costType="Revenue"
+            branch={clinic}
+            transactionCategory={procedure === "Medicine" ? "MEDICINE" : undefined}
+            method={method}
+            receiptMode={receiptMode}
+            furtherMode={furtherMode}
+            onChange={(patch) => {
+              if (patch.receiptMode !== undefined) setReceiptMode(patch.receiptMode);
+              if (patch.furtherMode !== undefined) setFurtherMode(patch.furtherMode);
+            }}
+          />
+        ) : (
+          <div className="flex items-center bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-xs text-gray-500">
+            This money never lands in one of our own accounts — booked as revenue collected by{" "}
+            {clinic || "the clinic"} on the patient&apos;s behalf.
+          </div>
+        )}
       </div>
 
       <div>

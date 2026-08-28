@@ -5,6 +5,7 @@ import connectDB from "@/lib/db";
 import mongoose from "mongoose";
 import Payable from "@/models/Payable";
 import Transactions from "@/models/Transactions";
+import Advance from "@/models/Advance";
 import DeleteLog from "@/models/DeleteLog";
 import { buildPayableAggregationStages } from "@/lib/payableAggregation";
 
@@ -101,6 +102,25 @@ export async function PATCH(req, { params }) {
 
     let linkedTdsPayable = null;
     if (isCancelled === true && !payable.isCancelled) {
+      // §4.4 — refuse to cancel a payable an open advance is settling (settlesPayableId — see
+      // src/models/Advance.js). The advance's own paid/pending netting depends on this payable
+      // still claiming to be owed; cancelling it out from under an open settlement would strand
+      // that link with nothing left to net against.
+      const settlingAdvance = await Advance.findOne({
+        settlesPayableId: payable._id,
+        isCancelled: { $ne: true },
+      });
+      if (settlingAdvance) {
+        return NextResponse.json(
+          {
+            error:
+              `An open advance (₹${settlingAdvance.amount.toLocaleString("en-IN")} to ` +
+              `${settlingAdvance.party?.label || "a party"}) is settling this payable. Unsettle it first.`,
+          },
+          { status: 409 },
+        );
+      }
+
       // Never silently orphan a linked TDS payable — require explicit confirmation to cascade.
       if (payable.tdsLink?.role === "PARENT" && payable.tdsLink?.linkedId) {
         const linked = await Payable.findById(payable.tdsLink.linkedId);
@@ -221,7 +241,7 @@ export async function DELETE(req, { params }) {
         {
           error:
             `${linkedBorrowings} borrowing row(s) are recorded against this loan. ` +
-            `Cancel those first (see /admin/borrowings), or cancel this payable instead of ` +
+            `Cancel those first (see /admin/financing), or cancel this payable instead of ` +
             `deleting it — deleting it now would leave those rows pointing at nothing.`,
         },
         { status: 409 },

@@ -65,6 +65,19 @@ const borrowingSchema = new mongoose.Schema(
       index: true,
     },
 
+    // §4.2 — an existing, UNRELATED Receivable this borrowing offsets (e.g. money borrowed FROM a
+    // party who also owes us something else, netted against what they owe) — distinct from
+    // `payableId` above, which is the Payable THIS borrowing itself created. Only ever set on the
+    // creating ("IN") row of a running loan — see the settle/unsettle actions in
+    // src/app/api/borrowings/[id]/route.js. Never mutates the target Receivable's totalAmount;
+    // only its live received/pending aggregation (src/lib/receivableAggregation.js) changes.
+    settlesReceivableId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Receivable",
+      default: null,
+      index: true,
+    },
+
     // Optional, same rule as AccountTransfer/SuspenseEntry: null means company-level, and a
     // branch-filtered view shows only rows tagged to that branch.
     branch: { type: String, enum: ALL_BRANCHES, default: null, index: true },

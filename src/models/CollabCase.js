@@ -109,6 +109,14 @@ const collabCaseSchema = new mongoose.Schema(
       default: null,
     },
 
+    // When the case's running total first reached its package amount and the clinic's fixed fee
+    // was crystallised (see collabDerivation.js's crystalliseClinicShare) — null while the case is
+    // still partially collected. The single idempotency gate: crystallisation must fire exactly
+    // once per case, and this is what it checks. Cleared back to null if a later reversal drops
+    // the case back under its package total (unwindClinicShareCrystallisation) or the case is
+    // cancelled.
+    clinicShareSettledAt: { type: Date, default: null },
+
     status: {
       type: String,
       enum: ["OPEN", "SETTLED", "CANCELLED"],
@@ -126,6 +134,7 @@ const collabCaseSchema = new mongoose.Schema(
             "Package Revised",
             "Share Revised",
             "Collection Added",
+            "Clinic Share Crystallised",
             "Cancelled",
             "Note Added",
           ],

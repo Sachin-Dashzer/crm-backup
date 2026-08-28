@@ -5,7 +5,6 @@ import SearchableSelect from "@/components/SearchableSelect";
 import BankRoutingFields from "@/components/BankRoutingFields";
 import ExternalPartyFields from "@/components/ExternalPartyFields";
 import TaxBreakdownFields from "@/components/TaxBreakdownFields";
-import { computeTaxBreakdown, toTaxDetails } from "@/lib/taxMath";
 import { getMethodOptions, withLegacyMethod } from "@/constants/paymentMethods";
 import ReceiptUpload from "@/components/ReceiptUpload";
 import RevenueSection from "@/components/RevenueSection";
@@ -19,6 +18,9 @@ import {
   PAYABLE_EXPENSE_DROPDOWN_CATEGORIES,
   DIRECT_PAYMENT_CATEGORIES,
 } from "@/constants/expenseCategories";
+import { getPayableContext } from "@/lib/entryForm/getPayableContext";
+import { buildExpensePayload } from "@/lib/entryForm/buildTransactionPayload";
+import { validateExpenseEntry } from "@/lib/entryForm/validateExpenseEntry";
 import {
   ArrowLeft,
   Plus,
@@ -42,32 +44,9 @@ const OTHER_EXPENSE_CATEGORIES = DIRECT_PAYMENT_CATEGORIES.filter(
   (cat) => cat !== "Patient Related Expenses",
 );
 
-// Payable Expenses tab: category -> Payable purpose/payee.kind. Rent and Electricity Bill
-// keep their existing dedicated kinds; every other payable category uses a generic "OTHER"
-// payee (the sub-type itself is the display label — see getPayableContext's "rent" branch).
-const PAYABLE_CATEGORY_PURPOSE = {
-  "Rent": "RENT",
-  "Electricity Bill": "ELECTRICITY",
-  "Medical Consumables": "MEDICAL_CONSUMABLES",
-  "Medicine Procurement": "MEDICINE_PROCUREMENT",
-  "Professional Expenses": "PROFESSIONAL_EXPENSES",
-  "Lab Expenses": "LAB_EXPENSES",
-  "Interest Expenses": "INTEREST_EXPENSES",
-  "Taxes": "TAX",
-  "Software Rental Expenses": "SOFTWARE_RENTAL",
-  "Hardware Rental Expenses": "HARDWARE_RENTAL",
-};
-const PAYABLE_CATEGORY_KIND = {
-  "Rent": "RENT_UNIT",
-  "Electricity Bill": "UTILITY_UNIT",
-};
-// Vendor selection is available for every payable category — see getPayableContext's "rent"
-// branch. Picking a vendor switches payeeKind/payeeRefId from the shared OTHER/RENT_UNIT/
-// UTILITY_UNIT bucket to that vendor's own payee, so each vendor's bills (created by
-// scripts/vendor-payables-bulk-import.mjs, or by this form) are found and paid individually
-// instead of being invisible to this tab (they never matched the bucket + sub-type label).
-// Leaving it blank keeps the existing shared-bucket convention fully working — vendor picking is
-// additive, never a replacement.
+// PAYABLE_CATEGORY_PURPOSE / PAYABLE_CATEGORY_KIND / getPayableContext moved to
+// src/lib/entryForm/getPayableContext.js (§2.2 Phase 1 extraction) — imported above.
+//
 // Patient tab → Expense sub-tab: the 2 patient-linked sub-types under
 // "Patient Related Expenses" (Refund claims the 3rd, "Patient Refunds").
 const PATIENT_EXPENSE_SUBTYPES = ["Patient Meals", "PATIENT EMI"];
@@ -446,109 +425,9 @@ function AdminCreateTransactionPageInner() {
     fetchData();
   }, []);
 
-  // Resolves the current tab/sub-tab into a Payable "context" — who owes,
-  // what purpose, what taxonomy — or null when the active selection isn't
-  // pending-able (direct expense, or required picker not yet filled in).
-  const getPayableContext = () => {
-    const d = expenseData;
-
-    if (d.expenseSection === "agent") {
-      if (!d.employeeId) return null;
-      const emp = employeeCache[d.employeeId] || employees.find((e) => e._id === d.employeeId);
-      const label = emp?.name || "Employee";
-      if (d.agentSubTab === "salary") {
-        return {
-          purpose: "SALARY",
-          payeeKind: "EMPLOYEE",
-          payeeRefId: d.employeeId,
-          payeeLabel: label,
-          expenseCategory: "Salary",
-          expenseSubType: "Salary",
-          period: { month: d.salaryMonth, year: d.salaryYear },
-          relatedPatient: null,
-          branch: d.branch,
-          giver: { type: "EMPLOYEE", refId: d.employeeId, name: label },
-        };
-      }
-      // incentive
-      return {
-        purpose: "INCENTIVE",
-        payeeKind: "EMPLOYEE",
-        payeeRefId: d.employeeId,
-        payeeLabel: label,
-        expenseCategory: "Incentive",
-        expenseSubType: d.expenseType,
-        period: null,
-        relatedPatient: d.patientId || null,
-        branch: d.branch,
-        giver: { type: "EMPLOYEE", refId: d.employeeId, name: label },
-      };
-    }
-
-    if (d.expenseSection === "patient" && d.patientSubTab === "commission") {
-      if (!d.patientId) return null;
-      let receiverLabel = "";
-      let receiverKind = "OTHER";
-      let receiverRefId = null;
-      if (d.receiverType === "MANUAL") {
-        receiverLabel = d.receiverName;
-      } else if (d.receiverType === "Patient") {
-        const pat = patientCache[d.receiverId] || patients.find((p) => p._id === d.receiverId);
-        receiverLabel = pat?.personal?.name || "";
-        receiverKind = "PATIENT";
-        receiverRefId = d.receiverId;
-      } else {
-        const emp = employeeCache[d.receiverId] || employees.find((e) => e._id === d.receiverId);
-        receiverLabel = emp?.name || "";
-        receiverKind = "EMPLOYEE";
-        receiverRefId = d.receiverId;
-      }
-      return {
-        purpose: "PATIENT_COMMISSION",
-        payeeKind: receiverKind,
-        payeeRefId: receiverRefId,
-        payeeLabel: receiverLabel || "Payee",
-        expenseCategory: "Commision",
-        expenseSubType: d.expenseType,
-        period: null,
-        relatedPatient: d.patientId,
-        branch: d.branch,
-        giver: {
-          type: d.receiverType === "MANUAL" ? "MANUAL" : d.receiverType === "Patient" ? "PATIENT" : "EMPLOYEE",
-          refId: d.receiverType === "MANUAL" ? null : d.receiverId,
-          name: receiverLabel,
-        },
-      };
-    }
-
-    if (d.expenseSection === "rent") {
-      if (!d.rentSubType) return null;
-      const purpose = PAYABLE_CATEGORY_PURPOSE[d.payableCategory];
-      if (!purpose) return null;
-
-      // Leaving the vendor blank keeps any payable genuinely created under the shared-bucket
-      // convention (OTHER + sub-type-label, or RENT_UNIT/UTILITY_UNIT) fully visible and payable
-      // exactly as before. Vendor mode is additive, never a replacement for the existing behavior.
-      const vendor = d.payableVendorId ? vendors.find((v) => v._id === d.payableVendorId) : null;
-
-      return {
-        purpose,
-        payeeKind: vendor ? "VENDOR" : PAYABLE_CATEGORY_KIND[d.payableCategory] || "OTHER",
-        payeeRefId: vendor ? vendor._id : null,
-        payeeLabel: vendor ? vendor.name : d.rentSubType,
-        expenseCategory: d.payableCategory,
-        expenseSubType: d.rentSubType,
-        period: null, // set when creating a payable, from the create-panel's own month/year picker
-        relatedPatient: null,
-        branch: d.branch,
-        giver: vendor ? { type: "VENDOR", refId: vendor._id, name: vendor.name } : null,
-      };
-    }
-
-    return null;
-  };
-
-  const payableContext = getPayableContext();
+  // getPayableContext moved to src/lib/entryForm/getPayableContext.js (§2.2 Phase 1 extraction) —
+  // same derivation, now unit-testable without mounting this page.
+  const payableContext = getPayableContext({ expenseData, employees, employeeCache, patients, patientCache, vendors });
 
   // Inline "Paid / Pending" chips + open-payables list for whichever
   // pending-able context is currently active.
@@ -1245,227 +1124,13 @@ function AdminCreateTransactionPageInner() {
     }
   };
 
-  // EXPENSE — payload shape depends on which of the 5 tabs is active
-  const buildExpensePayload = () => {
-    const common = {
-      method: expenseData.method,
-      paymentId: expenseData.paymentId,
-      branch: expenseData.branch,
-      date: expenseData.date,
-      remarks: expenseData.remarks,
-      receipts: expenseData.receipts,
-      furtherMode: expenseData.furtherMode,
-      externalParty: expenseData.method === "paid_by_other" ? expenseData.externalParty : undefined,
-      ...(payableAction === "pay"
-        ? { payableId: selectedPayableId, allowOverpayment }
-        : {}),
-    };
-
-    if (expenseData.expenseSection === "agent") {
-      const isSalary = expenseData.agentSubTab === "salary";
-      const emp =
-        employeeCache[expenseData.employeeId] ||
-        employees.find((e) => e._id === expenseData.employeeId);
-      return {
-        ...common,
-        expenseCategory: isSalary ? "Salary" : "Incentive",
-        expenseType: isSalary ? "Salary" : expenseData.expenseType,
-        patientId: !isSalary ? expenseData.patientId : undefined,
-        expenseGiver: {
-          type: "EMPLOYEE",
-          refId: expenseData.employeeId,
-          name: emp?.name || "",
-        },
-        amount: expenseData.amount,
-      };
-    }
-
-    if (expenseData.expenseSection === "patient") {
-      if (expenseData.patientSubTab === "commission") {
-        const receiverName =
-          expenseData.receiverType === "MANUAL"
-            ? expenseData.receiverName
-            : expenseData.receiverType === "Patient"
-              ? patientOptions.find((p) => p._id === expenseData.receiverId)
-                  ?.personal?.name || ""
-              : employeeOptions.find((e) => e._id === expenseData.receiverId)
-                  ?.name || "";
-        const giverType =
-          expenseData.receiverType === "MANUAL"
-            ? "MANUAL"
-            : expenseData.receiverType === "Patient"
-              ? "PATIENT"
-              : "EMPLOYEE";
-
-        return {
-          ...common,
-          expenseCategory: "Commision",
-          expenseType: expenseData.expenseType,
-          patientId: expenseData.patientId,
-          amount: expenseData.amount,
-          expenseGiver: {
-            type: giverType,
-            refId:
-              expenseData.receiverType === "MANUAL"
-                ? undefined
-                : expenseData.receiverId,
-            name: receiverName,
-          },
-          commissionReceiver: {
-            type: giverType,
-            refId:
-              expenseData.receiverType === "MANUAL"
-                ? undefined
-                : expenseData.receiverId,
-            name: receiverName,
-          },
-        };
-      }
-
-      const pat =
-        patientCache[expenseData.patientId] ||
-        patients.find((p) => p._id === expenseData.patientId);
-      const patientGiver = {
-        type: "PATIENT",
-        refId: expenseData.patientId,
-        name: pat?.personal?.name || "",
-      };
-
-      if (expenseData.patientSubTab === "refund") {
-        return {
-          ...common,
-          expenseCategory: "Patient Related Expenses",
-          expenseType: "Patient Refunds",
-          patientId: expenseData.patientId,
-          amount: expenseData.amount,
-          expenseGiver: patientGiver,
-        };
-      }
-      return {
-        ...common,
-        expenseCategory: "Patient Related Expenses",
-        expenseType: expenseData.expenseType,
-        patientId: expenseData.patientId,
-        amount: expenseData.amount,
-        expenseGiver: patientGiver,
-      };
-    }
-
-    if (expenseData.expenseSection === "rent") {
-      return {
-        ...common,
-        expenseCategory: expenseData.payableCategory,
-        expenseType: expenseData.rentSubType,
-        amount: expenseData.amount,
-      };
-    }
-
-
-    // "other" — Direct Payments. With GST ticked the Amount field is the BASE amount, so
-    // the transaction records the invoice total and keeps the breakdown in taxDetails.
-    // GST never becomes a payable and never gets its own transaction.
-    const vendor = vendors.find((v) => v._id === expenseData.vendorId);
-    const directTax = computeTaxBreakdown({
-      baseAmount: expenseData.amount,
-      includeGST: expenseData.includeGST,
-      gstRate: expenseData.gstRate,
-      gstAmount: expenseData.gstAmount,
-    });
-    return {
-      ...common,
-      expenseCategory: expenseData.expenseCategory,
-      expenseType: expenseData.expenseType,
-      expenseGiver: {
-        type: expenseData.isVendor ? "VENDOR" : "MANUAL",
-        vendorId: expenseData.isVendor ? expenseData.vendorId : "",
-        name: expenseData.isVendor
-          ? vendor?.name
-          : expenseData.expenseGiverName,
-      },
-      amount: expenseData.includeGST ? directTax.invoiceTotal : expenseData.amount,
-      ...(expenseData.includeGST ? { taxDetails: toTaxDetails(directTax) } : {}),
-    };
-  };
-
-  const validateExpenseSection = () => {
-    if (payableAction === "create") {
-      return "Use the Create Payable button to record this as owed.";
-    }
-    if (payableAction === "pay" && !selectedPayableId) {
-      return "Select which payable this payment is against";
-    }
-
-    if (expenseData.expenseSection === "agent") {
-      if (!expenseData.employeeId) return "Please select an employee";
-      if (expenseData.agentSubTab === "incentive") {
-        if (!expenseData.expenseType) return "Please select an incentive type";
-        if (!expenseData.patientId) return "Please select the related patient";
-      }
-      if (!expenseData.amount) return "Please enter amount";
-      return null;
-    }
-    if (expenseData.expenseSection === "patient") {
-      if (!expenseData.patientId) return "Please select a patient";
-      if (expenseData.patientSubTab === "commission") {
-        if (!expenseData.expenseType) return "Please select a commission type";
-        if (
-          expenseData.receiverType === "MANUAL" &&
-          !expenseData.receiverName
-        )
-          return "Please enter the payee's name";
-        if (
-          expenseData.receiverType !== "MANUAL" &&
-          !expenseData.receiverId
-        )
-          return "Please select the commission recipient";
-      }
-      if (expenseData.patientSubTab === "expense" && !expenseData.expenseType)
-        return "Please select an expense type";
-      if (!expenseData.amount) return "Please enter amount";
-      return null;
-    }
-    if (expenseData.expenseSection === "rent") {
-      if (!expenseData.rentSubType) return "Please select a sub-type";
-      if (!expenseData.amount) return "Please enter amount";
-      return null;
-    }
-    // other
-    if (!expenseData.expenseCategory) return "Please select expense category";
-    if (
-      getExpenseTypes(expenseData.expenseCategory).length > 0 &&
-      !expenseData.expenseType
-    )
-      return "Please select expense type";
-    if (expenseData.isVendor && !expenseData.vendorId)
-      return "Please select a vendor";
-    if (!expenseData.isVendor && !expenseData.expenseGiverName)
-      return "Please enter payee name";
-    if (!expenseData.amount) return "Please enter amount";
-    return null;
-  };
-
+  // buildExpensePayload / validateExpenseSection moved to src/lib/entryForm/ (§2.2 Phase 1
+  // extraction) — imported above. handleSaveExpense now makes one call to validateExpenseEntry,
+  // which composes the section rules with the payment-method rules that used to run inline here.
   const handleSaveExpense = async () => {
-    const sectionError = validateExpenseSection();
-    if (sectionError) {
-      alert(sectionError);
-      return;
-    }
-    if (expenseData.method !== "cash" && !expenseData.paymentId) {
-      alert(
-        expenseData.method === "card"
-          ? "Please enter card last no."
-          : expenseData.method?.toLowerCase() === "bajaj_loan" ||
-              expenseData.method?.toLowerCase() === "fibe_loan"
-            ? "Please add the reference id"
-            : "Please add transaction id",
-      );
-      return;
-    }
-    if (
-      expenseData.method === "paid_by_other" &&
-      (!expenseData.externalParty.name || !expenseData.externalParty.method)
-    ) {
-      alert("Please enter the sender's name and payment method");
+    const error = validateExpenseEntry({ expenseData, payableAction, selectedPayableId });
+    if (error) {
+      alert(error);
       return;
     }
     setLoading(true);
@@ -1473,7 +1138,21 @@ function AdminCreateTransactionPageInner() {
       const res = await fetch("/api/transactions/expense/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(buildExpensePayload()),
+        body: JSON.stringify(
+          buildExpensePayload({
+            expenseData,
+            payableAction,
+            selectedPayableId,
+            allowOverpayment,
+            employees,
+            employeeCache,
+            patients,
+            patientCache,
+            patientOptions,
+            employeeOptions,
+            vendors,
+          }),
+        ),
       });
       if (res.ok) {
         alert("Expense transaction created successfully!");
