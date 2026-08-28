@@ -8,6 +8,10 @@ import { formatCurrency, formatDate } from "@/lib/financeUI";
 const todayISO = () => new Date().toLocaleDateString("en-CA");
 const asInputDate = (d) => (d ? new Date(d).toLocaleDateString("en-CA") : todayISO());
 
+const inputClass =
+  "w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm outline-none transition placeholder:text-slate-300 focus:border-red-500 focus:ring-2 focus:ring-red-100 disabled:bg-slate-50 disabled:text-slate-400";
+const labelClass = "mb-1.5 block text-sm font-semibold text-slate-700";
+
 export default function ReverseTransactionModal({ transaction, onClose, onDone }) {
   const toast = useToast();
   const [state, setState] = useState(null);
@@ -91,201 +95,224 @@ export default function ReverseTransactionModal({ transaction, onClose, onDone }
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full my-8">
-        <div className="flex items-center justify-between p-5 border-b border-gray-100">
-          <div className="flex items-center gap-2">
-            <RotateCcw className="w-5 h-5 text-red-600" />
-            <h3 className="text-lg font-bold text-gray-900">Reverse / Refund</h3>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-3 backdrop-blur-sm sm:p-5">
+      <div className="flex max-h-[92vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
+
+        {/* HEADER */}
+        <div className="flex shrink-0 items-center justify-between border-b border-slate-200 bg-white px-4 py-4 sm:px-6">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-100 text-red-600">
+              <RotateCcw className="h-5 w-5" />
+            </div>
+            <div className="min-w-0">
+              <h3 className="truncate text-base font-bold text-slate-900 sm:text-lg">Reverse / Refund</h3>
+              <p className="mt-0.5 text-xs text-slate-500 sm:text-sm">Undo all or part of this transaction</p>
+            </div>
           </div>
-          <button onClick={onClose} className="p-1.5 hover:bg-gray-100 rounded-lg">
-            <X className="w-5 h-5 text-gray-500" />
+          <button
+            type="button"
+            onClick={onClose}
+            className="ml-3 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+            aria-label="Close"
+          >
+            <X className="h-5 w-5" />
           </button>
         </div>
 
-        {loading ? (
-          <div className="p-10 text-center text-gray-400">
-            <Loader2 className="w-5 h-5 animate-spin inline" />
-          </div>
-        ) : (
-          <div className="p-5 space-y-4">
-            <div className="rounded-xl border border-gray-200 bg-gray-50 p-3 text-sm space-y-1">
-              <div className="flex justify-between">
-                <span className="text-gray-500">Original</span>
-                <span className="font-semibold text-gray-900">{formatCurrency(state?.originalAmount)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">Date</span>
-                <span className="text-gray-700">{formatDate(transaction?.date)}</span>
-              </div>
-              {account ? (
-                <div className="flex justify-between">
-                  <span className="text-gray-500">Account</span>
-                  <span className="text-gray-700">{account}</span>
-                </div>
-              ) : null}
-              {state?.alreadyReversed > 0 ? (
-                <div className="flex justify-between pt-1 border-t border-gray-200 mt-1">
-                  <span className="text-purple-700 font-medium">Already reversed</span>
-                  <span className="font-semibold text-purple-700">
-                    {formatCurrency(state.alreadyReversed)} · {formatCurrency(state.remaining)} left
-                  </span>
-                </div>
-              ) : null}
+        {/* BODY */}
+        <div className="min-h-0 flex-1 overflow-y-auto bg-slate-50/50">
+          {loading ? (
+            <div className="p-10 text-center text-slate-400">
+              <Loader2 className="inline h-5 w-5 animate-spin" />
             </div>
-
-            {blocked ? (
-              <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
-                {blocked}
+          ) : (
+            <div className="space-y-5 p-4 sm:p-6">
+              <div className="space-y-1 rounded-xl border border-slate-200 bg-white p-4 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Original</span>
+                  <span className="font-semibold text-slate-900">{formatCurrency(state?.originalAmount)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Date</span>
+                  <span className="text-slate-700">{formatDate(transaction?.date)}</span>
+                </div>
+                {account ? (
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">Account</span>
+                    <span className="text-slate-700">{account}</span>
+                  </div>
+                ) : null}
+                {state?.alreadyReversed > 0 ? (
+                  <div className="mt-1 flex justify-between border-t border-slate-200 pt-1">
+                    <span className="font-medium text-purple-700">Already reversed</span>
+                    <span className="font-semibold text-purple-700">
+                      {formatCurrency(state.alreadyReversed)} · {formatCurrency(state.remaining)} left
+                    </span>
+                  </div>
+                ) : null}
               </div>
-            ) : (
-              <>
-                {!account && (
-                  <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700">
-                    This transaction names no account, so the reversal cannot put the money back
-                    into one either. Both rows will be missing from Cash &amp; Bank.
-                  </div>
-                )}
 
-                {state?.originalPeriodLocked && (
-                  <div className="rounded-xl border border-indigo-200 bg-indigo-50 p-3 text-xs text-indigo-800">
-                    The original sits in a closed period, so this reversal is dated <b>today</b>. A
-                    closed period stays closed and the correction lands in the open one.
-                  </div>
-                )}
+              {blocked ? (
+                <div className="rounded-xl border border-amber-200 bg-amber-50 p-3.5 text-sm text-amber-800">
+                  {blocked}
+                </div>
+              ) : (
+                <>
+                  {!account && (
+                    <div className="rounded-xl border border-rose-200 bg-rose-50 p-3.5 text-xs text-rose-700">
+                      This transaction names no account, so the reversal cannot put the money back
+                      into one either. Both rows will be missing from Cash &amp; Bank.
+                    </div>
+                  )}
 
-                <div className="grid grid-cols-2 gap-3">
+                  {state?.originalPeriodLocked && (
+                    <div className="rounded-xl border border-indigo-200 bg-indigo-50 p-3.5 text-xs text-indigo-800">
+                      The original sits in a closed period, so this reversal is dated <b>today</b>. A
+                      closed period stays closed and the correction lands in the open one.
+                    </div>
+                  )}
+
+                  <section>
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                      <div>
+                        <label className={labelClass}>
+                          Amount to reverse <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="number"
+                          value={amount}
+                          onChange={(e) => setAmount(e.target.value)}
+                          max={remaining}
+                          min={0}
+                          className={inputClass}
+                        />
+                        <p className="mt-1.5 text-xs text-slate-400">
+                          Up to {formatCurrency(remaining)}. Lower it for a partial refund.
+                        </p>
+                      </div>
+                      <div>
+                        <label className={labelClass}>Date</label>
+                        <input
+                          type="date"
+                          value={date}
+                          disabled={state?.originalPeriodLocked}
+                          onChange={(e) => setDate(e.target.value)}
+                          className={inputClass}
+                        />
+                      </div>
+                    </div>
+                  </section>
+
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                      Amount to reverse *
+                    <label className={labelClass}>
+                      Reason <span className="text-red-500">*</span>
                     </label>
                     <input
-                      type="number"
-                      value={amount}
-                      onChange={(e) => setAmount(e.target.value)}
-                      max={remaining}
-                      min={0}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                      value={reason}
+                      onChange={(e) => setReason(e.target.value)}
+                      placeholder="Loan cancelled · Patient refund · Duplicate entry"
+                      className={inputClass}
                     />
-                    <p className="mt-1 text-xs text-gray-400">
-                      Up to {formatCurrency(remaining)}. Lower it for a partial refund.
+                    <p className="mt-1.5 text-xs text-slate-400">
+                      Goes into the narration, so this row explains itself in a bank reconciliation
+                      months later.
                     </p>
                   </div>
+
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Date</label>
-                    <input
-                      type="date"
-                      value={date}
-                      disabled={state?.originalPeriodLocked}
-                      onChange={(e) => setDate(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg disabled:bg-gray-50 disabled:text-gray-400"
-                    />
+                    <label className={labelClass}>Remarks</label>
+                    <input value={remarks} onChange={(e) => setRemarks(e.target.value)} className={inputClass} />
                   </div>
-                </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Reason *</label>
-                  <input
-                    value={reason}
-                    onChange={(e) => setReason(e.target.value)}
-                    placeholder="Loan cancelled · Patient refund · Duplicate entry"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                  />
-                  <p className="mt-1 text-xs text-gray-400">
-                    Goes into the narration, so this row explains itself in a bank reconciliation
-                    months later.
-                  </p>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Remarks</label>
-                  <input
-                    value={remarks}
-                    onChange={(e) => setRemarks(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                  />
-                </div>
-
-                <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800 space-y-1.5">
-                  <div className="flex items-center gap-1.5 font-semibold">
-                    <AlertTriangle className="w-4 h-4" /> What this will do
-                  </div>
-                  <p>
-                    Creates a <b>−{formatCurrency(requested)}</b> entry
-                    {patientName ? (
-                      <>
-                        {" "}
-                        for <b>{patientName}</b>
-                      </>
-                    ) : null}
-                    , dated {formatDate(date)}.
-                  </p>
-                  <p>
-                    {isRevenue ? "Revenue" : "Expenses"}
-                    {account ? (
-                      <>
-                        {" "}
-                        and <b>{account}</b> both drop
-                      </>
-                    ) : (
-                      " drops"
-                    )}{" "}
-                    by {formatCurrency(requested)}.
-                  </p>
-                  {isRevenue && patientName && receivedAfter !== null ? (
+                  <div className="space-y-1.5 rounded-xl border border-red-200 bg-red-50 p-3.5 text-sm text-red-800">
+                    <div className="flex items-center gap-1.5 font-semibold">
+                      <AlertTriangle className="h-4 w-4" /> What this will do
+                    </div>
                     <p>
-                      {patientName}&apos;s received amount goes from {formatCurrency(receivedNow)} to{" "}
-                      <b>{formatCurrency(receivedAfter)}</b>
-                      {receivedAfter === 0 ? ", which will move their status backward." : "."}
+                      Creates a <b>−{formatCurrency(requested)}</b> entry
+                      {patientName ? (
+                        <>
+                          {" "}
+                          for <b>{patientName}</b>
+                        </>
+                      ) : null}
+                      , dated {formatDate(date)}.
                     </p>
-                  ) : null}
-                  {isPartial ? (
-                    <p className="text-red-700">
-                      Partial — the original stays open, with{" "}
-                      {formatCurrency(remaining - requested)} still reversible.
+                    <p>
+                      {isRevenue ? "Revenue" : "Expenses"}
+                      {account ? (
+                        <>
+                          {" "}
+                          and <b>{account}</b> both drop
+                        </>
+                      ) : (
+                        " drops"
+                      )}{" "}
+                      by {formatCurrency(requested)}.
                     </p>
-                  ) : (
-                    <p className="text-red-700">Full reversal — the original will be marked Reversed.</p>
-                  )}
-                  <p className="text-xs text-red-600 pt-1">
-                    Both rows stay visible. Nothing is deleted or hidden — the pair is the audit
-                    trail.
-                  </p>
+                    {isRevenue && patientName && receivedAfter !== null ? (
+                      <p>
+                        {patientName}&apos;s received amount goes from {formatCurrency(receivedNow)} to{" "}
+                        <b>{formatCurrency(receivedAfter)}</b>
+                        {receivedAfter === 0 ? ", which will move their status backward." : "."}
+                      </p>
+                    ) : null}
+                    {isPartial ? (
+                      <p className="text-red-700">
+                        Partial — the original stays open, with{" "}
+                        {formatCurrency(remaining - requested)} still reversible.
+                      </p>
+                    ) : (
+                      <p className="text-red-700">Full reversal — the original will be marked Reversed.</p>
+                    )}
+                    <p className="pt-1 text-xs text-red-600">
+                      Both rows stay visible. Nothing is deleted or hidden — the pair is the audit
+                      trail.
+                    </p>
+                  </div>
+                </>
+              )}
+
+              {error && (
+                <div className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-3.5">
+                  <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-red-100">
+                    <span className="text-xs font-bold text-red-700">!</span>
+                  </div>
+                  <p className="text-xs leading-5 text-red-700">{error}</p>
                 </div>
-              </>
-            )}
-
-            {error && (
-              <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-                {error}
-              </div>
-            )}
-
-            <div className="flex gap-3 pt-1">
-              <button
-                onClick={submit}
-                disabled={submitting || !!blocked || !reason.trim() || !(requested > 0)}
-                className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-semibold text-sm disabled:opacity-50"
-              >
-                {submitting ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Recording…
-                  </>
-                ) : (
-                  <>
-                    <RotateCcw className="w-4 h-4" />
-                    Reverse {formatCurrency(requested)}
-                  </>
-                )}
-              </button>
-              <button
-                onClick={onClose}
-                className="px-5 py-2.5 bg-white border border-gray-200 rounded-xl font-semibold text-sm text-gray-600 hover:bg-gray-50"
-              >
-                Cancel
-              </button>
+              )}
             </div>
+          )}
+        </div>
+
+        {/* FOOTER */}
+        {!loading && (
+          <div className="flex shrink-0 flex-col-reverse gap-2 border-t border-slate-200 bg-white p-4 sm:flex-row sm:justify-end sm:px-6">
+            <button
+              type="button"
+              onClick={onClose}
+              className="w-full rounded-xl border border-slate-200 px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 sm:w-auto"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={submit}
+              disabled={submitting || !!blocked || !reason.trim() || !(requested > 0)}
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-red-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+            >
+              {submitting ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Recording...
+                </>
+              ) : (
+                <>
+                  <RotateCcw className="h-4 w-4" />
+                  Reverse {formatCurrency(requested)}
+                </>
+              )}
+            </button>
           </div>
         )}
       </div>

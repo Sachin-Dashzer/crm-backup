@@ -10,6 +10,7 @@ import { ALL_BRANCHES } from "@/lib/branches";
 import { getExpenseTypes } from "@/constants/expenseCategories";
 
 const SUBTYPES = getExpenseTypes("Borrowings");
+
 const PARTY_KINDS = [
   { value: "VENDOR", label: "Vendor" },
   { value: "EMPLOYEE", label: "Employee" },
@@ -26,6 +27,7 @@ export default function RecordBorrowingModal({ open, onClose, onSuccess, mode, p
   const [partyKind, setPartyKind] = useState(payable?.payee?.kind || "VENDOR");
   const [partyId, setPartyId] = useState(payable?.payee?.refId || "");
   const [partyLabel, setPartyLabel] = useState(payable?.payee?.label || "");
+
   const [options, setOptions] = useState([]);
   const [searching, setSearching] = useState(false);
   const debounceRef = useRef(null);
@@ -47,7 +49,9 @@ export default function RecordBorrowingModal({ open, onClose, onSuccess, mode, p
 
   const fetchOptions = async (term = "") => {
     if (partyKind === "OTHER") return;
+
     setSearching(true);
+
     try {
       const endpoint =
         partyKind === "VENDOR"
@@ -55,7 +59,9 @@ export default function RecordBorrowingModal({ open, onClose, onSuccess, mode, p
           : partyKind === "EMPLOYEE"
             ? `/api/employees/get?limit=30${term ? `&search=${encodeURIComponent(term)}` : ""}`
             : `/api/patients/get-patient?limit=30${term ? `&search=${encodeURIComponent(term)}` : ""}`;
+
       const res = await fetch(endpoint);
+
       if (res.ok) {
         const data = await res.json();
         setOptions(data.data || data.vendors || data.employees || data.patients || []);
@@ -91,13 +97,16 @@ export default function RecordBorrowingModal({ open, onClose, onSuccess, mode, p
     setPeriodLocked(false);
 
     if (!account) return setError("Select which account this movement is through");
+
     const parsedAmount = parseFloat(amount);
     if (!(parsedAmount > 0)) return setError("Enter a valid amount");
+
     if (isNewLoan) {
       if (!subType) return setError("Select what this borrowing is");
       if (partyKind !== "OTHER" && !partyId) return setError("Select the party");
       if (partyKind === "OTHER" && !partyLabel.trim()) return setError("Enter who this is from");
     }
+
     if (isRepayment && overBalance && !allowOverpayment) {
       return setError("Amount exceeds the outstanding balance — check 'Allow overpayment' to proceed anyway");
     }
@@ -114,6 +123,7 @@ export default function RecordBorrowingModal({ open, onClose, onSuccess, mode, p
           })();
 
     setSubmitting(true);
+
     try {
       const res = await fetch("/api/borrowings/create", {
         method: "POST",
@@ -132,11 +142,11 @@ export default function RecordBorrowingModal({ open, onClose, onSuccess, mode, p
           allowOverpayment,
         }),
       });
+
       const data = await res.json();
+
       if (res.ok) {
-        toast?.success(
-          isRepayment ? "Repayment recorded" : isTranche ? "Tranche recorded" : "Borrowing recorded",
-        );
+        toast?.success(isRepayment ? "Repayment recorded" : isTranche ? "Tranche recorded" : "Borrowing recorded");
         onSuccess?.(data);
       } else if (res.status === 423) {
         setPeriodLocked(true);
@@ -154,230 +164,435 @@ export default function RecordBorrowingModal({ open, onClose, onSuccess, mode, p
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full my-8">
-        <div className="flex items-center justify-between p-5 border-b border-gray-100">
-          <h3 className="text-lg font-bold text-gray-900">{title}</h3>
-          <button onClick={onClose} className="p-1.5 hover:bg-gray-100 rounded-lg">
-            <X className="w-5 h-5 text-gray-500" />
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-3 backdrop-blur-sm sm:p-5">
+
+      {/* MODAL */}
+      <div className="flex max-h-[95vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
+
+        {/* =====================================================
+            HEADER
+        ====================================================== */}
+        <div className="flex shrink-0 items-center justify-between border-b border-slate-200 bg-white px-4 py-4 sm:px-6">
+
+          <div className="flex min-w-0 items-center gap-3">
+
+            {/* ICON */}
+            <div
+              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
+                isRepayment ? "bg-rose-100 text-rose-600" : "bg-violet-100 text-violet-600"
+              }`}
+            >
+              {isRepayment ? (
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 8c-2.21 0-4 1.343-4 3s1.79 3 4 3 4 1.343 4 3-1.79 3-4 3m0-14v2m0 12v2"
+                  />
+                </svg>
+              ) : (
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+              )}
+            </div>
+
+            <div className="min-w-0">
+              <h3 className="truncate text-base font-bold text-slate-900 sm:text-lg">{title}</h3>
+
+              <p className="mt-0.5 text-xs text-slate-500 sm:text-sm">
+                {isRepayment
+                  ? "Record money paid back against a borrowing"
+                  : isTranche
+                    ? "Add another instalment to this borrowing"
+                    : "Create a new loan or party borrowing"}
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={onClose}
+            className="ml-3 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+            aria-label="Close"
+          >
+            <X className="h-5 w-5" />
           </button>
         </div>
 
-        <div className="p-5 space-y-4">
-          {payable && (
-            <div className="bg-gray-50 rounded-lg p-3 text-sm">
-              <p className="font-semibold text-gray-900 truncate">{payable.payee?.label}</p>
-              <p className="text-gray-500 mt-1">
-                {payable.expenseSubType} · Outstanding:{" "}
-                <span className="font-bold text-rose-600">{formatCurrency(pending)}</span>
-              </p>
-            </div>
-          )}
+        {/* =====================================================
+            BODY
+        ====================================================== */}
+        <div className="min-h-0 flex-1 overflow-y-auto bg-slate-50/50">
 
-          {!partyLocked && (
-            <>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Party kind *</label>
-                <div className="grid grid-cols-4 gap-2">
-                  {PARTY_KINDS.map((k) => (
-                    <button
-                      key={k.value}
-                      type="button"
-                      onClick={() => {
-                        setPartyKind(k.value);
-                        setPartyId("");
-                        setPartyLabel("");
+          <div className="space-y-5 p-4 sm:p-6">
+
+            {/* =================================================
+                PAYABLE SUMMARY
+            ================================================== */}
+            {payable && (
+              <div className="rounded-xl border border-violet-200 bg-violet-50 p-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-violet-500">
+                      Outstanding Borrowing
+                    </p>
+                    <p className="mt-1 truncate text-sm font-bold text-slate-900 sm:text-base">
+                      {payable.payee?.label}
+                    </p>
+                    <p className="mt-1 text-xs text-slate-500">{payable.expenseSubType}</p>
+                  </div>
+
+                  <div className="sm:text-right">
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-violet-500">Remaining</p>
+                    <p className="mt-1 text-lg font-bold text-violet-600 sm:text-xl">{formatCurrency(pending)}</p>
+                  </div>
+
+                </div>
+              </div>
+            )}
+
+            {/* =================================================
+                PARTY SECTION
+            ================================================== */}
+            {!partyLocked && (
+              <section>
+                <div className="mb-3">
+                  <h4 className="text-sm font-bold text-slate-900">Party Details</h4>
+                  <p className="mt-0.5 text-xs text-slate-500">Select who this borrowing is associated with</p>
+                </div>
+
+                {/* PARTY TYPE */}
+                <div className="mb-4">
+                  <label className="mb-2 block text-xs font-semibold text-slate-600">
+                    Party Type <span className="text-red-500">*</span>
+                  </label>
+
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                    {PARTY_KINDS.map((kind) => {
+                      const selected = partyKind === kind.value;
+
+                      return (
+                        <button
+                          key={kind.value}
+                          type="button"
+                          onClick={() => {
+                            setPartyKind(kind.value);
+                            setPartyId("");
+                            setPartyLabel("");
+                          }}
+                          className={`rounded-xl border px-3 py-2.5 text-sm font-semibold transition ${
+                            selected
+                              ? "border-violet-500 bg-violet-50 text-violet-700 ring-1 ring-violet-500"
+                              : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
+                          }`}
+                        >
+                          <div className="flex items-center justify-center gap-2">
+                            <span className={`h-2 w-2 rounded-full ${selected ? "bg-violet-600" : "bg-slate-300"}`} />
+                            {kind.label}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* PARTY INPUT */}
+                {partyKind === "OTHER" ? (
+                  <div>
+                    <label className="mb-1.5 block text-sm font-semibold text-slate-700">
+                      Name <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={partyLabel}
+                      onChange={(e) => setPartyLabel(e.target.value)}
+                      placeholder="Enter the person or organization name"
+                      className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm outline-none transition placeholder:text-slate-300 focus:border-violet-500 focus:ring-2 focus:ring-violet-100"
+                    />
+                  </div>
+                ) : (
+                  <div>
+                    <label className="mb-1.5 block text-sm font-semibold text-slate-700">
+                      Select Party <span className="text-red-500">*</span>
+                    </label>
+                    <SearchableSelect
+                      options={options}
+                      value={partyId}
+                      onChange={(v, obj) => {
+                        setPartyId(v);
+                        setPartyLabel((partyKind === "PATIENT" ? obj?.personal?.name : obj?.name) || "");
                       }}
-                      className={`px-2 py-1.5 rounded-lg text-xs font-semibold border ${
-                        partyKind === k.value
-                          ? "bg-indigo-600 text-white border-indigo-600"
-                          : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-                      }`}
-                    >
-                      {k.label}
-                    </button>
+                      placeholder="Search and select..."
+                      valueKey="_id"
+                      formatOption={formatOption}
+                      onSearch={partyKind !== "VENDOR" ? handlePartySearch : undefined}
+                      searching={searching}
+                    />
+                  </div>
+                )}
+              </section>
+            )}
+
+            {/* =================================================
+                BORROWING TYPE
+            ================================================== */}
+            {isNewLoan && (
+              <section>
+                <div className="mb-3">
+                  <h4 className="text-sm font-bold text-slate-900">Borrowing Information</h4>
+                  <p className="mt-0.5 text-xs text-slate-500">Specify what this borrowing is for</p>
+                </div>
+
+                <label className="mb-1.5 block text-sm font-semibold text-slate-700">
+                  Borrowing Type <span className="text-red-500">*</span>
+                </label>
+
+                <select
+                  value={subType}
+                  onChange={(e) => setSubType(e.target.value)}
+                  className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-violet-500 focus:ring-2 focus:ring-violet-100"
+                >
+                  <option value="">Select borrowing type...</option>
+                  {SUBTYPES.map((type) => (
+                    <option key={type} value={type}>
+                      {type}
+                    </option>
                   ))}
+                </select>
+              </section>
+            )}
+
+            {/* =================================================
+                PAYMENT SECTION
+            ================================================== */}
+            <section>
+              <div className="mb-3">
+                <h4 className="text-sm font-bold text-slate-900">
+                  {isRepayment ? "Repayment Details" : "Borrowing Details"}
+                </h4>
+                <p className="mt-0.5 text-xs text-slate-500">Enter the account and amount involved</p>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+
+                {/* ACCOUNT */}
+                <div>
+                  <label className="mb-1.5 block text-sm font-semibold text-slate-700">
+                    {isRepayment ? "Paid From" : "Received In"} <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={account}
+                    onChange={(e) => setAccount(e.target.value)}
+                    className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-violet-500 focus:ring-2 focus:ring-violet-100"
+                  >
+                    <option value="">Select account...</option>
+                    {ACCOUNTS.map((acc) => (
+                      <option key={acc} value={acc}>
+                        {acc}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* AMOUNT */}
+                <div>
+                  <label className="mb-1.5 block text-sm font-semibold text-slate-700">
+                    Amount <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-slate-400">
+                      ₹
+                    </span>
+                    <input
+                      type="number"
+                      min="0"
+                      value={amount}
+                      onChange={(e) => setAmount(e.target.value)}
+                      placeholder="0"
+                      className="w-full rounded-xl border border-slate-300 py-2.5 pl-8 pr-3 text-sm outline-none transition placeholder:text-slate-300 focus:border-violet-500 focus:ring-2 focus:ring-violet-100"
+                    />
+                  </div>
+
+                  {isRepayment && (
+                    <p className="mt-1.5 text-xs text-slate-400">
+                      Outstanding: <span className="font-semibold text-violet-600">{formatCurrency(pending)}</span>
+                    </p>
+                  )}
                 </div>
               </div>
 
-              {partyKind === "OTHER" ? (
+              {/* OVER PAYMENT */}
+              {overBalance && (
+                <label className="mt-3 flex cursor-pointer items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-3">
+                  <input
+                    type="checkbox"
+                    checked={allowOverpayment}
+                    onChange={(e) => setAllowOverpayment(e.target.checked)}
+                    className="mt-0.5 h-4 w-4 rounded border-amber-300 text-amber-600 focus:ring-amber-500"
+                  />
+                  <div>
+                    <p className="text-sm font-semibold text-amber-800">Allow overpayment</p>
+                    <p className="mt-0.5 text-xs leading-5 text-amber-700">
+                      The entered amount exceeds the outstanding balance. Enable this option if you intentionally
+                      want to record the excess amount.
+                    </p>
+                  </div>
+                </label>
+              )}
+            </section>
+
+            {/* =================================================
+                DATE / BRANCH
+            ================================================== */}
+            <section>
+              <div className="mb-3">
+                <h4 className="text-sm font-bold text-slate-900">Transaction Details</h4>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+
+                {/* DATE */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Name *</label>
+                  <label className="mb-1.5 block text-sm font-semibold text-slate-700">Date</label>
+                  <DebouncedDateInput
+                    value={date}
+                    onCommit={setDate}
+                    className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm outline-none transition focus:border-violet-500 focus:ring-2 focus:ring-violet-100"
+                  />
+                </div>
+
+                {/* BRANCH */}
+                {!partyLocked && (
+                  <div>
+                    <label className="mb-1.5 block text-sm font-semibold text-slate-700">Branch</label>
+                    <select
+                      value={branch}
+                      onChange={(e) => setBranch(e.target.value)}
+                      className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-violet-500 focus:ring-2 focus:ring-violet-100"
+                    >
+                      <option value="">Company-level</option>
+                      {ALL_BRANCHES.map((b) => (
+                        <option key={b} value={b}>
+                          {b}
+                        </option>
+                      ))}
+                    </select>
+                    <p className="mt-1.5 text-xs leading-4 text-slate-400">
+                      Leave blank for a company-level transaction.
+                    </p>
+                  </div>
+                )}
+
+              </div>
+            </section>
+
+            {/* =================================================
+                REFERENCE
+            ================================================== */}
+            <section>
+              <div className="mb-3">
+                <h4 className="text-sm font-bold text-slate-900">Additional Information</h4>
+                <p className="mt-0.5 text-xs text-slate-500">Optional transaction references and notes</p>
+              </div>
+
+              <div className="space-y-4">
+
+                {/* REFERENCE */}
+                <div>
+                  <label className="mb-1.5 block text-sm font-semibold text-slate-700">
+                    Reference <span className="font-normal text-slate-400">(optional)</span>
+                  </label>
                   <input
                     type="text"
-                    value={partyLabel}
-                    onChange={(e) => setPartyLabel(e.target.value)}
-                    placeholder="Who this money is from"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                    value={reference}
+                    onChange={(e) => setReference(e.target.value)}
+                    placeholder="UTR / cheque number / transaction ID"
+                    className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm outline-none transition placeholder:text-slate-300 focus:border-violet-500 focus:ring-2 focus:ring-violet-100"
                   />
                 </div>
-              ) : (
+
+                {/* REMARKS */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Party *</label>
-                  <SearchableSelect
-                    options={options}
-                    value={partyId}
-                    onChange={(v, obj) => {
-                      setPartyId(v);
-                      setPartyLabel(
-                        (partyKind === "PATIENT" ? obj?.personal?.name : obj?.name) || "",
-                      );
-                    }}
-                    placeholder="Search and select..."
-                    valueKey="_id"
-                    formatOption={formatOption}
-                    onSearch={partyKind !== "VENDOR" ? handlePartySearch : undefined}
-                    searching={searching}
+                  <label className="mb-1.5 block text-sm font-semibold text-slate-700">Remarks</label>
+                  <textarea
+                    value={remarks}
+                    onChange={(e) => setRemarks(e.target.value)}
+                    rows={3}
+                    placeholder="Add any additional information..."
+                    className="w-full resize-none rounded-xl border border-slate-300 px-3 py-2.5 text-sm outline-none transition placeholder:text-slate-300 focus:border-violet-500 focus:ring-2 focus:ring-violet-100"
                   />
                 </div>
-              )}
-            </>
-          )}
 
-          {isNewLoan && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">This is a *</label>
-              <select
-                value={subType}
-                onChange={(e) => setSubType(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+              </div>
+            </section>
+
+            {/* =================================================
+                ERROR
+            ================================================== */}
+            {error && (
+              <div
+                className={`flex items-start gap-3 rounded-xl border p-3.5 ${
+                  periodLocked ? "border-amber-200 bg-amber-50" : "border-red-200 bg-red-50"
+                }`}
               >
-                <option value="">Select…</option>
-                {SUBTYPES.map((t) => (
-                  <option key={t} value={t}>
-                    {t}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
+                <div
+                  className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${
+                    periodLocked ? "bg-amber-100" : "bg-red-100"
+                  }`}
+                >
+                  <span className={`text-xs font-bold ${periodLocked ? "text-amber-700" : "text-red-700"}`}>!</span>
+                </div>
+                <div>
+                  <p className={`text-sm font-semibold ${periodLocked ? "text-amber-800" : "text-red-800"}`}>
+                    {periodLocked ? "Period Locked" : "Unable to save"}
+                  </p>
+                  <p className={`mt-0.5 text-xs leading-5 ${periodLocked ? "text-amber-700" : "text-red-700"}`}>
+                    {error}
+                  </p>
+                </div>
+              </div>
+            )}
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                {isRepayment ? "Paid from account *" : "Received in account *"}
-              </label>
-              <select
-                value={account}
-                onChange={(e) => setAccount(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-              >
-                <option value="">Select account…</option>
-                {ACCOUNTS.map((a) => (
-                  <option key={a} value={a}>
-                    {a}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Amount (₹) *</label>
-              <input
-                type="number"
-                min="0"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                placeholder="0"
-              />
-              {isRepayment && (
-                <p className="mt-1 text-xs text-gray-400">Outstanding: {formatCurrency(pending)}</p>
-              )}
-            </div>
           </div>
-
-          {overBalance && (
-            <label className="flex items-center gap-2 text-xs text-amber-700">
-              <input
-                type="checkbox"
-                checked={allowOverpayment}
-                onChange={(e) => setAllowOverpayment(e.target.checked)}
-              />
-              Amount exceeds outstanding balance — allow overpayment
-            </label>
-          )}
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Date</label>
-            <DebouncedDateInput
-              value={date}
-              onCommit={setDate}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-            />
-          </div>
-
-          {!partyLocked && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Branch</label>
-              <select
-                value={branch}
-                onChange={(e) => setBranch(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-              >
-                <option value="">Company-level (no branch)</option>
-                {ALL_BRANCHES.map((b) => (
-                  <option key={b} value={b}>
-                    {b}
-                  </option>
-                ))}
-              </select>
-              <p className="mt-1.5 text-xs text-gray-400">
-                Left blank, this row is company-level and won't appear in a branch-filtered view.
-              </p>
-            </div>
-          )}
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              Reference <span className="text-gray-400 font-normal">(optional)</span>
-            </label>
-            <input
-              type="text"
-              value={reference}
-              onChange={(e) => setReference(e.target.value)}
-              placeholder="UTR / cheque no."
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Remarks</label>
-            <textarea
-              value={remarks}
-              onChange={(e) => setRemarks(e.target.value)}
-              rows={2}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg resize-none"
-              placeholder="Optional"
-            />
-          </div>
-
-          {error && (
-            <div
-              className={`rounded-lg p-3 text-sm ${
-                periodLocked
-                  ? "bg-amber-50 border border-amber-200 text-amber-800"
-                  : "bg-red-50 border border-red-200 text-red-700"
-              }`}
-            >
-              {error}
-            </div>
-          )}
         </div>
 
-        <div className="flex gap-3 p-5 border-t border-gray-100">
+        {/* =====================================================
+            FOOTER
+        ====================================================== */}
+        <div className="flex shrink-0 flex-col-reverse gap-2 border-t border-slate-200 bg-white p-4 sm:flex-row sm:justify-end sm:px-6">
+
           <button
+            type="button"
             onClick={onClose}
-            className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl font-semibold text-gray-700 hover:bg-gray-50"
+            disabled={submitting}
+            className="w-full rounded-xl border border-slate-200 px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
           >
             Cancel
           </button>
+
           <button
+            type="button"
             onClick={handleSubmit}
             disabled={submitting}
-            className="flex-1 px-4 py-2.5 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 disabled:opacity-50 flex items-center justify-center gap-2"
+            className={`flex w-full items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto ${
+              isRepayment
+                ? "bg-rose-600 hover:bg-rose-700 focus:ring-rose-500"
+                : "bg-violet-600 hover:bg-violet-700 focus:ring-violet-500"
+            }`}
           >
-            {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : title}
+            {submitting ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              <>{isRepayment ? "Save Repayment" : isTranche ? "Save Tranche" : "Save Borrowing"}</>
+            )}
           </button>
+
         </div>
       </div>
     </div>

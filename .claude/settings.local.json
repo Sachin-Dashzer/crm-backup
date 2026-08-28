@@ -40,7 +40,20 @@
       "Bash(node .strip-comments-tmp.mjs --dry)",
       "Bash(node .strip-comments-tmp.mjs)",
       "Bash(grep -n \"{/\\\\*\\\\|/\\\\*\\\\|//\" src/components/CollabCaseForm.jsx)",
-      "Bash(grep -c \"{/\\\\*\\\\|/\\\\*\\\\|//\" src/components/CollabCaseForm.jsx)"
+      "Bash(grep -c \"{/\\\\*\\\\|/\\\\*\\\\|//\" src/components/CollabCaseForm.jsx)",
+      "Bash(awk '{print $NF, $5}')",
+      "Bash(grep -l \"from \\\\\"@/\\\\|from '@/\" \"/c/dashzer/New folder/ryan-crm/scripts/\"*.mjs)",
+      "Bash(node scripts/ensure-indexes.js)",
+      "Bash(node scripts/profile-finance-pages.mjs)",
+      "Bash(echo \"EXIT:$?\")",
+      "Bash(tee __TRACKED_VAR__/profile-before.txt)",
+      "Bash(tee \"C:\\\\Users\\\\sachi\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--dashzer-New-folder-ryan-crm\\\\e991aaae-04a7-454b-b490-1854239267f1\\\\scratchpad\\\\profile-before.txt\")",
+      "Bash(node scripts/.dump-explain-tmp.mjs)",
+      "Bash(tee \"C:\\\\Users\\\\sachi\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--dashzer-New-folder-ryan-crm\\\\e991aaae-04a7-454b-b490-1854239267f1\\\\scratchpad\\\\profile-after.txt\")",
+      "Bash(node scripts/ensure-indexes.js --apply)",
+      "Bash(tee \"C:\\\\Users\\\\sachi\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--dashzer-New-folder-ryan-crm\\\\e991aaae-04a7-454b-b490-1854239267f1\\\\scratchpad\\\\profile-final.txt\")",
+      "Bash(node scripts/.verify-receivable-refactor-tmp.mjs)",
+      "Bash(node scripts/.verify-receivable-grouped-tmp.mjs)"
     ]
   }
 }

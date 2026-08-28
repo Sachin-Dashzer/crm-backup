@@ -1,68 +1,87 @@
 import { buildAgeingStages } from "@/lib/ageing";
 import { UNSETTLED_METHODS } from "@/constants/bankRouting";
 
+// A receivable's receipts can arrive two ways: a transaction whose own `receivableId` field
+// points straight at it, or a transaction split across several receivables via
+// `receivableAllocations`. The original shape matched both with a single correlated $lookup
+// whose pipeline did `$expr: { $or: [ {$eq:["$receivableId","$$receivableId"]},
+// {$in:["$$receivableId","$receivableAllocations.receivableId"]} ] }`. Profiling
+// (scripts/profile-finance-pages.mjs) showed this costs ~3264 documents examined per receivable
+// — Mongo can use an index for the direct-equality arm of an $expr $eq, but not for the
+// array-contains arm of an $expr $in, so the whole $or falls back to scanning every Revenue
+// transaction and filtering in memory.
+//
+// Fix: two separate $lookups using localField/foreignField (a real equi-join, index-backed —
+// including on a multikey path like receivableAllocations.receivableId, unlike the $expr form),
+// each with a `pipeline` for the non-join filter only. Merge the results afterwards in the
+// outer pipeline, where plain field paths (no $$let needed) can see the receivable's own _id.
+function buildReceiptLookupStages(txCollectionName, { projectDate = false, dateCeiling = null } = {}) {
+  const postJoinFilter = { costType: "Revenue", approvalStatus: "APPROVED", method: { $nin: UNSETTLED_METHODS } };
+  const dateCap = dateCeiling ? [{ $match: { date: { $lte: dateCeiling } } }] : [];
+  const directProject = projectDate
+    ? { date: 1, amount: 1, receivableAllocations: 1 }
+    : { amount: 1, receivableAllocations: 1 };
+  const allocProject = projectDate ? { date: 1, receivableAllocations: 1 } : { receivableAllocations: 1 };
+
+  return [
+    {
+      $lookup: {
+        from: txCollectionName,
+        localField: "_id",
+        foreignField: "receivableId",
+        pipeline: [...dateCap, { $match: postJoinFilter }, { $project: directProject }],
+        as: "directReceipts",
+      },
+    },
+    {
+      $lookup: {
+        from: txCollectionName,
+        localField: "_id",
+        foreignField: "receivableAllocations.receivableId",
+        pipeline: [...dateCap, { $match: postJoinFilter }, { $project: allocProject }],
+        as: "allocReceipts",
+      },
+    },
+    {
+      // A document with a non-empty receivableAllocations array is a split payment — its true
+      // contribution to THIS receivable is the sum of its matching allocation entries (which
+      // directReceipts would double-count via the full $amount), so it's excluded here and
+      // folded in via allocReceipts below instead. Mirrors the original $cond exactly.
+      $addFields: {
+        directOnly: {
+          $filter: {
+            input: "$directReceipts",
+            cond: { $eq: [{ $size: { $ifNull: ["$$this.receivableAllocations", []] } }, 0] },
+          },
+        },
+      },
+    },
+  ];
+}
+
+// Per-allocation-entry amount matching this receivable, for one joined transaction doc.
+const allocContribution = {
+  $sum: {
+    $map: {
+      input: {
+        $filter: {
+          input: { $ifNull: ["$$tx.receivableAllocations", []] },
+          cond: { $eq: ["$$this.receivableId", "$_id"] },
+        },
+      },
+      as: "a",
+      in: "$$a.amount",
+    },
+  },
+};
+
 export function buildReceivableAggregationStages(
   txCollectionName,
   advancesCollectionName = "advances",
   borrowingsCollectionName = "borrowings",
 ) {
   return [
-    {
-      $lookup: {
-        from: txCollectionName,
-        let: { receivableId: "$_id" },
-        pipeline: [
-          {
-            $match: {
-              $expr: {
-                $and: [
-                  { $eq: ["$costType", "Revenue"] },
-                  { $eq: ["$approvalStatus", "APPROVED"] },
-                  { $not: [{ $in: ["$method", UNSETTLED_METHODS] }] },
-                  {
-                    $or: [
-                      { $eq: ["$receivableId", "$$receivableId"] },
-                      {
-                        $in: [
-                          "$$receivableId",
-                          { $ifNull: ["$receivableAllocations.receivableId", []] },
-                        ],
-                      },
-                    ],
-                  },
-                ],
-              },
-            },
-          },
-          {
-            $addFields: {
-              _allocContribution: {
-                $cond: [
-                  { $gt: [{ $size: { $ifNull: ["$receivableAllocations", []] } }, 0] },
-                  {
-                    $sum: {
-                      $map: {
-                        input: {
-                          $filter: {
-                            input: "$receivableAllocations",
-                            cond: { $eq: ["$$this.receivableId", "$$receivableId"] },
-                          },
-                        },
-                        as: "a",
-                        in: "$$a.amount",
-                      },
-                    },
-                  },
-                  "$amount",
-                ],
-              },
-            },
-          },
-          { $group: { _id: null, received: { $sum: "$_allocContribution" }, receiptCount: { $sum: 1 } } },
-        ],
-        as: "receiptAgg",
-      },
-    },
+    ...buildReceiptLookupStages(txCollectionName),
     {
       $lookup: {
         from: advancesCollectionName,
@@ -109,14 +128,16 @@ export function buildReceivableAggregationStages(
       $addFields: {
         received: {
           $add: [
-            { $ifNull: [{ $arrayElemAt: ["$receiptAgg.received", 0] }, 0] },
+            { $sum: "$directOnly.amount" },
+            { $sum: { $map: { input: "$allocReceipts", as: "tx", in: allocContribution } } },
             { $ifNull: [{ $arrayElemAt: ["$advanceAgg.received", 0] }, 0] },
             { $ifNull: [{ $arrayElemAt: ["$borrowingSettlementAgg.received", 0] }, 0] },
           ],
         },
         receiptCount: {
           $add: [
-            { $ifNull: [{ $arrayElemAt: ["$receiptAgg.receiptCount", 0] }, 0] },
+            { $size: "$directOnly" },
+            { $size: "$allocReceipts" },
             { $ifNull: [{ $arrayElemAt: ["$advanceAgg.receiptCount", 0] }, 0] },
             { $ifNull: [{ $arrayElemAt: ["$borrowingSettlementAgg.receiptCount", 0] }, 0] },
           ],
@@ -150,7 +171,15 @@ export function buildReceivableAggregationStages(
       },
     },
     ...buildAgeingStages(),
-    { $project: { receiptAgg: 0, advanceAgg: 0, borrowingSettlementAgg: 0 } },
+    {
+      $project: {
+        directReceipts: 0,
+        allocReceipts: 0,
+        directOnly: 0,
+        advanceAgg: 0,
+        borrowingSettlementAgg: 0,
+      },
+    },
   ];
 }
 
@@ -189,61 +218,18 @@ export function buildReceivableGroupedStages(
 
   return [
     { $match: match },
+    ...buildReceiptLookupStages(txCollectionName, { projectDate: true, dateCeiling: toDate }),
     {
-      $lookup: {
-        from: txCollectionName,
-        let: { receivableId: "$_id" },
-        pipeline: [
-          ...(toDate ? [{ $match: { date: { $lte: toDate } } }] : []),
-          {
-            $match: {
-              $expr: {
-                $and: [
-                  { $eq: ["$costType", "Revenue"] },
-                  { $eq: ["$approvalStatus", "APPROVED"] },
-                  { $not: [{ $in: ["$method", UNSETTLED_METHODS] }] },
-                  {
-                    $or: [
-                      { $eq: ["$receivableId", "$$receivableId"] },
-                      {
-                        $in: [
-                          "$$receivableId",
-                          { $ifNull: ["$receivableAllocations.receivableId", []] },
-                        ],
-                      },
-                    ],
-                  },
-                ],
-              },
-            },
+      $addFields: {
+        // Reduce each allocReceipts doc to just the {date, amount} shape the range-bucketing
+        // below expects — same per-entry contribution logic as buildReceivableAggregationStages.
+        allocReceiptsFlat: {
+          $map: {
+            input: "$allocReceipts",
+            as: "tx",
+            in: { date: "$$tx.date", amount: allocContribution },
           },
-          {
-            $project: {
-              date: 1,
-              amount: {
-                $cond: [
-                  { $gt: [{ $size: { $ifNull: ["$receivableAllocations", []] } }, 0] },
-                  {
-                    $sum: {
-                      $map: {
-                        input: {
-                          $filter: {
-                            input: "$receivableAllocations",
-                            cond: { $eq: ["$$this.receivableId", "$$receivableId"] },
-                          },
-                        },
-                        as: "a",
-                        in: "$$a.amount",
-                      },
-                    },
-                  },
-                  "$amount",
-                ],
-              },
-            },
-          },
-        ],
-        as: "receipts",
+        },
       },
     },
     {
@@ -270,7 +256,13 @@ export function buildReceivableGroupedStages(
     },
     {
       $addFields: {
-        receipts: { $concatArrays: ["$receipts", "$advanceRecoveries"] },
+        receipts: {
+          $concatArrays: [
+            { $map: { input: "$directOnly", as: "d", in: { date: "$$d.date", amount: "$$d.amount" } } },
+            "$allocReceiptsFlat",
+            "$advanceRecoveries",
+          ],
+        },
       },
     },
     {

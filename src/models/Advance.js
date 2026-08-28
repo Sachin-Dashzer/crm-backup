@@ -79,6 +79,14 @@ advanceSchema.pre("validate", function () {
 advanceSchema.index({ isCancelled: 1, account: 1, date: 1 });
 advanceSchema.index({ isCancelled: 1, receivableId: 1, direction: 1 });
 
+// payableAggregation.js's advanceSettlementAgg $lookup joins on settlesPayableId per payable
+// document — same O(documents x advances) risk as the Transactions lookups above without this.
+// Partial: most advances never settle a payable.
+advanceSchema.index(
+  { settlesPayableId: 1, isCancelled: 1, direction: 1 },
+  { partialFilterExpression: { settlesPayableId: { $type: "objectId" } } },
+);
+
 export const ADVANCE_PARTY_KINDS = PARTY_KINDS;
 
 export default mongoose.models.Advance || mongoose.model("Advance", advanceSchema);

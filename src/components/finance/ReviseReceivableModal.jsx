@@ -1,8 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { X, Loader2, Ban, Trash2 } from "lucide-react";
+import { X, Loader2, Ban, Trash2, PenSquare } from "lucide-react";
 import { formatCurrency } from "@/lib/financeUI";
+
+const inputClass =
+  "w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm outline-none transition placeholder:text-slate-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100";
+const labelClass = "mb-1.5 block text-sm font-semibold text-slate-700";
 
 export default function ReviseReceivableModal({ receivable, onClose, onSuccess, toast }) {
   const [totalAmount, setTotalAmount] = useState(String(receivable.totalAmount));
@@ -61,86 +65,115 @@ export default function ReviseReceivableModal({ receivable, onClose, onSuccess, 
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full">
-        <div className="flex items-center justify-between p-5 border-b border-gray-100">
-          <h3 className="text-lg font-bold text-gray-900">Revise Receivable</h3>
-          <button onClick={onClose} className="p-1.5 hover:bg-gray-100 rounded-lg">
-            <X className="w-5 h-5 text-gray-500" />
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-3 backdrop-blur-sm sm:p-5">
+      <div className="flex max-h-[92vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
+
+        {/* HEADER */}
+        <div className="flex shrink-0 items-center justify-between border-b border-slate-200 bg-white px-4 py-4 sm:px-6">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600">
+              <PenSquare className="h-5 w-5" />
+            </div>
+            <div className="min-w-0">
+              <h3 className="truncate text-base font-bold text-slate-900 sm:text-lg">Revise Receivable</h3>
+              <p className="mt-0.5 text-xs text-slate-500 sm:text-sm">Adjust amount, due date, or lifecycle</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="ml-3 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+            aria-label="Close"
+          >
+            <X className="h-5 w-5" />
           </button>
         </div>
-        <div className="p-5 space-y-4">
-          <div className="bg-gray-50 rounded-lg p-3 text-sm">
-            <p className="font-semibold text-gray-900 truncate">{receivable.payer?.label}</p>
-            <p className="text-gray-500 mt-1">
-              Already received:{" "}
-              <span className="font-semibold text-emerald-700">{formatCurrency(receivable.received)}</span>
-            </p>
-          </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Total Amount Expected (₹)</label>
-            <input
-              type="number"
-              value={totalAmount}
-              onChange={(e) => setTotalAmount(e.target.value)}
-              min="0"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-            />
-          </div>
+        {/* BODY */}
+        <div className="min-h-0 flex-1 overflow-y-auto bg-slate-50/50">
+          <div className="space-y-5 p-4 sm:p-6">
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Due Date</label>
-            <input
-              type="date"
-              value={dueDate}
-              onChange={(e) => setDueDate(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-            />
-          </div>
+            <div className="rounded-xl border border-slate-200 bg-white p-4">
+              <p className="truncate text-sm font-bold text-slate-900">{receivable.payer?.label}</p>
+              <p className="mt-1 text-xs text-slate-500">
+                Already received:{" "}
+                <span className="font-semibold text-emerald-700">{formatCurrency(receivable.received)}</span>
+              </p>
+            </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Note</label>
-            <textarea
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              rows={2}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg resize-none"
-              placeholder="Reason for the change (optional)"
-            />
+            <div>
+              <label className={labelClass}>Total Amount Expected (₹)</label>
+              <input
+                type="number"
+                value={totalAmount}
+                onChange={(e) => setTotalAmount(e.target.value)}
+                min="0"
+                className={inputClass}
+              />
+            </div>
+
+            <div>
+              <label className={labelClass}>Due Date</label>
+              <input
+                type="date"
+                value={dueDate}
+                onChange={(e) => setDueDate(e.target.value)}
+                className={inputClass}
+              />
+            </div>
+
+            <div>
+              <label className={labelClass}>Note</label>
+              <textarea
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                rows={2}
+                className={`${inputClass} resize-none`}
+                placeholder="Reason for the change (optional)"
+              />
+            </div>
           </div>
         </div>
-        <div className="flex flex-col gap-2 p-5 border-t border-gray-100">
-          <div className="flex gap-3">
-            <button onClick={onClose} className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl font-semibold text-gray-700 hover:bg-gray-50">
+
+        {/* FOOTER */}
+        <div className="flex shrink-0 flex-col gap-2 border-t border-slate-200 bg-white p-4 sm:px-6">
+          <div className="flex flex-col-reverse gap-2 sm:flex-row">
+            <button
+              type="button"
+              onClick={onClose}
+              className="w-full rounded-xl border border-slate-200 px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 sm:w-auto"
+            >
               Close
             </button>
             <button
+              type="button"
               onClick={() => save()}
               disabled={submitting}
-              className="flex-1 px-4 py-2.5 bg-emerald-600 text-white rounded-xl font-semibold hover:bg-emerald-700 disabled:opacity-50 flex items-center justify-center gap-2"
+              className="flex w-full flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
             >
-              {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save Changes"}
+              {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save Changes"}
             </button>
           </div>
           <button
+            type="button"
             onClick={() => save({ isCancelled: !receivable.isCancelled })}
             disabled={submitting}
-            className={`w-full px-4 py-2 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 ${
+            className={`flex w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-50 ${
               receivable.isCancelled
                 ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
                 : "bg-red-50 text-red-700 hover:bg-red-100"
             }`}
           >
-            <Ban className="w-4 h-4" />
+            <Ban className="h-4 w-4" />
             {receivable.isCancelled ? "Reinstate Receivable" : "Cancel Receivable"}
           </button>
           <button
+            type="button"
             onClick={remove}
             disabled={submitting}
-            className="w-full px-4 py-2 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 text-red-600 hover:bg-red-50 disabled:opacity-50"
+            className="flex w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            <Trash2 className="w-4 h-4" />
+            <Trash2 className="h-4 w-4" />
             Delete Permanently
           </button>
         </div>

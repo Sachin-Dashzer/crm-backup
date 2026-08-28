@@ -73,6 +73,37 @@ const INDEXES = {
     },
     { keys: { createdAt: -1 }, options: { name: "createdAt_-1" },
       why: "/api/admin/logs ranges on createdAt" },
+    {
+      keys: { payableId: 1, approvalStatus: 1, method: 1, date: 1 },
+      options: { name: "payableId_1_approvalStatus_1_method_1_date_1", partialFilterExpression: { payableId: { $type: "objectId" } } },
+      why: "payableAggregation.js's per-document $lookup joins on payableId+approvalStatus+method; without it, Assets/Liabilities cost O(payables x transactions) — the single biggest fix in this pass",
+    },
+    {
+      keys: { receivableId: 1, approvalStatus: 1, method: 1, date: 1 },
+      options: { name: "receivableId_1_approvalStatus_1_method_1_date_1", partialFilterExpression: { receivableId: { $type: "objectId" } } },
+      why: "mirrors the payableId index above for receivableAggregation.js's $lookup",
+    },
+    {
+      keys: { "collabRef.caseId": 1 },
+      options: { name: "collabRef.caseId_1" },
+      why: "collab flows filter transactions per case by this field",
+    },
+  ],
+
+  borrowings: [
+    {
+      keys: { settlesReceivableId: 1, isCancelled: 1, direction: 1 },
+      options: { name: "settlesReceivableId_1_isCancelled_1_direction_1", partialFilterExpression: { settlesReceivableId: { $type: "objectId" } } },
+      why: "receivableAggregation.js's borrowingSettlementAgg $lookup joins on this per receivable document",
+    },
+  ],
+
+  advances: [
+    {
+      keys: { settlesPayableId: 1, isCancelled: 1, direction: 1 },
+      options: { name: "settlesPayableId_1_isCancelled_1_direction_1", partialFilterExpression: { settlesPayableId: { $type: "objectId" } } },
+      why: "payableAggregation.js's advanceSettlementAgg $lookup joins on this per payable document",
+    },
   ],
 };
 

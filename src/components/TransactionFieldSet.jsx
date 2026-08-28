@@ -39,6 +39,10 @@ const isExpenseSide = (context, categoryOverride) =>
   context === "payable-payment" ||
   categoryOverride === "EXPENSE";
 
+export const fieldInputClass =
+  "w-full rounded-xl border border-gray-300 px-3.5 py-2.5 text-sm text-gray-900 shadow-sm outline-none transition placeholder:text-gray-400 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 disabled:bg-gray-50 disabled:text-gray-400";
+export const fieldLabelClass = "block text-sm font-semibold text-gray-700 mb-1.5";
+
 export default function TransactionFieldSet({
   context,
   value,
@@ -72,42 +76,45 @@ export default function TransactionFieldSet({
     <div className="space-y-4">
       {showAmount && (
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">
+          <label className={fieldLabelClass}>
             {amountLabel} <span className="text-red-500">*</span>
           </label>
-          <input
-            type="number"
-            min="0"
-            value={value.amount ?? ""}
-            onChange={(e) => set({ amount: e.target.value })}
-            disabled={disabled}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-            placeholder="0"
-          />
+          <div className="relative">
+            <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-sm text-gray-400">₹</span>
+            <input
+              type="number"
+              min="0"
+              value={value.amount ?? ""}
+              onChange={(e) => set({ amount: e.target.value })}
+              disabled={disabled}
+              className={`${fieldInputClass} pl-7 text-base font-semibold`}
+              placeholder="0"
+            />
+          </div>
         </div>
       )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">Date</label>
+          <label className={fieldLabelClass}>Date</label>
           <input
             type="date"
             value={value.date || ""}
             onChange={(e) => set({ date: e.target.value })}
             disabled={disabled}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+            className={fieldInputClass}
           />
         </div>
         {showBranch && (
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              Branch {branchLocked && <span className="text-xs text-gray-400">(fixed)</span>}
+            <label className={fieldLabelClass}>
+              Branch {branchLocked && <span className="text-xs font-normal text-gray-400">(fixed)</span>}
             </label>
             <select
               value={value.branch || ""}
               onChange={(e) => set({ branch: e.target.value })}
               disabled={disabled || branchLocked}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg disabled:bg-gray-50 disabled:text-gray-500"
+              className={fieldInputClass}
             >
               <option value="">Select branch</option>
               {ALL_BRANCHES.map((b) => (
@@ -139,9 +146,12 @@ export default function TransactionFieldSet({
           />
 
           {furtherModeRequired && !value.furtherMode && (
-            <p className="text-xs text-red-600 -mt-2">
-              Select the account this money {expenseSide ? "left from" : "landed in"} — without it this
-              settlement can&apos;t be reconciled in Close Book.
+            <p className="text-xs text-red-600 -mt-2 flex items-start gap-1.5">
+              <span className="mt-0.5">⚠</span>
+              <span>
+                Select the account this money {expenseSide ? "left from" : "landed in"} — without it this
+                settlement can&apos;t be reconciled in Close Book.
+              </span>
             </p>
           )}
         </>
@@ -157,13 +167,13 @@ export default function TransactionFieldSet({
 
       {showRemarks && (
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">Remarks</label>
+          <label className={fieldLabelClass}>Remarks</label>
           <textarea
             value={value.remarks || ""}
             onChange={(e) => set({ remarks: e.target.value })}
             rows={2}
             disabled={disabled}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg resize-none"
+            className={`${fieldInputClass} resize-none`}
             placeholder="Optional"
           />
         </div>
@@ -171,7 +181,7 @@ export default function TransactionFieldSet({
 
       {showReceipts && (
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">Receipts</label>
+          <label className={fieldLabelClass}>Receipts</label>
           <ReceiptUpload
             receipts={value.receipts || []}
             onChange={(receipts) => set({ receipts })}

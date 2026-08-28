@@ -1,13 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import { X, Loader2, Ban, Trash2 } from "lucide-react";
+import { X, Loader2, Ban, Trash2, HandCoins } from "lucide-react";
 import DebouncedDateInput from "@/components/finance/DebouncedDateInput";
 import { formatCurrency } from "@/lib/financeUI";
 import { ACCOUNTS } from "@/constants/bankRouting";
 import { ALL_BRANCHES } from "@/lib/branches";
 
+const inputClass =
+  "w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm outline-none transition placeholder:text-slate-300 focus:border-violet-500 focus:ring-2 focus:ring-violet-100 disabled:bg-slate-50 disabled:text-slate-400";
+const labelClass = "mb-1.5 block text-sm font-semibold text-slate-700";
+
 export default function EditBorrowingModal({ borrowing, onClose, onSuccess, toast }) {
+  const isRepayment = borrowing.direction === "OUT";
+
   const [amount, setAmount] = useState(String(borrowing.amount));
   const [date, setDate] = useState(new Date(borrowing.date).toISOString().split("T")[0]);
   const [account, setAccount] = useState(borrowing.account);
@@ -73,7 +79,7 @@ export default function EditBorrowingModal({ borrowing, onClose, onSuccess, toas
 
   const remove = async () => {
     const ok = window.confirm(
-      `Permanently delete this ${borrowing.direction === "OUT" ? "repayment" : "borrowing"} row (${formatCurrency(borrowing.amount)})?\n\nThis cannot be undone.`,
+      `Permanently delete this ${isRepayment ? "repayment" : "borrowing"} row (${formatCurrency(borrowing.amount)})?\n\nThis cannot be undone.`,
     );
     if (!ok) return;
     setSubmitting(true);
@@ -94,160 +100,186 @@ export default function EditBorrowingModal({ borrowing, onClose, onSuccess, toas
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full my-8">
-        <div className="flex items-center justify-between p-5 border-b border-gray-100">
-          <h3 className="text-lg font-bold text-gray-900">
-            Edit {borrowing.direction === "OUT" ? "Repayment" : "Borrowing"}
-          </h3>
-          <button onClick={onClose} className="p-1.5 hover:bg-gray-100 rounded-lg">
-            <X className="w-5 h-5 text-gray-500" />
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-3 backdrop-blur-sm sm:p-5">
+      <div className="flex max-h-[92vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
+
+        {/* HEADER */}
+        <div className="flex shrink-0 items-center justify-between border-b border-slate-200 bg-white px-4 py-4 sm:px-6">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-violet-600">
+              <HandCoins className="h-5 w-5" />
+            </div>
+            <div className="min-w-0">
+              <h3 className="truncate text-base font-bold text-slate-900 sm:text-lg">
+                Edit {isRepayment ? "Repayment" : "Borrowing"}
+              </h3>
+              <p className="mt-0.5 text-xs text-slate-500 sm:text-sm">Update amount, account, or lifecycle</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="ml-3 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+            aria-label="Close"
+          >
+            <X className="h-5 w-5" />
           </button>
         </div>
 
-        <div className="p-5 space-y-4">
-          <div className="bg-gray-50 rounded-lg p-3 text-sm">
-            <p className="font-semibold text-gray-900 truncate">{borrowing.party?.label}</p>
-            <p className="text-gray-500 mt-1">
-              {borrowing.direction === "OUT" ? "Repayment" : "Received"} ·{" "}
-              {borrowing.isCancelled ? (
-                <span className="text-red-600 font-semibold">Cancelled</span>
-              ) : (
-                <span className="text-emerald-600 font-semibold">Active</span>
-              )}
-            </p>
-          </div>
+        {/* BODY */}
+        <div className="min-h-0 flex-1 overflow-y-auto bg-slate-50/50">
+          <div className="space-y-5 p-4 sm:p-6">
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Amount (₹)</label>
-              <input
-                type="number"
-                min="0"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                disabled={borrowing.isCancelled}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg disabled:bg-gray-50"
-              />
+            <div className="rounded-xl border border-slate-200 bg-white p-4">
+              <div className="flex items-center justify-between gap-3">
+                <p className="truncate text-sm font-bold text-slate-900">{borrowing.party?.label}</p>
+                {borrowing.isCancelled ? (
+                  <span className="shrink-0 rounded-full bg-red-100 px-2.5 py-1 text-xs font-semibold text-red-700">
+                    Cancelled
+                  </span>
+                ) : (
+                  <span className="shrink-0 rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700">
+                    Active
+                  </span>
+                )}
+              </div>
+              <p className="mt-1 text-xs text-slate-500">{isRepayment ? "Repayment" : "Received"}</p>
             </div>
+
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <label className={labelClass}>Amount (₹)</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  disabled={borrowing.isCancelled}
+                  className={inputClass}
+                />
+              </div>
+              <div>
+                <label className={labelClass}>Account</label>
+                <select
+                  value={account}
+                  onChange={(e) => setAccount(e.target.value)}
+                  disabled={borrowing.isCancelled}
+                  className={inputClass}
+                >
+                  {ACCOUNTS.map((a) => (
+                    <option key={a} value={a}>{a}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Account</label>
+              <label className={labelClass}>Date</label>
+              <DebouncedDateInput value={date} onCommit={setDate} className={inputClass} />
+            </div>
+
+            <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-3">
+              <input
+                type="checkbox"
+                checked={allowOverpayment}
+                onChange={(e) => setAllowOverpayment(e.target.checked)}
+                className="mt-0.5 h-4 w-4 rounded border-amber-300 text-amber-600 focus:ring-amber-500"
+              />
+              <p className="text-xs leading-5 text-amber-700">
+                Allow overpayment (only matters if this is a repayment amount increase)
+              </p>
+            </label>
+
+            <div>
+              <label className={labelClass}>Branch</label>
               <select
-                value={account}
-                onChange={(e) => setAccount(e.target.value)}
+                value={branch}
+                onChange={(e) => setBranch(e.target.value)}
                 disabled={borrowing.isCancelled}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg disabled:bg-gray-50"
+                className={inputClass}
               >
-                {ACCOUNTS.map((a) => (
-                  <option key={a} value={a}>
-                    {a}
-                  </option>
+                <option value="">Company-level (no branch)</option>
+                {ALL_BRANCHES.map((b) => (
+                  <option key={b} value={b}>{b}</option>
                 ))}
               </select>
             </div>
-          </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Date</label>
-            <DebouncedDateInput
-              value={date}
-              onCommit={setDate}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-            />
-          </div>
-
-          <label className="flex items-center gap-2 text-xs text-amber-700">
-            <input
-              type="checkbox"
-              checked={allowOverpayment}
-              onChange={(e) => setAllowOverpayment(e.target.checked)}
-            />
-            Allow overpayment (only matters if this is a repayment amount increase)
-          </label>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Branch</label>
-            <select
-              value={branch}
-              onChange={(e) => setBranch(e.target.value)}
-              disabled={borrowing.isCancelled}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg disabled:bg-gray-50"
-            >
-              <option value="">Company-level (no branch)</option>
-              {ALL_BRANCHES.map((b) => (
-                <option key={b} value={b}>
-                  {b}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Reference</label>
-            <input
-              type="text"
-              value={reference}
-              onChange={(e) => setReference(e.target.value)}
-              disabled={borrowing.isCancelled}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg disabled:bg-gray-50"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Remarks</label>
-            <textarea
-              value={remarks}
-              onChange={(e) => setRemarks(e.target.value)}
-              disabled={borrowing.isCancelled}
-              rows={2}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg resize-none disabled:bg-gray-50"
-            />
-          </div>
-
-          {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700">
-              {error}
+            <div>
+              <label className={labelClass}>Reference</label>
+              <input
+                type="text"
+                value={reference}
+                onChange={(e) => setReference(e.target.value)}
+                disabled={borrowing.isCancelled}
+                className={inputClass}
+              />
             </div>
-          )}
+
+            <div>
+              <label className={labelClass}>Remarks</label>
+              <textarea
+                value={remarks}
+                onChange={(e) => setRemarks(e.target.value)}
+                disabled={borrowing.isCancelled}
+                rows={2}
+                className={`${inputClass} resize-none`}
+              />
+            </div>
+
+            {error && (
+              <div className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-3.5">
+                <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-red-100">
+                  <span className="text-xs font-bold text-red-700">!</span>
+                </div>
+                <p className="text-xs leading-5 text-red-700">{error}</p>
+              </div>
+            )}
+          </div>
         </div>
 
-        <div className="flex flex-col gap-2 p-5 border-t border-gray-100">
-          <div className="flex gap-3">
+        {/* FOOTER */}
+        <div className="flex shrink-0 flex-col gap-2 border-t border-slate-200 bg-white p-4 sm:px-6">
+          <div className="flex flex-col-reverse gap-2 sm:flex-row">
             <button
+              type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl font-semibold text-gray-700 hover:bg-gray-50"
+              className="w-full rounded-xl border border-slate-200 px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 sm:w-auto"
             >
               Close
             </button>
             {!borrowing.isCancelled && (
               <button
+                type="button"
                 onClick={save}
                 disabled={submitting}
-                className="flex-1 px-4 py-2.5 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 disabled:opacity-50 flex items-center justify-center gap-2"
+                className="flex w-full flex-1 items-center justify-center gap-2 rounded-xl bg-violet-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
               >
-                {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save Changes"}
+                {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save Changes"}
               </button>
             )}
           </div>
           <button
+            type="button"
             onClick={() => setLifecycle(borrowing.isCancelled ? "reinstate" : "cancel")}
             disabled={submitting}
-            className={`w-full px-4 py-2 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 ${
+            className={`flex w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-50 ${
               borrowing.isCancelled
                 ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
                 : "bg-red-50 text-red-700 hover:bg-red-100"
             }`}
           >
-            <Ban className="w-4 h-4" />
+            <Ban className="h-4 w-4" />
             {borrowing.isCancelled ? "Reinstate" : "Cancel"}
           </button>
           {borrowing.isCancelled && (
             <button
+              type="button"
               onClick={remove}
               disabled={submitting}
-              className="w-full px-4 py-2 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 text-red-600 hover:bg-red-50 disabled:opacity-50"
+              className="flex w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              <Trash2 className="w-4 h-4" />
+              <Trash2 className="h-4 w-4" />
               Delete Permanently
             </button>
           )}

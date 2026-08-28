@@ -444,5 +444,22 @@ transactionSchema.index({ approvalStatus: 1, costType: 1, date: 1 });
 transactionSchema.index({ date: -1, method: 1 });
 transactionSchema.index({ branch: 1, transactionCategory: 1, date: -1 });
 
+// Settlement lookups. payableAggregation/receivableAggregation $lookup on these per document
+// to compute paid/pending live; without an index each lookup is a full collection scan, so the
+// Assets and Liabilities pages cost O(documents x transactions). approvalStatus and method are
+// in the same filter, so they belong in the same compound index — the whole sub-pipeline is
+// then served from the index alone. Partial, since most transactions have neither field set.
+transactionSchema.index(
+  { payableId: 1, approvalStatus: 1, method: 1, date: 1 },
+  { partialFilterExpression: { payableId: { $type: "objectId" } } },
+);
+transactionSchema.index(
+  { receivableId: 1, approvalStatus: 1, method: 1, date: 1 },
+  { partialFilterExpression: { receivableId: { $type: "objectId" } } },
+);
+
+// collabRef.caseId already carries `index: true` on the field itself (see the collabRef
+// sub-schema above) — no separate schema.index() call needed; adding one duplicates it.
+
 export default mongoose.models.Transactions ||
   mongoose.model("Transactions", transactionSchema);
