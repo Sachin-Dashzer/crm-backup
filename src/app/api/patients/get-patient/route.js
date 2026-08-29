@@ -77,7 +77,14 @@ const handler = async (req) => {
     if (readyForSurgery)   query["counselling.readyForSurgery"] = true;
 
     const dateRange = resolveDateRange(searchParams);
-    const visitDateQuery = toDateQuery(dateRange);
+    // A name/phone/email search is a lookup for one specific patient — scoping it to the
+    // current-month visit window (the default when no explicit range is passed) hides
+    // patients whose first visit was in an earlier month, which silently breaks every
+    // patient picker (transactions, collab cases, payables, PRP…). An explicit
+    // dateFrom/dateTo or all=1 is still honoured; only the implicit month default is
+    // bypassed while searching.
+    const searchBypassesDefaultWindow = dateRange.isDefault && !!search;
+    const visitDateQuery = searchBypassesDefaultWindow ? null : toDateQuery(dateRange);
     if (visitDateQuery) query["personal.visitDate"] = visitDateQuery;
 
     if (surgeryLocations.length) query["surgery.location"] = { $in: surgeryLocations };
@@ -164,10 +171,10 @@ const handler = async (req) => {
     return NextResponse.json({
       patients, total, page, limit, success: true,
       dateWindow: {
-        from: dateRange.start ? dateRange.start.toISOString() : null,
-        to: dateRange.end ? dateRange.end.toISOString() : null,
-        isDefault: dateRange.isDefault,
-        isAll: dateRange.isAll,
+        from: visitDateQuery && dateRange.start ? dateRange.start.toISOString() : null,
+        to: visitDateQuery && dateRange.end ? dateRange.end.toISOString() : null,
+        isDefault: dateRange.isDefault && !searchBypassesDefaultWindow,
+        isAll: dateRange.isAll || searchBypassesDefaultWindow,
       },
     }, { status: 200 });
   } catch (error) {
