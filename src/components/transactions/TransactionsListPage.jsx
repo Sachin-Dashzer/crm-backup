@@ -48,6 +48,7 @@ import TransactionStatusBadges from "@/components/finance/StatusBadges";
 import { ENTRY_TYPES, ENTRY_TYPE_TONE_CLASSES, ENTRY_TYPE_FILTER_OPTIONS } from "@/constants/entryTypes";
 import SuspenseManager from "@/components/SuspenseManager";
 import ContraManager from "@/components/ContraManager";
+import SearchableMultiSelect from "@/components/SearchableMultiSelect";
 
 const calculateNetAmount = (transaction) => Math.max(0, parseFloat(transaction?.amount) || 0);
 
@@ -72,21 +73,28 @@ const TRANSPLANT_PROCEDURES = ["Sapphire FUE", "DHI", "Turkish DHI", "Beard Tran
 const SERVICE_PROCEDURES    = ["PRP", "GFC", "Alopecia", "Headwash", "Canacot"];
 const REVENUE_CATEGORIES = ["TRANSPLANT", "SERVICE", "MEDICINE"];
 const UNTRACKED_FURTHER_MODE = "__UNTRACKED__";
+// Categorical filters are multi-select (arrays); dateFrom/dateTo stay strings.
+const MULTI_FILTER_KEYS = ["branch", "paymentMethod", "procedure", "furtherMode", "expenseCategory", "expenseType", "entryType"];
 const FILTER_KEYS = ["branch", "dateFrom", "dateTo", "paymentMethod", "procedure", "furtherMode", "expenseCategory", "expenseType", "entryType"];
+const parseList = (raw) => (raw ? raw.split(",").map((s) => s.trim()).filter(Boolean) : []);
+const filterEquals = (a, b) =>
+  Array.isArray(a) || Array.isArray(b)
+    ? (a || []).length === (b || []).length && (a || []).every((v, i) => v === (b || [])[i])
+    : a === b;
 const defaultFilters = () => ({
-  branch: "", dateFrom: getTodayDate(), dateTo: getTodayDate(), paymentMethod: "", procedure: "",
-  furtherMode: "", expenseCategory: "", expenseType: "", entryType: "",
+  branch: [], dateFrom: getTodayDate(), dateTo: getTodayDate(), paymentMethod: [], procedure: [],
+  furtherMode: [], expenseCategory: [], expenseType: [], entryType: [],
 });
 const filtersFromParams = (params) => ({
-  branch:        params.get("branch") || "",
+  branch:        parseList(params.get("branch")),
   dateFrom:      params.get("dateFrom") || getTodayDate(),
   dateTo:        params.get("dateTo") || getTodayDate(),
-  paymentMethod: params.get("paymentMethod") || "",
-  procedure:     params.get("procedure") || "",
-  furtherMode:      params.get("furtherMode") || "",
-  expenseCategory:  params.get("expenseCategory") || "",
-  expenseType:      params.get("expenseType") || "",
-  entryType:        params.get("entryType") || "",
+  paymentMethod: parseList(params.get("paymentMethod")),
+  procedure:     parseList(params.get("procedure")),
+  furtherMode:      parseList(params.get("furtherMode")),
+  expenseCategory:  parseList(params.get("expenseCategory")),
+  expenseType:      parseList(params.get("expenseType")),
+  entryType:        parseList(params.get("entryType")),
 });
 
 const SortIcon = ({ columnKey, sortConfig }) => {
@@ -210,24 +218,6 @@ function Input({ label, type = "text", value, onChange, icon: Icon, required, pl
           required={required} placeholder={placeholder} min={min} max={max}
           className={`w-full border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-100 focus:border-indigo-300 transition-all text-sm sm:text-base ${Icon ? "pl-9 sm:pl-11 pr-4" : "px-4"} py-2.5 sm:py-3`}
         />
-      </div>
-    </label>
-  );
-}
-
-function Select({ label, value, onChange, options, required, icon: Icon }) {
-  return (
-    <label className="block">
-      <span className="text-sm font-semibold text-gray-700 mb-2 block">{label} {required && <span className="text-red-500">*</span>}</span>
-      <div className="relative">
-        {Icon && <Icon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 sm:w-5 sm:h-5 pointer-events-none" />}
-        <select
-          value={value} onChange={(e) => onChange(e.target.value)} required={required}
-          className={`w-full border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-100 focus:border-indigo-300 bg-white transition-all appearance-none text-sm sm:text-base ${Icon ? "pl-9 sm:pl-11 pr-8 sm:pr-10" : "px-4 pr-8 sm:pr-10"} py-2.5 sm:py-3`}
-        >
-          {options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-        </select>
-        <ChevronLeft className="absolute right-2 sm:right-3 top-1/2 transform -translate-y-1/2 rotate-90 text-gray-400 w-4 h-4 sm:w-5 sm:h-5 pointer-events-none" />
       </div>
     </label>
   );
@@ -850,15 +840,15 @@ function AllTransactionsPageInner({ Sidebar }) {
         sortKey:       sortConfig.key,
         sortDir:       sortConfig.direction,
       });
-      if (appliedFilters.branch)        p.set("branch",         appliedFilters.branch);
+      if (appliedFilters.branch.length)        p.set("branch",         appliedFilters.branch.join(","));
       if (appliedFilters.dateFrom)      p.set("dateFrom",       appliedFilters.dateFrom);
       if (appliedFilters.dateTo)        p.set("dateTo",         appliedFilters.dateTo);
-      if (appliedFilters.paymentMethod) p.set("paymentMethod",  appliedFilters.paymentMethod);
-      if (appliedFilters.procedure)     p.set("procedure",      appliedFilters.procedure);
-      if (appliedFilters.furtherMode)     p.set("furtherMode",     appliedFilters.furtherMode);
-      if (appliedFilters.expenseCategory) p.set("expenseCategory", appliedFilters.expenseCategory);
-      if (appliedFilters.expenseType)     p.set("expenseType",     appliedFilters.expenseType);
-      if (appliedFilters.entryType)       p.set("entryType",       appliedFilters.entryType);
+      if (appliedFilters.paymentMethod.length) p.set("paymentMethod",  appliedFilters.paymentMethod.join(","));
+      if (appliedFilters.procedure.length)     p.set("procedure",      appliedFilters.procedure.join(","));
+      if (appliedFilters.furtherMode.length)     p.set("furtherMode",     appliedFilters.furtherMode.join(","));
+      if (appliedFilters.expenseCategory.length) p.set("expenseCategory", appliedFilters.expenseCategory.join(","));
+      if (appliedFilters.expenseType.length)     p.set("expenseType",     appliedFilters.expenseType.join(","));
+      if (appliedFilters.entryType.length)       p.set("entryType",       appliedFilters.entryType.join(","));
       if (debouncedSearch)       p.set("search",         debouncedSearch);
       if (activeCategory === "EXPENSE" && pendingOnly) p.set("approvalStatus", "PENDING");
 
@@ -887,11 +877,11 @@ function AllTransactionsPageInner({ Sidebar }) {
 
   useEffect(() => {
     const patch = {};
-    if (!(activeCategory === "TRANSPLANT" || activeCategory === "SERVICE")) patch.procedure = "";
-    if (activeCategory !== "EXPENSE") { patch.expenseCategory = ""; patch.expenseType = ""; }
+    if (!(activeCategory === "TRANSPLANT" || activeCategory === "SERVICE")) patch.procedure = [];
+    if (activeCategory !== "EXPENSE") { patch.expenseCategory = []; patch.expenseType = []; }
 
     const applyPatch = (f) => {
-      const changed = Object.keys(patch).filter((k) => f[k] !== patch[k]);
+      const changed = Object.keys(patch).filter((k) => (f[k] || []).length > 0);
       return changed.length ? { ...f, ...patch } : f;
     };
     setDraftFilters(applyPatch);
@@ -901,15 +891,15 @@ function AllTransactionsPageInner({ Sidebar }) {
   useEffect(() => {
     const params = new URLSearchParams();
     if (activeCategory !== "TRANSPLANT") params.set("category", activeCategory);
-    if (appliedFilters.branch)        params.set("branch", appliedFilters.branch);
+    if (appliedFilters.branch.length)        params.set("branch", appliedFilters.branch.join(","));
     if (appliedFilters.dateFrom)      params.set("dateFrom", appliedFilters.dateFrom);
     if (appliedFilters.dateTo)        params.set("dateTo", appliedFilters.dateTo);
-    if (appliedFilters.paymentMethod) params.set("paymentMethod", appliedFilters.paymentMethod);
-    if (appliedFilters.procedure)     params.set("procedure", appliedFilters.procedure);
-    if (appliedFilters.furtherMode)     params.set("furtherMode", appliedFilters.furtherMode);
-    if (appliedFilters.expenseCategory) params.set("expenseCategory", appliedFilters.expenseCategory);
-    if (appliedFilters.expenseType)     params.set("expenseType", appliedFilters.expenseType);
-    if (appliedFilters.entryType)       params.set("entryType", appliedFilters.entryType);
+    if (appliedFilters.paymentMethod.length) params.set("paymentMethod", appliedFilters.paymentMethod.join(","));
+    if (appliedFilters.procedure.length)     params.set("procedure", appliedFilters.procedure.join(","));
+    if (appliedFilters.furtherMode.length)     params.set("furtherMode", appliedFilters.furtherMode.join(","));
+    if (appliedFilters.expenseCategory.length) params.set("expenseCategory", appliedFilters.expenseCategory.join(","));
+    if (appliedFilters.expenseType.length)     params.set("expenseType", appliedFilters.expenseType.join(","));
+    if (appliedFilters.entryType.length)       params.set("entryType", appliedFilters.entryType.join(","));
     const qs = params.toString();
     router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
   }, [appliedFilters, activeCategory]);
@@ -946,21 +936,25 @@ function AllTransactionsPageInner({ Sidebar }) {
 
   const applyFilters = () => setAppliedFilters(draftFilters);
 
-  const removeFilter = (key) => {
-    setDraftFilters((f) => ({ ...f, [key]: "" }));
-    setAppliedFilters((f) => ({ ...f, [key]: "" }));
+  const removeFilter = (key, value) => {
+    const reset = (f) => {
+      if (MULTI_FILTER_KEYS.includes(key)) {
+        return { ...f, [key]: value != null ? (f[key] || []).filter((v) => v !== value) : [] };
+      }
+      return { ...f, [key]: "" };
+    };
+    setDraftFilters(reset);
+    setAppliedFilters(reset);
   };
 
-  const hasPendingChanges = FILTER_KEYS.some((k) => draftFilters[k] !== appliedFilters[k]);
+  const hasPendingChanges = FILTER_KEYS.some((k) => !filterEquals(draftFilters[k], appliedFilters[k]));
 
   const pages    = Math.max(1, Math.ceil(total / perPage));
   const current  = Math.min(page, pages);
   const startIdx = (current - 1) * perPage;
   const endIdx   = Math.min(startIdx + perPage, total);
 
-  const hasActiveFilters = appliedFilters.branch || appliedFilters.paymentMethod || appliedFilters.procedure ||
-    appliedFilters.furtherMode || appliedFilters.expenseCategory || appliedFilters.expenseType ||
-    appliedFilters.entryType || tableSearch ||
+  const hasActiveFilters = MULTI_FILTER_KEYS.some((k) => appliedFilters[k].length > 0) || tableSearch ||
     appliedFilters.dateFrom !== getTodayDate() || appliedFilters.dateTo !== getTodayDate();
 
   const exportToExcel = async () => {
@@ -970,15 +964,15 @@ function AllTransactionsPageInner({ Sidebar }) {
         category: activeCategory,
         sortKey: sortConfig.key, sortDir: sortConfig.direction,
       });
-      if (appliedFilters.branch)        p.set("branch",        appliedFilters.branch);
+      if (appliedFilters.branch.length)        p.set("branch",        appliedFilters.branch.join(","));
       if (appliedFilters.dateFrom)      p.set("dateFrom",      appliedFilters.dateFrom);
       if (appliedFilters.dateTo)        p.set("dateTo",        appliedFilters.dateTo);
-      if (appliedFilters.paymentMethod) p.set("paymentMethod", appliedFilters.paymentMethod);
-      if (appliedFilters.procedure)     p.set("procedure",     appliedFilters.procedure);
-      if (appliedFilters.furtherMode)     p.set("furtherMode",     appliedFilters.furtherMode);
-      if (appliedFilters.expenseCategory) p.set("expenseCategory", appliedFilters.expenseCategory);
-      if (appliedFilters.expenseType)     p.set("expenseType",     appliedFilters.expenseType);
-      if (appliedFilters.entryType)       p.set("entryType",       appliedFilters.entryType);
+      if (appliedFilters.paymentMethod.length) p.set("paymentMethod", appliedFilters.paymentMethod.join(","));
+      if (appliedFilters.procedure.length)     p.set("procedure",     appliedFilters.procedure.join(","));
+      if (appliedFilters.furtherMode.length)     p.set("furtherMode",     appliedFilters.furtherMode.join(","));
+      if (appliedFilters.expenseCategory.length) p.set("expenseCategory", appliedFilters.expenseCategory.join(","));
+      if (appliedFilters.expenseType.length)     p.set("expenseType",     appliedFilters.expenseType.join(","));
+      if (appliedFilters.entryType.length)       p.set("entryType",       appliedFilters.entryType.join(","));
       if (debouncedSearch)       p.set("search",        debouncedSearch);
       if (activeCategory === "EXPENSE" && pendingOnly) p.set("approvalStatus", "PENDING");
 
@@ -1293,53 +1287,67 @@ function AllTransactionsPageInner({ Sidebar }) {
                   onSubmit={(e) => { e.preventDefault(); applyFilters(); }}
                   className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-4"
                 >
-                  <Select label="Branch" value={draftFilters.branch} onChange={(v) => setDraftFilters((f) => ({ ...f, branch: v }))} options={[{ value: "", label: "All Branches" }, ...tenantBranches.map((b) => ({ value: b, label: b }))]} icon={Building2} />
+                  <SearchableMultiSelect
+                    label="Branch" icon={Building2} allLabel="All Branches"
+                    value={draftFilters.branch}
+                    onChange={(v) => setDraftFilters((f) => ({ ...f, branch: v }))}
+                    options={tenantBranches.map((b) => ({ value: b, label: b }))}
+                  />
                   <Input  label="From Date" type="date" value={draftFilters.dateFrom} onChange={(v) => setDraftFilters((f) => ({ ...f, dateFrom: v }))} icon={Calendar} />
                   <Input  label="To Date"   type="date" value={draftFilters.dateTo}   onChange={(v) => setDraftFilters((f) => ({ ...f, dateTo: v }))}   icon={Calendar} />
-                  <Select label="Payment Method" value={draftFilters.paymentMethod} onChange={(v) => setDraftFilters((f) => ({ ...f, paymentMethod: v }))} options={[{ value: "", label: "All Methods" }, ...PAYMENT_METHODS.map((m) => ({ value: m, label: METHOD_LABELS[m] || m }))]} icon={CreditCard} />
+                  <SearchableMultiSelect
+                    label="Payment Method" icon={CreditCard} allLabel="All Methods"
+                    value={draftFilters.paymentMethod}
+                    onChange={(v) => setDraftFilters((f) => ({ ...f, paymentMethod: v }))}
+                    options={PAYMENT_METHODS.map((m) => ({ value: m, label: METHOD_LABELS[m] || m }))}
+                  />
                   {!NON_TRANSACTION_TABS.includes(activeCategory) && (
-                    <Select
-                      label="Entry Type" value={draftFilters.entryType}
+                    <SearchableMultiSelect
+                      label="Entry Type" icon={Link2} allLabel="All Entry Types"
+                      value={draftFilters.entryType}
                       onChange={(v) => setDraftFilters((f) => ({ ...f, entryType: v }))}
-                      options={ENTRY_TYPE_FILTER_OPTIONS}
-                      icon={Link2}
+                      options={ENTRY_TYPE_FILTER_OPTIONS.filter((o) => o.value).map((o) => ({
+                        value: o.value,
+                        label: o.label.replace(/ only$/, ""),
+                      }))}
                     />
                   )}
                   {(activeCategory === "TRANSPLANT" || activeCategory === "SERVICE") && (
-                    <Select
-                      label="Procedure" value={draftFilters.procedure} onChange={(v) => setDraftFilters((f) => ({ ...f, procedure: v }))}
-                      options={[{ value: "", label: "All Procedures" }, ...(activeCategory === "TRANSPLANT" ? TRANSPLANT_PROCEDURES : SERVICE_PROCEDURES).map((p) => ({ value: p, label: p }))]}
+                    <SearchableMultiSelect
+                      label="Procedure" allLabel="All Procedures"
+                      value={draftFilters.procedure}
+                      onChange={(v) => setDraftFilters((f) => ({ ...f, procedure: v }))}
+                      options={(activeCategory === "TRANSPLANT" ? TRANSPLANT_PROCEDURES : SERVICE_PROCEDURES).map((p) => ({ value: p, label: p }))}
                     />
                   )}
                   {(REVENUE_CATEGORIES.includes(activeCategory) || activeCategory === "EXPENSE") && (
-                    <Select
+                    <SearchableMultiSelect
                       label={activeCategory === "EXPENSE" ? "Paid From" : "Received In"}
-                      value={draftFilters.furtherMode} onChange={(v) => setDraftFilters((f) => ({ ...f, furtherMode: v }))}
+                      icon={Landmark} allLabel="All Accounts"
+                      value={draftFilters.furtherMode}
+                      onChange={(v) => setDraftFilters((f) => ({ ...f, furtherMode: v }))}
                       options={[
-                        { value: "", label: "All Accounts" },
                         { value: UNTRACKED_FURTHER_MODE, label: "Untracked (no account recorded)" },
                         ...FURTHER_MODES.map((m) => ({ value: m, label: m })),
                       ]}
-                      icon={Landmark}
                     />
                   )}
                   {activeCategory === "EXPENSE" && (
                     <>
-                      <Select
-                        label="Expense Category" value={draftFilters.expenseCategory}
-                        onChange={(v) => setDraftFilters((f) => ({ ...f, expenseCategory: v, expenseType: "" }))}
-                        options={[{ value: "", label: "All Categories" }, ...EXPENSE_CATEGORIES.map((c) => ({ value: c, label: c }))]}
+                      <SearchableMultiSelect
+                        label="Expense Category" allLabel="All Categories"
+                        value={draftFilters.expenseCategory}
+                        onChange={(v) => setDraftFilters((f) => ({ ...f, expenseCategory: v, expenseType: [] }))}
+                        options={EXPENSE_CATEGORIES.map((c) => ({ value: c, label: c }))}
                       />
-                      <Select
-                        label="Expense Type" value={draftFilters.expenseType}
+                      <SearchableMultiSelect
+                        label="Expense Type" allLabel="All Types"
+                        value={draftFilters.expenseType}
                         onChange={(v) => setDraftFilters((f) => ({ ...f, expenseType: v }))}
-                        options={[
-                          { value: "", label: "All Types" },
-                          ...(draftFilters.expenseCategory
-                            ? getExpenseTypes(draftFilters.expenseCategory)
-                            : [...new Set(EXPENSE_CATEGORIES.flatMap((c) => getExpenseTypes(c)))]
-                          ).map((t) => ({ value: t, label: t })),
-                        ]}
+                        options={(draftFilters.expenseCategory.length
+                          ? [...new Set(draftFilters.expenseCategory.flatMap((c) => getExpenseTypes(c)))]
+                          : [...new Set(EXPENSE_CATEGORIES.flatMap((c) => getExpenseTypes(c)))]
+                        ).map((t) => ({ value: t, label: t }))}
                       />
                     </>
                   )}
@@ -1361,39 +1369,41 @@ function AllTransactionsPageInner({ Sidebar }) {
                       <span className="text-xs text-indigo-700">{total} results</span>
                     </div>
                     <div className="flex flex-wrap gap-2">
-                      {appliedFilters.branch && (
-                        <FilterChip label={`Branch: ${appliedFilters.branch}`} onRemove={() => removeFilter("branch")} />
-                      )}
+                      {appliedFilters.branch.map((v) => (
+                        <FilterChip key={`branch-${v}`} label={`Branch: ${v}`} onRemove={() => removeFilter("branch", v)} />
+                      ))}
                       {appliedFilters.dateFrom && (
                         <FilterChip label={`From: ${formatDateForDisplay(appliedFilters.dateFrom)}`} onRemove={() => removeFilter("dateFrom")} />
                       )}
                       {appliedFilters.dateTo && (
                         <FilterChip label={`To: ${formatDateForDisplay(appliedFilters.dateTo)}`} onRemove={() => removeFilter("dateTo")} />
                       )}
-                      {appliedFilters.paymentMethod && (
-                        <FilterChip label={`Method: ${METHOD_LABELS[appliedFilters.paymentMethod] || appliedFilters.paymentMethod}`} onRemove={() => removeFilter("paymentMethod")} />
-                      )}
-                      {appliedFilters.procedure && (
-                        <FilterChip label={`Procedure: ${appliedFilters.procedure}`} onRemove={() => removeFilter("procedure")} />
-                      )}
-                      {appliedFilters.furtherMode && (
+                      {appliedFilters.paymentMethod.map((v) => (
+                        <FilterChip key={`method-${v}`} label={`Method: ${METHOD_LABELS[v] || v}`} onRemove={() => removeFilter("paymentMethod", v)} />
+                      ))}
+                      {appliedFilters.procedure.map((v) => (
+                        <FilterChip key={`proc-${v}`} label={`Procedure: ${v}`} onRemove={() => removeFilter("procedure", v)} />
+                      ))}
+                      {appliedFilters.furtherMode.map((v) => (
                         <FilterChip
-                          label={`${activeCategory === "EXPENSE" ? "Paid From" : "Received In"}: ${appliedFilters.furtherMode === UNTRACKED_FURTHER_MODE ? "Untracked" : appliedFilters.furtherMode}`}
-                          onRemove={() => removeFilter("furtherMode")}
+                          key={`fm-${v}`}
+                          label={`${activeCategory === "EXPENSE" ? "Paid From" : "Received In"}: ${v === UNTRACKED_FURTHER_MODE ? "Untracked" : v}`}
+                          onRemove={() => removeFilter("furtherMode", v)}
                         />
-                      )}
-                      {appliedFilters.expenseCategory && (
-                        <FilterChip label={`Category: ${appliedFilters.expenseCategory}`} onRemove={() => removeFilter("expenseCategory")} />
-                      )}
-                      {appliedFilters.expenseType && (
-                        <FilterChip label={`Type: ${appliedFilters.expenseType}`} onRemove={() => removeFilter("expenseType")} />
-                      )}
-                      {appliedFilters.entryType && (
+                      ))}
+                      {appliedFilters.expenseCategory.map((v) => (
+                        <FilterChip key={`ec-${v}`} label={`Category: ${v}`} onRemove={() => removeFilter("expenseCategory", v)} />
+                      ))}
+                      {appliedFilters.expenseType.map((v) => (
+                        <FilterChip key={`et-${v}`} label={`Type: ${v}`} onRemove={() => removeFilter("expenseType", v)} />
+                      ))}
+                      {appliedFilters.entryType.map((v) => (
                         <FilterChip
-                          label={`Entry: ${ENTRY_TYPE_FILTER_OPTIONS.find((o) => o.value === appliedFilters.entryType)?.label || appliedFilters.entryType}`}
-                          onRemove={() => removeFilter("entryType")}
+                          key={`entry-${v}`}
+                          label={`Entry: ${(ENTRY_TYPE_FILTER_OPTIONS.find((o) => o.value === v)?.label || v).replace(/ only$/, "")}`}
+                          onRemove={() => removeFilter("entryType", v)}
                         />
-                      )}
+                      ))}
                       {tableSearch && (
                         <FilterChip label={`Search: "${tableSearch}"`} onRemove={() => { setTableSearch(""); setDebouncedSearch(""); }} />
                       )}

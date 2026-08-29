@@ -26,6 +26,31 @@ const escapeRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 const UNTRACKED_FURTHER_MODE = "__UNTRACKED__";
 
+/** Split a `?key=a,b,c` param into a trimmed, de-duped list. */
+const listParam = (raw) => [
+  ...new Set(
+    (raw || "")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean),
+  ),
+];
+
+/** Case-insensitive exact-match `$in` clause for a list of string values. */
+const ciInClause = (values) => ({
+  $in: values.map((v) => new RegExp(`^${escapeRegex(v)}$`, "i")),
+});
+
+/** Mongo clause for a single derived "entry type" pseudo-filter. */
+const entryTypeClause = (t, UNSETTLED_METHODS) => {
+  if (t === "REGULAR")
+    return { isSettlement: { $ne: true }, reversalOf: null, method: { $nin: UNSETTLED_METHODS } };
+  if (t === "SETTLEMENT") return { isSettlement: true };
+  if (t === "EXTERNAL") return { method: { $in: UNSETTLED_METHODS } };
+  if (t === "REVERSAL") return { reversalOf: { $ne: null } };
+  return null;
+};
+
 export async function GET(request) {
   try {
     const session = await getServerSession(authOptions);
@@ -37,27 +62,45 @@ export async function GET(request) {
     const page          = Math.max(1, parseInt(searchParams.get("page")  || "1"));
     const limit         = Math.min(10000, Math.max(1, parseInt(searchParams.get("limit") || "10")));
     const category      = searchParams.get("category")      || "";
-    const branch        = searchParams.get("branch")        || "";
     const dateFrom      = searchParams.get("dateFrom")      || "";
     const dateTo        = searchParams.get("dateTo")        || "";
     const search        = searchParams.get("search")        || "";
-    const paymentMethod = searchParams.get("paymentMethod") || "";
-    const procedure     = searchParams.get("procedure")     || "";
-    const furtherMode    = searchParams.get("furtherMode")    || "";
-    const expenseCategory = searchParams.get("expenseCategory") || "";
-    const expenseType    = searchParams.get("expenseType")    || "";
     const approvalStatus = searchParams.get("approvalStatus") || "";
     const payableId      = searchParams.get("payableId")      || "";
     const receivableId   = searchParams.get("receivableId")   || "";
-    const entryType      = searchParams.get("entryType")      || "";
     const sortKey       = searchParams.get("sortKey")       || "date";
     const sortDir       = searchParams.get("sortDir") === "asc" ? 1 : -1;
 
+    // Multi-value filters (comma-separated). OR within a filter, AND across filters.
+    const branches        = listParam(searchParams.get("branch"));
+    const paymentMethods  = listParam(searchParams.get("paymentMethod"));
+    const procedures      = listParam(searchParams.get("procedure"));
+    const furtherModes    = listParam(searchParams.get("furtherMode"));
+    const expenseCategories = listParam(searchParams.get("expenseCategory"));
+    const expenseTypes    = listParam(searchParams.get("expenseType"));
+    const entryTypes      = listParam(searchParams.get("entryType"));
+
     await connectDB();
 
-    const branchFilter = resolveBranchFilter(session, branch);
+    const branchFilter = resolveBranchFilter(
+      session,
+      branches.length === 1 ? branches[0] : "",
+    );
 
     const query = { ...branchFilter };
+
+    // Honour a multi-branch selection while never widening past what the
+    // session is allowed to see.
+    if (branches.length > 1) {
+      const allowed = branchFilter.branch;
+      if (allowed && Array.isArray(allowed.$in)) {
+        query.branch = { $in: branches.filter((b) => allowed.$in.includes(b)) };
+      } else if (typeof allowed === "string") {
+        // session is locked to a single branch — ignore the multi request
+      } else {
+        query.branch = { $in: branches };
+      }
+    }
 
     if (payableId) {
       query.payableId = payableId;
@@ -99,25 +142,28 @@ export async function GET(request) {
       }
     }
 
-    if (paymentMethod) {
-      query.method = { $regex: new RegExp(`^${escapeRegex(paymentMethod)}$`, "i") };
+    if (paymentMethods.length) {
+      query.method = ciInClause(paymentMethods);
     }
 
-    if (procedure) {
-      query.procedure = { $regex: new RegExp(`^${escapeRegex(procedure)}$`, "i") };
+    if (procedures.length) {
+      query.procedure = ciInClause(procedures);
     }
 
-    if (furtherMode === UNTRACKED_FURTHER_MODE) {
-      query.furtherMode = { $in: ["", null] };
-    } else if (furtherMode) {
-      query.furtherMode = { $regex: new RegExp(`^${escapeRegex(furtherMode)}$`, "i") };
+    if (furtherModes.length) {
+      const wantsUntracked = furtherModes.includes(UNTRACKED_FURTHER_MODE);
+      const named = furtherModes.filter((m) => m !== UNTRACKED_FURTHER_MODE);
+      const parts = [];
+      if (named.length) parts.push(...ciInClause(named).$in);
+      if (wantsUntracked) parts.push("", null);
+      query.furtherMode = { $in: parts };
     }
 
-    if (expenseCategory) {
-      query.expense = { $regex: new RegExp(`^${escapeRegex(expenseCategory)}$`, "i") };
+    if (expenseCategories.length) {
+      query.expense = ciInClause(expenseCategories);
     }
-    if (expenseType) {
-      query.expenseType = { $regex: new RegExp(`^${escapeRegex(expenseType)}$`, "i") };
+    if (expenseTypes.length) {
+      query.expenseType = ciInClause(expenseTypes);
     }
 
     if (search) {
@@ -150,16 +196,13 @@ export async function GET(request) {
       }
     }
 
-    if (entryType === "REGULAR") {
-      query.isSettlement = { $ne: true };
-      query.reversalOf = null;
-      query.$and = [...(query.$and || []), { method: { $nin: UNSETTLED_METHODS } }];
-    } else if (entryType === "SETTLEMENT") {
-      query.isSettlement = true;
-    } else if (entryType === "EXTERNAL") {
-      query.$and = [...(query.$and || []), { method: { $in: UNSETTLED_METHODS } }];
-    } else if (entryType === "REVERSAL") {
-      query.reversalOf = { $ne: null };
+    const entryClauses = entryTypes
+      .map((t) => entryTypeClause(t, UNSETTLED_METHODS))
+      .filter(Boolean);
+    if (entryClauses.length === 1) {
+      query.$and = [...(query.$and || []), entryClauses[0]];
+    } else if (entryClauses.length > 1) {
+      query.$and = [...(query.$and || []), { $or: entryClauses }];
     }
 
     const statsQuery = {
@@ -167,6 +210,7 @@ export async function GET(request) {
       ...SETTLEMENT_EXCLUSION,
       approvalStatus: { $nin: ["PENDING", "REJECTED"] },
     };
+    if (query.branch)      statsQuery.branch = query.branch;
     if (query.date)        statsQuery.date   = query.date;
     if (query.procedure)   statsQuery.procedure = query.procedure;
     if (query.furtherMode) statsQuery.furtherMode = query.furtherMode;
