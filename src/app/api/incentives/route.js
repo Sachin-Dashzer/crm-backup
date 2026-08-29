@@ -5,26 +5,24 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import connectDB from "@/lib/db";
 import { recordPatientIncentive, IncentiveError } from "@/lib/incentiveDerivation";
 
-const ALLOWED_ROLES = ["admin", "super-admin"];
-
-export async function POST(req, { params }) {
+// Open incentive entry point used by the "Incentive" panel on the role transaction-create
+// pages. Any authenticated staff member may record a per-patient incentive here — it tops up
+// the linked employee's monthly INCENTIVE payable exactly like the admin patient-page flow.
+// Period-lock rules still apply (enforced inside recordPatientIncentive).
+export async function POST(req) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    if (!ALLOWED_ROLES.includes(session.user.role)) {
-      return NextResponse.json({ error: "Forbidden — admin access required" }, { status: 403 });
-    }
 
     await connectDB();
 
-    const { id } = await params;
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return NextResponse.json({ error: "Invalid patient ID" }, { status: 400 });
-    }
+    const { patient, employee, purpose, amount, date, branch, remarks } = await req.json();
 
-    const { employee, purpose, amount, date, branch, remarks } = await req.json();
+    if (!patient || !mongoose.Types.ObjectId.isValid(patient)) {
+      return NextResponse.json({ error: "Select a patient" }, { status: 400 });
+    }
 
     const actor = { name: session.user.name, email: session.user.email, branch: session.user.branch };
     const performedBy = { name: session.user.name, email: session.user.email };
@@ -32,7 +30,7 @@ export async function POST(req, { params }) {
     let result;
     try {
       result = await recordPatientIncentive({
-        patientId: id,
+        patientId: patient,
         employee,
         purpose,
         amount,

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/db";
 import { periodLockResponse } from "@/lib/periodLock";
+import { backDateGuard } from "@/lib/backDateGuard";
 import { checkCascadeOnDelete } from "@/lib/cascadeIntegrity";
 import Transaction from "@/models/Transactions";
 import Stock from "@/models/Stock";
@@ -65,6 +66,11 @@ export async function DELETE(req) {
     }
 
     for (const txn of transactionsToDelete) {
+      const backDateError = backDateGuard(session.user.role, txn.date);
+      if (backDateError) {
+        return NextResponse.json(backDateError.body, { status: backDateError.status });
+      }
+
       const locked = await periodLockResponse(txn);
       if (locked) {
         return NextResponse.json(locked.body, { status: locked.status });

@@ -1,8 +1,11 @@
+import mongoose from "mongoose";
 import Payable from "@/models/Payable";
 import Patient from "@/models/Patient";
+import Employee from "@/models/Employee";
 import Transactions from "@/models/Transactions";
 import { buildPayableAggregationStages } from "@/lib/payableAggregation";
 import { checkPeriodLock } from "@/lib/periodLock";
+import { INCENTIVE_PURPOSES } from "@/constants/incentivePurposes";
 
 const round2 = (n) => Math.round((Number(n) || 0) * 100) / 100;
 
@@ -127,4 +130,106 @@ export async function recomputeIncentivePayable({ session, payableId, actor }) {
     payable.totalAmount = recomputedTotal;
     await payable.save({ session });
   }
+}
+
+/**
+ * Records a single per-patient incentive: pushes a row onto patient.incentives and
+ * tops up (or opens) that employee's INCENTIVE payable for the row's month.
+ *
+ * Shared by the admin-only patient route (`/api/patients/[id]/incentives`) and the
+ * open transaction-page route (`/api/incentives`) so both take the exact same path.
+ *
+ * `actor` = { name, email, branch }, `performedBy` = { name, email }.
+ * Throws IncentiveError (with .status / .body) on any validation or state failure.
+ */
+export async function recordPatientIncentive({
+  patientId,
+  employee,
+  purpose,
+  amount,
+  date,
+  branch,
+  remarks,
+  actor,
+  performedBy,
+}) {
+  if (!patientId || !mongoose.Types.ObjectId.isValid(patientId)) {
+    throw new IncentiveError(400, { error: "Invalid patient ID" });
+  }
+  if (!employee || !mongoose.Types.ObjectId.isValid(employee)) {
+    throw new IncentiveError(400, { error: "Select an employee" });
+  }
+  if (!purpose || !INCENTIVE_PURPOSES.includes(purpose)) {
+    throw new IncentiveError(400, { error: "Invalid purpose" });
+  }
+  const parsedAmount = parseFloat(amount);
+  if (!parsedAmount || parsedAmount <= 0) {
+    throw new IncentiveError(400, { error: "Amount must be greater than 0" });
+  }
+
+  const employeeDoc = await Employee.findById(employee).select("name role").lean();
+  if (!employeeDoc) {
+    throw new IncentiveError(404, { error: "Employee not found" });
+  }
+
+  const when = date ? new Date(date) : new Date();
+  const period = { month: when.getMonth() + 1, year: when.getFullYear() };
+
+  let createdRow = null;
+  let payableAfter = null;
+
+  const dbSession = await mongoose.startSession();
+  try {
+    await dbSession.withTransaction(async () => {
+      const patient = await Patient.findById(patientId).session(dbSession);
+      if (!patient) {
+        throw new IncentiveError(404, { error: "Patient not found" });
+      }
+
+      const resolvedBranch = branch || patient.personal?.branch || undefined;
+
+      const payable = await findOrCreateIncentivePayable({
+        session: dbSession,
+        employeeId: employeeDoc._id,
+        employeeLabel: employeeDoc.name,
+        branch: resolvedBranch,
+        period,
+        relatedPatient: patient._id,
+        date: when,
+        actor,
+      });
+
+      patient.incentives.push({
+        employee: employeeDoc._id,
+        employeeName: employeeDoc.name,
+        role: employeeDoc.role,
+        purpose,
+        amount: parsedAmount,
+        date: when,
+        branch: resolvedBranch,
+        payableId: payable._id,
+        remarks: remarks || "",
+        createdBy: { ...actor, date: new Date() },
+        log: [
+          {
+            action: "Created",
+            newValue: String(parsedAmount),
+            note: remarks || undefined,
+            performedBy,
+            performedAt: new Date(),
+          },
+        ],
+      });
+      await patient.save({ session: dbSession });
+
+      await recomputeIncentivePayable({ session: dbSession, payableId: payable._id, actor });
+
+      createdRow = patient.incentives[patient.incentives.length - 1];
+      payableAfter = await Payable.findById(payable._id).session(dbSession);
+    });
+  } finally {
+    await dbSession.endSession();
+  }
+
+  return { incentive: createdRow, payable: payableAfter };
 }

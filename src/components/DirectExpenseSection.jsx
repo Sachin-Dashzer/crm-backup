@@ -6,13 +6,24 @@ import ReceiptUpload from "@/components/ReceiptUpload";
 import SearchableSelect from "@/components/SearchableSelect";
 import TransactionSummaryPanel from "@/components/TransactionSummaryPanel";
 import { BranchDateRemarks } from "@/components/RevenueSection";
-import { EXPENSE_CATEGORIES, getExpenseTypes } from "@/constants/expenseCategories";
+import {
+  EXPENSE_CATEGORIES,
+  getExpenseTypes,
+  PAYABLE_EXPENSE_CATEGORIES,
+} from "@/constants/expenseCategories";
 import { Wallet, Save, Loader2 } from "lucide-react";
+
+// This section is only rendered in non-admin panels (sales / reception / stocks),
+// where payable-type expense categories are managed elsewhere, so hide them here.
+const DIRECT_EXPENSE_CATEGORY_OPTIONS = EXPENSE_CATEGORIES.filter(
+  (cat) => !PAYABLE_EXPENSE_CATEGORIES.includes(cat),
+);
 
 export default function DirectExpenseSection({
   data, onChange, vendors, branches, onSave, saving = false, saveLabel = "Save Expense",
   methodOptions,
   forEdit = false,
+  collapsibleRouting = !forEdit,
 }) {
   const set = (patch) => onChange({ ...data, ...patch });
   const vendor = vendors.find((v) => v._id === data.vendorId);
@@ -76,10 +87,10 @@ export default function DirectExpenseSection({
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg"
               >
                 <option value="">Select Category</option>
-                {data.expenseCategory && !EXPENSE_CATEGORIES.includes(data.expenseCategory) && (
+                {data.expenseCategory && !DIRECT_EXPENSE_CATEGORY_OPTIONS.includes(data.expenseCategory) && (
                   <option value={data.expenseCategory}>{data.expenseCategory} (existing)</option>
                 )}
-                {EXPENSE_CATEGORIES.map((cat) => (
+                {DIRECT_EXPENSE_CATEGORY_OPTIONS.map((cat) => (
                   <option key={cat} value={cat}>{cat}</option>
                 ))}
               </select>
@@ -129,6 +140,7 @@ export default function DirectExpenseSection({
               onChange={set}
               methodOptions={methodOptions}
               forEdit={forEdit}
+              collapsibleRouting={collapsibleRouting}
             />
           </div>
         </TransactionSectionCard>

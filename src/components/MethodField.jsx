@@ -21,6 +21,7 @@ export default function MethodField({
   disabled = false,
   methodOptions,
   forEdit = false,
+  collapsibleRouting = false,
 }) {
   const isExpense = category === "EXPENSE";
   const externalMethod = isExpense ? "paid_by_other" : "paid_to_external";
@@ -68,6 +69,7 @@ export default function MethodField({
         furtherMode={value.furtherMode}
         onChange={(patch) => onChange(patch)}
         forEdit={forEdit}
+        collapsible={collapsibleRouting}
       />
 
       <div>

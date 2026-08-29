@@ -7,6 +7,7 @@ import connectDB from "@/lib/db";
 import { periodLockResponse } from "@/lib/periodLock";
 import { checkCascadeOnUpdate, applyCascadeOnUpdate } from "@/lib/cascadeIntegrity";
 import { withDbTransaction, syncExternalPartyOnUpdate } from "@/lib/externalPartyDerivation";
+import { backDateGuard } from "@/lib/backDateGuard";
 import mongoose from "mongoose";
 
 export async function PUT(req) {
@@ -43,6 +44,15 @@ export async function PUT(req) {
         { success: false, message: "Not a transplant transaction" },
         { status: 400 }
       );
+    }
+
+    const backDateError = backDateGuard(
+      session.user.role,
+      existingTransaction.date,
+      data.date
+    );
+    if (backDateError) {
+      return NextResponse.json(backDateError.body, { status: backDateError.status });
     }
 
     const locked = await periodLockResponse(existingTransaction, {

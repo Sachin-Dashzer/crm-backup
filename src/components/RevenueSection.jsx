@@ -1,5 +1,6 @@
 "use client";
 
+import { useSession } from "next-auth/react";
 import TransactionSectionCard from "@/components/TransactionSectionCard";
 import PatientPicker from "@/components/PatientPicker";
 import LineItemsEditor from "@/components/LineItemsEditor";
@@ -34,6 +35,7 @@ export default function RevenueSection({
   saveLabel = "Save Transaction",
   methodOptions,
   forEdit = false,
+  collapsibleRouting = !forEdit,
   singleItem = false,
   branches,
 }) {
@@ -195,6 +197,7 @@ export default function RevenueSection({
               onChange={set}
               methodOptions={methodOptions}
               forEdit={forEdit}
+              collapsibleRouting={collapsibleRouting}
             />
             {!forEdit && !data.isWalkIn && data.patient && (
               <ReceivableLinkField
@@ -256,6 +259,9 @@ export default function RevenueSection({
 
 export function BranchDateRemarks({ data, onChange, branches }) {
   const list = branches || ALL_BRANCHES;
+  const { data: session } = useSession();
+  const canBackDate = ["admin", "super-admin"].includes(session?.user?.role);
+  const todayIST = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
       <div>
@@ -276,8 +282,14 @@ export function BranchDateRemarks({ data, onChange, branches }) {
           type="date"
           value={data.date}
           onChange={(e) => onChange({ date: e.target.value })}
+          min={canBackDate ? undefined : todayIST}
           className="w-full px-3 py-2 border border-gray-300 rounded-lg"
         />
+        {!canBackDate && (
+          <p className="text-xs text-gray-400 mt-1">
+            Back-dated entries require an admin.
+          </p>
+        )}
       </div>
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">Remarks</label>

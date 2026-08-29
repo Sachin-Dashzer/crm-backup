@@ -10,6 +10,7 @@ import ReceiptUpload from "@/components/ReceiptUpload";
 import RevenueSection from "@/components/RevenueSection";
 import ContraEntryForm from "@/components/ContraEntryForm";
 import SuspenseEntryForm from "@/components/SuspenseEntryForm";
+import IncentiveEntryForm from "@/components/IncentiveEntryForm";
 import { useSession } from "next-auth/react";
 import { maskPhone } from "@/utils/phoneUtils";
 import {
@@ -36,6 +37,7 @@ import {
   Wallet,
   ArrowLeftRight,
   HelpCircle,
+  Gift,
 } from "lucide-react";
 
 const OTHER_EXPENSE_CATEGORIES = DIRECT_PAYMENT_CATEGORIES.filter(
@@ -1125,6 +1127,7 @@ function AdminCreateTransactionPageInner() {
                   { id: "service", label: "Service (PRP/GFC)", icon: Heart },
                   { id: "medicine", label: "Medicine Sale", icon: Pill },
                   { id: "expense", label: "Expense", icon: Receipt },
+                  { id: "incentive", label: "Incentive", icon: Gift },
                   { id: "contra", label: "Contra Entry", icon: ArrowLeftRight },
                   { id: "suspense", label: "Suspense", icon: HelpCircle },
                 ].map(({ id, label, icon: Icon }) => (
@@ -1192,6 +1195,10 @@ function AdminCreateTransactionPageInner() {
                 saving={loading}
                 saveLabel="Save Medicines"
               />
+            )}
+
+            {activeTab === "incentive" && (
+              <IncentiveEntryForm picker={patientPicker} />
             )}
 
             {activeTab === "contra" && <ContraEntryForm />}
@@ -2036,6 +2043,7 @@ function AdminCreateTransactionPageInner() {
                           onChange={({ furtherMode }) =>
                             setExpenseData((prev) => ({ ...prev, furtherMode }))
                           }
+                          collapsible
                         />
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">

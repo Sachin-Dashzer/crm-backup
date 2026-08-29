@@ -5,6 +5,7 @@ import connectDB from "@/lib/db";
 import { periodLockResponse } from "@/lib/periodLock";
 import { checkCascadeOnUpdate, applyCascadeOnUpdate } from "@/lib/cascadeIntegrity";
 import { withDbTransaction, syncExternalPartyOnUpdate } from "@/lib/externalPartyDerivation";
+import { backDateGuard } from "@/lib/backDateGuard";
 import Transactions from "@/models/Transactions";
 import Patient from "@/models/Patient";
 import Stock from "@/models/Stock";
@@ -47,6 +48,11 @@ export async function PUT(req) {
         { error: "Transaction not found" },
         { status: 404 }
       );
+    }
+
+    const backDateError = backDateGuard(session.user.role, existingTransaction.date, date);
+    if (backDateError) {
+      return NextResponse.json(backDateError.body, { status: backDateError.status });
     }
 
     const locked = await periodLockResponse(existingTransaction, { date, furtherMode });

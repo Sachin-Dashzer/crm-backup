@@ -12,6 +12,7 @@ import {
   validateExternalParty,
 } from "@/lib/externalPartyDerivation";
 import { UNSETTLED_METHODS, NON_CASH_METHODS } from "@/constants/bankRouting";
+import { backDateGuard } from "@/lib/backDateGuard";
 
 const NO_GIVER_CATEGORIES = [
   "Salary",
@@ -53,17 +54,9 @@ export async function POST(req) {
       taxDetails,
     } = await req.json();
 
-    if (date) {
-      const todayStart = new Date();
-      todayStart.setUTCHours(0, 0, 0, 0);
-      const inputDate = new Date(date);
-      inputDate.setUTCHours(0, 0, 0, 0);
-      if (inputDate < todayStart && !["admin", "super-admin"].includes(session.user.role)) {
-        return NextResponse.json(
-          { error: "Back-dated entries are not allowed for your role" },
-          { status: 403 }
-        );
-      }
+    const backDateError = backDateGuard(session.user.role, date);
+    if (backDateError) {
+      return NextResponse.json(backDateError.body, { status: backDateError.status });
     }
 
     if (!expenseCategory || !amount) {

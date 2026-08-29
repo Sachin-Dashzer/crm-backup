@@ -21,7 +21,15 @@ export default function EmployeeDetailPage() {
   const [employee, setEmployee] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const [data, setData] = useState({ rows: [], total: 0, byMonth: [], byPurpose: [], outstanding: 0 });
+  const [data, setData] = useState({
+    rows: [],
+    total: 0,
+    byMonth: [],
+    byPurpose: [],
+    byPatient: [],
+    outstanding: 0,
+    paid: 0,
+  });
   const [rowsLoading, setRowsLoading] = useState(true);
   const [month, setMonth] = useState("");
   const [year, setYear] = useState("");
@@ -95,12 +103,16 @@ export default function EmployeeDetailPage() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4">
             <p className="text-xs text-gray-500 uppercase tracking-wide">Total Earned (active)</p>
             <p className="text-2xl font-bold text-gray-900 mt-1">
               {formatCurrency(data.byPurpose.reduce((s, p) => s + p.total, 0))}
             </p>
+          </div>
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4">
+            <p className="text-xs text-gray-500 uppercase tracking-wide">Paid</p>
+            <p className="text-2xl font-bold text-emerald-700 mt-1">{formatCurrency(data.paid)}</p>
           </div>
           <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4">
             <p className="text-xs text-gray-500 uppercase tracking-wide">Outstanding (unpaid)</p>
@@ -203,6 +215,48 @@ export default function EmployeeDetailPage() {
                 </div>
               )}
             </>
+          )}
+        </div>
+
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
+          <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+            <Gift className="w-4 h-4 text-gray-500" /> By Patient
+          </h3>
+          {rowsLoading ? (
+            <p className="text-sm text-gray-400">Loading...</p>
+          ) : data.byPatient.length === 0 ? (
+            <p className="text-sm text-gray-400">No incentives recorded for this employee yet.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr>
+                    <th className="text-left px-3 py-2 font-semibold text-gray-600">Patient</th>
+                    <th className="text-right px-3 py-2 font-semibold text-gray-600">Entries</th>
+                    <th className="text-right px-3 py-2 font-semibold text-gray-600">Total Earned</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {data.byPatient.map((row) => (
+                    <tr key={row.patientId}>
+                      <td className="px-3 py-2">
+                        <Link
+                          href={`/admin/patients/${row.patientId}`}
+                          className="text-indigo-600 hover:underline"
+                        >
+                          {row.patientName || "Unknown"}
+                        </Link>
+                        {row.patientPhone ? (
+                          <span className="text-gray-400"> · {row.patientPhone}</span>
+                        ) : null}
+                      </td>
+                      <td className="px-3 py-2 text-right">{row.count}</td>
+                      <td className="px-3 py-2 text-right font-medium">{formatCurrency(row.total)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
 

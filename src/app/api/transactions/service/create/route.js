@@ -11,6 +11,7 @@ import {
   validateExternalParty,
 } from "@/lib/externalPartyDerivation";
 import { resolveReceivableAllocations } from "@/lib/receivableAllocation";
+import { backDateGuard } from "@/lib/backDateGuard";
 
 export async function POST(req) {
   try {
@@ -47,17 +48,9 @@ export async function POST(req) {
       },
     ];
 
-    if (date) {
-      const todayStart = new Date();
-      todayStart.setUTCHours(0, 0, 0, 0);
-      const inputDate = new Date(date);
-      inputDate.setUTCHours(0, 0, 0, 0);
-      if (inputDate < todayStart && !["admin", "super-admin"].includes(session.user.role)) {
-        return NextResponse.json(
-          { error: "Back-dated entries are not allowed for your role" },
-          { status: 403 }
-        );
-      }
+    const backDateError = backDateGuard(session.user.role, date);
+    if (backDateError) {
+      return NextResponse.json(backDateError.body, { status: backDateError.status });
     }
 
     if (!services || services.length === 0) {

@@ -70,7 +70,11 @@ export async function GET(req, { params }) {
       { $sort: { date: -1 } },
     ];
 
-    const [rows, totalAgg, byMonth, byPurpose, outstandingPayables] = await Promise.all([
+    // Patient-wise rollup ("brochure") — respects the same purpose + month/year filters as the
+    // flat row list, and excludes cancelled rows so the totals line up with what's owed.
+    const byPatientMatch = { ...rowMatch, "incentives.isCancelled": { $ne: true } };
+
+    const [rows, totalAgg, byMonth, byPurpose, outstandingPayables, byPatient] = await Promise.all([
       Patient.aggregate([...basePipeline, { $skip: (page - 1) * limit }, { $limit: limit }]),
       Patient.aggregate([...basePipeline, { $count: "total" }]),
       Patient.aggregate([
@@ -104,9 +108,25 @@ export async function GET(req, { params }) {
         },
         ...buildPayableAggregationStages(Transactions.collection.name),
       ]),
+      Patient.aggregate([
+        { $match: preMatch },
+        { $unwind: "$incentives" },
+        { $match: byPatientMatch },
+        {
+          $group: {
+            _id: "$_id",
+            patientName: { $first: "$personal.name" },
+            patientPhone: { $first: "$personal.phone" },
+            total: { $sum: "$incentives.amount" },
+            count: { $sum: 1 },
+          },
+        },
+        { $sort: { total: -1 } },
+      ]),
     ]);
 
     const outstanding = outstandingPayables.reduce((sum, p) => sum + (p.pending || 0), 0);
+    const paid = outstandingPayables.reduce((sum, p) => sum + (p.paid || 0), 0);
 
     return NextResponse.json({
       success: true,
@@ -116,7 +136,15 @@ export async function GET(req, { params }) {
       limit,
       byMonth: byMonth.map((m) => ({ month: m._id.month, year: m._id.year, total: m.total, count: m.count })),
       byPurpose: byPurpose.map((p) => ({ purpose: p._id, total: p.total, count: p.count })),
+      byPatient: byPatient.map((p) => ({
+        patientId: p._id,
+        patientName: p.patientName,
+        patientPhone: p.patientPhone,
+        total: p.total,
+        count: p.count,
+      })),
       outstanding,
+      paid,
       payables: outstandingPayables,
     });
   } catch (error) {

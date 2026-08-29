@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ACCOUNTS,
   RECEIPT_MODES,
@@ -17,9 +17,11 @@ export default function BankRoutingFields({
   furtherMode,
   onChange,
   forEdit = false,
+  collapsible = false,
 }) {
   const isExpense = costType === "Expenses";
   const mounted = useRef(false);
+  const [showRouting, setShowRouting] = useState(false);
 
   useEffect(() => {
     const defaults = isExpense
@@ -66,9 +68,9 @@ export default function BankRoutingFields({
     </div>
   );
 
-  if (isExpense) return furtherModeField;
-
-  return (
+  const fields = isExpense ? (
+    furtherModeField
+  ) : (
     <>
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">Receipt Mode</label>
@@ -89,6 +91,27 @@ export default function BankRoutingFields({
         </select>
       </div>
       {furtherModeField}
+    </>
+  );
+
+  if (!collapsible) return fields;
+
+  return (
+    <>
+      <div className="md:col-span-2">
+        <label className="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={showRouting}
+            onChange={(e) => setShowRouting(e.target.checked)}
+            className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+          />
+          {isExpense
+            ? "Set paid-from account manually"
+            : "Set receipt mode & account manually"}
+        </label>
+      </div>
+      {showRouting && fields}
     </>
   );
 }
