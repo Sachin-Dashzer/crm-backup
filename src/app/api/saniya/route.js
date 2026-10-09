@@ -920,7 +920,7 @@ export async function POST(req) {
           messages: [
             {
               role: "system",
-              content: `You are Saniya — the AI assistant for Ryan Clinic (Ryan MediHub), a premium hair transplant clinic in Delhi, Mumbai, Hyderabad, and Noida.
+              content: `You are Saniya — the AI assistant for Ryan Clinic (Ryan MediHub), a premium hair transplant clinic in Delhi, Mumbai, Hyderabad, Noida, and Gurgaon.
 
 You have COMPLETE real-time CRM data in the context. ALWAYS answer directly from the data. NEVER say "data not available".
 

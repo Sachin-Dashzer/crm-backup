@@ -50,6 +50,15 @@ const CLINIC_BRANCHES = {
     website: "https://clinicryan.com",
     gstin: "",
   },
+  Gurgaon: {
+    img: Logo,
+    name: "RYAN CLINIC",
+    address: "Ryan Clinic, Gurgaon",
+    city: "Gurgaon, Haryana",
+    phone: "",
+    website: "https://clinicryan.com",
+    gstin: "",
+  },
   ...Object.fromEntries(
     COLLAB_BRANCHES.map((city) => [
       city,
@@ -176,10 +185,10 @@ const s = {
 
 function ServiceInvoice({ transaction, patient, consultant, branch }) {
   const clinic = CLINIC_BRANCHES[branch] || CLINIC_BRANCHES.Delhi;
-  const grossAmount = parseFloat(transaction.amount) || 0;
-  const discount = parseFloat(transaction.discount) || 0;
+  const grossAmount = parseFloat(transaction?.amount) || 0;
+  const discount = parseFloat(transaction?.discount) || 0;
   const netAmount = grossAmount - discount;
-  const invoiceNo = `#INV${transaction._id.slice(-5).toUpperCase()}`;
+  const invoiceNo = `#INV${(transaction?._id?.toString() || "00000").slice(-5).toUpperCase()}`;
 
   return (
     <div style={s.page}>
@@ -226,7 +235,7 @@ function ServiceInvoice({ transaction, patient, consultant, branch }) {
         <tbody>
           <tr>
             <td style={s.td}>1</td>
-            <td style={s.td}>Service {transaction.procedure}</td>
+            <td style={s.td}>{transaction?.procedure ? `Service ${transaction.procedure}` : (transaction?.expense ? `Expense: ${transaction.expense}` : (transaction?.expenseType || "Service / Treatment"))}</td>
             <td style={s.td}>{consultant}</td>
             <td style={{ ...s.td, textAlign: "center" }}>{transaction.quantity || 1}</td>
             <td style={{ ...s.td, textAlign: "right" }}>{grossAmount.toFixed(2)}</td>
@@ -272,8 +281,8 @@ function ServiceInvoice({ transaction, patient, consultant, branch }) {
 
 function MedicineInvoice({ transactions, patient, consultant, branch }) {
   const clinic = CLINIC_BRANCHES[branch] || CLINIC_BRANCHES.Delhi;
-  const firstTransaction = transactions[0];
-  const invoiceNo = `#INV${firstTransaction._id.slice(-5).toUpperCase()}`;
+  const firstTransaction = transactions?.[0] || {};
+  const invoiceNo = `#INV${(firstTransaction?._id?.toString() || "00000").slice(-5).toUpperCase()}`;
 
   let netTotal = 0;
   transactions.forEach((t) => { netTotal += parseFloat(t.amount) || 0; });
@@ -376,8 +385,8 @@ function MedicineInvoice({ transactions, patient, consultant, branch }) {
 
 function TransplantInvoice({ transactions, patient, consultant, branch, packageAmount, packageDiscount }) {
   const clinic = CLINIC_BRANCHES[branch] || CLINIC_BRANCHES.Delhi;
-  const firstTransaction = transactions[0] || {};
-  const invoiceNo = `#INV${firstTransaction._id?.slice(-5).toUpperCase() || "00000"}`;
+  const firstTransaction = transactions?.[0] || {};
+  const invoiceNo = `#INV${(firstTransaction?._id?.toString() || "00000").slice(-5).toUpperCase()}`;
 
   const packageTotal = parseFloat(packageAmount) || 0;
   const discountOnPackage = parseFloat(packageDiscount) || 0;
@@ -489,31 +498,61 @@ function TransplantInvoice({ transactions, patient, consultant, branch, packageA
   );
 }
 
-export default function BillGenerator({ transactionId, onClose }) {
+export default function BillGenerator({ transactionId, data, onClose }) {
   const [generating, setGenerating] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [invoiceData, setInvoiceData] = useState(null);
 
-  useEffect(() => {
-    if (transactionId) fetchTransactionData();
-  }, [transactionId]);
+  const resolvedId =
+    transactionId ||
+    data?._id ||
+    data?.id ||
+    data?.transactionId ||
+    (typeof data?.patient === "string" ? data.patient : data?.patient?._id) ||
+    data?.patientId;
 
-  const fetchTransactionData = async () => {
+  const fetchTransactionData = async (idToFetch) => {
+    if (!idToFetch) {
+      setLoading(false);
+      setError("No transaction ID provided.");
+      return;
+    }
     try {
       setLoading(true);
       setError(null);
-      const res = await fetch(`/api/transactions/invoice-data?id=${transactionId}`);
+      const res = await fetch(`/api/transactions/invoice-data?id=${idToFetch}`);
+      if (!res.ok) {
+        let errMsg = `Unable to load receipt data (${res.status})`;
+        try {
+          const errJson = await res.json();
+          if (errJson?.error || errJson?.message) {
+            errMsg = errJson.error || errJson.message;
+          }
+        } catch (_) {}
+        throw new Error(errMsg);
+      }
       const result = await res.json();
-      if (!result.success) throw new Error(result.error || "Failed to fetch invoice data");
+      if (!result?.success || !result?.data) {
+        throw new Error(result?.error || result?.message || "Unable to load receipt data. Please try again.");
+      }
       setInvoiceData(result.data);
-    } catch (error) {
-      console.error("Error fetching transaction:", error);
-      setError(error.message);
+    } catch (err) {
+      console.error("Error fetching transaction:", err);
+      setError(err.message || "Unable to load receipt data. Please try again.");
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (resolvedId) {
+      fetchTransactionData(resolvedId);
+    } else {
+      setLoading(false);
+      setError("No transaction ID provided.");
+    }
+  }, [resolvedId]);
 
   const handlePrint = () => window.print();
 
@@ -530,7 +569,7 @@ export default function BillGenerator({ transactionId, onClose }) {
 
       const opt = {
         margin: [10, 10, 10, 10],
-        filename: `Invoice_${transactionId}.pdf`,
+        filename: `Invoice_${resolvedId || "download"}.pdf`,
         image: { type: "jpeg", quality: 0.98 },
         html2canvas: {
           scale: 2,
@@ -561,9 +600,17 @@ export default function BillGenerator({ transactionId, onClose }) {
   if (loading) {
     return (
       <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-2xl shadow-2xl p-8">
+        <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-sm w-full text-center relative">
+          <button
+            onClick={onClose}
+            className="absolute top-4 right-4 p-1.5 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"
+            title="Cancel"
+          >
+            <CloseIcon className="w-5 h-5" />
+          </button>
           <Loader2 className="w-12 h-12 animate-spin text-indigo-600 mx-auto mb-4" />
-          <p className="text-gray-600 font-medium">Loading invoice data...</p>
+          <p className="text-gray-700 font-semibold mb-1">Loading invoice data...</p>
+          <p className="text-gray-400 text-xs">Please wait while we prepare the receipt</p>
         </div>
       </div>
     );
@@ -572,16 +619,29 @@ export default function BillGenerator({ transactionId, onClose }) {
   if (error || !invoiceData) {
     return (
       <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md">
+        <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full">
           <div className="text-center">
             <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
               <CloseIcon className="w-8 h-8 text-red-500" />
             </div>
-            <h3 className="text-xl font-bold text-gray-900 mb-2">Error Loading Invoice</h3>
-            <p className="text-gray-600 mb-4">{error || "Transaction not found"}</p>
-            <button onClick={onClose} className="px-6 py-2.5 bg-indigo-500 text-white rounded-xl hover:bg-indigo-600 transition-all font-medium">
-              Close
-            </button>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">Error Loading Receipt</h3>
+            <p className="text-gray-600 mb-6">{error || "Unable to load receipt data. Please try again."}</p>
+            <div className="flex gap-3 justify-center">
+              {resolvedId && (
+                <button
+                  onClick={() => fetchTransactionData(resolvedId)}
+                  className="px-5 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-all font-medium text-sm"
+                >
+                  Try Again
+                </button>
+              )}
+              <button
+                onClick={onClose}
+                className="px-5 py-2.5 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-all font-medium text-sm"
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       </div>

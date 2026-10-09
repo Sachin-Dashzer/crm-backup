@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
+import { RotateCw, Banknote, Receipt, AlertTriangle, Calendar } from "lucide-react";
 import OwnerSidebar from "@/components/Sidebars/OwnerSidebar";
 import { OwnerTopbar, KpiRow, Card, Funnel, ProgressBar, Modal, DataTable } from "@/components/owner";
 import { ALL_BRANCHES } from "@/lib/branches";
@@ -179,7 +180,7 @@ export default function OwnerCommandCenter() {
   if (!financeLoading && finance?.payable?.totalPending > 0) {
     alerts.push({
       id: "payable-pending",
-      icon: "💸",
+      icon: <Banknote className="w-4 h-4 text-red-500" />,
       title: `${rupee(finance.payable.totalPending)} payable pending`,
       detail: `${fmt(finance.payable.count || 0)} open payable(s) awaiting payment`,
     });
@@ -187,7 +188,7 @@ export default function OwnerCommandCenter() {
   if (!financeLoading && finance?.receivable?.totalPending > 0) {
     alerts.push({
       id: "receivable-pending",
-      icon: "🧾",
+      icon: <Receipt className="w-4 h-4 text-blue-500" />,
       title: `${rupee(finance.receivable.totalPending)} receivable pending`,
       detail: `${fmt(finance.receivable.count || 0)} open receivable(s) awaiting collection`,
     });
@@ -195,7 +196,7 @@ export default function OwnerCommandCenter() {
   if (!loading && d.notConverted > 0) {
     alerts.push({
       id: "not-converted",
-      icon: "⚠️",
+      icon: <AlertTriangle className="w-4 h-4 text-amber-500" />,
       title: `${fmt(d.notConverted)} leads not converted`,
       detail: `Out of ${fmt(d.visited)} visited this period`,
     });
@@ -203,7 +204,7 @@ export default function OwnerCommandCenter() {
   if (!loading && d.scheduledInterviews > 0) {
     alerts.push({
       id: "interviews-scheduled",
-      icon: "🗓️",
+      icon: <Calendar className="w-4 h-4 text-indigo-500" />,
       title: `${fmt(d.scheduledInterviews)} interviews scheduled`,
       detail: "Upcoming candidate interviews this period",
     });
@@ -248,7 +249,7 @@ export default function OwnerCommandCenter() {
                 </>
               )}
               <button className="icon-btn" onClick={fetchData} disabled={loading} title="Refresh">
-                {loading ? "…" : "⟳"}
+                <RotateCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
               </button>
             </>
           }
@@ -295,7 +296,9 @@ export default function OwnerCommandCenter() {
                         <Tooltip
                           formatter={(v) => [rupee(v), "Revenue"]}
                           labelFormatter={(l) => new Date(l).toLocaleDateString("en-IN", { weekday: "long", day: "2-digit", month: "long" })}
-                          contentStyle={{ borderRadius: "14px", border: "1px solid var(--line)", fontSize: "12px" }}
+                          contentStyle={{ borderRadius: "14px", border: "1px solid var(--line)", fontSize: "12px", backgroundColor: "var(--card)", color: "var(--text)" }}
+                          itemStyle={{ color: "var(--text-primary)" }}
+                          labelStyle={{ color: "var(--muted)" }}
                         />
                         <Area
                           type="monotone"

@@ -2,7 +2,18 @@ import Patient from "@/models/Patient";
 import { withDB } from "@/lib/withDB";
 import { NextResponse } from "next/server";
 
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+
 const handler = async (req) => {
+  const session = await getServerSession(authOptions);
+  if (!session) {
+    return NextResponse.json({ success: false, message: "Unauthorized." }, { status: 401 });
+  }
+  if (session?.user?.role === "sales") {
+    return NextResponse.json({ success: false, message: "Forbidden. Sales users are view-only." }, { status: 403 });
+  }
+
   if (req.method !== 'POST') {
     return NextResponse.json({ error: 'Method not allowed' }, { status: 405 });
   }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, useMemo } from "react";
+import { RotateCw } from "lucide-react";
 import OwnerSidebar from "@/components/Sidebars/OwnerSidebar";
 import { OwnerTopbar, Card, DataTable, Heatmap, KpiRow } from "@/components/owner";
 
@@ -57,7 +58,7 @@ export default function LeadershipPage() {
           subtitle="Team-lead ranking from callby's teamTotals — no manager tier in this data model"
           controls={
             <button className="icon-btn" onClick={fetchData} disabled={loading} title="Refresh">
-              {loading ? "…" : "⟳"}
+              <RotateCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
             </button>
           }
         />

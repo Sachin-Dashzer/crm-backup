@@ -16,6 +16,12 @@ const handler = async (req) => {
         { status: 401 }
       );
     }
+    if (session?.user?.role === "sales") {
+      return NextResponse.json(
+        { success: false, message: "Forbidden. Sales users are view-only." },
+        { status: 403 }
+      );
+    }
 
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");

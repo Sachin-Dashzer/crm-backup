@@ -23,6 +23,12 @@ export async function DELETE(req) {
         { status: 401 }
       );
     }
+    if (session?.user?.role === "sales") {
+      return NextResponse.json(
+        { success: false, message: "Forbidden. Sales users are view-only." },
+        { status: 403 }
+      );
+    }
 
     const { transactionId } = await req.json();
 

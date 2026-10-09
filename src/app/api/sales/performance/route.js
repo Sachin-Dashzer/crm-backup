@@ -5,9 +5,16 @@ import Employee from "@/models/Employee";
 import Patient from "@/models/Patient";
 import Transactions from "@/models/Transactions.js";
 import { UNSETTLED_METHODS, SETTLEMENT_EXCLUSION } from "@/constants/bankRouting";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
 export async function GET(request) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session) {
+      return NextResponse.json({ success: false, message: "Unauthorized." }, { status: 401 });
+    }
+
     await dbConnect();
 
     const { searchParams } = new URL(request.url);
@@ -31,7 +38,7 @@ export async function GET(request) {
     const branch = searchParams.get("branch");
 
     const branchFilter = { costType: "Revenue", method: { $nin: UNSETTLED_METHODS }, ...SETTLEMENT_EXCLUSION, ...dateFilter };
-    const branches = ["Delhi", "Mumbai", "Hyderabad", "Noida"];
+    const branches = ["Delhi", "Mumbai", "Hyderabad", "Noida", "Gurgaon"];
     const targetBranches = branch ? branches.filter((b) => b === branch) : branches;
 
     const procedures = ["hair transplant", "prp", "beard transplant", "medicine", "gfc"];
@@ -82,7 +89,7 @@ export async function GET(request) {
       summaryAggArr,
     ] = await Promise.all([
       Employee.find({ role: "Agent" })
-        .populate({ path: "patient", select: "personal payments" })
+        .populate({ path: "patient", select: "personal payments ops" })
         .lean(),
       targetBranches.length
         ? Transactions.aggregate([
@@ -150,21 +157,39 @@ export async function GET(request) {
       : [];
     const revenueMapByPatient = new Map(revenueByPatient.map((r) => [String(r._id), r.total]));
 
-    const agentPerformance = agentPatientSets.map(({ agent, patients }) => {
-      const visitedCount = patients.filter((p) => p.personal?.visitDate).length;
-      const revenue = patients.reduce((sum, p) => sum + (revenueMapByPatient.get(String(p._id)) || 0), 0);
+    const CONVERTED_STATUSES = new Set(["CLOSED", "SURGERY_BOOKED", "BOOKING_DONE"]);
 
-      return {
-        name: agent.name,
-        patients: patients.length,
-        visited: visitedCount,
-        revenue,
-      };
-    });
+    const agentPerformance = agentPatientSets
+      .map(({ agent, patients }) => {
+        const visitedCount = patients.filter((p) => p.personal?.visitDate).length;
+        const revenue = patients.reduce((sum, p) => sum + (revenueMapByPatient.get(String(p._id)) || 0), 0);
+        const converted = patients.filter((p) => CONVERTED_STATUSES.has(p.ops?.status)).length;
+        const totalLeads = patients.length;
+        // Avoid division by zero; agents with 0 leads get conversionRate = 0
+        const conversionRate =
+          totalLeads > 0 ? parseFloat(((converted / totalLeads) * 100).toFixed(2)) : 0;
+
+        return {
+          name: agent.name,
+          patients: totalLeads,
+          visited: visitedCount,
+          converted,
+          conversionRate,
+          revenue,
+        };
+      })
+      // Sort: highest conversionRate (among agents with leads) → converted → revenue → leads
+      .sort((a, b) => {
+        if (b.conversionRate !== a.conversionRate) return b.conversionRate - a.conversionRate;
+        if (b.converted !== a.converted) return b.converted - a.converted;
+        if (b.revenue !== a.revenue) return b.revenue - a.revenue;
+        return b.patients - a.patients;
+      });
 
     const branchRevenueMap = new Map(branchRevenueAgg.map((r) => [r._id, r.total]));
     const filteredRevenueByBranch = targetBranches
-      .map((branchName) => ({ name: branchName, revenue: branchRevenueMap.get(branchName) || 0 }))
+      // KEY FIX: return `branch` (not `name`) to match XAxis dataKey="branch" on the frontend
+      .map((branchName) => ({ branch: branchName, revenue: branchRevenueMap.get(branchName) || 0 }))
       .filter((b) => b.revenue > 0);
 
     const procedureRevenueMap = new Map(procedureAgg.map((r) => [r._id, r.total]));

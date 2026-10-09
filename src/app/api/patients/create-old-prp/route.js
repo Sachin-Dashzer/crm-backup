@@ -8,6 +8,12 @@ const FALLBACK_DATE = new Date("2025-01-01T00:00:00.000Z");
 
 const handler = async (req) => {
   const session = await getServerSession(authOptions);
+  if (!session) {
+    return NextResponse.json({ success: false, message: "Unauthorized." }, { status: 401 });
+  }
+  if (session?.user?.role === "sales") {
+    return NextResponse.json({ success: false, message: "Forbidden. Sales users are view-only." }, { status: 403 });
+  }
   const rawUserBranch = session?.user?.branch || null;
   const userBranch = rawUserBranch === "Collab" ? null : rawUserBranch;
 

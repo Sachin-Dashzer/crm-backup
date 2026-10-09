@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
+import { RotateCw } from "lucide-react";
 import OwnerSidebar from "@/components/Sidebars/OwnerSidebar";
 import { OwnerTopbar, Card, DataTable, Badge, KpiRow } from "@/components/owner";
 
@@ -52,7 +53,7 @@ export default function RetryRecoveryPage() {
           subtitle="Straight from callby's retry-queue — every lead currently due a follow-up"
           controls={
             <button className="icon-btn" onClick={fetchData} disabled={loading} title="Refresh">
-              {loading ? "…" : "⟳"}
+              <RotateCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
             </button>
           }
         />

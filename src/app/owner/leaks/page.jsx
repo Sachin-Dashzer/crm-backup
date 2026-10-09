@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { RotateCw } from "lucide-react";
 import OwnerSidebar from "@/components/Sidebars/OwnerSidebar";
 import { OwnerTopbar, Card, DataTable, KpiRow } from "@/components/owner";
 import { ALL_BRANCHES } from "@/lib/branches";
@@ -61,7 +62,7 @@ export default function LeakControlRoomPage() {
                 {BRANCHES.map((b) => <option key={b}>{b}</option>)}
               </select>
               <button className="icon-btn" onClick={fetchData} disabled={loading} title="Refresh">
-                {loading ? "…" : "⟳"}
+                <RotateCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
               </button>
             </>
           }

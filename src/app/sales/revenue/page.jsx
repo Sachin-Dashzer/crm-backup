@@ -1,35 +1,24 @@
 "use client";
 
-import { Suspense } from "react";
-import Sidebar from "@/components/Sidebars/SalesSidebar";
-import TransactionTable from "@/components/TransactionTable";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 
-const CONFIG = {
-  title:           "Revenue Transactions",
-  subtitle:        "All revenue transactions and payment details",
-  columns:         ["date","patient","branch","procedure","paymentType","method","amount"],
-  actions:         ["view","bill"],
-  viewBasePath:    "/sales/patients",
-  showCsvExport:   true,
-  defaultPageSize: 25,
-  pageSizeOptions: [25, 50, 100],
-  defaultCostType: "Revenue",
-  filters: {
-    showCostType:    false,
-    showCategory:    false,
-    showMethod:      true,
-    showPaymentType: true,
-    showBranch:      true,
-  },
-};
+/**
+ * Revenue section has been permanently removed from the Sales Panel.
+ * Any direct visits are redirected to Sales Transactions.
+ */
+export default function SalesRevenueRedirect() {
+  const router = useRouter();
 
-export default function SalesRevenuePage() {
+  useEffect(() => {
+    router.replace("/sales/transactions");
+  }, [router]);
+
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      <Sidebar />
-      <Suspense fallback={<div className="flex-1 flex items-center justify-center"><div className="animate-spin h-10 w-10 border-4 border-indigo-100 border-t-indigo-500 rounded-full" /></div>}>
-        <TransactionTable config={CONFIG} />
-      </Suspense>
+    <div className="flex min-h-screen items-center justify-center bg-[#f8fafc]">
+      <div className="text-center p-8 bg-white rounded-2xl border border-slate-200 shadow-sm">
+        <p className="text-sm font-medium text-slate-600">Redirecting to Transactions...</p>
+      </div>
     </div>
   );
 }

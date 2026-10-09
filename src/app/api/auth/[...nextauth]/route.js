@@ -118,9 +118,15 @@ export const authOptions = {
     },
 
     async redirect({ url, baseUrl }) {
-      if (url.startsWith("/")) return `${baseUrl}${url}`;
-      else if (new URL(url).origin === baseUrl) return url;
-      return baseUrl;
+      const cleanBase = baseUrl ? baseUrl.replace(/\/$/, "") : "";
+      if (url.startsWith("/")) return `${cleanBase}${url}`;
+      try {
+        const parsed = new URL(url);
+        if (parsed.origin === cleanBase || parsed.hostname === "localhost" || parsed.hostname === "127.0.0.1") {
+          return url;
+        }
+      } catch (_) {}
+      return cleanBase || "/";
     },
   },
 
@@ -139,10 +145,14 @@ export const authOptions = {
     maxAge: 9 * 60 * 60,
   },
 
+  useSecureCookies: process.env.NODE_ENV === "production" && !process.env.NEXTAUTH_URL?.includes("localhost"),
+
   secret: process.env.NEXTAUTH_SECRET,
 
   debug: process.env.NODE_ENV === "development",
 };
+
+export const dynamic = "force-dynamic";
 
 const handler = NextAuth(authOptions);
 

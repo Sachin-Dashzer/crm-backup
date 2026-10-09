@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { RotateCw } from "lucide-react";
 import OwnerSidebar from "@/components/Sidebars/OwnerSidebar";
 import { OwnerTopbar, Card, DataTable, Badge, KpiRow } from "@/components/owner";
 
@@ -60,7 +61,7 @@ export default function LiveWorkforcePage() {
           subtitle="Per-agent status and the P0–P4 retry queue, live from callby"
           controls={
             <button className="icon-btn" onClick={fetchData} disabled={loading} title="Refresh">
-              {loading ? "…" : "⟳"}
+              <RotateCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
             </button>
           }
         />

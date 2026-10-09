@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import mongoose from "mongoose";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { withDB } from "@/lib/withDB";
@@ -51,6 +52,7 @@ const handler = async (req) => {
     const branches        = split(searchParams.get("branch"));
     const counsellorNames = split(searchParams.get("counsellor"));
     const agentNames      = split(searchParams.get("agent"));
+    const reference       = searchParams.get("reference");
     const techniques      = split(searchParams.get("technique"));
     const doctorNames     = split(searchParams.get("doctor"));
     const seniorTechNames = split(searchParams.get("seniorTech"));
@@ -59,6 +61,12 @@ const handler = async (req) => {
     const surgeryDate      = searchParams.get("surgeryDate")      || "";
     const visited          = searchParams.get("visited")          === "true";
     const readyForSurgery  = searchParams.get("readyForSurgery")  === "true";
+
+    if (reference) {
+      if (!mongoose.Types.ObjectId.isValid(reference)) {
+        return NextResponse.json({ success: false, error: "Invalid reference ID" }, { status: 400 });
+      }
+    }
 
     const query = {};
     const andClauses = [];
@@ -132,10 +140,13 @@ const handler = async (req) => {
       const ids = counsellorDocs.map((d) => d._id);
       query["counselling.counsellor"] = ids.length === 1 ? ids[0] : { $in: ids };
     } else if (visited) {
+      // "Visited" means they have had a counsellor assigned, but no specific counsellor filter is set.
       query["counselling.counsellor"] = { $exists: true, $ne: null };
     }
 
-    if (agentNames.length) {
+    if (reference) {
+      query["personal.reference"] = new mongoose.Types.ObjectId(reference);
+    } else if (agentNames.length) {
       if (!agentDocs.length) return NextResponse.json({ patients: [], total: 0, page, limit, filterOptions: {} }, { status: 200 });
       const ids = agentDocs.map((d) => d._id);
       query["personal.reference"] = ids.length === 1 ? ids[0] : { $in: ids };

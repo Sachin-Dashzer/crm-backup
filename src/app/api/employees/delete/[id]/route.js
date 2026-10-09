@@ -15,7 +15,7 @@ export async function DELETE(req, { params }) {
 
     await connectDB();
 
-    const { id } = params;
+    const { id } = await params;
 
     const employee = await Employee.findByIdAndDelete(id);
 

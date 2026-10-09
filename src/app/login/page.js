@@ -41,8 +41,16 @@ export default function LoginPage() {
       }
 
       if (result?.ok) {
-        const response = await fetch('/api/auth/session');
-        const session = await response.json();
+        let role = null;
+        try {
+          const response = await fetch('/api/auth/session');
+          if (response.ok) {
+            const session = await response.json();
+            role = session?.user?.role;
+          }
+        } catch (sessionErr) {
+          console.error("Session fetch error after login:", sessionErr);
+        }
 
         const roleRoutes = {
           owner: '/owner/dashboard',
@@ -57,7 +65,7 @@ export default function LoginPage() {
           hr: '/hr/dashboard',
         };
 
-        router.push(roleRoutes[session?.user?.role] || '/');
+        router.push(roleRoutes[role] || '/');
         router.refresh();
       }
     } catch (err) {

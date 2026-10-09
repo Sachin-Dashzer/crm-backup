@@ -28,7 +28,7 @@ export function ThemeProvider({ children }) {
 
   return (
     <ThemeContext.Provider value={{ theme, toggleTheme }}>
-      <div className="owner-app" data-theme={theme}>
+      <div className="owner-app" data-theme={theme} style={{ minHeight: "100vh" }}>
         {children}
       </div>
     </ThemeContext.Provider>

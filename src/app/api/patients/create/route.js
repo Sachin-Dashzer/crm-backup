@@ -10,6 +10,12 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 const handler = async (req) => {
   const session = await getServerSession(authOptions);
 
+  if (!session) {
+    return NextResponse.json({ success: false, message: "Unauthorized." }, { status: 401 });
+  }
+  if (session?.user?.role === "sales") {
+    return NextResponse.json({ success: false, message: "Forbidden. Sales users are view-only." }, { status: 403 });
+  }
 
   const userBranch = session?.user?.branch || null;
 

@@ -1,7 +1,9 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { useState, useRef, useEffect, useLayoutEffect, useCallback, useMemo } from "react";
 import { ChevronDown, X, Check, Search } from "lucide-react";
+
+const useIsomorphicLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
 export default function MultiSelect({
   values = [],
@@ -15,16 +17,18 @@ export default function MultiSelect({
   const [dropdownStyle, setDropdownStyle] = useState({});
   const triggerRef = useRef(null);
   const dropdownRef = useRef(null);
+  const searchInputRef = useRef(null);
 
-  const computePosition = useCallback(() => {
-    if (!triggerRef.current) return;
+  const computeStyle = useCallback(() => {
+    if (!triggerRef.current) return null;
     const rect = triggerRef.current.getBoundingClientRect();
     const viewportHeight = window.innerHeight;
+    // Estimate: options, plus the search box (~52) and the select-all header (~34).
     const dropdownHeight = Math.min(options.length * 40 + 90, 346);
     const spaceBelow = viewportHeight - rect.bottom;
     const openUpward = spaceBelow < dropdownHeight && rect.top > dropdownHeight;
 
-    setDropdownStyle({
+    return {
       position: "fixed",
       left: rect.left,
       width: rect.width,
@@ -32,14 +36,34 @@ export default function MultiSelect({
       ...(openUpward
         ? { bottom: viewportHeight - rect.top, top: "auto" }
         : { top: rect.bottom + 2, bottom: "auto" }),
-    });
+    };
   }, [options.length]);
 
-  useEffect(() => {
-    if (open) computePosition();
-  }, [open, computePosition]);
+  const handleToggle = () => {
+    if (!open) {
+      const style = computeStyle();
+      if (style) setDropdownStyle(style);
+      setOpen(true);
+    } else {
+      setOpen(false);
+    }
+  };
+
+  useIsomorphicLayoutEffect(() => {
+    if (open) {
+      const style = computeStyle();
+      if (style) setDropdownStyle(style);
+    }
+  }, [open, computeStyle]);
 
   useEffect(() => {
+    if (!open) return;
+
+    const handleUpdate = () => {
+      const style = computeStyle();
+      if (style) setDropdownStyle(style);
+    };
+
     const closeOnOutside = (e) => {
       if (
         triggerRef.current && !triggerRef.current.contains(e.target) &&
@@ -48,28 +72,34 @@ export default function MultiSelect({
         setOpen(false);
       }
     };
-    const closeOnScroll = (e) => {
-      if (dropdownRef.current?.contains(e.target)) return;
-      setOpen(false);
-    };
-    const closeOnResize = () => setOpen(false);
 
-    if (open) {
-      document.addEventListener("mousedown", closeOnOutside);
-      document.addEventListener("scroll", closeOnScroll, true);
-      window.addEventListener("resize", closeOnResize);
-    }
+    document.addEventListener("mousedown", closeOnOutside);
+    window.addEventListener("scroll", handleUpdate, true);
+    window.addEventListener("resize", handleUpdate);
+
     return () => {
       document.removeEventListener("mousedown", closeOnOutside);
-      document.removeEventListener("scroll", closeOnScroll, true);
-      window.removeEventListener("resize", closeOnResize);
+      window.removeEventListener("scroll", handleUpdate, true);
+      window.removeEventListener("resize", handleUpdate);
     };
+  }, [open, computeStyle]);
+
+  useEffect(() => {
+    if (open) {
+      requestAnimationFrame(() => {
+        searchInputRef.current?.focus({ preventScroll: true });
+      });
+    }
   }, [open]);
 
+  // A stale search term must not survive into the next open.
   useEffect(() => {
     if (!open) setSearch("");
   }, [open]);
 
+  // Filtering only narrows what is VISIBLE. `values` is never touched here, so a selected
+  // option that the current search hides stays selected — the count and the committed
+  // filter are unaffected by what happens to be typed in this box.
   const visibleOptions = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return options;
@@ -91,9 +121,10 @@ export default function MultiSelect({
 
   return (
     <div ref={triggerRef} className={`relative ${className}`}>
+      {/* Trigger button */}
       <button
         type="button"
-        onClick={() => setOpen((v) => !v)}
+        onClick={handleToggle}
         className="w-full flex items-center justify-between rounded-lg border border-gray-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 transition-colors"
       >
         <span className={values.length ? "text-gray-900 font-medium truncate" : "text-gray-400"}>
@@ -118,30 +149,36 @@ export default function MultiSelect({
         </div>
       </button>
 
-      {open && (
+      {/* Dropdown — fixed positioned to escape overflow:hidden/auto parents */}
+      {open && dropdownStyle.position && (
         <div
           ref={dropdownRef}
           style={dropdownStyle}
           className="bg-white border border-gray-200 rounded-xl shadow-2xl overflow-hidden"
         >
+          {/* Search — sticky above the scrolling list, same pattern as SearchableSelect */}
           <div className="p-2 border-b border-gray-200 bg-white">
             <div className="relative">
               <Search className="w-3.5 h-3.5 text-gray-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
+                ref={searchInputRef}
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Type to search..."
                 className="w-full pl-8 pr-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-indigo-200 focus:outline-none"
                 onClick={(e) => e.stopPropagation()}
-                autoFocus
               />
             </div>
           </div>
 
+          {/* Header */}
           <div className="flex items-center justify-between px-3 py-1.5 border-b border-gray-100 bg-gray-50">
             <button
               type="button"
+              // Scoped to the visible list and merged with what's already chosen, so
+              // "Select all" under an active search adds those matches without discarding
+              // selections the search happens to be hiding.
               onClick={() =>
                 onChange([...new Set([...values, ...visibleOptions.map((o) => o.value)])])
               }
@@ -160,6 +197,7 @@ export default function MultiSelect({
             )}
           </div>
 
+          {/* Options list */}
           <div className="max-h-64 overflow-y-auto">
             {options.length === 0 ? (
               <p className="px-3 py-4 text-xs text-gray-400 text-center">No options available</p>

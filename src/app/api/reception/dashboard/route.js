@@ -7,7 +7,7 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { UNSETTLED_METHODS, SETTLEMENT_EXCLUSION } from "@/constants/bankRouting";
 
 
-const VALID_BRANCHES = ["All", "Delhi", "Mumbai", "Hyderabad", "Noida"];
+const VALID_BRANCHES = ["All", "Delhi", "Mumbai", "Hyderabad", "Noida", "Gurgaon"];
 
 const getISTStartOfDay = (date = null) => {
   const d = date ? new Date(date) : new Date();

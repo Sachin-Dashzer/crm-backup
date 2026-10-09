@@ -13,6 +13,7 @@ import {
   Filter, X, ChevronRight, ChevronLeft,
   Eye, SquarePen, Search, Calendar,
   Download, Plus, Phone, MapPin, Users, Scissors,
+  Trash2, AlertTriangle, Loader2, ShieldAlert, Lock, EyeOff,
 } from "lucide-react";
 
 const STATUS_OPTIONS = ["NEW","NOT_VISITED","CONSULTED","NOT_CONVERTED","BOOKING_DONE","SURGERY_BOOKED","CLOSED"];
@@ -27,7 +28,7 @@ const STATUS_COLORS = {
   CLOSED:         "bg-gray-50 text-gray-600 border-gray-200",
 };
 
-const LOCATION_OPTIONS = ["Delhi", "Mumbai", "Hyderabad", "Noida"];
+const LOCATION_OPTIONS = ["Delhi", "Mumbai", "Hyderabad", "Noida", "Gurgaon"];
 
 const COL_DEFS = {
   visitDate:   { label: "Visit Date",    sortKey: "personal.visitDate" },
@@ -124,7 +125,14 @@ export default function PatientTable({ config = {} }) {
     doctors: [], seniorTechs: [], implanters: [],
     surgeryLocations: [],
   });
-const [drawerOpen, setDrawerOpen] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
+  const [deleteModal, setDeleteModal] = useState(null);
+  const [deleteAdminEmail, setDeleteAdminEmail] = useState("");
+  const [deleteAdminPassword, setDeleteAdminPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
+  const [deleteSuccess, setDeleteSuccess] = useState(null); // { message, warning }
 
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch]           = useState("");
@@ -205,7 +213,7 @@ const [drawerOpen, setDrawerOpen] = useState(false);
   };
 
   const listKey = `/api/patients/get-patient?${buildQuery()}`;
-  const { data, error, isLoading, isValidating } = useCrmData(listKey);
+  const { data, error, isLoading, isValidating, mutate } = useCrmData(listKey);
 
   const patients   = data?.patients || [];
   const total      = data?.total || 0;
@@ -235,6 +243,63 @@ const [drawerOpen, setDrawerOpen] = useState(false);
     setPage(1);
   };
 
+  /* ── Delete Patient with Super Admin Verification ── */
+  const openDeleteModal = (pt) => {
+    setDeleteModal({ id: pt._id, name: pt.personal?.name || "this patient" });
+    setDeleteAdminEmail(
+      session?.user?.role === "super-admin" || session?.user?.role === "owner"
+        ? session?.user?.email || ""
+        : ""
+    );
+    setDeleteAdminPassword("");
+    setDeleteError("");
+    setShowPassword(false);
+  };
+
+  const handleDelete = async (e) => {
+    if (e) e.preventDefault();
+    if (!deleteModal?.id) return;
+    if (!deleteAdminEmail.trim() || !deleteAdminPassword) {
+      setDeleteError("Please enter both Super Admin ID/Email and Password.");
+      return;
+    }
+    setDeletingId(deleteModal.id);
+    setDeleteError("");
+    try {
+      const res = await fetch("/api/patients/delete", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: deleteModal.id,
+          adminEmail: deleteAdminEmail.trim(),
+          adminPassword: deleteAdminPassword,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || data.error || "Failed to delete patient");
+      }
+      // Refresh the patient list
+      if (typeof mutate === "function") mutate();
+      // Show result feedback
+      setDeleteSuccess({
+        message: `Patient "${deleteModal.name}" and all associated records have been permanently deleted.`,
+        warning: data.cloudinaryWarning || null,
+        summary: data.summary || null,
+      });
+      setDeleteModal(null);
+      setDeleteAdminEmail("");
+      setDeleteAdminPassword("");
+      // Auto-dismiss success banner after 10 s
+      setTimeout(() => setDeleteSuccess(null), 10000);
+    } catch (err) {
+      setDeleteError(err.message || "Authorization failed");
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  /* ── CSV Export (all filtered records) ── */
   const [exporting, setExporting] = useState(false);
   const exportCSV = async () => {
     setExporting(true);
@@ -513,14 +578,26 @@ const [drawerOpen, setDrawerOpen] = useState(false);
                             <button
                               onClick={() => window.open(`${basePath}/${pt._id}`, "_blank", "noopener,noreferrer")}
                               className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 transition-colors"
+                              title="View Details"
                             >
                               <Eye className="w-3.5 h-3.5" /> View
+                            </button>
+                          )}
+                          {actions.includes("delete") && (
+                            <button
+                              onClick={() => openDeleteModal(pt)}
+                              disabled={deletingId === pt._id}
+                              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-red-700 bg-red-50 hover:bg-red-100 transition-colors disabled:opacity-50"
+                              title="Delete Patient"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" /> Delete
                             </button>
                           )}
                           {actions.includes("edit") && (
                             <Link
                               href={`${basePath}/edit/${pt._id}`}
                               className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-purple-700 bg-purple-50 hover:bg-purple-100 transition-colors"
+                              title="Edit Patient"
                             >
                               <SquarePen className="w-3.5 h-3.5" /> Edit
                             </Link>
@@ -753,6 +830,170 @@ const [drawerOpen, setDrawerOpen] = useState(false);
                 Done
               </button>
             </div>
+          </div>
+        </div>
+      )}
+      {/* ── Super Admin Security Authorization Delete Modal ── */}
+      {deleteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => !deletingId && setDeleteModal(null)}
+          />
+          <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden">
+            {/* Modal Header */}
+            <div className="px-6 pt-6 pb-4 border-b border-gray-100 flex items-start justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-red-50 text-red-600 flex items-center justify-center shrink-0 border border-red-200">
+                  <ShieldAlert className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-gray-900 leading-snug">Super Admin Authorization</h3>
+                  <p className="text-xs text-gray-500 mt-0.5">High-security patient deletion</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => !deletingId && setDeleteModal(null)}
+                className="p-1 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <form onSubmit={handleDelete} className="p-6 space-y-4">
+              {/* Destructive impact warning */}
+              <div className="p-3.5 bg-red-50/80 border border-red-200 rounded-xl space-y-2">
+                <p className="text-xs font-bold text-red-900 flex items-center gap-1.5">
+                  <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                  Delete Patient Permanently?
+                </p>
+                <p className="text-xs text-red-800 leading-relaxed">
+                  You are about to permanently delete{" "}
+                  <span className="font-bold underline decoration-red-400">{deleteModal.name}</span>.
+                  This will irreversibly remove:
+                </p>
+                <ul className="text-xs text-red-800 list-disc pl-4 space-y-0.5 leading-relaxed">
+                  <li>Patient profile &amp; personal data</li>
+                  <li>All transactions, payments &amp; receipts</li>
+                  <li>All receivables &amp; payables</li>
+                  <li>All incentive records</li>
+                  <li>All collab cases &amp; related references</li>
+                  <li>All uploaded documents &amp; images (Cloudinary)</li>
+                  <li>All legacy audit trail entries</li>
+                </ul>
+                <p className="text-xs font-semibold text-red-900">This action cannot be undone.</p>
+              </div>
+
+              {deleteError && (
+                <div className="p-3 bg-red-100/90 border border-red-300 text-red-800 text-xs rounded-xl flex items-center gap-2 font-medium">
+                  <AlertTriangle className="w-4 h-4 shrink-0 text-red-600" />
+                  <span>{deleteError}</span>
+                </div>
+              )}
+
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">
+                    Super Admin ID / Email <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <Users className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    <input
+                      type="text"
+                      value={deleteAdminEmail}
+                      onChange={(e) => setDeleteAdminEmail(e.target.value)}
+                      placeholder="superadmin@ryancrm.com"
+                      className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-200 focus:border-red-500 focus:outline-none transition-colors"
+                      required
+                      autoFocus
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">
+                    Super Admin Password <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <Lock className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      value={deleteAdminPassword}
+                      onChange={(e) => setDeleteAdminPassword(e.target.value)}
+                      placeholder="••••••••••••"
+                      className="w-full pl-9 pr-10 py-2 text-sm border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-200 focus:border-red-500 focus:outline-none transition-colors"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((s) => !s)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Modal Footer */}
+              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-gray-100">
+                <button
+                  type="button"
+                  onClick={() => setDeleteModal(null)}
+                  disabled={!!deletingId}
+                  className="px-4 py-2 rounded-xl border border-gray-300 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={!!deletingId || !deleteAdminEmail || !deleteAdminPassword}
+                  className="inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-red-600 text-white text-sm font-semibold hover:bg-red-700 transition-colors shadow-sm disabled:opacity-50"
+                >
+                  {deletingId ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" /> Deleting permanently…
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="w-4 h-4" /> Yes, Delete Everything
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── Post-deletion success / warning banner ── */}
+      {deleteSuccess && (
+        <div className="fixed bottom-5 right-5 z-50 max-w-sm w-full shadow-2xl rounded-2xl overflow-hidden border border-gray-200">
+          <div className={`px-4 py-3 flex items-start gap-3 ${
+            deleteSuccess.warning ? "bg-amber-50 border-b border-amber-200" : "bg-emerald-50 border-b border-emerald-200"
+          }`}>
+            <AlertTriangle className={`w-4 h-4 mt-0.5 shrink-0 ${
+              deleteSuccess.warning ? "text-amber-600" : "text-emerald-600"
+            }`} />
+            <div className="flex-1 min-w-0">
+              <p className={`text-xs font-bold ${
+                deleteSuccess.warning ? "text-amber-900" : "text-emerald-900"
+              }`}>
+                {deleteSuccess.warning ? "Deletion Complete (with warnings)" : "Deletion Complete"}
+              </p>
+              <p className="text-xs text-gray-700 mt-0.5 leading-relaxed">{deleteSuccess.message}</p>
+              {deleteSuccess.warning && (
+                <p className="text-xs text-amber-800 mt-1 font-medium">{deleteSuccess.warning}</p>
+              )}
+            </div>
+            <button
+              onClick={() => setDeleteSuccess(null)}
+              className="p-1 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors shrink-0"
+            >
+              <X className="w-4 h-4" />
+            </button>
           </div>
         </div>
       )}

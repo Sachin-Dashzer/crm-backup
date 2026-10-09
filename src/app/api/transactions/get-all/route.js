@@ -60,7 +60,7 @@ export async function GET(request) {
 
     const { searchParams } = new URL(request.url);
     const page          = Math.max(1, parseInt(searchParams.get("page")  || "1"));
-    const limit         = Math.min(10000, Math.max(1, parseInt(searchParams.get("limit") || "10")));
+    const limit         = Math.min(1000, Math.max(1, parseInt(searchParams.get("limit") || "10")));
     const category      = searchParams.get("category")      || "";
     const dateFrom      = searchParams.get("dateFrom")      || "";
     const dateTo        = searchParams.get("dateTo")        || "";
@@ -228,7 +228,7 @@ export async function GET(request) {
       Transactions.find(query)
         .populate({
           path: "patient",
-          select: "personal.name personal.phone payments counselling.counsellor",
+          select: "personal.name personal.phone personal.techniqueQuoted payments counselling.counsellor counselling.techniqueSuggested counselling.finlpackage surgery.technique",
           populate: { path: "counselling.counsellor", select: "name" },
         })
         .populate("medicineId", "name")
@@ -290,7 +290,7 @@ export async function GET(request) {
       stats,
     });
   } catch (error) {
-    console.error("❌ Error fetching all transactions:", error);
+    console.error("Error fetching all transactions:", error);
     return NextResponse.json(
       { success: false, error: "Failed to fetch transactions", message: error.message },
       { status: 500 }

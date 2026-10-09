@@ -156,7 +156,7 @@ function DashboardSkeleton() {
 export default function SuperAdminDashboard() {
   const router = useRouter();
   const [branch, setBranch]       = useState("All");
-  const [dateRange, setDateRange] = useState("Today");
+  const [dateRange, setDateRange] = useState("Last 7 Days");
   const [custom, setCustom]       = useState({ from: "", to: "" });
   const [loading, setLoading]     = useState(true);
   const [data, setData]           = useState(null);

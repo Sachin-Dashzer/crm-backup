@@ -1,9 +1,17 @@
 import { NextResponse } from "next/server";
 import Employee from "@/models/Employee";
 import dbConnect from "@/lib/db";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
 export async function PUT(request, { params }) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session) {
+      return NextResponse.json({ success: false, message: "Unauthorized." }, { status: 401 });
+    }
+    const isSales = session?.user?.role === "sales";
+
     await dbConnect();
 
     const { id } = await params;
@@ -14,6 +22,30 @@ export async function PUT(request, { params }) {
         { success: false, message: "Employee ID is required" },
         { status: 400 }
       );
+    }
+
+    // Role-based protections for Sales users
+    if (isSales) {
+      const existingEmployee = await Employee.findById(id);
+      if (!existingEmployee) {
+        return NextResponse.json(
+          { success: false, message: "Employee not found" },
+          { status: 404 }
+        );
+      }
+      if (existingEmployee.role === "Hr") {
+        return NextResponse.json(
+          { success: false, message: "Forbidden. Sales users cannot modify HR records." },
+          { status: 403 }
+        );
+      }
+      const allowedSalesRoles = ["Agent", "Counsellor", "Doctor", "Technician", "Implanter", "Others"];
+      if (data.role && !allowedSalesRoles.includes(data.role)) {
+        return NextResponse.json(
+          { success: false, message: "Sales users cannot assign HR or administrative roles." },
+          { status: 403 }
+        );
+      }
     }
 
     if (!data.name || !data.name.trim()) {
@@ -29,8 +61,8 @@ export async function PUT(request, { params }) {
         { status: 400 }
       );
     }
-
-    const allowedRoles = ["Agent", "Counsellor", "Doctor", "Technician", "Implanter", "Others"];
+    // Validate role is from allowed enum values
+    const allowedRoles = ["Agent", "Counsellor", "Doctor", "Technician", "Implanter", "Others", "Hr"];
     if (!allowedRoles.includes(data.role)) {
       return NextResponse.json(
         { success: false, message: "Invalid role specified. Must be one of: " + allowedRoles.join(", ") },
@@ -64,8 +96,12 @@ export async function PUT(request, { params }) {
       email: data.email?.trim() || undefined,
       role: data.role,
       isactive: data.isactive !== undefined ? data.isactive : true,
-      salaryStructure: data.salaryStructure || undefined,
-      incentiveRate: data.incentiveRate !== undefined ? data.incentiveRate : undefined,
+      ...(isSales
+        ? {}
+        : {
+            salaryStructure: data.salaryStructure || undefined,
+            incentiveRate: data.incentiveRate !== undefined ? data.incentiveRate : undefined,
+          }),
     };
 
     const employee = await Employee.findByIdAndUpdate(

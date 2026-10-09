@@ -1,707 +1,1015 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import React, { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
-import { maskPhone } from "@/utils/phoneUtils";
 import SalesSidebar from "@/components/Sidebars/SalesSidebar";
-import { useToast } from "@/components/Toast";
 import BillGenerator from "@/components/BillGenerator";
+import ContraManager from "@/components/ContraManager";
+import SuspenseManager from "@/components/SuspenseManager";
+import IncentiveEntryForm from "@/components/IncentiveEntryForm";
+import usePatientPicker from "@/lib/usePatientPicker";
+import { ALL_BRANCHES } from "@/lib/branches";
+import { METHOD_LABELS } from "@/constants/paymentMethods";
 import {
+  Receipt,
+  Search,
   Filter,
-  X,
+  RefreshCw,
+  Calendar,
+  IndianRupee,
   ChevronLeft,
   ChevronRight,
-  Search,
-  Plus,
-  Edit2,
-  User,
-  Calendar,
-  CreditCard,
-  Building2,
-  AlertCircle,
-  Trash2,
-  RefreshCw,
-  Loader2,
-  Menu,
-  Tag,
-  ArrowUpDown,
   ChevronDown,
-  Package,
+  ChevronUp,
+  Tag,
+  Scissors,
+  Heart,
+  Pill,
+  ArrowUpDown,
+  Building2,
+  Gift,
+  FileDown,
   FileText as Bill,
+  Activity,
+  Layers,
+  Sparkles,
+  ArrowLeftRight,
+  HelpCircle,
+  X,
+  CreditCard,
+  User,
   Clock,
-  XCircle,
+  Package,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { utils, writeFile } from "xlsx";
 
-const calculateNetAmount = (transaction) => {
-  if (!transaction) return 0;
-  return Math.max(0, parseFloat(transaction.amount) || 0);
-};
+const DATE_PRESETS = ["Today", "Yesterday", "Last 7 Days", "This Month", "All Time", "Custom"];
 
-const getTodayDate = () => new Date().toISOString().split("T")[0];
-
-const formatDateForDisplay = (date) => {
-  if (!date) return "N/A";
-  return new Date(date).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
-};
-
-const formatCurrency = (amount) =>
-  new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(parseFloat(amount) || 0);
-
-const PAYMENT_METHODS = ["upi", "cash", "card", "banking", "bajaj_loan", "fibe_loan", "hdfc_skin_bank_transfer", "hdfc_ryan_medihub_bank_transfer", "icici_medihub_bank_transfer", "other"];
-const TRANSPLANT_PROCEDURES = ["Sapphire FUE", "DHI", "Turkish DHI", "Beard Transplant"];
-const SERVICE_PROCEDURES = ["PRP", "GFC", "Alopecia", "Headwash", "Canacot"];
-const TRANSACTION_CATEGORIES = [
-  { value: "TRANSPLANT", label: "Transplant", icon: User },
-  { value: "SERVICE", label: "Services", icon: User },
-  { value: "MEDICINE", label: "Medicine", icon: User },
-  { value: "EXPENSE", label: "Expenses", icon: User },
+const TABS = [
+  { id: "ALL",          label: "All",          icon: Layers },
+  { id: "TOTAL_SALES",  label: "Total Sales",  icon: IndianRupee },
+  { id: "TRANSPLANT",   label: "Transplants",  icon: Scissors },
+  { id: "SERVICE",      label: "Services",     icon: Heart },
+  { id: "MEDICINE",     label: "Medicine",     icon: Pill },
+  { id: "CONTRA",       label: "Contra",       icon: ArrowLeftRight },
+  { id: "SUSPENSE",     label: "Suspense",     icon: HelpCircle },
 ];
 
-const getCategoryGradientClass = (categoryValue, isActive) => {
-  if (!isActive) return "bg-gray-50 text-gray-600 hover:bg-gray-100";
-  const gradients = {
-    TRANSPLANT: "bg-gradient-to-r from-indigo-500 to-indigo-600 text-white shadow-md",
-    SERVICE: "bg-gradient-to-r from-pink-500 to-pink-600 text-white shadow-md",
-    MEDICINE: "bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-md",
-    EXPENSE: "bg-gradient-to-r from-rose-500 to-rose-600 text-white shadow-md",
-  };
-  return gradients[categoryValue] || "bg-gray-50 text-gray-600";
+const METHOD_COLORS = {
+  cash: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  upi: "bg-blue-50 text-blue-700 border-blue-200",
+  card: "bg-purple-50 text-purple-700 border-purple-200",
+  banking: "bg-indigo-50 text-indigo-700 border-indigo-200",
+  bajaj_loan: "bg-orange-50 text-orange-700 border-orange-200",
+  fibe_loan: "bg-amber-50 text-amber-700 border-amber-200",
+  hdfc_skin_bank_transfer: "bg-sky-50 text-sky-700 border-sky-200",
+  hdfc_ryan_medihub_bank_transfer: "bg-teal-50 text-teal-700 border-teal-200",
+  icici_medihub_bank_transfer: "bg-rose-50 text-rose-700 border-rose-200",
+  other: "bg-slate-100 text-slate-600 border-slate-200",
 };
 
-function ApprovalBadge({ status }) {
-  if (status === "PENDING") {
-    return (
-      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold bg-amber-100 text-amber-700 border border-amber-200">
-        <Clock className="w-3 h-3" />Pending Approval
-      </span>
-    );
+const fmtRupee = (num) =>
+  new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+    maximumFractionDigits: 0,
+  }).format(num || 0);
+
+const fmtDate = (dateStr) => {
+  if (!dateStr) return "—";
+  return new Date(dateStr).toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+};
+
+function getISTDate(d = new Date()) {
+  return d.toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
+}
+
+const getPatientName = (row) => row.patient?.personal?.name || row.patientName || "Walk-in Customer";
+const getPatientPhone = (row) => row.patient?.personal?.phone || row.patientPhone || "";
+
+const getPatientPackage = (row) => {
+  const p = row.patient;
+  if (!p) {
+    if (row.procedure && (row.transactionCategory === "SERVICE" || row.transactionCategory === "TRANSPLANT")) {
+      return row.procedure;
+    }
+    return "N/A";
   }
-  if (status === "REJECTED") {
-    return (
-      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold bg-gray-100 text-gray-600 border border-gray-200">
-        <XCircle className="w-3 h-3" />Rejected
-      </span>
-    );
-  }
-  return null;
-}
+  const pkg =
+    p.counselling?.techniqueSuggested ||
+    p.surgery?.technique ||
+    p.personal?.techniqueQuoted ||
+    row.procedure ||
+    "N/A";
+  return pkg;
+};
 
-function StatCard({ title, value, icon: Icon, gradient, count, iconBg, iconColor }) {
-  return (
-    <div className={`bg-linear-to-br ${gradient} p-4 sm:p-6 rounded-2xl shadow-lg text-white relative overflow-hidden transform hover:scale-105 transition-transform duration-300`}>
-      <div className="absolute top-0 right-0 w-24 h-24 sm:w-32 sm:h-32 bg-white/10 rounded-full -mr-12 -mt-12 sm:-mr-16 sm:-mt-16" />
-      <div className="relative">
-        <div className="flex justify-between items-start mb-3 sm:mb-4">
-          <div className="flex-1 min-w-0">
-            <p className="text-white/90 text-xs sm:text-sm font-medium mb-1 truncate">{title}</p>
-            <h3 className="text-xl sm:text-2xl lg:text-3xl font-bold truncate">{value}</h3>
-          </div>
-          <div className={`${iconBg} p-2 sm:p-3 rounded-xl shrink-0 ml-2`}>
-            <Icon className={`w-4 h-4 sm:w-6 sm:h-6 ${iconColor}`} />
-          </div>
-        </div>
-        <p className="text-white/80 text-xs sm:text-sm font-medium truncate">{count}</p>
-      </div>
-    </div>
-  );
-}
+const getPatientPackageAmount = (row) => {
+  const p = row.patient;
+  if (!p) return null;
+  const amt = p.payments?.totalAmount || p.counselling?.finlpackage || null;
+  return amt ? parseFloat(amt) : null;
+};
 
-function DeleteConfirmModal({ transaction, onClose, onConfirm }) {
-  const [deleting, setDeleting] = useState(false);
-  const handleDelete = async () => { setDeleting(true); await onConfirm(); setDeleting(false); };
-  const netAmount = calculateNetAmount(transaction);
-  const hasDiscount = parseFloat(transaction?.discount || 0) > 0;
-
-  return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full mx-4">
-        <div className="p-6 sm:p-8">
-          <div className="w-12 h-12 sm:w-16 sm:h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4"><AlertCircle className="w-6 h-6 sm:w-8 sm:h-8 text-red-600" /></div>
-          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 text-center mb-2">Delete Transaction?</h2>
-          <p className="text-gray-600 text-center mb-4 sm:mb-6 text-sm sm:text-base">Are you sure you want to delete this transaction? This action cannot be undone.</p>
-          <div className="bg-gray-50 rounded-xl p-3 sm:p-4 mb-4 sm:mb-6 space-y-2">
-            <div className="flex justify-between items-center"><span className="text-sm text-gray-600">Category:</span><span className="font-bold text-gray-900 text-sm sm:text-base">{transaction?.transactionCategory || "Uncategorized"}</span></div>
-            <div className="flex justify-between items-center"><span className="text-sm text-gray-600">Amount:</span><span className="font-bold text-emerald-600 text-sm sm:text-base">{formatCurrency(netAmount)}</span></div>
-            {hasDiscount && <div className="flex justify-between items-center"><span className="text-sm text-gray-600">Discount:</span><span className="font-bold text-amber-600 text-sm sm:text-base">-{formatCurrency(transaction?.discount || 0)}</span></div>}
-            <div className="flex justify-between items-center pt-2 border-t border-gray-200"><span className="text-sm text-gray-600">Date:</span><span className="font-medium text-gray-900 text-sm sm:text-base">{formatDateForDisplay(transaction?.date)}</span></div>
-          </div>
-          <div className="flex flex-col xs:flex-row gap-3">
-            <button onClick={onClose} disabled={deleting} className="flex-1 px-4 sm:px-6 py-2.5 sm:py-3 border-2 border-gray-200 rounded-xl hover:bg-gray-50 transition-all font-semibold text-gray-700 disabled:opacity-50 text-sm sm:text-base">Cancel</button>
-            <button onClick={handleDelete} disabled={deleting} className="flex-1 px-4 sm:px-6 py-2.5 sm:py-3 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-all font-semibold disabled:opacity-50 flex items-center justify-center gap-2 text-sm sm:text-base">
-              {deleting ? <><Loader2 className="w-4 h-4 animate-spin" />Deleting...</> : <><Trash2 className="w-4 h-4" />Delete</>}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function Input({ label, type = "text", value, onChange, icon: Icon, required, placeholder, min, max }) {
-  return (
-    <label className="block">
-      <span className="text-sm font-semibold text-gray-700 mb-2 block">{label} {required && <span className="text-red-500">*</span>}</span>
-      <div className="relative">
-        {Icon && <Icon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 sm:w-5 sm:h-5" />}
-        <input type={type} value={value} onChange={(e) => onChange(e.target.value)} required={required} placeholder={placeholder} min={min} max={max}
-          className={`w-full border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-100 focus:border-indigo-300 transition-all text-sm sm:text-base ${Icon ? "pl-9 sm:pl-11 pr-4" : "px-4"} py-2.5 sm:py-3`} />
-      </div>
-    </label>
-  );
-}
-
-function Select({ label, value, onChange, options, required, icon: Icon }) {
-  return (
-    <label className="block">
-      <span className="text-sm font-semibold text-gray-700 mb-2 block">{label} {required && <span className="text-red-500">*</span>}</span>
-      <div className="relative">
-        {Icon && <Icon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 sm:w-5 sm:h-5 pointer-events-none" />}
-        <select value={value} onChange={(e) => onChange(e.target.value)} required={required}
-          className={`w-full border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-100 focus:border-indigo-300 bg-white transition-all appearance-none text-sm sm:text-base ${Icon ? "pl-9 sm:pl-11 pr-8 sm:pr-10" : "px-4 pr-8 sm:pr-10"} py-2.5 sm:py-3`}>
-          {options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-        </select>
-        <ChevronLeft className="absolute right-2 sm:right-3 top-1/2 transform -translate-y-1/2 rotate-90 text-gray-400 w-4 h-4 sm:w-5 sm:h-5 pointer-events-none" />
-      </div>
-    </label>
-  );
-}
-
-function DataTable({ category, rows, onDelete, onSort, sortConfig, pagination, onGenerateBill }) {
-  const router = useRouter();
+function SalesTransactionsContent() {
   const { data: session } = useSession();
-  const userRole = session?.user?.role || "";
+  const patientPicker = usePatientPicker();
 
-  const hasUndefinedCategory = (row) => { const cat = row.transactionCategory || row.category; return !cat || cat === ""; };
+  const [activeTab, setActiveTab] = useState("ALL");
+  const [transactions, setTransactions] = useState([]);
+  const [stats, setStats] = useState({
+    TRANSPLANT: { count: 0, total: 0 },
+    SERVICE:    { count: 0, total: 0 },
+    MEDICINE:   { count: 0, total: 0 },
+  });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [lastUpdated, setLastUpdated] = useState(null);
 
-  const getColumns = () => {
-    const base = [{ key: "date", label: "Date", sortable: true, width: "110px" }];
-    switch (category) {
-      case "TRANSPLANT": return [...base,
-        { key: "patient", label: "Patient", sortable: true, width: "160px" },
-        { key: "procedure", label: "Procedure", sortable: true, width: "130px" },
-        { key: "paymentType", label: "Payment Type", sortable: true, width: "120px" },
-        { key: "amount", label: "Amount", sortable: true, width: "130px" },
-        { key: "method", label: "Method", sortable: true, width: "110px" },
-        { key: "paymentId", label: "Trans ID", sortable: true, width: "150px" },
-        { key: "branch", label: "Branch", sortable: true, width: "110px" },
-        { key: "actions", label: "Actions", sortable: false, width: "120px" },
-      ];
-      case "SERVICE": return [...base,
-        { key: "patient", label: "Patient/Customer", sortable: true, width: "160px" },
-        { key: "procedure", label: "Service", sortable: true, width: "100px" },
-        { key: "quantity", label: "Sessions", sortable: true, width: "90px" },
-        { key: "perSessionCost", label: "Per Session", sortable: true, width: "120px" },
-        { key: "amount", label: "Total", sortable: true, width: "130px" },
-        { key: "method", label: "Method", sortable: true, width: "110px" },
-        { key: "paymentId", label: "Trans ID", sortable: true, width: "150px" },
-        { key: "batchId", label: "Batch", sortable: false, width: "100px" },
-        { key: "branch", label: "Branch", sortable: true, width: "110px" },
-        { key: "actions", label: "Actions", sortable: false, width: "120px" },
-      ];
-      case "MEDICINE": return [...base,
-        { key: "patient", label: "Patient/Customer", sortable: true, width: "160px" },
-        { key: "medicine", label: "Medicine", sortable: true, width: "160px" },
-        { key: "quantity", label: "Qty", sortable: true, width: "80px" },
-        { key: "perUnitCost", label: "Per Unit", sortable: true, width: "110px" },
-        { key: "amount", label: "Total", sortable: true, width: "130px" },
-        { key: "method", label: "Method", sortable: true, width: "110px" },
-        { key: "paymentId", label: "Trans ID", sortable: true, width: "150px" },
-        { key: "batchId", label: "Batch", sortable: false, width: "100px" },
-        { key: "branch", label: "Branch", sortable: true, width: "110px" },
-        { key: "actions", label: "Actions", sortable: false, width: "120px" },
-      ];
-      case "EXPENSE": return [...base,
-        { key: "expense", label: "Expense", sortable: true, width: "160px" },
-        { key: "expenseType", label: "Type", sortable: true, width: "150px" },
-        { key: "expenseGiver", label: "Paid To", sortable: false, width: "160px" },
-        { key: "amount", label: "Amount", sortable: true, width: "130px" },
-        { key: "method", label: "Method", sortable: true, width: "110px" },
-        { key: "paymentId", label: "Trans ID", sortable: true, width: "150px" },
-        { key: "branch", label: "Branch", sortable: true, width: "110px" },
-        { key: "approvalStatus", label: "Status", sortable: false, width: "140px" },
-        { key: "actions", label: "Actions", sortable: false, width: "120px" },
-      ];
-      default: return base;
+  // Filters
+  const [search, setSearch] = useState("");
+  const [selectedBranch, setSelectedBranch] = useState("All");
+  const [selectedMethod, setSelectedMethod] = useState("All");
+  const [dateRange, setDateRange] = useState("This Month");
+  const [customFrom, setCustomFrom] = useState("");
+  const [customTo, setCustomTo] = useState("");
+
+  // Pagination & Sorting
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(25);
+  const [sortField, setSortField] = useState("date");
+  const [sortDir, setSortDir] = useState("desc");
+
+  // Expanded row state (for view-only detail expansion)
+  const [expandedRowId, setExpandedRowId] = useState(null);
+
+  // Modals
+  const [showIncentiveModal, setShowIncentiveModal] = useState(false);
+  const [billDataId, setBillDataId] = useState(null);
+  const [showBill, setShowBill] = useState(false);
+
+  // Fetch transactions dataset
+  const fetchTransactions = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/transactions/get-all?limit=1000", {
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const json = await res.json();
+      if (json.success && json.transactions) {
+        // Filter out expenses from sales view dataset
+        const salesTx = (json.transactions || []).filter(
+          (t) => (t.transactionCategory || t.category) !== "EXPENSE"
+        );
+        setTransactions(salesTx);
+        if (json.stats) {
+          setStats({
+            TRANSPLANT: json.stats.TRANSPLANT || { count: 0, total: 0 },
+            SERVICE:    json.stats.SERVICE    || { count: 0, total: 0 },
+            MEDICINE:   json.stats.MEDICINE   || { count: 0, total: 0 },
+          });
+        }
+        setLastUpdated(new Date());
+      } else {
+        throw new Error(json.message || "Failed to load transactions");
+      }
+    } catch (err) {
+      console.error("Sales transactions fetch error:", err);
+      setError(err.message || "Failed to load transactions");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchTransactions();
+  }, [fetchTransactions]);
+
+  // Tab & attribute filter logic
+  const filteredTransactions = useMemo(() => {
+    let list = transactions.filter((t) => {
+      const cat = t.transactionCategory || t.category || "TRANSPLANT";
+      // Expenses are strictly excluded
+      if (cat === "EXPENSE") return false;
+
+      if (activeTab === "ALL") return true;
+      if (activeTab === "TOTAL_SALES") {
+        return cat === "TRANSPLANT" || cat === "SERVICE" || cat === "MEDICINE";
+      }
+      if (activeTab === "TRANSPLANT") {
+        return cat === "TRANSPLANT" || !cat || cat === "";
+      }
+      if (activeTab === "SERVICE") return cat === "SERVICE";
+      if (activeTab === "MEDICINE") return cat === "MEDICINE";
+      return true;
+    });
+
+    if (selectedBranch !== "All") {
+      list = list.filter((t) => t.branch?.toLowerCase() === selectedBranch.toLowerCase());
+    }
+
+    if (selectedMethod !== "All") {
+      list = list.filter((t) => t.method?.toLowerCase() === selectedMethod.toLowerCase());
+    }
+
+    // Date filtering
+    const now = new Date();
+    if (dateRange === "Today") {
+      const todayStr = getISTDate(now);
+      list = list.filter((t) => t.date && getISTDate(new Date(t.date)) === todayStr);
+    } else if (dateRange === "Yesterday") {
+      const y = new Date(now);
+      y.setDate(y.getDate() - 1);
+      const yStr = getISTDate(y);
+      list = list.filter((t) => t.date && getISTDate(new Date(t.date)) === yStr);
+    } else if (dateRange === "Last 7 Days") {
+      const past = new Date(now);
+      past.setDate(past.getDate() - 7);
+      list = list.filter((t) => t.date && new Date(t.date) >= past);
+    } else if (dateRange === "This Month") {
+      const start = new Date(now.getFullYear(), now.getMonth(), 1);
+      list = list.filter((t) => t.date && new Date(t.date) >= start);
+    } else if (dateRange === "Custom" && customFrom) {
+      const from = new Date(customFrom);
+      const to = customTo ? new Date(customTo) : new Date(customFrom);
+      to.setHours(23, 59, 59, 999);
+      list = list.filter((t) => {
+        if (!t.date) return false;
+        const d = new Date(t.date);
+        return d >= from && d <= to;
+      });
+    }
+
+    // Text search
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      list = list.filter((t) => {
+        const pName = getPatientName(t);
+        const pPhone = getPatientPhone(t);
+        const proc = t.procedure || "";
+        const id = t.paymentId || "";
+        const remarks = t.remarks || "";
+        const pkg = getPatientPackage(t);
+        return (
+          pName.toLowerCase().includes(q) ||
+          pPhone.includes(q) ||
+          proc.toLowerCase().includes(q) ||
+          id.toLowerCase().includes(q) ||
+          remarks.toLowerCase().includes(q) ||
+          pkg.toLowerCase().includes(q)
+        );
+      });
+    }
+
+    // Sorting
+    list.sort((a, b) => {
+      let aVal = a[sortField];
+      let bVal = b[sortField];
+      if (sortField === "date") {
+        aVal = new Date(a.date || 0).getTime();
+        bVal = new Date(b.date || 0).getTime();
+      } else if (sortField === "amount") {
+        aVal = parseFloat(a.amount) || 0;
+        bVal = parseFloat(b.amount) || 0;
+      } else if (sortField === "patient") {
+        aVal = getPatientName(a).toLowerCase();
+        bVal = getPatientName(b).toLowerCase();
+      }
+      if (aVal < bVal) return sortDir === "asc" ? -1 : 1;
+      if (aVal > bVal) return sortDir === "asc" ? 1 : -1;
+      return 0;
+    });
+
+    return list;
+  }, [
+    transactions,
+    activeTab,
+    selectedBranch,
+    selectedMethod,
+    dateRange,
+    customFrom,
+    customTo,
+    search,
+    sortField,
+    sortDir,
+  ]);
+
+  // Dynamic branch list from existing transactions
+  const availableBranches = useMemo(() => {
+    const set = new Set();
+    transactions.forEach((t) => {
+      if (t.branch) set.add(t.branch);
+    });
+    ALL_BRANCHES.forEach((b) => set.add(b));
+    return Array.from(set).filter(Boolean);
+  }, [transactions]);
+
+  // KPI Calculations strictly using real database metrics
+  const kpiData = useMemo(() => {
+    const totalActivityAmount = (stats.TRANSPLANT.total || 0) + (stats.SERVICE.total || 0) + (stats.MEDICINE.total || 0);
+    const totalActivityCount = (stats.TRANSPLANT.count || 0) + (stats.SERVICE.count || 0) + (stats.MEDICINE.count || 0);
+
+    return {
+      totalActivity: {
+        amount: totalActivityAmount,
+        count: totalActivityCount,
+      },
+      transplant: {
+        amount: stats.TRANSPLANT.total || 0,
+        count: stats.TRANSPLANT.count || 0,
+      },
+      service: {
+        amount: stats.SERVICE.total || 0,
+        count: stats.SERVICE.count || 0,
+      },
+      medicine: {
+        amount: stats.MEDICINE.total || 0,
+        count: stats.MEDICINE.count || 0,
+      },
+    };
+  }, [stats]);
+
+  // Tab counts
+  const tabCounts = useMemo(() => {
+    const counts = {
+      ALL: transactions.length,
+      TOTAL_SALES: 0,
+      TRANSPLANT: 0,
+      SERVICE: 0,
+      MEDICINE: 0,
+    };
+    transactions.forEach((t) => {
+      const cat = t.transactionCategory || t.category || "TRANSPLANT";
+      if (cat === "TRANSPLANT") {
+        counts.TRANSPLANT += 1;
+        counts.TOTAL_SALES += 1;
+      } else if (cat === "SERVICE") {
+        counts.SERVICE += 1;
+        counts.TOTAL_SALES += 1;
+      } else if (cat === "MEDICINE") {
+        counts.MEDICINE += 1;
+        counts.TOTAL_SALES += 1;
+      }
+    });
+    return counts;
+  }, [transactions]);
+
+  // Pagination calculations
+  const total = filteredTransactions.length;
+  const totalPages = Math.max(1, Math.ceil(total / limit));
+  const startItem = total === 0 ? 0 : (page - 1) * limit + 1;
+  const endItem = Math.min(page * limit, total);
+  const paginatedRows = useMemo(() => {
+    const start = (page - 1) * limit;
+    return filteredTransactions.slice(start, start + limit);
+  }, [filteredTransactions, page, limit]);
+
+  // Export to Excel (Read-only intelligence export)
+  const exportToExcel = () => {
+    try {
+      const exportData = filteredTransactions.map((t) => ({
+        Date: fmtDate(t.date),
+        Type: t.transactionCategory || t.category || "TRANSPLANT",
+        Patient: getPatientName(t),
+        Phone: getPatientPhone(t),
+        ProcedureOrMedicine: t.procedure || (typeof t.medicineId === "object" ? t.medicineId?.name : null) || "—",
+        TotalPackage: getPatientPackage(t),
+        Method: METHOD_LABELS[t.method] || t.method || "—",
+        Branch: t.branch || "—",
+        Amount: parseFloat(t.amount) || 0,
+        Remarks: t.remarks || "",
+      }));
+
+      const ws = utils.json_to_sheet(exportData);
+      const wb = utils.book_new();
+      utils.book_append_sheet(wb, ws, "Sales Transactions");
+      writeFile(wb, `Sales_Transactions_${activeTab}_${dateRange}.xlsx`);
+    } catch (e) {
+      console.error("Export error:", e);
     }
   };
 
-  const columns = getColumns();
-
-  const getProcedureColor = (proc) => {
-    const colors = { "sapphire fue": "bg-indigo-100 text-indigo-700 border-indigo-200", dhi: "bg-purple-100 text-purple-700 border-purple-200", "turkish dhi": "bg-pink-100 text-pink-700 border-pink-200", "beard transplant": "bg-amber-100 text-amber-700 border-amber-200", prp: "bg-emerald-100 text-emerald-700 border-emerald-200", gfc: "bg-cyan-100 text-cyan-700 border-cyan-200", alopecia: "bg-rose-100 text-rose-700 border-rose-200", headwash: "bg-sky-100 text-sky-700 border-sky-200", canacot: "bg-lime-100 text-lime-700 border-lime-200" };
-    return colors[proc?.toLowerCase()] || "bg-gray-100 text-gray-700 border-gray-200";
+  const handleOpenBill = (row) => {
+    const isRevenue = row.costType === "Revenue";
+    const hasCategory = row.transactionCategory && row.transactionCategory !== "undefined" && row.transactionCategory !== "";
+    if (isRevenue && (!hasCategory || row.transactionCategory === "TRANSPLANT") && row.patient) {
+      const patientId = typeof row.patient === "object" ? row.patient._id : row.patient;
+      setBillDataId(patientId || row._id);
+    } else {
+      setBillDataId(row._id);
+    }
+    setShowBill(true);
   };
-
-  const getMethodColor = (method) => {
-    const colors = { cash: "bg-emerald-100 text-emerald-700 border-emerald-200", upi: "bg-blue-100 text-blue-700 border-blue-200", card: "bg-purple-100 text-purple-700 border-purple-200", banking: "bg-indigo-100 text-indigo-700 border-indigo-200", bajaj_loan: "bg-orange-100 text-orange-700 border-orange-200", fibe_loan: "bg-amber-100 text-amber-700 border-amber-200", hdfc_skin_bank_transfer: "bg-sky-100 text-sky-700 border-sky-200", hdfc_ryan_medihub_bank_transfer: "bg-teal-100 text-teal-700 border-teal-200", icici_medihub_bank_transfer: "bg-rose-100 text-rose-700 border-rose-200" };
-    return colors[method?.toLowerCase()] || "bg-gray-100 text-gray-700 border-gray-200";
-  };
-
-  const SortIcon = ({ columnKey }) => {
-    if (sortConfig.key !== columnKey) return <ArrowUpDown className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />;
-    return sortConfig.direction === "asc" ? <ChevronLeft className="w-3 h-3 sm:w-4 sm:h-4 rotate-90 text-indigo-600" /> : <ChevronRight className="w-3 h-3 sm:w-4 sm:h-4 rotate-90 text-indigo-600" />;
-  };
-
-  const gridTemplateColumns = columns.map((col) => col.width).join(" ");
-  const getPatientName = (row) => { if (row.patient && typeof row.patient === "object") return row.patient.personal?.name || "N/A"; return row.patientName || "Walk-in Customer"; };
-  const getPatientPhone = (row) => { const raw = (row.patient && typeof row.patient === "object") ? row.patient.personal?.phone || "" : row.patientPhone || ""; return maskPhone(raw, userRole); };
-  const getMedicineName = (row) => { if (row.medicineId && typeof row.medicineId === "object") return row.medicineId.name || "N/A"; return "N/A"; };
-  const getExpenseGiverName = (row) => { if (row.expenseGiver?.type === "VENDOR") { if (typeof row.expenseGiver.vendorId === "object") return row.expenseGiver.vendorId?.name || row.expenseGiver.name || "N/A"; return row.expenseGiver.name || "N/A"; } return row.expenseGiver?.name || "N/A"; };
 
   return (
-    <div className="flex flex-col h-full bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
-      <div className="hidden md:grid items-center bg-linear-to-r from-slate-50 to-slate-100 border-b border-slate-200 min-h-13 px-2" style={{ gridTemplateColumns }}>
-        {columns.map((col) => (
-          <div key={col.key} className={`px-2 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wide truncate ${col.sortable ? "cursor-pointer hover:bg-slate-200/50 transition-colors duration-150 group" : ""}`} onClick={() => col.sortable && onSort(col.key)}>
-            <div className="flex items-center gap-1.5"><span className="truncate">{col.label}</span>{col.sortable && <SortIcon columnKey={col.key} />}</div>
+    <div className="flex min-h-screen bg-[#f8fafc] text-slate-800 antialiased selection:bg-blue-600 selection:text-white">
+      <SalesSidebar />
+
+      <main className="flex-1 min-h-screen overflow-auto bg-[radial-gradient(ellipse_80%_80%_at_50%_-15%,rgba(59,130,246,0.06),rgba(255,255,255,0))]">
+        {/* ── Sticky Header ──────────────────────────────────────────────────── */}
+        <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-xl border-b border-slate-200/80 px-4 sm:px-6 py-4 shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
+          <div className="max-w-7xl mx-auto flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+            {/* Title */}
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-700 text-white flex items-center justify-center shadow-md shadow-blue-600/20 shrink-0">
+                <Receipt className="w-4.5 h-4.5 drop-shadow-xs" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-base sm:text-lg font-semibold text-slate-800 tracking-tight leading-none">
+                    Financial Transactions
+                  </h1>
+                  <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-medium uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200/70">
+                    <span className="relative flex h-1.5 w-1.5">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                      <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
+                    </span>
+                    Live
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <p className="text-[11px] text-slate-400 font-normal">
+                    Enterprise sales collections, settlement audit &amp; patient financial records
+                  </p>
+                  {lastUpdated && (
+                    <span className="hidden sm:inline-flex items-center gap-1 text-[11px] text-slate-400 before:content-['·'] before:mr-0.5">
+                      <Clock className="w-3 h-3" />
+                      {lastUpdated.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Date presets + Action Buttons */}
+            <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+              {/* Segmented date pills */}
+              <div className="inline-flex items-center p-0.5 bg-slate-100/90 rounded-xl border border-slate-200/70 shadow-inner">
+                {DATE_PRESETS.map((r) => {
+                  const active = dateRange === r;
+                  return (
+                    <button
+                      key={r}
+                      onClick={() => { setDateRange(r); setPage(1); }}
+                      className={`px-2.5 py-1 text-[11px] font-medium rounded-[10px] transition-all cursor-pointer whitespace-nowrap ${
+                        active
+                          ? "bg-white text-blue-600 shadow-xs border border-slate-200/60"
+                          : "text-slate-500 hover:text-slate-800 hover:bg-white/60"
+                      }`}
+                    >
+                      {r}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Custom date pickers */}
+              {dateRange === "Custom" && (
+                <div className="flex items-center gap-1 bg-white border border-slate-200/90 rounded-xl p-1 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+                  <input
+                    type="date"
+                    value={customFrom}
+                    onChange={(e) => { setCustomFrom(e.target.value); setPage(1); }}
+                    className="text-slate-700 text-[11px] font-normal px-2 py-1 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                  <span className="text-slate-400 text-[11px] px-0.5">to</span>
+                  <input
+                    type="date"
+                    value={customTo}
+                    onChange={(e) => { setCustomTo(e.target.value); setPage(1); }}
+                    className="text-slate-700 text-[11px] font-normal px-2 py-1 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
+              )}
+
+              {/* Export Excel */}
+              <button
+                onClick={exportToExcel}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200/90 rounded-xl text-[11px] font-medium text-slate-600 hover:text-blue-600 hover:border-blue-200 shadow-xs transition-colors cursor-pointer"
+                title="Download Excel Report"
+              >
+                <FileDown className="w-3.5 h-3.5 text-blue-600" />
+                <span className="hidden sm:inline">Export</span>
+              </button>
+
+              {/* Incentive Entry Action */}
+              <button
+                onClick={() => setShowIncentiveModal(true)}
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-linear-to-r from-blue-600 to-indigo-600 text-white text-[11px] font-semibold rounded-xl shadow-sm shadow-blue-500/20 hover:from-blue-700 hover:to-indigo-700 transition-all cursor-pointer"
+                title="Record per-patient employee incentive"
+              >
+                <Gift className="w-3.5 h-3.5" />
+                <span>Incentive Entry</span>
+              </button>
+
+              {/* Refresh */}
+              <button
+                onClick={fetchTransactions}
+                disabled={loading}
+                className="p-2 bg-white border border-slate-200/90 rounded-xl text-slate-500 hover:text-blue-600 hover:border-blue-300 shadow-xs transition-all disabled:opacity-50 cursor-pointer"
+                title="Refresh"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-blue-600" : ""}`} />
+              </button>
+            </div>
           </div>
-        ))}
-      </div>
+        </header>
 
-      <div className="md:hidden bg-linear-to-r from-slate-50 to-slate-100 border-b border-slate-200 px-4 py-3">
-        <div className="flex items-center justify-between">
-          <div><h3 className="text-sm font-bold text-slate-900">{category} Records</h3><p className="text-xs text-slate-600">Showing {rows.length} of {pagination.total}</p></div>
-          <div className="text-right"><p className="text-xs font-medium text-slate-700">Sorted by</p><p className="text-sm font-bold text-indigo-700">{sortConfig.key.replace(/([A-Z])/g, " $1").trim()}</p></div>
-        </div>
-      </div>
+        {/* ── Main Canvas ────────────────────────────────────────────────────── */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-5">
+          {/* ── 4 Primary Summary Cards ────────────────────────────────────────── */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+            {/* 1. Total Activity */}
+            <div className="relative bg-white border border-slate-200/80 rounded-2xl p-4 sm:p-5 shadow-[0_2px_10px_-3px_rgba(0,0,0,0.04)] overflow-hidden">
+              <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-slate-400 to-blue-500" />
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Total Activity</p>
+                  <h3 className="text-xl sm:text-2xl font-bold text-slate-800 tracking-tight mt-1">
+                    {fmtRupee(kpiData.totalActivity.amount)}
+                  </h3>
+                  <p className="text-[11px] text-slate-500 mt-1 font-medium">
+                    {kpiData.totalActivity.count} transactions
+                  </p>
+                </div>
+                <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 border border-blue-100">
+                  <Activity className="w-5 h-5" />
+                </div>
+              </div>
+            </div>
 
-      <div className="flex-1 overflow-auto">
-        {rows.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 sm:py-16 px-4">
-            <div className="w-16 h-16 bg-indigo-50 rounded-full flex items-center justify-center mb-4"><Search className="w-8 h-8 text-indigo-400" /></div>
-            <h3 className="text-lg font-semibold text-slate-900 mb-2">No records found</h3>
-            <p className="text-sm text-slate-600 text-center max-w-md">Try adjusting your search filters or add a new transaction</p>
+            {/* 2. Transplant Revenue */}
+            <div className="relative bg-white border border-slate-200/80 rounded-2xl p-4 sm:p-5 shadow-[0_2px_10px_-3px_rgba(0,0,0,0.04)] overflow-hidden">
+              <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-blue-500 to-indigo-600" />
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Transplant Revenue</p>
+                  <h3 className="text-xl sm:text-2xl font-bold text-slate-800 tracking-tight mt-1">
+                    {fmtRupee(kpiData.transplant.amount)}
+                  </h3>
+                  <p className="text-[11px] text-slate-500 mt-1 font-medium">
+                    {kpiData.transplant.count} transactions
+                  </p>
+                </div>
+                <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 border border-indigo-100">
+                  <Scissors className="w-5 h-5" />
+                </div>
+              </div>
+            </div>
+
+            {/* 3. Service Revenue */}
+            <div className="relative bg-white border border-slate-200/80 rounded-2xl p-4 sm:p-5 shadow-[0_2px_10px_-3px_rgba(0,0,0,0.04)] overflow-hidden">
+              <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-purple-500 to-pink-500" />
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Service Revenue</p>
+                  <h3 className="text-xl sm:text-2xl font-bold text-slate-800 tracking-tight mt-1">
+                    {fmtRupee(kpiData.service.amount)}
+                  </h3>
+                  <p className="text-[11px] text-slate-500 mt-1 font-medium">
+                    {kpiData.service.count} transactions
+                  </p>
+                </div>
+                <div className="w-10 h-10 rounded-xl bg-pink-50 text-pink-600 flex items-center justify-center shrink-0 border border-pink-100">
+                  <Heart className="w-5 h-5" />
+                </div>
+              </div>
+            </div>
+
+            {/* 4. Medicine Revenue */}
+            <div className="relative bg-white border border-slate-200/80 rounded-2xl p-4 sm:p-5 shadow-[0_2px_10px_-3px_rgba(0,0,0,0.04)] overflow-hidden">
+              <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-emerald-500 to-teal-600" />
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Medicine Revenue</p>
+                  <h3 className="text-xl sm:text-2xl font-bold text-slate-800 tracking-tight mt-1">
+                    {fmtRupee(kpiData.medicine.amount)}
+                  </h3>
+                  <p className="text-[11px] text-slate-500 mt-1 font-medium">
+                    {kpiData.medicine.count} transactions
+                  </p>
+                </div>
+                <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 border border-emerald-100">
+                  <Pill className="w-5 h-5" />
+                </div>
+              </div>
+            </div>
           </div>
-        ) : (
-          <div className="divide-y divide-slate-100">
-            {rows.map((row, i) => {
-              const netAmount = calculateNetAmount(row);
-              const hasDiscount = parseFloat(row.discount || 0) > 0;
-              const rowCategory = row.transactionCategory || row.category || "TRANSPLANT";
 
-              return (
-                <div key={row._id || i}>
-                  <div className="group transition-all duration-200 hover:bg-indigo-50/30">
-                    <div className="hidden md:grid items-center min-h-16 px-2" style={{ gridTemplateColumns }}>
-                      <div className="px-2 py-3"><div className="text-sm font-medium text-slate-900">{formatDateForDisplay(row.date)}</div></div>
+          {/* ── Category / Tab Navigation ─────────────────────────────────────── */}
+          <div className="bg-white border border-slate-200/80 rounded-2xl p-1.5 shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
+            <div className="flex items-center gap-1 overflow-x-auto pb-1 sm:pb-0 scrollbar-hide">
+              {TABS.map((t) => {
+                const Icon = t.icon;
+                const isActive = activeTab === t.id;
+                const count = tabCounts[t.id];
+                return (
+                  <button
+                    key={t.id}
+                    onClick={() => { setActiveTab(t.id); setPage(1); }}
+                    className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-[12px] font-semibold whitespace-nowrap transition-all cursor-pointer ${
+                      isActive
+                        ? "bg-blue-600 text-white shadow-xs shadow-blue-500/20"
+                        : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                    }`}
+                  >
+                    <Icon className={`w-3.5 h-3.5 ${isActive ? "text-white" : "text-slate-400"}`} />
+                    <span>{t.label}</span>
+                    {count !== undefined && (
+                      <span
+                        className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
+                          isActive
+                            ? "bg-white/20 text-white"
+                            : "bg-slate-100 text-slate-500"
+                        }`}
+                      >
+                        {count}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
 
-                      {rowCategory === "TRANSPLANT" && (<>
-                        <div className="px-2 py-3"><div className="text-sm font-semibold text-slate-900 truncate">{getPatientName(row)}</div><div className="text-xs text-slate-600 font-medium">{getPatientPhone(row) || "No phone"}</div></div>
-                        <div className="px-2 py-3"><span className={`inline-flex px-2 py-1 rounded-lg text-xs font-semibold border ${getProcedureColor(row.procedure)}`}>{row.procedure}</span></div>
-                        <div className="px-2 py-3"><span className="inline-flex px-2 py-1 rounded-lg text-xs font-semibold bg-blue-100 text-blue-700 border border-blue-200">{row.paymentType}</span></div>
-                        <div className="px-2 py-3"><div className="text-center"><div className="text-sm font-bold text-emerald-700">{formatCurrency(netAmount)}</div>{hasDiscount && <div className="flex items-center justify-center gap-1 mt-1"><Tag className="w-3 h-3 text-amber-500" /><span className="text-xs text-amber-600 font-medium">-{formatCurrency(row.discount)}</span></div>}</div></div>
-                        <div className="px-2 py-3"><span className={`inline-flex px-2 py-1 rounded-lg text-xs font-semibold border ${getMethodColor(row.method)}`}>{row.method?.replace(/_/g, " ").toUpperCase()}</span></div>
-                        <div className="px-2 py-3">{row.paymentId ? <div className="bg-slate-100 px-2 py-1 rounded text-xs font-mono text-slate-700 truncate">{row.paymentId}</div> : <span className="text-xs text-slate-400">-</span>}</div>
-                        <div className="px-2 py-3"><span className="inline-flex px-2 py-1 rounded-lg text-xs font-semibold bg-purple-100 text-purple-700 border border-purple-200">{row.branch}</span></div>
-                      </>)}
+          {/* ── Body: Contra / Suspense / Regular Transactions ───────────────── */}
+          {activeTab === "CONTRA" ? (
+            <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
+              <ContraManager />
+            </div>
+          ) : activeTab === "SUSPENSE" ? (
+            <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
+              <SuspenseManager />
+            </div>
+          ) : (
+            <div className="bg-white border border-slate-200/80 rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.05)] overflow-hidden">
+              {/* Filter Toolbar */}
+              <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                {/* Search */}
+                <div className="relative flex-1 min-w-0">
+                  <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <input
+                    type="text"
+                    placeholder="Search patient, phone, procedure, package, notes..."
+                    value={search}
+                    onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+                    className="w-full pl-9 pr-3 py-2 bg-white border border-slate-200 rounded-xl text-[12px] text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
+                  />
+                </div>
 
-                      {rowCategory === "SERVICE" && (<>
-                        <div className="px-2 py-3"><div className="text-sm font-semibold text-slate-900 truncate">{getPatientName(row)}</div><div className="text-xs text-slate-600 font-medium">{getPatientPhone(row) || "No phone"}</div></div>
-                        <div className="px-2 py-3"><span className={`inline-flex px-2 py-1 rounded-lg text-xs font-semibold border ${getProcedureColor(row.procedure)}`}>{row.procedure}</span></div>
-                        <div className="px-2 py-3 text-center"><div className="text-sm font-bold text-indigo-700">{row.quantity || 1}</div></div>
-                        <div className="px-2 py-3 text-center"><div className="text-sm font-medium text-slate-900">{formatCurrency(row.perSessionCost || 0)}</div></div>
-                        <div className="px-2 py-3"><div className="text-center"><div className="text-sm font-bold text-emerald-700">{formatCurrency(netAmount)}</div>{hasDiscount && <div className="flex items-center justify-center gap-1 mt-1"><Tag className="w-3 h-3 text-amber-500" /><span className="text-xs text-amber-600 font-medium">-{formatCurrency(row.discount)}</span></div>}</div></div>
-                        <div className="px-2 py-3"><span className={`inline-flex px-2 py-1 rounded-lg text-xs font-semibold border ${getMethodColor(row.method)}`}>{row.method?.replace(/_/g, " ").toUpperCase()}</span></div>
-                        <div className="px-2 py-3">{row.paymentId ? <div className="bg-slate-100 px-2 py-1 rounded text-xs font-mono text-slate-700 truncate">{row.paymentId}</div> : <span className="text-xs text-slate-400">-</span>}</div>
-                        <div className="px-2 py-3">{row.batchId ? <div className="flex items-center gap-1"><Package className="w-3 h-3 text-indigo-600" /><span className="text-xs font-mono text-indigo-700">{row.batchId.slice(-8)}</span></div> : <span className="text-xs text-slate-400">-</span>}</div>
-                        <div className="px-2 py-3"><span className="inline-flex px-2 py-1 rounded-lg text-xs font-semibold bg-purple-100 text-purple-700 border border-purple-200">{row.branch}</span></div>
-                      </>)}
+                {/* Branch selector */}
+                <div className="relative min-w-[150px]">
+                  <Building2 className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <select
+                    value={selectedBranch}
+                    onChange={(e) => { setSelectedBranch(e.target.value); setPage(1); }}
+                    className="w-full pl-8 pr-7 py-2 bg-white border border-slate-200 rounded-xl text-[12px] text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors appearance-none cursor-pointer"
+                  >
+                    <option value="All">All Branches</option>
+                    {availableBranches.map((b) => (
+                      <option key={b} value={b}>{b}</option>
+                    ))}
+                  </select>
+                  <span className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 text-[10px]">▾</span>
+                </div>
 
-                      {rowCategory === "MEDICINE" && (<>
-                        <div className="px-2 py-3"><div className="text-sm font-semibold text-slate-900 truncate">{getPatientName(row)}</div><div className="text-xs text-slate-600 font-medium">{getPatientPhone(row) || "No phone"}</div></div>
-                        <div className="px-2 py-3"><div className="text-sm font-semibold text-slate-900 truncate">{getMedicineName(row)}</div></div>
-                        <div className="px-2 py-3 text-center"><div className="text-sm font-bold text-indigo-700">{row.quantity || 1}</div></div>
-                        <div className="px-2 py-3 text-center"><div className="text-sm font-medium text-slate-900">{formatCurrency(row.perUnitCost || 0)}</div></div>
-                        <div className="px-2 py-3"><div className="text-center"><div className="text-sm font-bold text-emerald-700">{formatCurrency(netAmount)}</div>{hasDiscount && <div className="flex items-center justify-center gap-1 mt-1"><Tag className="w-3 h-3 text-amber-500" /><span className="text-xs text-amber-600 font-medium">-{formatCurrency(row.discount)}</span></div>}</div></div>
-                        <div className="px-2 py-3"><span className={`inline-flex px-2 py-1 rounded-lg text-xs font-semibold border ${getMethodColor(row.method)}`}>{row.method?.replace(/_/g, " ").toUpperCase()}</span></div>
-                        <div className="px-2 py-3">{row.paymentId ? <div className="bg-slate-100 px-2 py-1 rounded text-xs font-mono text-slate-700 truncate">{row.paymentId}</div> : <span className="text-xs text-slate-400">-</span>}</div>
-                        <div className="px-2 py-3">{row.batchId ? <div className="flex items-center gap-1"><Package className="w-3 h-3 text-indigo-600" /><span className="text-xs font-mono text-indigo-700">{row.batchId.slice(-8)}</span></div> : <span className="text-xs text-slate-400">-</span>}</div>
-                        <div className="px-2 py-3"><span className="inline-flex px-2 py-1 rounded-lg text-xs font-semibold bg-purple-100 text-purple-700 border border-purple-200">{row.branch}</span></div>
-                      </>)}
+                {/* Payment Method selector */}
+                <div className="relative min-w-[150px]">
+                  <CreditCard className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <select
+                    value={selectedMethod}
+                    onChange={(e) => { setSelectedMethod(e.target.value); setPage(1); }}
+                    className="w-full pl-8 pr-7 py-2 bg-white border border-slate-200 rounded-xl text-[12px] text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors appearance-none cursor-pointer"
+                  >
+                    <option value="All">All Methods</option>
+                    {Object.keys(METHOD_LABELS).map((m) => (
+                      <option key={m} value={m}>{METHOD_LABELS[m] || m}</option>
+                    ))}
+                  </select>
+                  <span className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 text-[10px]">▾</span>
+                </div>
 
-                      {rowCategory === "EXPENSE" && (<>
-                        <div className="px-2 py-3"><div className="text-sm font-semibold text-slate-900 truncate">{row.expense || row.expenseCategory || "N/A"}</div></div>
-                        <div className="px-2 py-3"><div className="text-sm text-slate-900 truncate">{row.expenseType || "-"}</div></div>
-                        <div className="px-2 py-3"><div className="text-sm text-slate-900 truncate">{getExpenseGiverName(row)}</div></div>
-                        <div className="px-2 py-3 text-right"><div className="text-sm font-bold text-rose-600">{formatCurrency(row.amount)}</div></div>
-                        <div className="px-2 py-3"><span className={`inline-flex px-2 py-1 rounded-lg text-xs font-semibold border ${getMethodColor(row.method)}`}>{row.method?.replace(/_/g, " ").toUpperCase()}</span></div>
-                        <div className="px-2 py-3">{row.paymentId ? <div className="bg-slate-100 px-2 py-1 rounded text-xs font-mono text-slate-700 truncate">{row.paymentId}</div> : <span className="text-xs text-slate-400">-</span>}</div>
-                        <div className="px-2 py-3"><span className="inline-flex px-2 py-1 rounded-lg text-xs font-semibold bg-purple-100 text-purple-700 border border-purple-200">{row.branch}</span></div>
-                        <div className="px-2 py-3"><ApprovalBadge status={row.approvalStatus} /></div>
-                      </>)}
+                {/* Sort selector */}
+                <div className="relative min-w-[160px]">
+                  <ArrowUpDown className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <select
+                    value={`${sortField}-${sortDir}`}
+                    onChange={(e) => {
+                      const [f, d] = e.target.value.split("-");
+                      setSortField(f);
+                      setSortDir(d);
+                    }}
+                    className="w-full pl-8 pr-7 py-2 bg-white border border-slate-200 rounded-xl text-[12px] text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors appearance-none cursor-pointer"
+                  >
+                    <option value="date-desc">Newest First</option>
+                    <option value="date-asc">Oldest First</option>
+                    <option value="amount-desc">Highest Amount</option>
+                    <option value="amount-asc">Lowest Amount</option>
+                    <option value="patient-asc">Patient Name (A-Z)</option>
+                  </select>
+                  <span className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 text-[10px]">▾</span>
+                </div>
+              </div>
 
-                      <div className="px-2 py-3">
-                        <div className="flex items-center gap-2">
-                          <button onClick={() => onGenerateBill(row)} className="p-2 hover:bg-emerald-100 rounded-lg transition-colors text-emerald-600 hover:text-emerald-800" title="Generate Bill"><Bill size={18} /></button>
-                          <button onClick={() => router.push(`/sales/transactions/edit/${row._id}`)} className="p-2 hover:bg-indigo-100 rounded-lg transition-colors text-indigo-600 hover:text-indigo-800" title="Edit record"><Edit2 size={18} /></button>
-                          <button onClick={() => onDelete(row)} className="p-2 hover:bg-red-100 rounded-lg transition-colors text-red-600 hover:text-red-800" title="Delete record"><Trash2 size={18} /></button>
-                        </div>
-                      </div>
-                    </div>
+              {/* Transactions Table */}
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-slate-50/75 border-b border-slate-100 text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
+                      <th className="py-3 px-4">Date</th>
+                      <th className="py-3 px-4">Type</th>
+                      <th className="py-3 px-4">Party</th>
+                      <th className="py-3 px-4">Details</th>
+                      <th className="py-3 px-4">Total Package</th>
+                      <th className="py-3 px-4">Method</th>
+                      <th className="py-3 px-4">Branch</th>
+                      <th className="py-3 px-4 text-right">Amount</th>
+                      <th className="py-3 px-4 text-center">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 text-[12px]">
+                    {loading ? (
+                      <tr>
+                        <td colSpan={9} className="py-12 text-center text-slate-400">
+                          <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-2 text-blue-600" />
+                          <span>Loading financial transactions...</span>
+                        </td>
+                      </tr>
+                    ) : paginatedRows.length === 0 ? (
+                      <tr>
+                        <td colSpan={9} className="py-12 text-center text-slate-400">
+                          <Receipt className="w-7 h-7 mx-auto mb-2 text-slate-300" />
+                          <p className="font-medium text-slate-600">No transactions found</p>
+                          <p className="text-[11px] text-slate-400 mt-0.5">Try adjusting filters or date range</p>
+                        </td>
+                      </tr>
+                    ) : (
+                      paginatedRows.map((row) => {
+                        const cat = row.transactionCategory || row.category || "TRANSPLANT";
+                        const pkg = getPatientPackage(row);
+                        const pkgAmt = getPatientPackageAmount(row);
+                        const isExpanded = expandedRowId === row._id;
 
-                    <div className="md:hidden p-4">
-                      <div className="space-y-4">
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <div className="flex items-center gap-2 mb-1 flex-wrap">
-                              <span className={`px-2 py-1 rounded text-xs font-semibold ${rowCategory === "TRANSPLANT" ? getProcedureColor(row.procedure) : rowCategory === "SERVICE" ? getProcedureColor(row.procedure) : rowCategory === "MEDICINE" ? "bg-emerald-100 text-emerald-700 border border-emerald-200" : "bg-rose-100 text-rose-700 border border-rose-200"}`}>
-                                {rowCategory === "TRANSPLANT" || rowCategory === "SERVICE" ? row.procedure : rowCategory === "MEDICINE" ? getMedicineName(row) : row.expense || row.expenseCategory || "Expense"}
-                              </span>
-                              <span className={`px-2 py-1 rounded text-xs font-semibold ${getMethodColor(row.method)}`}>{row.method?.replace(/_/g, " ").toUpperCase()}</span>
-                              {hasUndefinedCategory(row) && <span className="inline-flex items-center gap-1 px-2 py-1 bg-amber-100 text-amber-700 rounded text-xs font-semibold border border-amber-200"><AlertCircle className="w-3 h-3" />Uncategorized</span>}
-                            </div>
-                            <h4 className="text-base font-bold text-slate-900">{rowCategory !== "EXPENSE" ? getPatientName(row) : getExpenseGiverName(row)}</h4>
-                            {rowCategory !== "EXPENSE" && <p className="text-sm text-slate-600 font-medium">{getPatientPhone(row)}</p>}
-                            {rowCategory === "EXPENSE" && <p className="text-sm text-slate-600 font-medium">{[row.expense || row.expenseCategory || "General Expense", row.expenseType].filter(Boolean).join(" • ")}</p>}
-                          </div>
-                          <div className="text-right">
-                            <div className={`text-lg font-bold ${rowCategory === "EXPENSE" ? "text-rose-600" : "text-emerald-700"}`}>{formatCurrency(netAmount)}</div>
-                            <p className="text-xs text-slate-500">{formatDateForDisplay(row.date)}</p>
-                          </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-3">
-                          {(rowCategory === "SERVICE" || rowCategory === "MEDICINE") && (<><div><p className="text-xs text-slate-500 mb-1">{rowCategory === "SERVICE" ? "Sessions" : "Quantity"}</p><p className="text-sm font-semibold text-indigo-700">{row.quantity || 1}</p></div><div><p className="text-xs text-slate-500 mb-1">{rowCategory === "SERVICE" ? "Per Session" : "Per Unit"}</p><p className="text-sm font-semibold text-slate-700">{formatCurrency(rowCategory === "SERVICE" ? row.perSessionCost : row.perUnitCost)}</p></div></>)}
-                          {rowCategory === "TRANSPLANT" && <div><p className="text-xs text-slate-500 mb-1">Payment Type</p><p className="text-sm font-semibold text-blue-700">{row.paymentType || "N/A"}</p></div>}
-                          {rowCategory === "EXPENSE" && <div><p className="text-xs text-slate-500 mb-1">Expense Category</p><p className="text-sm font-semibold text-rose-700">{row.expense || row.expenseCategory || "N/A"}</p></div>}
-                          {rowCategory === "EXPENSE" && <div><p className="text-xs text-slate-500 mb-1">Expense Type</p><p className="text-sm font-semibold text-rose-700">{row.expenseType || "N/A"}</p></div>}
-                          {rowCategory === "EXPENSE" && (row.approvalStatus === "PENDING" || row.approvalStatus === "REJECTED") && <div><p className="text-xs text-slate-500 mb-1">Approval</p><ApprovalBadge status={row.approvalStatus} /></div>}
-                          <div><p className="text-xs text-slate-500 mb-1">Branch</p><p className="text-sm font-semibold text-purple-700">{row.branch}</p></div>
-                          <div><p className="text-xs text-slate-500 mb-1">Transaction ID</p><p className="text-sm font-mono text-slate-700 truncate">{row.paymentId || "-"}</p></div>
-                          {row.batchId && <div className="col-span-2"><p className="text-xs text-slate-500 mb-1">Batch ID</p><p className="text-sm font-mono text-indigo-700">{row.batchId.slice(-8)}</p></div>}
-                        </div>
-                        {row.remarks && <div><p className="text-xs text-slate-500 mb-1">Remarks</p><p className="text-sm text-slate-700">{row.remarks}</p></div>}
-                        <div className="flex items-center justify-end pt-3 border-t border-slate-200">
-                          <div className="flex items-center gap-2">
-                            <button onClick={() => onGenerateBill(row)} className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-lg text-sm font-medium hover:bg-emerald-100 transition-colors"><Bill size={14} />Bill</button>
-                            <button onClick={() => router.push(`/sales/transactions/edit/${row._id}`)} className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 text-indigo-700 rounded-lg text-sm font-medium hover:bg-indigo-100 transition-colors"><Edit2 size={14} />Edit</button>
-                            <button onClick={() => onDelete(row)} className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 text-rose-700 rounded-lg text-sm font-medium hover:bg-rose-100 transition-colors"><Trash2 size={14} />Delete</button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                        return (
+                          <React.Fragment key={row._id}>
+                            <tr className="hover:bg-slate-50/80 transition-colors">
+                              {/* Date */}
+                              <td className="py-3 px-4 whitespace-nowrap text-slate-600 font-medium">
+                                {fmtDate(row.date)}
+                              </td>
+
+                              {/* Type */}
+                              <td className="py-3 px-4 whitespace-nowrap">
+                                <span
+                                  className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wide uppercase ${
+                                    cat === "TRANSPLANT"
+                                      ? "bg-indigo-50 text-indigo-700 border border-indigo-200/80"
+                                      : cat === "SERVICE"
+                                      ? "bg-pink-50 text-pink-700 border border-pink-200/80"
+                                      : "bg-emerald-50 text-emerald-700 border border-emerald-200/80"
+                                  }`}
+                                >
+                                  {cat}
+                                </span>
+                              </td>
+
+                              {/* Party (Patient) */}
+                              <td className="py-3 px-4">
+                                <div className="font-semibold text-slate-800 leading-snug">
+                                  {getPatientName(row)}
+                                </div>
+                                <div className="text-[11px] text-slate-400 font-mono">
+                                  {getPatientPhone(row) || "—"}
+                                </div>
+                              </td>
+
+                              {/* Details */}
+                              <td className="py-3 px-4">
+                                <div className="font-medium text-slate-700">
+                                  {row.procedure || (typeof row.medicineId === "object" ? row.medicineId?.name : null) || "—"}
+                                </div>
+                                {row.quantity > 1 && (
+                                  <div className="text-[11px] text-slate-400">
+                                    Qty / Sessions: {row.quantity}
+                                  </div>
+                                )}
+                              </td>
+
+                              {/* Total Package of Patient (Authoritative Database field) */}
+                              <td className="py-3 px-4">
+                                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-200/80 text-[11px]">
+                                  <Package className="w-3 h-3 text-indigo-600 shrink-0" />
+                                  <span className="font-semibold text-slate-700">{pkg}</span>
+                                  {pkgAmt !== null && (
+                                    <span className="text-slate-400 text-[10px]">
+                                      · {fmtRupee(pkgAmt)}
+                                    </span>
+                                  )}
+                                </div>
+                              </td>
+
+                              {/* Method */}
+                              <td className="py-3 px-4 whitespace-nowrap">
+                                <span
+                                  className={`inline-flex px-2 py-0.5 rounded-md text-[11px] font-medium border ${
+                                    METHOD_COLORS[row.method?.toLowerCase()] || METHOD_COLORS.other
+                                  }`}
+                                >
+                                  {METHOD_LABELS[row.method] || row.method || "—"}
+                                </span>
+                              </td>
+
+                              {/* Branch */}
+                              <td className="py-3 px-4 whitespace-nowrap">
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 text-[11px] font-medium">
+                                  <Building2 className="w-3 h-3 text-slate-400" />
+                                  {row.branch || "—"}
+                                </span>
+                              </td>
+
+                              {/* Amount */}
+                              <td className="py-3 px-4 text-right whitespace-nowrap">
+                                <div className="font-bold text-slate-900 text-[13px]">
+                                  {fmtRupee(row.amount)}
+                                </div>
+                                {parseFloat(row.discount || 0) > 0 && (
+                                  <div className="text-[10px] text-amber-600 font-medium">
+                                    -{fmtRupee(row.discount)} disc
+                                  </div>
+                                )}
+                              </td>
+
+                              {/* Actions (Strictly Read-Only: Bill & Expand) */}
+                              <td className="py-3 px-4 text-center whitespace-nowrap">
+                                <div className="inline-flex items-center gap-1">
+                                  {/* View Bill / Receipt */}
+                                  <button
+                                    onClick={() => handleOpenBill(row)}
+                                    className="p-1.5 hover:bg-emerald-50 text-emerald-600 rounded-lg transition-colors cursor-pointer"
+                                    title="View / Print Invoice"
+                                  >
+                                    <Bill className="w-4 h-4" />
+                                  </button>
+
+                                  {/* Toggle Detail Expander */}
+                                  <button
+                                    onClick={() => setExpandedRowId(isExpanded ? null : row._id)}
+                                    className="p-1.5 hover:bg-slate-100 text-slate-500 rounded-lg transition-colors cursor-pointer"
+                                    title="View Record Details"
+                                  >
+                                    {isExpanded ? (
+                                      <ChevronUp className="w-4 h-4 text-blue-600" />
+                                    ) : (
+                                      <ChevronDown className="w-4 h-4" />
+                                    )}
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+
+                            {/* ── Expanded Detail Row (Read-Only) ────────────── */}
+                            {isExpanded && (
+                              <tr className="bg-blue-50/30">
+                                <td colSpan={9} className="px-6 py-3 border-t border-b border-blue-100">
+                                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 text-[11px]">
+                                    <div>
+                                      <span className="font-semibold text-slate-500 block">Payment ID:</span>
+                                      <span className="font-mono text-slate-700">{row.paymentId || "N/A"}</span>
+                                    </div>
+                                    <div>
+                                      <span className="font-semibold text-slate-500 block">Payment Type:</span>
+                                      <span className="text-slate-700">{row.paymentType || "Standard"}</span>
+                                    </div>
+                                    <div>
+                                      <span className="font-semibold text-slate-500 block">Account / Mode:</span>
+                                      <span className="text-slate-700">{row.furtherMode || "Standard Account"}</span>
+                                    </div>
+                                    <div>
+                                      <span className="font-semibold text-slate-500 block">Remarks:</span>
+                                      <span className="text-slate-600 italic">{row.remarks || "None"}</span>
+                                    </div>
+                                  </div>
+                                </td>
+                              </tr>
+                            )}
+                          </React.Fragment>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* ── Pagination ─────────────────────────────────────────────────── */}
+              {!loading && total > 0 && (
+                <div className="px-4 py-3 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3">
+                  <div className="text-[11px] text-slate-400">
+                    Showing{" "}
+                    <span className="text-slate-700 font-semibold">{startItem}–{endItem}</span>{" "}
+                    of{" "}
+                    <span className="text-slate-700 font-semibold">{total}</span>{" "}
+                    transactions
+                    {totalPages > 1 && (
+                      <span className="text-slate-300 ml-1">· Page {page} of {totalPages}</span>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => setPage((p) => Math.max(1, p - 1))}
+                      disabled={page <= 1 || loading}
+                      className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-xl border text-[11px] font-medium transition-colors cursor-pointer ${
+                        page <= 1 || loading
+                          ? "bg-slate-50 text-slate-300 border-slate-200 cursor-not-allowed"
+                          : "bg-white text-slate-600 hover:bg-slate-50 border-slate-200"
+                      }`}
+                    >
+                      <ChevronLeft className="w-3.5 h-3.5" />
+                      Previous
+                    </button>
+
+                    <button
+                      onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                      disabled={page >= totalPages || loading}
+                      className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-xl border text-[11px] font-medium transition-colors cursor-pointer ${
+                        page >= totalPages || loading
+                          ? "bg-slate-50 text-slate-300 border-slate-200 cursor-not-allowed"
+                          : "bg-white text-slate-600 hover:bg-slate-50 border-slate-200"
+                      }`}
+                    >
+                      Next
+                      <ChevronRight className="w-3.5 h-3.5" />
+                    </button>
                   </div>
                 </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-      <div className="border-t border-slate-200 bg-white">
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 sm:px-6 py-4">
-          <div className="text-sm text-slate-600"><span className="font-medium text-slate-900">{pagination.startIdx + 1}-{pagination.endIdx}</span><span className="mx-2">of</span><span className="font-medium text-slate-900">{pagination.total.toLocaleString()}</span><span className="ml-2">records</span></div>
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-slate-600 hidden sm:inline">Show</span>
-              <select className="text-sm border border-slate-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white font-medium transition-all" value={pagination.perPage} onChange={(e) => { pagination.setPerPage(Number(e.target.value)); pagination.setPage(1); }}>
-                {[10, 25, 50, 100].map((n) => <option key={n} value={n}>{n}</option>)}
-              </select>
-              <span className="text-sm text-slate-600 hidden sm:inline">per page</span>
+              )}
             </div>
-            <div className="flex items-center gap-1">
-              <button onClick={() => pagination.setPage((p) => Math.max(1, p - 1))} disabled={pagination.page <= 1} className="p-2 rounded-lg border border-slate-300 bg-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 hover:border-slate-400 transition-all"><ChevronLeft className="w-4 h-4" /></button>
-              <div className="flex items-center gap-1 mx-2">
-                {(() => {
-                  const pages = []; const totalPages = pagination.pages; const currentPage = pagination.page;
-                  if (currentPage > 2) { pages.push(1); if (currentPage > 3) pages.push("..."); }
-                  for (let i = Math.max(1, currentPage - 1); i <= Math.min(totalPages, currentPage + 1); i++) pages.push(i);
-                  if (currentPage < totalPages - 1) { if (currentPage < totalPages - 2) pages.push("..."); pages.push(totalPages); }
-                  return pages.map((page, idx) =>
-                    page === "..." ? <span key={idx} className="px-2 text-slate-400">...</span> :
-                    <button key={idx} onClick={() => pagination.setPage(page)} className={`w-8 h-8 rounded-lg text-sm font-medium transition-all ${page === currentPage ? "bg-indigo-600 text-white border border-indigo-600" : "text-slate-700 hover:bg-slate-100 border border-transparent"}`}>{page}</button>
-                  );
-                })()}
+          )}
+        </div>
+      </main>
+
+      {/* ── Incentive Entry Modal ────────────────────────────────────────────── */}
+      {showIncentiveModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs">
+          <div className="relative w-full max-w-xl bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-100">
+                  <Gift className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold text-slate-800">Record Staff Incentive</h3>
+                  <p className="text-[11px] text-slate-400">Tops up the employee&apos;s monthly incentive payable</p>
+                </div>
               </div>
-              <button onClick={() => pagination.setPage((p) => Math.min(pagination.pages, p + 1))} disabled={pagination.page >= pagination.pages} className="p-2 rounded-lg border border-slate-300 bg-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 hover:border-slate-400 transition-all"><ChevronRight className="w-4 h-4" /></button>
+              <button
+                onClick={() => setShowIncentiveModal(false)}
+                className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-6 max-h-[80vh] overflow-y-auto">
+              <IncentiveEntryForm picker={patientPicker} />
             </div>
           </div>
         </div>
-      </div>
+      )}
+
+      {/* ── Bill Generator Modal ─────────────────────────────────────────────── */}
+      {showBill && billDataId && (
+        <BillGenerator
+          transactionId={billDataId}
+          onClose={() => {
+            setShowBill(false);
+            setBillDataId(null);
+          }}
+        />
+      )}
     </div>
   );
 }
 
 export default function SalesTransactionsPage() {
-  const tenantBranches = ["Delhi", "Mumbai", "Hyderabad", "Noida"];
-
-  const router = useRouter();
-  const [transactions, setTransactions] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [refreshing, setRefreshing] = useState(false);
-  const [activeCategory, setActiveCategory] = useState("TRANSPLANT");
-  const [pendingOnly, setPendingOnly] = useState(false);
-  const [filters, setFilters] = useState({ branch: "", dateFrom: getTodayDate(), dateTo: getTodayDate(), paymentMethod: "", procedure: "" });
-  const [showFilters, setShowFilters] = useState(false);
-  const [tableSearch, setTableSearch] = useState("");
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [deletingTransaction, setDeletingTransaction] = useState(null);
-  const [showBillGenerator, setShowBillGenerator] = useState(false);
-  const [selectedTransactionId, setSelectedTransactionId] = useState(null);
-  const [page, setPage] = useState(1);
-  const [perPage, setPerPage] = useState(10);
-  const toast = useToast();
-  const [sortConfig, setSortConfig] = useState({ key: "date", direction: "desc" });
-
-  useEffect(() => { fetchData(); }, [pendingOnly]);
-
-  const fetchData = async () => {
-    try {
-      setLoading(true); setError(null);
-      const url = `/api/transactions/get-all?limit=10000${pendingOnly ? "&approvalStatus=PENDING" : ""}`;
-      const res = await fetch(url, { credentials: "include" });
-      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-      const data = await res.json();
-      if (data.success && data.transactions) { setTransactions(data.transactions); }
-      else throw new Error(data.message || data.error || "Invalid data format");
-    } catch (e) { setError(e.message); toast?.error?.("Error loading data: " + e.message); }
-    finally { setLoading(false); setRefreshing(false); }
-  };
-
-  const handleRefresh = async () => { setRefreshing(true); await fetchData(); };
-
-  const filterByDateRange = (items, dateFrom, dateTo) => {
-    if (!dateFrom && !dateTo) return items;
-    return items.filter((item) => {
-      const itemDate = new Date(item.date);
-      if (dateFrom) { const fromDate = new Date(dateFrom); fromDate.setHours(0, 0, 0, 0); if (itemDate < fromDate) return false; }
-      if (dateTo) { const toDate = new Date(dateTo); toDate.setHours(23, 59, 59, 999); if (itemDate > toDate) return false; }
-      return true;
-    });
-  };
-
-  const matchesSearch = (row, searchLower) => {
-    const commonMatch = row.method?.toLowerCase().includes(searchLower) || row.branch?.toLowerCase().includes(searchLower) || row.remarks?.toLowerCase().includes(searchLower) || row.paymentId?.toLowerCase().includes(searchLower) || row.amount?.toString().includes(searchLower);
-    if (commonMatch) return true;
-    const rowCategory = row.transactionCategory || row.category || "TRANSPLANT";
-    if (rowCategory === "TRANSPLANT" || rowCategory === "SERVICE") { const pn = row.patient?.personal?.name || row.patientName || ""; const pp = row.patient?.personal?.phone || row.patientPhone || ""; return pn.toLowerCase().includes(searchLower) || pp.includes(searchLower) || row.procedure?.toLowerCase().includes(searchLower); }
-    if (rowCategory === "MEDICINE") { const pn = row.patient?.personal?.name || row.patientName || ""; const pp = row.patient?.personal?.phone || row.patientPhone || ""; const mn = typeof row.medicineId === "object" ? row.medicineId?.name : ""; return pn.toLowerCase().includes(searchLower) || pp.includes(searchLower) || mn?.toLowerCase().includes(searchLower); }
-    if (rowCategory === "EXPENSE") { const en = row.expense || row.expenseCategory || ""; const et = row.expenseType || ""; const gn = row.expenseGiver?.name || ""; return en.toLowerCase().includes(searchLower) || et.toLowerCase().includes(searchLower) || gn.toLowerCase().includes(searchLower); }
-    return false;
-  };
-
-  const filteredTransactions = useMemo(() => {
-    let list = transactions;
-    if (tableSearch) { const searchLower = tableSearch.toLowerCase(); list = list.filter((row) => matchesSearch(row, searchLower)); }
-    if (!tableSearch) { list = list.filter((t) => { const category = t.transactionCategory || t.category; if (activeCategory === "TRANSPLANT") return category === "TRANSPLANT" || !category || category === ""; return category === activeCategory; }); }
-    if (filters.branch) list = list.filter((t) => t.branch?.toLowerCase() === filters.branch.toLowerCase());
-    if (filters.paymentMethod) list = list.filter((t) => t.method?.toLowerCase() === filters.paymentMethod.toLowerCase());
-    if (filters.procedure) list = list.filter((t) => t.procedure?.toLowerCase() === filters.procedure.toLowerCase());
-    list = filterByDateRange(list, filters.dateFrom, filters.dateTo);
-    return list;
-  }, [transactions, activeCategory, filters, tableSearch]);
-
-  const categoryStats = useMemo(() => {
-    const stats = { TRANSPLANT: { count: 0, total: 0 }, SERVICE: { count: 0, total: 0 }, MEDICINE: { count: 0, total: 0 }, EXPENSE: { count: 0, total: 0 } };
-    let filteredList = transactions;
-    if (filters.branch) filteredList = filteredList.filter((t) => t.branch?.toLowerCase() === filters.branch.toLowerCase());
-    if (filters.paymentMethod) filteredList = filteredList.filter((t) => t.method?.toLowerCase() === filters.paymentMethod.toLowerCase());
-    if (filters.procedure) filteredList = filteredList.filter((t) => t.procedure?.toLowerCase() === filters.procedure.toLowerCase());
-    filteredList = filterByDateRange(filteredList, filters.dateFrom, filters.dateTo);
-    filteredList.forEach((t) => { const cat = t.transactionCategory || t.category; const ac = cat || "TRANSPLANT"; if (stats[ac]) { stats[ac].count++; stats[ac].total += calculateNetAmount(t); } });
-    return stats;
-  }, [transactions, filters]);
-
-  const sortedRows = useMemo(() => {
-    const sorted = [...filteredTransactions];
-    if (sortConfig.key) {
-      sorted.sort((a, b) => {
-        let aVal = a[sortConfig.key]; let bVal = b[sortConfig.key];
-        if (sortConfig.key === "patient") { aVal = a.patient?.personal?.name || a.patientName || "Walk-in Customer"; bVal = b.patient?.personal?.name || b.patientName || "Walk-in Customer"; }
-        if (sortConfig.key === "date") { aVal = new Date(aVal); bVal = new Date(bVal); }
-        if (aVal < bVal) return sortConfig.direction === "asc" ? -1 : 1;
-        if (aVal > bVal) return sortConfig.direction === "asc" ? 1 : -1;
-        return 0;
-      });
-    }
-    return sorted;
-  }, [filteredTransactions, sortConfig]);
-
-  const handleSort = (key) => { setSortConfig((prev) => ({ key, direction: prev.key === key && prev.direction === "asc" ? "desc" : "asc" })); };
-
-  const total = sortedRows.length;
-  const pages = Math.max(1, Math.ceil(total / perPage));
-  const current = Math.min(page, pages);
-  const startIdx = (current - 1) * perPage;
-  const endIdx = Math.min(startIdx + perPage, total);
-  const paginatedRows = sortedRows.slice(startIdx, endIdx);
-
-  const clearFilters = () => { setFilters({ branch: "", dateFrom: getTodayDate(), dateTo: getTodayDate(), paymentMethod: "", procedure: "" }); setTableSearch(""); setPage(1); };
-  const hasActiveFilters = Object.values(filters).some((v) => v !== "") || tableSearch;
-  useEffect(() => { setPage(1); }, [filters, activeCategory, tableSearch]);
-  useEffect(() => { if (activeCategory !== "EXPENSE" && pendingOnly) setPendingOnly(false); }, [activeCategory]);
-
-  const openDeleteConfirm = (transaction) => { setDeletingTransaction(transaction); setShowDeleteConfirm(true); };
-
-  const handleDelete = async () => {
-    if (!deletingTransaction) return;
-    try {
-      const category = deletingTransaction.transactionCategory || deletingTransaction.category || "TRANSPLANT";
-      const endpoint = category === "TRANSPLANT" ? "/api/transactions/transplant/delete" : category === "SERVICE" ? "/api/transactions/service/delete" : category === "MEDICINE" ? "/api/transactions/medicine/delete" : "/api/transactions/expense/delete";
-      const res = await fetch(endpoint, { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ transactionId: deletingTransaction._id }), credentials: "include" });
-      const data = await res.json();
-      if (res.ok) { toast.success("Transaction deleted successfully"); fetchData(); setShowDeleteConfirm(false); setDeletingTransaction(null); }
-      else toast.error(data.error || "Failed to delete transaction");
-    } catch (err) { toast.error("An error occurred while deleting"); }
-  };
-
-  const openBillGenerator = (data) => {
-    try {
-      const isRevenue = data.costType === "Revenue";
-      const hasCategory = data.transactionCategory && data.transactionCategory !== "undefined" && data.transactionCategory !== "";
-      if (isRevenue && (!hasCategory || data.transactionCategory === "TRANSPLANT") && data.patient) {
-        const patientId = typeof data.patient === "object" ? data.patient._id : data.patient;
-        setSelectedTransactionId(patientId || data._id);
-      } else setSelectedTransactionId(data._id);
-      setShowBillGenerator(true);
-    } catch (err) { console.error("Error opening bill generator:", err); toast.error("Failed to open bill generator"); }
-  };
-
-  const closeBillGenerator = () => { setShowBillGenerator(false); setSelectedTransactionId(null); };
-
-  const applyQuickFilter = (preset) => {
-    const today = getTodayDate(); const date = new Date();
-    switch (preset) {
-      case "today": setFilters({ ...filters, dateFrom: today, dateTo: today }); break;
-      case "yesterday": const yesterday = new Date(date.setDate(date.getDate() - 1)).toISOString().split("T")[0]; setFilters({ ...filters, dateFrom: yesterday, dateTo: yesterday }); break;
-      case "week": const weekAgo = new Date(date.setDate(date.getDate() - 7)).toISOString().split("T")[0]; setFilters({ ...filters, dateFrom: weekAgo, dateTo: getTodayDate() }); break;
-      case "month": const monthAgo = new Date(date.setMonth(date.getMonth() - 1)).toISOString().split("T")[0]; setFilters({ ...filters, dateFrom: monthAgo, dateTo: getTodayDate() }); break;
-      case "all": setFilters({ ...filters, dateFrom: "", dateTo: "" }); break;
-    }
-  };
-
-  if (loading) return <div className="flex h-screen items-center justify-center bg-linear-to-br from-blue-50 via-indigo-50 to-purple-50"><div className="text-center"><Loader2 className="animate-spin h-16 w-16 text-indigo-500 mx-auto mb-4" /><p className="text-gray-600 font-medium">Loading transactions...</p></div></div>;
-
-  if (error) return (
-    <div className="flex h-screen items-center justify-center bg-linear-to-br from-blue-50 via-indigo-50 to-purple-50">
-      <div className="text-center bg-white p-8 rounded-3xl shadow-xl border border-red-100">
-        <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4"><AlertCircle className="w-8 h-8 text-red-500" /></div>
-        <h2 className="text-xl font-semibold text-gray-900 mb-2">Error Loading Data</h2>
-        <p className="text-gray-600 mb-4">{error}</p>
-        <button onClick={handleRefresh} className="px-6 py-2.5 bg-indigo-500 text-white rounded-xl hover:bg-indigo-600 transition-all font-medium">Try Again</button>
-      </div>
-    </div>
-  );
-
   return (
-    <div className="flex min-h-screen bg-linear-to-br from-blue-50 via-indigo-50 to-purple-50">
-      <SalesSidebar />
-
-      <main className="flex-1 p-4 sm:p-6 lg:p-8 w-full lg:w-auto min-w-0">
-        <div className="mb-4 sm:mb-6">
-          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">All Transactions</h1>
-              <p className="text-gray-600 text-sm sm:text-base">View and manage all transaction categories</p>
-            </div>
-            <div className="flex gap-2 sm:gap-3">
-              <button onClick={handleRefresh} disabled={refreshing} className="p-2 sm:p-3 bg-white border-2 border-gray-200 rounded-xl hover:bg-gray-50 transition-all shadow-sm disabled:opacity-50 shrink-0" title="Refresh data">
-                <RefreshCw className={`w-4 h-4 sm:w-5 sm:h-5 text-gray-600 ${refreshing ? "animate-spin" : ""}`} />
-              </button>
-              <button onClick={() => router.push("/sales/transactions/create")} className="bg-linear-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white px-3 sm:px-5 py-2 sm:py-3 rounded-xl flex items-center gap-1 sm:gap-2 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 text-sm sm:text-base shrink-0">
-                <Plus size={18} strokeWidth={2.5} />
-                <span className="font-semibold hidden sm:inline">Add Transaction</span>
-                <span className="font-semibold sm:hidden">Add</span>
-              </button>
-            </div>
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-[#f8fafc]">
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-white rounded-xl border border-slate-200 text-[12px] text-slate-500 shadow-sm">
+            <RefreshCw className="w-3.5 h-3.5 animate-spin text-blue-600" />
+            <span>Loading sales transactions workspace...</span>
           </div>
         </div>
-
-        <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-5 mb-4 sm:mb-6">
-          <StatCard title="Transplants" value={formatCurrency(categoryStats.TRANSPLANT.total)} icon={User} gradient="from-indigo-400 to-purple-500" count={`${categoryStats.TRANSPLANT.count} transactions`} iconBg="bg-indigo-100" iconColor="text-indigo-600" />
-          <StatCard title="Services" value={formatCurrency(categoryStats.SERVICE.total)} icon={User} gradient="from-pink-400 to-rose-500" count={`${categoryStats.SERVICE.count} transactions`} iconBg="bg-pink-100" iconColor="text-pink-600" />
-          <StatCard title="Medicines" value={formatCurrency(categoryStats.MEDICINE.total)} icon={User} gradient="from-emerald-400 to-green-500" count={`${categoryStats.MEDICINE.count} transactions`} iconBg="bg-emerald-100" iconColor="text-emerald-600" />
-          <StatCard title="Expenses" value={formatCurrency(categoryStats.EXPENSE.total)} icon={User} gradient="from-rose-400 to-red-500" count={`${categoryStats.EXPENSE.count} transactions`} iconBg="bg-rose-100" iconColor="text-rose-600" />
-        </div>
-
-        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-          <div className="border-b border-gray-200">
-            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-3 sm:gap-4 p-4 sm:px-6 sm:py-4">
-              <div className="flex gap-1 sm:gap-2 w-full lg:w-auto overflow-x-auto pb-2 lg:pb-0">
-                {TRANSACTION_CATEGORIES.map((cat) => {
-                  const Icon = cat.icon;
-                  return (
-                    <button key={cat.value} className={`px-4 sm:px-6 py-2 sm:py-2.5 rounded-xl font-semibold transition-all whitespace-nowrap shrink-0 flex items-center gap-2 ${getCategoryGradientClass(cat.value, activeCategory === cat.value)}`} onClick={() => setActiveCategory(cat.value)}>
-                      <Icon size={18} />{cat.label} ({categoryStats[cat.value].count})
-                    </button>
-                  );
-                })}
-              </div>
-              <div className="flex gap-2 sm:gap-3 w-full lg:w-auto">
-                {activeCategory === "EXPENSE" && (
-                  <button onClick={() => setPendingOnly((v) => !v)} className={`px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl transition-all shrink-0 flex items-center gap-2 text-sm font-semibold whitespace-nowrap ${pendingOnly ? "bg-amber-500 text-white shadow-md" : "bg-amber-50 text-amber-700 hover:bg-amber-100"}`}>
-                    <Clock className="w-4 h-4" />
-                    <span className="hidden sm:inline">Pending Approvals</span>
-                    <span className="sm:hidden">Pending</span>
-                  </button>
-                )}
-                <div className="relative flex-1 lg:flex-initial min-w-0">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 sm:w-5 sm:h-5" />
-                  <input type="text" placeholder="Search all transactions..." value={tableSearch} onChange={(e) => setTableSearch(e.target.value)} className="pl-9 sm:pl-11 pr-4 py-2 sm:py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-100 focus:border-indigo-300 text-sm w-full lg:w-64 transition-all" />
-                </div>
-                <button onClick={() => setShowFilters(!showFilters)} className={`p-2 sm:p-2.5 rounded-xl transition-all shrink-0 flex items-center gap-2 ${showFilters ? "bg-indigo-50 text-indigo-600 ring-2 ring-indigo-200" : "bg-gray-50 hover:bg-gray-100 text-gray-600"}`}>
-                  <Filter className="w-4 h-4 sm:w-5 sm:h-5" />
-                  <ChevronDown className={`w-4 h-4 hidden sm:block ${showFilters ? "rotate-180" : ""}`} />
-                </button>
-                {hasActiveFilters && (
-                  <button onClick={clearFilters} className="px-3 sm:px-4 py-2 sm:py-2.5 text-sm bg-gray-50 hover:bg-gray-100 text-gray-700 rounded-xl transition-all font-medium flex items-center gap-1 sm:gap-2 whitespace-nowrap shrink-0">
-                    <X className="w-4 h-4" /><span className="hidden xs:inline">Clear</span>
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {showFilters && (
-              <div className="px-4 sm:px-6 pb-4 sm:pb-5 border-t border-gray-100 pt-4 sm:pt-5 bg-linear-to-b from-indigo-50/30 to-white">
-                <div className="mb-4">
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Quick Filters</label>
-                  <div className="flex flex-wrap gap-2">
-                    {[{ label: "Today", value: "today" }, { label: "Yesterday", value: "yesterday" }, { label: "Last 7 Days", value: "week" }, { label: "Last 30 Days", value: "month" }, { label: "All Time", value: "all" }].map((preset) => (
-                      <button key={preset.value} onClick={() => applyQuickFilter(preset.value)} className="px-3 sm:px-4 py-1.5 sm:py-2 bg-white border-2 border-indigo-200 text-indigo-700 rounded-lg hover:bg-indigo-50 transition-all text-xs sm:text-sm font-semibold">{preset.label}</button>
-                    ))}
-                  </div>
-                </div>
-                <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-4">
-                  <Select label="Branch" value={filters.branch} onChange={(val) => setFilters({ ...filters, branch: val })} options={[{ value: "", label: "All Branches" }, ...tenantBranches.map((b) => ({ value: b, label: b }))]} icon={Building2} />
-                  <Input label="From Date" type="date" value={filters.dateFrom} onChange={(val) => setFilters({ ...filters, dateFrom: val })} icon={Calendar} />
-                  <Input label="To Date" type="date" value={filters.dateTo} onChange={(val) => setFilters({ ...filters, dateTo: val })} icon={Calendar} />
-                  <Select label="Payment Method" value={filters.paymentMethod} onChange={(val) => setFilters({ ...filters, paymentMethod: val })} options={[{ value: "", label: "All Methods" }, ...PAYMENT_METHODS.map((m) => ({ value: m, label: m.replace(/_/g, " ").toUpperCase() }))]} icon={CreditCard} />
-                  {(activeCategory === "TRANSPLANT" || activeCategory === "SERVICE") && (
-                    <Select label="Procedure" value={filters.procedure} onChange={(val) => setFilters({ ...filters, procedure: val })} options={[{ value: "", label: "All Procedures" }, ...(activeCategory === "TRANSPLANT" ? TRANSPLANT_PROCEDURES : SERVICE_PROCEDURES).map((p) => ({ value: p, label: p }))]} />
-                  )}
-                </div>
-                {hasActiveFilters && (
-                  <div className="mt-4 p-3 bg-indigo-50 border border-indigo-200 rounded-lg">
-                    <div className="flex items-center justify-between mb-2"><span className="text-sm font-semibold text-indigo-900">Active Filters:</span><span className="text-xs text-indigo-700">{sortedRows.length} results</span></div>
-                    <div className="flex flex-wrap gap-2">
-                      {filters.branch && <span className="px-2 py-1 bg-white text-indigo-700 rounded-md text-xs font-medium border border-indigo-200">Branch: {filters.branch}</span>}
-                      {filters.dateFrom && <span className="px-2 py-1 bg-white text-indigo-700 rounded-md text-xs font-medium border border-indigo-200">From: {formatDateForDisplay(filters.dateFrom)}</span>}
-                      {filters.dateTo && <span className="px-2 py-1 bg-white text-indigo-700 rounded-md text-xs font-medium border border-indigo-200">To: {formatDateForDisplay(filters.dateTo)}</span>}
-                      {filters.paymentMethod && <span className="px-2 py-1 bg-white text-indigo-700 rounded-md text-xs font-medium border border-indigo-200">Method: {filters.paymentMethod.replace(/_/g, " ").toUpperCase()}</span>}
-                      {filters.procedure && <span className="px-2 py-1 bg-white text-indigo-700 rounded-md text-xs font-medium border border-indigo-200">Procedure: {filters.procedure}</span>}
-                      {tableSearch && <span className="px-2 py-1 bg-white text-indigo-700 rounded-md text-xs font-medium border border-indigo-200">Search: "{tableSearch}"</span>}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-
-          <DataTable
-            category={activeCategory}
-            rows={paginatedRows}
-            onDelete={openDeleteConfirm}
-            onGenerateBill={openBillGenerator}
-            onSort={handleSort}
-            sortConfig={sortConfig}
-            pagination={{ page: current, pages, perPage, setPage, setPerPage, startIdx, endIdx, total }}
-          />
-        </div>
-      </main>
-
-      {showDeleteConfirm && <DeleteConfirmModal transaction={deletingTransaction} onClose={() => { setShowDeleteConfirm(false); setDeletingTransaction(null); }} onConfirm={handleDelete} />}
-      {showBillGenerator && selectedTransactionId && <BillGenerator transactionId={selectedTransactionId} onClose={closeBillGenerator} />}
-    </div>
+      }
+    >
+      <SalesTransactionsContent />
+    </Suspense>
   );
 }

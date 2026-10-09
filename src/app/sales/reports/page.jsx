@@ -1,212 +1,483 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Download, FileText, Users, IndianRupee, TrendingUp, Calendar, CheckCircle } from "lucide-react";
-import Sidebar from "../../../components/Sidebars/SalesSidebar";
-import Topbar from "../../../components/Topbar";
+import { useState, useCallback } from "react";
+import SalesSidebar from "@/components/Sidebars/SalesSidebar";
+import {
+  FileBarChart,
+  Download,
+  CalendarDays,
+  Users,
+  Trophy,
+  TrendingUp,
+  BarChart3,
+  RefreshCw,
+  ShieldCheck,
+  CheckCircle2,
+  Calendar,
+  Eye,
+  Filter,
+  ArrowRight,
+  AlertCircle,
+  Table,
+  ClipboardList,
+  UserCheck,
+  Clock,
+  Activity,
+} from "lucide-react";
 
-export default function SalesReports() {
-  const [activePage, setActivePage] = useState("Reports");
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [branch, setBranch] = useState("All");
-  const [dateRange, setDateRange] = useState("Today");
-  const [customDates, setCustomDates] = useState({ from: "", to: "" });
-  const [loading, setLoading] = useState({});
+const BRANCHES = ["All", "Delhi", "Mumbai", "Hyderabad", "Noida", "Gurgaon"];
+const DATE_RANGES = ["Today", "Yesterday", "Last 7 Days", "This Month", "All Time", "Custom"];
 
-  const getDateRange = () => {
-    let fromDate = new Date();
-    fromDate.setHours(0, 0, 0, 0);
-    let toDate = new Date();
-    toDate.setHours(23, 59, 59, 999);
+const REPORT_DEFINITIONS = [
+  {
+    id: "appointments",
+    title: "Appointments & Consultations Report",
+    description: "Scheduled patient consultations, visit dates, clinical statuses, and assigned telecallers",
+    icon: CalendarDays,
+    accent: "bg-blue-600",
+    color: "text-blue-600",
+    iconBg: "bg-blue-50 border-blue-200",
+    badge: "Scheduling",
+    badgeColor: "bg-blue-50 text-blue-600 border-blue-200",
+    fields: ["Visit Date", "Patient Name", "Branch", "Status", "Quoted Technique", "Quoted Package", "Reference Agent", "Counsellor"],
+  },
+  {
+    id: "leads",
+    title: "Sales Leads & Inquiries Report",
+    description: "Lead acquisition records, quote amounts, visit status, and conversion tracking across branches",
+    icon: Users,
+    accent: "bg-indigo-600",
+    color: "text-indigo-600",
+    iconBg: "bg-indigo-50 border-indigo-200",
+    badge: "Pipeline",
+    badgeColor: "bg-indigo-50 text-indigo-600 border-indigo-200",
+    fields: ["Created Date", "Patient Name", "Branch", "Visit Date", "Status", "Quoted Technique", "Package", "Telecaller", "Amount Received"],
+  },
+  {
+    id: "agent-performance",
+    title: "Sales Agent Performance Report",
+    description: "Performance scorecard strictly for sales telecallers: inquiries managed, conversions, and settled collections",
+    icon: Trophy,
+    accent: "bg-purple-600",
+    color: "text-purple-600",
+    iconBg: "bg-purple-50 border-purple-200",
+    badge: "Agents Only",
+    badgeColor: "bg-purple-50 text-purple-600 border-purple-200",
+    fields: ["Agent Name", "Branch", "Status", "Total Leads", "Consultations", "Converted", "Conversion Rate %", "Total Revenue", "Avg Rev/Lead"],
+  },
+  {
+    id: "revenue",
+    title: "Revenue & Collections Ledger Report",
+    description: "Itemized transaction records, payment methods, procedure types, and bank transaction IDs",
+    icon: TrendingUp,
+    accent: "bg-emerald-600",
+    color: "text-emerald-600",
+    iconBg: "bg-emerald-50 border-emerald-200",
+    badge: "Financial",
+    badgeColor: "bg-emerald-50 text-emerald-600 border-emerald-200",
+    fields: ["Date", "Patient Name", "Branch", "Category", "Procedure", "Payment Type", "Method", "Amount (INR)", "Transaction ID"],
+  },
+  {
+    id: "summary",
+    title: "Executive Sales Summary Report",
+    description: "High-level summary of total leads, portfolio conversion rate, total revenue, and active telecaller count",
+    icon: BarChart3,
+    accent: "bg-amber-600",
+    color: "text-amber-600",
+    iconBg: "bg-amber-50 border-amber-200",
+    badge: "Executive",
+    badgeColor: "bg-amber-50 text-amber-700 border-amber-200",
+    fields: ["Period", "Branch", "Total Leads", "Total Converted", "Conversion Rate %", "Total Revenue", "Active Agents"],
+  },
+  {
+    id: "patients",
+    title: "Patients Directory Report",
+    description: "Complete directory of all registered patients with registration date, branch, stage, conversion status, and billed amounts",
+    icon: ClipboardList,
+    accent: "bg-cyan-600",
+    color: "text-cyan-600",
+    iconBg: "bg-cyan-50 border-cyan-200",
+    badge: "Directory",
+    badgeColor: "bg-cyan-50 text-cyan-700 border-cyan-200",
+    fields: ["Registration Date", "Patient Name", "Age", "Gender", "Branch", "Current Stage", "Conversion Status", "Sales Agent", "Quoted Technique", "Total Billed", "Amount Received"],
+  },
+  {
+    id: "converted-patients",
+    title: "Converted Patients Report",
+    description: "Patients who have been converted to surgery or completed procedures, including surgery dates and settled revenue",
+    icon: UserCheck,
+    accent: "bg-teal-600",
+    color: "text-teal-600",
+    iconBg: "bg-teal-50 border-teal-200",
+    badge: "Converted",
+    badgeColor: "bg-teal-50 text-teal-700 border-teal-200",
+    fields: ["Conversion Date", "Patient Name", "Branch", "Status", "Surgery Date", "Quoted Technique", "Sales Agent", "Total Billed", "Amount Received"],
+  },
+  {
+    id: "pending-leads",
+    title: "Pending Leads Report",
+    description: "Active leads that have not yet converted or been disqualified — still in the sales pipeline requiring follow-up",
+    icon: Clock,
+    accent: "bg-orange-500",
+    color: "text-orange-600",
+    iconBg: "bg-orange-50 border-orange-200",
+    badge: "Pipeline",
+    badgeColor: "bg-orange-50 text-orange-700 border-orange-200",
+    fields: ["Created Date", "Patient Name", "Branch", "Current Status", "Visit Date", "Days Since Created", "Sales Agent", "Quoted Technique", "Quoted Package"],
+  },
+  {
+    id: "daily-summary",
+    title: "Daily Activity Summary Report",
+    description: "Day-by-day breakdown of new registrations, consultations held, conversions achieved, and daily revenue collected",
+    icon: Activity,
+    accent: "bg-rose-600",
+    color: "text-rose-600",
+    iconBg: "bg-rose-50 border-rose-200",
+    badge: "Daily",
+    badgeColor: "bg-rose-50 text-rose-700 border-rose-200",
+    fields: ["Date", "Branch", "New Registrations", "Consultations", "New Conversions", "Revenue Collected"],
+  },
+];
 
-    if (dateRange === "Yesterday") {
-      fromDate.setDate(fromDate.getDate() - 1);
-      toDate.setDate(toDate.getDate() - 1);
+function getISTDate(d = new Date()) {
+  return d.toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
+}
+
+export default function SalesReportsPage() {
+  const [selectedBranch, setSelectedBranch] = useState("All");
+  const [dateRange, setDateRange] = useState("This Month");
+  const [customFrom, setCustomFrom] = useState("");
+  const [customTo, setCustomTo] = useState("");
+
+  const [downloadingId, setDownloadingId] = useState(null);
+  const [previewingId, setPreviewingId] = useState(null);
+  const [previewData, setPreviewData] = useState(null);
+  const [previewTitle, setPreviewTitle] = useState("");
+
+  const buildDateParams = useCallback(() => {
+    const now = new Date();
+    let dateFrom = "";
+    let dateTo = "";
+
+    if (dateRange === "Today") {
+      dateFrom = getISTDate(now);
+      dateTo = getISTDate(now);
+    } else if (dateRange === "Yesterday") {
+      const y = new Date(now);
+      y.setDate(y.getDate() - 1);
+      dateFrom = getISTDate(y);
+      dateTo = getISTDate(y);
     } else if (dateRange === "Last 7 Days") {
-      fromDate.setDate(fromDate.getDate() - 6);
-    } else if (dateRange === "Custom" && customDates.from) {
-      fromDate = new Date(customDates.from);
-      fromDate.setHours(0, 0, 0, 0);
-      toDate = customDates.to ? new Date(customDates.to) : new Date(customDates.from);
-      toDate.setHours(23, 59, 59, 999);
+      const past = new Date(now);
+      past.setDate(past.getDate() - 7);
+      dateFrom = getISTDate(past);
+      dateTo = getISTDate(now);
+    } else if (dateRange === "This Month") {
+      const start = new Date(now.getFullYear(), now.getMonth(), 1);
+      dateFrom = getISTDate(start);
+      dateTo = getISTDate(now);
+    } else if (dateRange === "Custom" && customFrom) {
+      dateFrom = customFrom;
+      dateTo = customTo || customFrom;
     }
 
-    return { from: fromDate, to: toDate };
-  };
+    return { dateFrom, dateTo };
+  }, [dateRange, customFrom, customTo]);
 
-  const downloadReport = async (reportType) => {
-    setLoading(prev => ({ ...prev, [reportType]: true }));
-
+  // Genuine CSV download from GET /api/sales/reports
+  const downloadReport = async (reportId) => {
+    setDownloadingId(reportId);
     try {
-      const { from, to } = getDateRange();
+      const { dateFrom, dateTo } = buildDateParams();
       const params = new URLSearchParams({
-        type: reportType,
-        branch,
-        dateFrom: from.toISOString(),
-        dateTo: to.toISOString()
+        type: reportId,
+        format: "csv",
       });
 
-      const res = await fetch(`/api/sales/reports?${params.toString()}`);
-      const data = await res.json();
+      if (selectedBranch !== "All") params.set("branch", selectedBranch);
+      if (dateFrom) params.set("dateFrom", dateFrom);
+      if (dateTo) params.set("dateTo", dateTo);
 
-      if (data.success && data.csvData) {
-        const blob = new Blob([data.csvData], { type: "text/csv" });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `${reportType}-${new Date().toISOString().split("T")[0]}.csv`;
-        a.click();
-        window.URL.revokeObjectURL(url);
-      }
+      const res = await fetch(`/api/sales/reports?${params.toString()}`);
+      if (!res.ok) throw new Error(`HTTP error ${res.status}`);
+
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `sales-${reportId}-${getISTDate(new Date())}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
     } catch (err) {
-      console.error("Error downloading report:", err);
-      alert("Failed to download report. Please try again.");
+      console.error("Report download failed:", err);
+      alert("Failed to generate report. Please verify connection and try again.");
     } finally {
-      setLoading(prev => ({ ...prev, [reportType]: false }));
+      setDownloadingId(null);
     }
   };
 
-  const reports = [
-    {
-      id: "patients",
-      title: "Patients Report",
-      description: "Complete list of all patients with their personal information and status",
-      icon: Users,
-      color: "from-blue-500 to-cyan-600",
-      includes: ["Name, Age, Gender", "Contact Details", "Branch", "Status", "Conversion Status", "Reference Agent"]
-    },
-    {
-      id: "agent-performance",
-      title: "Agent Performance Report",
-      description: "Detailed performance metrics for all sales agents",
-      icon: TrendingUp,
-      color: "from-purple-500 to-pink-600",
-      includes: ["Agent Details", "Total Leads", "Converted Patients", "Conversion Rate", "Branch Performance"]
-    },
-    {
-      id: "revenue",
-      title: "Revenue Report",
-      description: "All revenue transactions with payment details",
-      icon: IndianRupee,
-      color: "from-emerald-500 to-green-600",
-      includes: ["Transaction Date", "Patient Name", "Procedure", "Amount", "Payment Method", "Payment Type"]
-    },
-    {
-      id: "converted-patients",
-      title: "Converted Patients Report",
-      description: "List of all converted patients",
-      icon: CheckCircle,
-      color: "from-teal-500 to-cyan-600",
-      includes: ["Patient Details", "Conversion Date", "Reference Agent", "Revenue Generated", "Current Status"]
-    },
-    {
-      id: "pending-leads",
-      title: "Pending Leads Report",
-      description: "All leads that are not yet converted",
-      icon: Calendar,
-      color: "from-amber-500 to-orange-600",
-      includes: ["Lead Details", "Days Since First Contact", "Last Follow-up", "Reference Agent", "Current Stage"]
-    },
-    {
-      id: "daily-summary",
-      title: "Daily Summary Report",
-      description: "Daily summary of all sales activities",
-      icon: FileText,
-      color: "from-indigo-500 to-purple-600",
-      includes: ["New Leads", "Contacted", "Converted", "Revenue", "Top Performers", "Branch Breakdown"]
+  // Preview table data from backend
+  const previewReport = async (report) => {
+    setPreviewingId(report.id);
+    setPreviewTitle(report.title);
+    try {
+      const { dateFrom, dateTo } = buildDateParams();
+      const params = new URLSearchParams({
+        type: report.id,
+      });
+
+      if (selectedBranch !== "All") params.set("branch", selectedBranch);
+      if (dateFrom) params.set("dateFrom", dateFrom);
+      if (dateTo) params.set("dateTo", dateTo);
+
+      const res = await fetch(`/api/sales/reports?${params.toString()}`);
+      if (!res.ok) throw new Error(`HTTP error ${res.status}`);
+      const json = await res.json();
+      if (json.success) {
+        setPreviewData(json.data || []);
+      }
+    } catch (err) {
+      console.error("Report preview failed:", err);
+      alert("Failed to load report preview.");
+    } finally {
+      setPreviewingId(null);
     }
-  ];
+  };
 
   return (
-    <div className="flex min-h-screen bg-linear-to-br from-gray-50 to-gray-100">
-      <Sidebar
-        sidebarOpen={sidebarOpen}
-        setSidebarOpen={setSidebarOpen}
-        activePage={activePage}
-        setActivePage={setActivePage}
-      />
+    <div className="flex min-h-screen bg-[#f8fafc] text-slate-800">
+      <SalesSidebar />
 
-      <main className="flex-1 overflow-auto">
+      <main className="flex-1 flex flex-col min-w-0 overflow-y-auto">
+        <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-5">
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-lg bg-blue-50 border border-blue-200/80 flex items-center justify-center">
+                <FileBarChart className="w-5 h-5 text-blue-600" />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold text-slate-900 tracking-tight">
+                  Sales Reports & CSV Exports
+                </h1>
+                <p className="text-xs text-slate-500">
+                  Generate, inspect, and export verified CRM sales reports and agent scorecards
+                </p>
+              </div>
+            </div>
 
-        <div className="p-4 lg:p-8">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Reports</h1>
-            <p className="text-gray-600">Download comprehensive reports for your sales data</p>
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200/80">
+                <ShieldCheck className="w-3.5 h-3.5" />
+                View-Only
+              </span>
+            </div>
           </div>
 
+          {/* Filter Bar */}
+          <div className="bg-white border border-slate-200/80 rounded-xl p-4 shadow-sm space-y-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {/* Branch Filter */}
+              <div>
+                <label className="text-[11px] text-slate-500 font-medium block mb-1">
+                  Filter by Branch
+                </label>
+                <select
+                  value={selectedBranch}
+                  onChange={(e) => setSelectedBranch(e.target.value)}
+                  className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
+                >
+                  {BRANCHES.map((b) => (
+                    <option key={b} value={b}>
+                      {b === "All" ? "All Operational Branches" : `${b} Clinic`}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {reports.map((report) => (
-              <div
-                key={report.id}
-                className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-lg transition-all"
-              >
-                <div className={`h-2 bg-linear-to-r ${report.color}`}></div>
-                <div className="p-6">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center gap-4">
-                      <div className={`p-3 bg-linear-to-br ${report.color} rounded-lg`}>
-                        <report.icon className="h-6 w-6 text-white" />
+              {/* Period Preset */}
+              <div>
+                <label className="text-[11px] text-slate-500 font-medium block mb-1">
+                  Report Timeframe
+                </label>
+                <select
+                  value={dateRange}
+                  onChange={(e) => setDateRange(e.target.value)}
+                  className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
+                >
+                  {DATE_RANGES.map((d) => (
+                    <option key={d} value={d}>
+                      Period: {d}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Status Note */}
+              <div className="flex flex-col justify-end">
+                <span className="text-xs text-slate-500">
+                  Exports are generated directly by <code className="text-blue-600 font-mono">/api/sales/reports</code> in compliant RFC-4180 CSV format.
+                </span>
+              </div>
+            </div>
+
+            {/* Custom Dates Row */}
+            {dateRange === "Custom" && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                <div>
+                  <label className="text-[11px] text-slate-500 block mb-1">From Date</label>
+                  <input
+                    type="date"
+                    value={customFrom}
+                    onChange={(e) => setCustomFrom(e.target.value)}
+                    className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs text-slate-700"
+                  />
+                </div>
+                <div>
+                  <label className="text-[11px] text-slate-500 block mb-1">To Date</label>
+                  <input
+                    type="date"
+                    value={customTo}
+                    onChange={(e) => setCustomTo(e.target.value)}
+                    className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs text-slate-700"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Reports Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {REPORT_DEFINITIONS.map((report) => {
+              const Icon = report.icon;
+              const isDownloading = downloadingId === report.id;
+              const isPreviewing = previewingId === report.id;
+
+              return (
+                <div
+                  key={report.id}
+                  className="relative overflow-hidden rounded-[20px] border border-slate-200 bg-white p-5 sm:p-6 flex flex-col justify-between space-y-4 hover:border-slate-300 hover:shadow-md transition-all shadow-xs group"
+                >
+                  <div className={`absolute inset-x-0 top-0 h-[3px] ${report.accent || "bg-blue-600"}`} />
+                  <div className="space-y-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className={`w-12 h-12 rounded-2xl border flex items-center justify-center shrink-0 shadow-xs ${report.iconBg}`}>
+                        <Icon className={`w-6 h-6 ${report.color}`} />
                       </div>
-                      <div>
-                        <h3 className="text-lg font-bold text-gray-900">{report.title}</h3>
-                        <p className="text-sm text-gray-600 mt-1">{report.description}</p>
+                      <span className={`px-2.5 py-1 rounded-full text-[10px] font-semibold border ${report.badgeColor}`}>
+                        {report.badge}
+                      </span>
+                    </div>
+
+                    <div>
+                      <h3 className="text-base font-bold text-slate-900 tracking-tight">
+                        {report.title}
+                      </h3>
+                      <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                        {report.description}
+                      </p>
+                    </div>
+
+                    {/* Included Fields */}
+                    <div className="pt-2">
+                      <span className="text-[10px] uppercase tracking-wider font-semibold text-slate-400 block mb-1.5">
+                        Export Columns:
+                      </span>
+                      <div className="flex flex-wrap gap-1">
+                        {report.fields.map((f, i) => (
+                          <span
+                            key={i}
+                            className="text-[10px] px-1.5 py-0.5 rounded bg-slate-50 text-slate-500 border border-slate-200"
+                          >
+                            {f}
+                          </span>
+                        ))}
                       </div>
                     </div>
                   </div>
 
-                  <div className="mb-4">
-                    <p className="text-sm font-semibold text-gray-700 mb-2">Includes:</p>
-                    <ul className="space-y-1">
-                      {report.includes.map((item, idx) => (
-                        <li key={idx} className="text-sm text-gray-600 flex items-center gap-2">
-                          <div className="w-1.5 h-1.5 bg-indigo-600 rounded-full"></div>
-                          {item}
-                        </li>
-                      ))}
-                    </ul>
+                  {/* Actions */}
+                  <div className="pt-3 border-t border-slate-100 flex items-center gap-2">
+                    <button
+                      onClick={() => previewReport(report)}
+                      disabled={isPreviewing || isDownloading}
+                      className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium transition-colors disabled:opacity-50 border border-slate-200"
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                      {isPreviewing ? "Loading..." : "Preview"}
+                    </button>
+                    <button
+                      onClick={() => downloadReport(report.id)}
+                      disabled={isDownloading || isPreviewing}
+                      className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold shadow-sm transition-all disabled:opacity-50"
+                    >
+                      <Download className={`w-3.5 h-3.5 ${isDownloading ? "animate-bounce" : ""}`} />
+                      {isDownloading ? "Generating..." : "Download CSV"}
+                    </button>
                   </div>
-
-                  <button
-                    onClick={() => downloadReport(report.id)}
-                    disabled={loading[report.id]}
-                    className={`w-full flex items-center justify-center gap-2 px-4 py-3 bg-linear-to-r ${report.color} text-white rounded-lg font-semibold transition-all hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed`}
-                  >
-                    {loading[report.id] ? (
-                      <>
-                        <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white"></div>
-                        <span>Generating...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Download className="h-5 w-5" />
-                        <span>Download Report</span>
-                      </>
-                    )}
-                  </button>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
-          <div className="mt-8 bg-blue-50 border border-blue-200 rounded-xl p-6">
-            <div className="flex gap-4">
-              <div className="shrink-0">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <FileText className="h-6 w-6 text-blue-600" />
+          {/* Interactive Data Preview Drawer */}
+          {previewData && (
+            <div className="bg-white border border-slate-200/80 rounded-xl overflow-hidden shadow-sm space-y-3 p-5">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                <div className="flex items-center gap-2.5">
+                  <Table className="w-5 h-5 text-blue-600" />
+                  <div>
+                    <h3 className="text-base font-bold text-slate-900">{previewTitle} Preview</h3>
+                    <p className="text-xs text-slate-500">
+                      Showing first {previewData.length} records generated by backend
+                    </p>
+                  </div>
                 </div>
+                <button
+                  onClick={() => setPreviewData(null)}
+                  className="text-xs text-slate-500 hover:text-slate-800 px-2.5 py-1 rounded bg-slate-100 hover:bg-slate-200 border border-slate-200 transition-colors"
+                >
+                  Close Preview
+                </button>
               </div>
-              <div>
-                <h4 className="text-sm font-bold text-gray-900 mb-2">Report Information</h4>
-                <ul className="space-y-1 text-sm text-gray-600">
-                  <li>• All reports are generated in CSV format for easy analysis</li>
-                  <li>• Use the date range and branch filters above to customize your reports</li>
-                  <li>• Reports only include data that is accessible to sales team</li>
-                  <li>• Medical, surgery, and payment details are not included for privacy</li>
-                </ul>
-              </div>
+
+              {previewData.length === 0 ? (
+                <div className="py-8 text-center text-slate-400 text-xs">
+                  No records returned for current filter parameters.
+                </div>
+              ) : (
+                <div className="overflow-x-auto max-h-96">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className="border-b border-slate-200 bg-slate-50/80 sticky top-0 text-[10px] uppercase tracking-wider text-slate-500">
+                        {Object.keys(previewData[0] || {}).map((header, i) => (
+                          <th key={i} className="px-3.5 py-2.5 whitespace-nowrap font-semibold">
+                            {header}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {previewData.map((row, rIdx) => (
+                        <tr key={rIdx} className="hover:bg-slate-50/70 transition-colors">
+                          {Object.values(row).map((val, cIdx) => (
+                            <td
+                              key={cIdx}
+                              className="px-3.5 py-2.5 text-slate-600 whitespace-nowrap"
+                            >
+                              {String(val ?? "—")}
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
-          </div>
+          )}
         </div>
       </main>
     </div>

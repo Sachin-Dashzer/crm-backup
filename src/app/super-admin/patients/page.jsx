@@ -10,7 +10,7 @@ const CONFIG = {
   title:           "Patient Management",
   subtitle:        "Comprehensive patient data overview",
   columns:         ["visitDate","name","phone","branch","technique","package","received","pending","status","reference"],
-  actions:         ["view","edit"],
+  actions:         ["view","delete","edit"],
   showCsvExport:   true,
   showAddButton:   false,
   defaultPageSize: 50,

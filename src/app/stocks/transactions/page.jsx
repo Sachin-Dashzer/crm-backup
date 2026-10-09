@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
 import { maskPhone } from "@/utils/phoneUtils";
 import StockSidebar from "@/components/Sidebars/StockSidebar";
@@ -534,7 +534,7 @@ function DataTable({ category, rows, onDelete, onSort, sortConfig, pagination, o
 }
 
 export default function StocksTransactionsPage() {
-  const tenantBranches = ["Delhi", "Mumbai", "Hyderabad", "Noida"];
+  const tenantBranches = ["Delhi", "Mumbai", "Hyderabad", "Noida", "Gurgaon"];
 
   const router = useRouter();
   const [transactions, setTransactions] = useState([]);
@@ -556,16 +556,18 @@ export default function StocksTransactionsPage() {
   const toast = useToast();
   const [sortConfig, setSortConfig] = useState({ key: "date", direction: "desc" });
 
-  useEffect(() => { fetchData(); }, [pendingOnly]);
-
-  useEffect(() => { if (activeCategory !== "EXPENSE" && pendingOnly) setPendingOnly(false); }, [activeCategory]);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
-      const approvalQuery = pendingOnly ? "&approvalStatus=PENDING" : "";
-      const res = await fetch(`/api/transactions/get-all?limit=10000${approvalQuery}`, { credentials: "include" });
+      const params = new URLSearchParams();
+      if (filters.dateFrom) params.set("dateFrom", filters.dateFrom);
+      if (filters.dateTo) params.set("dateTo", filters.dateTo);
+      if (filters.branch) params.set("branch", filters.branch);
+      if (pendingOnly) params.set("approvalStatus", "PENDING");
+      params.set("limit", "1000");
+
+      const res = await fetch(`/api/transactions/get-all?${params.toString()}`, { credentials: "include" });
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       const data = await res.json();
       if (data.success && data.transactions) {
@@ -580,9 +582,20 @@ export default function StocksTransactionsPage() {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }, [filters.dateFrom, filters.dateTo, filters.branch, pendingOnly]);
 
-  const handleRefresh = async () => { setRefreshing(true); await fetchData(); };
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  useEffect(() => {
+    if (activeCategory !== "EXPENSE" && pendingOnly) setPendingOnly(false);
+  }, [activeCategory, pendingOnly]);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await fetchData();
+  };
 
   const filterByDateRange = (items, dateFrom, dateTo) => {
     if (!dateFrom && !dateTo) return items;

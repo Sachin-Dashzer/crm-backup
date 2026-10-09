@@ -1,7 +1,8 @@
 import OwnerSidebar from "@/components/Sidebars/OwnerSidebar";
 import { OwnerTopbar, Card } from "@/components/owner";
+import { FolderKanban } from "lucide-react";
 
-export default function HRActionsPage() {
+export default function HrActionsPage() {
   return (
     <div className="app">
       <OwnerSidebar />
@@ -14,10 +15,12 @@ export default function HRActionsPage() {
 
         <div className="content">
           <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "calc(100vh - 150px)" }}>
-            <Card className=" " style={{ maxWidth: "380px", textAlign: "center" }}>
-              <div style={{ fontSize: "64px", marginBottom: "16px" }}>🗂️</div>
-              <h2 style={{ margin: "0 0 8px 0", fontSize: "18px" }}>This is coming soon.</h2>
-              <p style={{ margin: "0", color: "var(--muted)", fontSize: "13px" }}>Needs an HR action-tracking system — not yet implemented.</p>
+            <Card style={{ maxWidth: "380px", textAlign: "center", padding: "32px 24px" }}>
+              <div style={{ display: "inline-flex", padding: "16px", borderRadius: "16px", background: "var(--chip-bg)", color: "var(--blue)", marginBottom: "16px" }}>
+                <FolderKanban className="w-10 h-10" />
+              </div>
+              <h2 style={{ margin: "0 0 8px 0", fontSize: "18px", fontWeight: 800 }}>This is coming soon.</h2>
+              <p style={{ margin: "0", color: "var(--muted)", fontSize: "13px", lineHeight: 1.5 }}>Needs an HR action queue model — not yet implemented.</p>
             </Card>
           </div>
         </div>

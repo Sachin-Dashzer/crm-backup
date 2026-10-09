@@ -2,10 +2,18 @@ import { NextResponse } from "next/server";
 import { withDB } from "@/lib/withDB";
 import Patient from "@/models/Patient";
 import Employee from "@/models/Employee";
-import Transactions from "@/models/Transactions";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
 const handler = async (req) => {
     try {
+        const session = await getServerSession(authOptions);
+        if (!session) {
+            return NextResponse.json({ success: false, message: "Unauthorized." }, { status: 401 });
+        }
+        if (session?.user?.role === "sales") {
+            return NextResponse.json({ success: false, message: "Forbidden. Use standard patient endpoints." }, { status: 403 });
+        }
         const patients = await Patient.find({})
             .select('personal ops counselling payments surgery.surgeryDate surgery.technique surgery.doctor createdAt updatedAt')
             .populate({

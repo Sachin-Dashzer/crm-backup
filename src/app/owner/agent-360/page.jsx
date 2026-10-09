@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, useMemo } from "react";
+import { RotateCw } from "lucide-react";
 import OwnerSidebar from "@/components/Sidebars/OwnerSidebar";
 import { OwnerTopbar, Card, DataTable, Badge, Modal, KpiRow } from "@/components/owner";
 
@@ -98,7 +99,7 @@ export default function Agent360Page() {
           subtitle="Sortable performance table — click a row for full detail"
           controls={
             <button className="icon-btn" onClick={fetchAgents} disabled={loading} title="Refresh">
-              {loading ? "…" : "⟳"}
+              <RotateCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
             </button>
           }
         />
